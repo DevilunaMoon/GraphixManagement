@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface DeviceProgress {
@@ -11,6 +11,9 @@ interface DeviceProgress {
   progress: string;
   image: string | null;
   status: string;
+  cause: string | null;
+  technician: string | null;
+  repairCost: string | null;
 }
 
 
@@ -25,6 +28,19 @@ export default function CashierMonitoring() {
   const [deviceToComplete, setDeviceToComplete] = useState<DeviceProgress | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
+  const [editProgress, setEditProgress] = useState('0%');
+  const [initialEditProgress, setInitialEditProgress] = useState('0%');
+  const [editCause, setEditCause] = useState('');
+  const [editTechnician, setEditTechnician] = useState('');
+  const [editRepairCost, setEditRepairCost] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const progressLevels = ['0%', '25%', '50%', '75%', '100%'];
+  const initialProgressIndex = progressLevels.indexOf(initialEditProgress);
 
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,8 +63,14 @@ export default function CashierMonitoring() {
     d.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredDevices.length / ITEMS_PER_PAGE) || 1;
-  const paginatedDevices = filteredDevices.slice(
+  const sortedDevices = [...filteredDevices].sort((a, b) => {
+    if (a.progress === '100%' && b.progress !== '100%') return 1;
+    if (a.progress !== '100%' && b.progress === '100%') return -1;
+    return 0;
+  });
+
+  const totalPages = Math.ceil(sortedDevices.length / ITEMS_PER_PAGE) || 1;
+  const paginatedDevices = sortedDevices.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -91,6 +113,51 @@ export default function CashierMonitoring() {
       } finally {
         setIsCompleting(false);
       }
+    }
+  };
+
+  const openEditModal = (device: DeviceProgress) => {
+    setDeviceToEdit(device);
+    setEditProgress(device.progress || '0%');
+    setInitialEditProgress(device.progress || '0%');
+    setEditCause(device.cause || '');
+    setEditTechnician(device.technician || '');
+    setEditRepairCost(device.repairCost || '');
+    setEditModalOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!deviceToEdit) return;
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          progress: editProgress,
+          cause: editCause,
+          technician: editTechnician,
+          repairCost: editRepairCost
+        })
+      });
+
+      if (res.ok) {
+        setDevices(prev => prev.map(d => d.id === deviceToEdit.id ? { 
+          ...d, 
+          progress: editProgress,
+          cause: editCause,
+          technician: editTechnician,
+          repairCost: editRepairCost
+        } : d));
+        setEditModalOpen(false);
+      } else {
+        alert('Failed to update progress.');
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      alert('An external error occurred.');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -161,18 +228,11 @@ export default function CashierMonitoring() {
                       <td className="p-4 align-middle">
                         <div className="flex gap-4 justify-center items-center">
                           <button 
-                            onClick={() => navigate('/cashier/edit-progress?id=' + device.id)}
+                            onClick={() => openEditModal(device)}
                             className="w-11 h-11 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md"
                             title="Edit Progress"
                           >
                             <Pencil size={18} />
-                          </button>
-                          <button 
-                            onClick={() => openCompleteModal(device)}
-                            className="w-11 h-11 rounded-full flex justify-center items-center bg-[#ffb703] text-white hover:bg-[#e0a100] hover:scale-110 transition-all shadow-md"
-                            title="Complete Request"
-                          >
-                            <FileText size={18} />
                           </button>
                         </div>
                       </td>
@@ -261,6 +321,129 @@ export default function CashierMonitoring() {
           </div>
         </div>
       )}
+
+      {/* Edit Progress Modal */}
+      {editModalOpen && deviceToEdit && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h2 className="text-xl font-bold text-black border-none">Edit Device Progress</h2>
+              <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
+              
+              {/* Internal Image Display */}
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-white flex justify-center items-center overflow-hidden p-2">
+                  {deviceToEdit.image ? (
+                    <img src={deviceToEdit.image} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-gray-400 font-bold">No Image</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic Form Fields */}
+              <div className="flex flex-col gap-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Device Name</label>
+                    <input type="text" value={deviceToEdit.deviceName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Name of the Owner</label>
+                    <input type="text" value={deviceToEdit.ownerName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Progress</label>
+                  <div className="relative">
+                    <select 
+                      value={editProgress}
+                      onChange={(e) => setEditProgress(e.target.value)}
+                      className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
+                    >
+                      <option value="0%" disabled={progressLevels.indexOf('0%') < initialProgressIndex} className="text-red-500 font-semibold">0%</option>
+                      <option value="25%" disabled={progressLevels.indexOf('25%') < initialProgressIndex} className="text-red-500 font-semibold">25%</option>
+                      <option value="50%" disabled={progressLevels.indexOf('50%') < initialProgressIndex} className="text-yellow-500 font-semibold">50%</option>
+                      <option value="75%" disabled={progressLevels.indexOf('75%') < initialProgressIndex} className="text-yellow-500 font-semibold">75%</option>
+                      <option value="100%" disabled={progressLevels.indexOf('100%') < initialProgressIndex} className="text-green-600 font-semibold">100%</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                      <ChevronDown size={20} className="text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Cause of the problem</label>
+                  <input 
+                    type="text" 
+                    value={editCause}
+                    onChange={(e) => setEditCause(e.target.value)}
+                    placeholder="e.g. Broken LCD" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Technician</label>
+                    <input 
+                      type="text" 
+                      value={editTechnician}
+                      onChange={(e) => setEditTechnician(e.target.value)}
+                      placeholder="Technician Name" 
+                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Repair Cost</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
+                      <input 
+                        type="text" 
+                        value={editRepairCost}
+                        onChange={(e) => setEditRepairCost(e.target.value)}
+                        placeholder="2,000" 
+                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-4 mt-2">
+               <button 
+                 onClick={() => setEditModalOpen(false)}
+                 className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={handleEditSave}
+                 disabled={isSavingEdit}
+                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50"
+               >
+                 {isSavingEdit ? "Saving..." : "Save Changes"}
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }

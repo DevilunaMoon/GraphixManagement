@@ -11,6 +11,7 @@ export default function CustomerProducts() {
   const [categoriesData, setCategoriesData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState('default');
+  const [budgetFilter, setBudgetFilter] = useState('');
   const searchParams = useSearchParams();
 
   const fallbackCategories = [
@@ -46,6 +47,7 @@ export default function CustomerProducts() {
     .filter(p => {
       let matchesCategory = true;
       let matchesSearch = true;
+      let matchesBudget = true;
 
       if (categoryFilter) {
         const filterLower = categoryFilter.toLowerCase();
@@ -59,7 +61,14 @@ export default function CustomerProducts() {
         matchesSearch = p.name.toLowerCase().includes(searchLower) || catName.includes(searchLower);
       }
 
-      return matchesCategory && matchesSearch;
+      if (budgetFilter) {
+        const budget = parseFloat(budgetFilter);
+        if (!isNaN(budget)) {
+          matchesBudget = (p.price || 0) <= budget;
+        }
+      }
+
+      return matchesCategory && matchesSearch && matchesBudget;
     })
     .sort((a, b) => {
       if (sortOrder === 'price-asc') return (a.price || 0) - (b.price || 0);
@@ -90,6 +99,18 @@ export default function CustomerProducts() {
                 <option value="price-desc">Price: Highest to Lowest</option>
                 <option value="price-asc">Price: Lowest to Highest</option>
               </select>
+            </div>
+            {/* Budget Filter */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Budget: ₱</span>
+              <input 
+                type="number" 
+                value={budgetFilter}
+                onChange={(e) => setBudgetFilter(e.target.value)}
+                placeholder="Max price" 
+                className="w-full sm:w-28 px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors"
+                min="0"
+              />
             </div>
           </div>
         </div>

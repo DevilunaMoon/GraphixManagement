@@ -12,12 +12,16 @@ export default function CashierEditProgress() {
 
   const [deviceData, setDeviceData] = useState<any>(null);
   const [progress, setProgress] = useState('0%');
+  const [initialProgress, setInitialProgress] = useState('0%');
   const [cause, setCause] = useState('');
   const [technician, setTechnician] = useState('');
   const [repairCost, setRepairCost] = useState('');
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const progressLevels = ['0%', '25%', '50%', '75%', '100%'];
+  const initialProgressIndex = progressLevels.indexOf(initialProgress);
 
   useEffect(() => {
     if (id) {
@@ -28,6 +32,7 @@ export default function CashierEditProgress() {
           if (data && !data.error) {
             setDeviceData(data);
             setProgress(data.progress || '0%');
+            setInitialProgress(data.progress || '0%');
             setCause(data.cause || '');
             setTechnician(data.technician || '');
             setRepairCost(data.repairCost || '');
@@ -97,8 +102,7 @@ export default function CashierEditProgress() {
   }
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Signika'] flex justify-center items-start">
-      <div className="w-full max-w-4xl bg-white border-2 border-[#bd00ff] rounded-2xl p-6 md:p-10 flex flex-col gap-8 shadow-sm">
+    <main className="flex-1 flex flex-col p-5 md:p-8 gap-8 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Signika'] overflow-y-auto w-auto">
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
@@ -142,11 +146,11 @@ export default function CashierEditProgress() {
                   onChange={(e) => setProgress(e.target.value)}
                   className={`w-full h-12 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor()}`}
                 >
-                  <option value="0%" className="text-red-500 font-semibold">0%</option>
-                  <option value="25%" className="text-red-500 font-semibold">25%</option>
-                  <option value="50%" className="text-yellow-500 font-semibold">50%</option>
-                  <option value="75%" className="text-yellow-500 font-semibold">75%</option>
-                  <option value="100%" className="text-green-600 font-semibold">100%</option>
+                  <option value="0%" disabled={progressLevels.indexOf('0%') < initialProgressIndex} className="text-red-500 font-semibold">0%</option>
+                  <option value="25%" disabled={progressLevels.indexOf('25%') < initialProgressIndex} className="text-red-500 font-semibold">25%</option>
+                  <option value="50%" disabled={progressLevels.indexOf('50%') < initialProgressIndex} className="text-yellow-500 font-semibold">50%</option>
+                  <option value="75%" disabled={progressLevels.indexOf('75%') < initialProgressIndex} className="text-yellow-500 font-semibold">75%</option>
+                  <option value="100%" disabled={progressLevels.indexOf('100%') < initialProgressIndex} className="text-green-600 font-semibold">100%</option>
                 </select>
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                   <ChevronDown size={20} className="text-gray-500" />
@@ -204,7 +208,6 @@ export default function CashierEditProgress() {
            </button>
         </div>
 
-      </div>
     </main>
   );
 }
