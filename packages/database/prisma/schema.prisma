@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  phone       String?
+  password      String?
+  authProvider  String   @default("LOCAL")
+  role        String   @default("CUSTOMER")
+  image       String?
+  gender      String?
+  dateOfBirth String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reviews     Review[]
+  purchases   Purchase[]
+}
+
+model Device {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float
+  cost        Float    @default(0)
+  stock       Int
+  sold        Int      @default(0)
+  specs       String?
+  image       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reviews     Review[]
+  purchases   Purchase[]
+  variations  DeviceVariation[]
+
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+model DeviceVariation {
+  id        String   @id @default(cuid())
+  type      String   
+  name      String   
+  price     Float
+  cost      Float    @default(0)
+  stock     Int
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+}
+
+
+model RepairRequest {
+  id          String   @id @default(cuid())
+  deviceName  String
+  ownerName   String
+  progress    String
+  cause       String?
+  technician  String?
+  repairCost  String?
+  image       String?
+  status      String   @default("Active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TechnicianFeedback {
+  id             String   @id @default(cuid())
+  customerName   String
+  technicianName String?
+  feedbackText   String
+  sentiment      String   @default("Positive")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  devices   Device[]
+}
+
+model Policy {
+  id        String   @id @default(cuid())
+  type      String   @unique
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Purchase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}

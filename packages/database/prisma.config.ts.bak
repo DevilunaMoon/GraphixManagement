@@ -1,0 +1,21 @@
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load the root .env file securely
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+
+const user = process.env.POSTGRES_USER || "postgres";
+const pass = process.env.POSTGRES_PASSWORD || "password";
+const db = process.env.POSTGRES_DB || "srmall_dev";
+
+import { defineConfig } from "@prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+  },
+  datasource: {
+    url: `postgresql://${user}:${pass}@localhost:5432/${db}?schema=public`,
+  },
+});

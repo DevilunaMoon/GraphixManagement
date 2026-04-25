@@ -1,0 +1,58 @@
+# Monorepo & Node.js Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs & Next.js
+.next/
+out/
+build/
+dist/
+.turbo/
+.expo/
+*.tsbuildinfo
+
+# Environment Variables & Secrets (CRITICAL SECURITY)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.sqlite
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE & Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs & Temporary Files
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+.pnpm-store/
+coverage/
+.nyc_output/
+.npm/
+
+# Prisma
+packages/database/generated/
+prisma/generated/
+apps/**/prisma/generated/

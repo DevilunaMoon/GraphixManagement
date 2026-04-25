@@ -1,0 +1,120 @@
+"use client";
+
+import { useState, Suspense } from 'react';
+import { ChevronLeft, Wifi } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+function CustomerDownpaymentContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const deviceId = searchParams.get('deviceId');
+  const navigate = router.push;
+  const [method, setMethod] = useState('cash');
+
+  const handlePlaceOrder = async () => {
+    if (deviceId) {
+      try {
+        await fetch('/api/purchases', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId })
+        });
+      } catch (err) {
+        console.error('Failed to record purchase:', err);
+      }
+    }
+    navigate('/customer/downpayment-confirmed');
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Signika']">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-8">
+        
+        {/* Header */}
+        <div className="flex items-center gap-4 border-b-2 border-gray-100 pb-4">
+          <button 
+            onClick={() => router.back()} 
+            className="text-[#bd00ff] hover:text-[#9c00d6] hover:-translate-x-1 transition-all bg-transparent border-none cursor-pointer p-0"
+          >
+            <ChevronLeft size={32} />
+          </button>
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#4B0082] m-0 border-none">Secure Payment</h2>
+        </div>
+
+        <form className="flex flex-col gap-6">
+          
+          <div className="flex flex-col gap-3">
+            <label className="font-bold text-gray-700 text-lg">Select Payment Method</label>
+            <div className="grid grid-cols-2 gap-4">
+              
+              <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'cash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <input type="radio" name="payment" value="cash" checked={method === 'cash'} onChange={() => setMethod('cash')} className="absolute opacity-0" />
+                <span className="text-4xl text-yellow-400 font-bold tracking-tighter">₱</span>
+                <span className="font-bold text-sm text-center text-black">On Cash Payment</span>
+              </label>
+
+              <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'gcash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+                <input type="radio" name="payment" value="gcash" checked={method === 'gcash'} onChange={() => setMethod('gcash')} className="absolute opacity-0" />
+                <div className="text-blue-500 font-extrabold text-3xl flex items-center justify-center">
+                  G<Wifi size={20} className="rotate-90 ml-0.5" strokeWidth={4} />
+                </div>
+                <span className="font-bold text-sm text-center text-black">G-Cash Payment</span>
+              </label>
+
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-bold text-gray-700 text-lg">Message for Staff</label>
+            <textarea 
+              placeholder="Enter your message here" 
+              rows={2}
+              className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Signika'] resize-vertical focus:border-[#bd00ff] transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-bold text-gray-700 text-lg">As Low as for 12 Months</label>
+            <div className="flex items-center w-full px-5 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-black font-bold text-xl">
+              <span className="text-gray-500 mr-2">₱</span>
+              <span>1,300.00</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center w-full border-2 border-gray-200 rounded-xl p-5 bg-white shadow-sm mt-2 flex-wrap gap-4">
+            <span className="font-bold text-gray-600 text-lg uppercase tracking-wide">Downpayment:</span>
+            <div className="flex items-center text-[#bd00ff] font-extrabold text-3xl">
+              <span className="text-2xl mr-1">₱</span>
+              <span>3,100.00</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center w-full border border-[#bd00ff] rounded-xl p-5 bg-purple-50 shadow-[0_4px_15px_rgba(189,0,255,0.1)] flex-wrap gap-4">
+            <span className="font-bold text-black text-lg uppercase tracking-wide">Total To Pay:</span>
+            <div className="flex items-center text-red-600 font-extrabold text-3xl">
+              <span className="text-2xl mr-1">₱</span>
+              <span>10,000.00</span>
+            </div>
+          </div>
+
+          <button 
+            type="button"
+            onClick={handlePlaceOrder}
+            className="w-full py-4 mt-4 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-xl rounded-xl border-none cursor-pointer shadow-[0_8px_20px_rgba(189,0,255,0.4)] hover:shadow-[0_8px_25px_rgba(189,0,255,0.6)] hover:-translate-y-1 transition-all"
+          >
+            Place Order
+          </button>
+
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function CustomerDownpayment() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CustomerDownpaymentContent />
+    </Suspense>
+  );
+}

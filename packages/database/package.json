@@ -1,0 +1,33 @@
+{
+  "name": "database",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "default": "./index.ts"
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
+    "prisma": "^7.4.2",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.4.2",
+    "@prisma/config": "^7.5.0",
+    "dotenv": "^17.3.1",
+    "pg": "^8.20.0"
+  }
+}

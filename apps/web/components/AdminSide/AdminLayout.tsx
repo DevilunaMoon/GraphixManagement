@@ -1,0 +1,142 @@
+"use client";
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { useTheme } from '../../context/ThemeContext';
+import {
+  List,
+  X,
+  Grid,
+  User,
+  Box,
+  BarChart2,
+  Settings,
+  LogOut,
+  Image as ImageIcon,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { styles, bgClass } = useTheme();
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
+
+  return (
+    <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Inter'] transition-colors duration-300`}>
+      {/* Mobile Header */}
+      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-5 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
+        <div className="flex items-center gap-3">
+          <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover" />
+          <span className="text-white text-lg font-bold">Graphix Admin</span>
+        </div>
+        <button onClick={toggleSidebar} className="text-white">
+          <List size={28} />
+        </button>
+      </div>
+
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-40 transition-opacity" 
+          onClick={toggleSidebar}
+        />
+      )}
+
+      {/* Admin Sidebar */}
+      <aside 
+        className={`fixed top-0 left-0 h-screen bg-gradient-to-b ${styles.gradient} text-white flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.1)] ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } ${isCollapsed ? 'w-[260px] md:w-[80px]' : 'w-[260px]'}`}
+      >
+        {/* Desktop Shrink Toggle Button */}
+        <button 
+          onClick={toggleCollapse}
+          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-gray-900 rounded-full p-1.5 shadow-md border border-gray-100 hover:scale-110 hover:text-[var(--theme-primary,purple)] transition-transform z-50"
+          title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} /> : <ChevronLeft size={18} strokeWidth={3} />}
+        </button>
+
+        <div className={`p-6 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-white/10 h-[85px]`}>
+          <div className="flex items-center gap-3">
+            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-white object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
+            {!isCollapsed && <span className="text-2xl font-extrabold tracking-wide">Graphix</span>}
+          </div>
+          {!isCollapsed && (
+            <button onClick={toggleSidebar} className="md:hidden text-white">
+              <X size={24} />
+            </button>
+          )}
+        </div>
+
+        <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
+          {[
+            { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
+            { href: '/admin/accounts', label: 'Accounts', icon: User },
+            { href: '/admin/inventory', label: 'Inventory', icon: Box },
+            { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
+            { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+            { href: '/admin/settings', label: 'Settings', icon: Settings },
+          ].map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link 
+                key={item.href}
+                href={item.href} 
+                onClick={() => setIsSidebarOpen(false)}
+                title={isCollapsed ? item.label : undefined}
+                className={`flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                  isActive 
+                    ? isCollapsed 
+                      ? 'bg-white/20 text-white shadow-sm' 
+                      : 'bg-white/15 text-white border-l-4 border-l-white' 
+                    : isCollapsed
+                      ? 'text-white/70'
+                      : 'text-white/70 border-l-4 border-l-transparent'
+                }`}
+              >
+                <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                {!isCollapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className={`flex-1 transition-all duration-300 w-full min-h-screen flex flex-col pt-[60px] md:pt-0 ${
+        isCollapsed ? 'md:ml-[80px]' : 'md:ml-[260px]'
+      }`}>
+        <header className={`bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 flex justify-between items-center shadow-sm transition-all duration-300`}>
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Dashboard Overview</h1>
+            <p className="text-sm text-white/90">Welcome Back Admin. Here's the daily summary</p>
+          </div>
+          <button 
+            onClick={async () => {
+              const { logoutUser } = await import('../../actions/auth');
+              await logoutUser();
+              window.location.href = '/login';
+            }}
+            title="Log Out"
+            className="text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+          >
+            <LogOut size={28} />
+          </button>
+        </header>
+
+        <div className="flex-1 p-5 md:p-10 mx-auto w-full max-w-[1600px] overflow-hidden">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

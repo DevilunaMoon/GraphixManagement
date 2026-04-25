@@ -1,0 +1,505 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Menu, X,
+  MonitorSmartphone, ShoppingBag,
+  ShieldCheck, Clock,
+  ChevronRight, ArrowRight,
+  ChevronLeft, Sparkles
+} from "lucide-react";
+
+const MOCK_PRODUCTS = [
+  { id: '1', name: 'Samsung Galaxy S25', description: 'Latest flagship smartphone with advanced AI capabilities.', price: 999.00, originalPrice: null, image: '/Images/Samsung S25.jpg', tag: 'New', tagColor: 'purple' },
+  { id: '2', name: 'Wireless Headphones', description: 'Premium noise-canceling audio for immersive listening.', price: 199.00, originalPrice: 249.00, image: '/Images/Headphone.jpg', tag: 'Sale', tagColor: 'red' },
+  { id: '3', name: 'IPhone', description: 'Industry-leading performance with a gorgeous Retina display.', price: 899.00, originalPrice: null, image: '/Images/iphone.jpg', tag: null, tagColor: null },
+  { id: '4', name: '65W Fast Charger', description: 'Ultra-fast dual port charging brick for all your devices.', price: 39.00, originalPrice: null, image: '/Images/Charger.jpg', tag: 'In Stock', tagColor: 'green' },
+  { id: '5', name: 'Samsung Galaxy Z FOLD 7', description: 'Innovative folding design with massive screen space.', price: 1299.00, originalPrice: null, image: '/Images/Samsung Galaxy Z FOLD 7.jpg', tag: 'Premium', tagColor: 'purple' },
+  { id: '6', name: 'Tecno Pova Pro', description: 'High performance gaming phone with large battery.', price: 299.00, originalPrice: 349.00, image: '/Images/Tecno Pova Pro 5g.png', tag: 'Sale', tagColor: 'red' },
+  { id: '7', name: 'Aula Keyboard', description: 'Mechanical keyboard for gaming and typing.', price: 59.00, originalPrice: null, image: '/Images/Aula.jpg', tag: 'New', tagColor: 'purple' },
+  { id: '8', name: 'HDMI Cable', description: 'High-speed 4K HDMI braided cable.', price: 15.00, originalPrice: null, image: '/Images/HDMI.jpg', tag: 'In Stock', tagColor: 'green' },
+  { id: '9', name: 'Realme Note 50', description: 'Affordable entry-level smartphone.', price: 149.00, originalPrice: null, image: '/Images/Realme note 50.jpg', tag: null, tagColor: null },
+  { id: '10', name: 'RedMagic', description: 'Ultimate gaming monster phone.', price: 799.00, originalPrice: null, image: '/Images/RedMagic.jpg', tag: 'Gaming', tagColor: 'red' },
+  { id: '11', name: 'Elago Case', description: 'Premium silicone case for your devices.', price: 25.00, originalPrice: null, image: '/Images/Elago.jpg', tag: null, tagColor: null },
+  { id: '12', name: 'Xiaomi Phone', description: 'Great value for everyday tasks.', price: 249.00, originalPrice: null, image: '/Images/Xiaomi.jpg', tag: 'In Stock', tagColor: 'green' },
+];
+
+export default function HomePage() {
+  const router = useRouter();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  const [selectedPolicyType, setSelectedPolicyType] = useState('PURCHASE');
+  const [policyContent, setPolicyContent] = useState('');
+  const [loadingPolicy, setLoadingPolicy] = useState(false);
+
+  const openPolicyModal = async (e: React.MouseEvent, type: string) => {
+    e.preventDefault();
+    setSelectedPolicyType(type);
+    setPolicyModalOpen(true);
+    setLoadingPolicy(true);
+
+    try {
+      const res = await fetch('/api/policies');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const target = data.find((p: any) => p.type === type.toUpperCase());
+          if (target) setPolicyContent(target.content);
+          else setPolicyContent('No policy content defined yet.');
+        }
+      }
+    } catch (err) {
+      setPolicyContent('Failed to load policy.');
+    } finally {
+      setLoadingPolicy(false);
+    }
+  };
+
+  const [products, setProducts] = useState(MOCK_PRODUCTS);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Check if the user is already logged in
+    fetch('/api/auth/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.loggedIn) setIsLoggedIn(true);
+      })
+      .catch((err) => console.error("Session check failed", err));
+  }, []);
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const response = await fetch('/api/devices');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            const dbProducts = data.map((device: any) => ({
+              id: device.id,
+              name: device.name,
+              description: device.specs || 'Premium electronic device.',
+              price: device.price,
+              originalPrice: null,
+              image: device.image || '/Images/graphix-logo.jpg',
+              tag: device.stock > 0 ? 'In Stock' : 'Out of Stock',
+              tagColor: device.stock > 0 ? 'green' : 'gray'
+            }));
+
+            const combined = [...dbProducts, ...MOCK_PRODUCTS];
+            const unique = combined.filter((v, i, a) => a.findIndex((t: any) => (t.name === v.name)) === i);
+            setProducts(unique);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching devices', err);
+      }
+    };
+    fetchDevices();
+  }, []);
+
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
+
+  const features = [
+    {
+      title: "Device Monitoring",
+      description: "Track the real-time repair and maintenance status of your electronic devices with complete transparency.",
+      icon: <MonitorSmartphone className="text-white" size={32} />
+    },
+    {
+      title: "Digital Marketplace",
+      description: "Browse and purchase a wide selection of premium electronics, cables, and accessories directly.",
+      icon: <ShoppingBag className="text-white" size={32} />
+    },
+    {
+      title: "Secure Data",
+      description: "Safe, secure, and fully documented transactions with digital receipts for every purchase or service.",
+      icon: <ShieldCheck className="text-white" size={32} />
+    },
+    {
+      title: "Efficiency",
+      description: "No more waiting in lines. Get live updates on your repair progress straight from the dashboard.",
+      icon: <Clock className="text-white" size={32} />
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f3f4f8] font-['Signika'] flex flex-col overflow-x-hidden selection:bg-[#bd00ff] selection:text-white">
+      {/* Navbar */}
+      <nav
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled
+          ? "bg-white shadow-md py-4 border-b border-gray-200"
+          : "bg-transparent py-6"
+          }`}
+      >
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo(0, 0)}>
+            <div
+              className={`w-12 h-12 rounded-xl flex justify-center items-center overflow-hidden border-2 ${isScrolled ? 'border-[#8b00cc]' : 'border-gray-800'}`}
+            >
+              <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-full h-full object-cover bg-white" />
+            </div>
+            <span className={`text-3xl font-extrabold tracking-tight ${isScrolled ? 'text-[#8b00cc]' : 'text-gray-900 group-hover:text-[#bd00ff]'} transition-colors`}>
+              Graphix
+            </span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-10">
+            {['Home', 'About', 'Features'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase()}`} className={`font-bold relative ${isScrolled ? 'text-gray-600' : 'text-gray-900'} hover:text-[#bd00ff] transition-colors`}>
+                {item}
+              </a>
+            ))}
+            <button
+              onClick={() => router.push('/login')}
+              className="bg-[#8b00cc] text-white px-8 py-3 rounded-xl font-bold shadow-md ml-4 hover:bg-[#bd00ff] transition-all"
+            >
+              {isLoggedIn ? "Dashboard" : "Log in"}
+            </button>
+          </div>
+
+          <button className="md:hidden text-[#8b00cc] p-2 bg-white rounded-xl shadow-sm border border-gray-100" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
+        </div>
+
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-gray-100 flex flex-col py-6 px-6 gap-2">
+            {['Home', 'About', 'Features'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} className="text-gray-800 font-bold text-xl py-3 border-b border-gray-100/50">
+                {item}
+              </a>
+            ))}
+            <button
+              onClick={() => { setMobileMenuOpen(false); router.push('/login'); }}
+              className="bg-[#8b00cc] text-white px-6 py-4 rounded-xl font-bold w-full mt-4 text-xl shadow-md"
+            >
+              {isLoggedIn ? "Dashboard" : "Log in"}
+            </button>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section */}
+      <section id="home" className="relative pt-40 pb-32 md:pt-56 md:pb-48 px-6 bg-white border-b border-gray-200 overflow-hidden">
+        {/* CSS Animation Loop Overlay */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes float1 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-30px) scale(1.05); }
+          }
+          @keyframes float2 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(40px) scale(0.95); }
+          }
+          @keyframes rotateOrb {
+            0% { transform: rotate(0deg) translate(50px) rotate(0deg); }
+            100% { transform: rotate(360deg) translate(50px) rotate(-360deg); }
+          }
+        `}} />
+
+        {/* Ambient Animated Orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply opacity-50 blur-3xl pointer-events-none z-0" style={{ animation: 'float1 8s ease-in-out infinite' }}></div>
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-400 rounded-full mix-blend-multiply opacity-40 blur-3xl pointer-events-none z-0" style={{ animation: 'float2 10s ease-in-out infinite' }}></div>
+        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-pink-400 rounded-[50%] mix-blend-multiply opacity-30 blur-3xl pointer-events-none z-0" style={{ animation: 'rotateOrb 15s linear infinite' }}></div>
+
+        <div className="max-w-7xl mx-auto flex flex-col items-center text-center gap-6 relative z-10">
+          <div className="inline-flex items-center gap-2 px-5 py-2 bg-purple-50 rounded-full font-bold text-sm border border-purple-200 text-[#8b00cc]">
+            <Sparkles size={16} />
+            <span>Next-Gen Device Management</span>
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight max-w-4xl">
+            Control your tech with clarity.
+          </h1>
+
+          <p className="text-xl text-gray-600 max-w-2xl font-medium leading-relaxed mt-2">
+            Graphix provides a seamless, transparent, and breathtakingly fast way to track repairs, browse electronics, and manage tech investments.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full sm:w-auto">
+            <button
+              onClick={() => router.push('/login')}
+              className="bg-[#8b00cc] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#bd00ff] transition-all flex items-center justify-center gap-3 shadow-md"
+            >
+              {isLoggedIn ? "Go to Dashboard" : "Get Started Free"} <ArrowRight size={22} />
+            </button>
+            <a
+              href="#about"
+              className="bg-white text-gray-900 px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all flex items-center justify-center border-2 border-gray-200"
+            >
+              Discover Features
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Products Section */}
+      <section className="px-6 py-20 bg-[#f3f4f8]">
+        <div className="max-w-7xl mx-auto flex flex-col gap-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between">
+            <div>
+              <h2 className="text-[#8b00cc] font-black text-xl tracking-wide uppercase mb-2 flex items-center gap-2">
+                <ShoppingBag size={24} /> Storefront
+              </h2>
+              <h3 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">Trending Weekly</h3>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {currentProducts.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
+              >
+                <div className="w-full aspect-square bg-[#f8f9fc] rounded-xl mb-4 overflow-hidden relative border border-gray-100 flex items-center justify-center p-4">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-contain"
+                  />
+                  {product.tag && (
+                    <div className={`absolute top-3 right-3 bg-${product.tagColor}-100 text-${product.tagColor}-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm uppercase tracking-wide`}>
+                      {product.tag}
+                    </div>
+                  )}
+                </div>
+                <h4 className="font-bold text-gray-900 text-lg mb-1 line-clamp-1">{product.name}</h4>
+                <p className="text-gray-500 font-medium text-sm mb-4 line-clamp-2 leading-relaxed">{product.description}</p>
+                <div className="mt-auto flex justify-between items-center">
+                  <div className="flex flex-col">
+                    {product.originalPrice && (
+                      <span className="text-xs text-gray-400 line-through font-bold">₱{product.originalPrice.toFixed(2)}</span>
+                    )}
+                    <span className="font-black text-2xl text-[#8b00cc]">₱{product.price.toFixed(2)}</span>
+                  </div>
+                  <button
+                    className="w-12 h-12 rounded-xl bg-purple-50 text-[#8b00cc] flex justify-center items-center hover:bg-[#8b00cc] hover:text-white transition-all shadow-sm"
+                  >
+                    <ShoppingBag size={20} className="stroke-[2.5]" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center mt-12 gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-12 h-12 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-900 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+              >
+                <ChevronLeft size={24} />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {[...Array(totalPages)].map((_, idx) => {
+                  const page = idx + 1;
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-12 h-12 rounded-xl font-bold text-lg transition-colors ${currentPage === page
+                        ? "bg-[#8b00cc] text-white shadow-md"
+                        : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="w-12 h-12 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-900 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-24 bg-gray-900 text-white border-y border-gray-800">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="flex flex-col gap-6">
+            <div className="inline-flex w-max items-center gap-2 px-4 py-2 bg-white/10 rounded-lg font-bold text-sm text-[#e0b0ff]">
+              Why Choose Us
+            </div>
+            <h3 className="text-4xl md:text-5xl font-black text-white leading-tight">
+              Bridging the gap between service & transparency.
+            </h3>
+            <p className="text-lg text-gray-400 leading-relaxed max-w-lg">
+              We eliminated the anxiety of device repairs. Our system provides real-time, step-by-step visibility into your electronics' status.
+            </p>
+            <div className="flex gap-8 mt-6">
+              <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
+                <span className="text-4xl font-black">24<span className="text-[#e0b0ff]">/7</span></span>
+                <span className="text-gray-400 font-bold uppercase text-xs mt-1">Visibility</span>
+              </div>
+              <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
+                <span className="text-4xl font-black">100<span className="text-[#e0b0ff]">%</span></span>
+                <span className="text-gray-400 font-bold uppercase text-xs mt-1">Guarantee</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[#111111] border border-gray-800 rounded-3xl p-8 shadow-xl flex flex-col gap-6 w-full h-[400px]">
+            {/* Abstract Representation */}
+            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+              <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center border border-green-500/30">
+                <div className="w-4 h-4 bg-green-400 rounded-full"></div>
+              </div>
+              <div className="flex-1">
+                <div className="w-1/3 h-3 bg-white/20 rounded mb-2"></div>
+                <div className="w-2/3 h-2 bg-white/10 rounded"></div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 flex-1">
+              <div className="bg-[#8b00cc]/20 rounded-xl p-6 border border-[#8b00cc]/30"></div>
+              <div className="flex flex-col gap-4">
+                <div className="bg-white/5 border border-white/10 rounded-xl flex-1 flex items-center justify-center">
+                  <MonitorSmartphone size={32} className="text-white/40" />
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl flex-1"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-[#8b00cc] font-black text-lg tracking-widest uppercase mb-2">Core Platform</h2>
+            <h3 className="text-4xl md:text-5xl font-black text-gray-900">Everything you need, unified.</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, idx) => (
+              <div
+                key={idx}
+                className="bg-[#f8f9fc] p-8 rounded-2xl border border-gray-200 flex flex-col shadow-sm"
+              >
+                <div className="w-16 h-16 bg-[#8b00cc] rounded-xl flex items-center justify-center mb-6 shadow-md">
+                  {feature.icon}
+                </div>
+                <h4 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h4>
+                <p className="text-gray-600 font-medium leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Grand CTA Section */}
+      <section className="py-20 px-6 bg-[#f3f4f8]">
+        <div className="max-w-5xl mx-auto bg-[#8b00cc] rounded-3xl p-12 text-center shadow-xl">
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-6">Ready to take control?</h2>
+          <p className="text-xl text-purple-100 font-medium mb-8 max-w-2xl mx-auto">
+            Experience the easiest way to browse products and track your repairs safely.
+          </p>
+          <button
+            onClick={() => router.push('/login')}
+            className="bg-white text-[#8b00cc] px-10 py-4 rounded-xl font-bold text-xl hover:bg-gray-50 transition-colors shadow-md inline-flex items-center gap-2"
+          >
+            {isLoggedIn ? "Go to Dashboard" : "Create Account Free"}
+            <ArrowRight size={24} />
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-white pt-16 pb-8 px-6 text-gray-500 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 border-b border-gray-100 pb-12">
+          <div className="col-span-1 md:col-span-2 flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#8b00cc] rounded-xl flex justify-center items-center overflow-hidden">
+                <img src="/Images/graphix-logo.jpg" alt="Logo" className="w-full h-full object-cover" />
+              </div>
+              <span className="text-2xl font-black text-gray-900">Graphix</span>
+            </div>
+            <p className="text-gray-500 font-medium leading-relaxed max-w-sm">
+              The premier electronics device management and sales tracking system built to organize your technical life.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 font-semibold">
+            <h4 className="text-gray-900 font-bold text-lg mb-1">Platform</h4>
+            <a href="#home" className="hover:text-[#8b00cc] transition-colors">Home Selection</a>
+            <a href="#about" className="hover:text-[#8b00cc] transition-colors">Our Approach</a>
+            <a href="#features" className="hover:text-[#8b00cc] transition-colors">Feature Set</a>
+          </div>
+          <div className="flex flex-col gap-3 font-semibold">
+            <h4 className="text-gray-900 font-bold text-lg mb-1">General Terms & Conditions</h4>
+            <a href="#" onClick={(e) => openPolicyModal(e, 'PURCHASE')} className="hover:text-[#8b00cc] transition-colors">Purchase Policy</a>
+            <a href="#" onClick={(e) => openPolicyModal(e, 'PAYMENT')} className="hover:text-[#8b00cc] transition-colors">Payment Policy</a>
+            <a href="#" onClick={(e) => openPolicyModal(e, 'REPAIR')} className="hover:text-[#8b00cc] transition-colors">Repair Policy</a>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto text-center font-semibold md:flex md:justify-between items-center text-sm">
+          <p>&copy; {new Date().getFullYear()} Graphix Management System.</p>
+          <p className="mt-2 md:mt-0 text-[#8b00cc]">Designed & Built for Efficiency.</p>
+        </div>
+      </footer>
+
+      {policyModalOpen && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 border-2 border-purple-500/20">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-[#fcf8ff] rounded-t-3xl">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                {selectedPolicyType === 'PURCHASE' ? 'Purchase Policy' :
+                  selectedPolicyType === 'PAYMENT' ? 'Payment Policy' : 'Repair Policy'}
+              </h3>
+              <button
+                onClick={() => setPolicyModalOpen(false)}
+                className="p-2 hover:bg-purple-100 rounded-full text-gray-500 hover:text-purple-700 transition cursor-pointer border-none bg-transparent"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 md:p-8 overflow-y-auto">
+              {loadingPolicy ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="w-10 h-10 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                <div className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-medium">
+                  {policyContent}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-3xl flex justify-end">
+              <button
+                onClick={() => setPolicyModalOpen(false)}
+                className="px-8 py-3 bg-[#bd00ff] text-white rounded-xl font-bold hover:bg-[#9c00d6] transition-colors shadow-lg shadow-purple-500/30 cursor-pointer border-none"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
