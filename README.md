@@ -1,1 +1,1 @@
-# srmallcapstone
+# Graphix Management
