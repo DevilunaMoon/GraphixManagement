@@ -14,16 +14,17 @@ interface Record {
   change: string;
   qty: string;
   customerName: string;
+  date: string;
 }
 
 const INITIAL_RECORDS: Record[] = [
-  { id: 7, orderId: '#7', deviceName: 'Techno Pova Pro 5g', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Charlie Kirk' },
-  { id: 6, orderId: '#6', deviceName: 'Iphone Pro Max', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'P. Diddy' },
-  { id: 5, orderId: '#5', deviceName: 'Realme C85', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Jeffrey Epstein' },
-  { id: 4, orderId: '#4', deviceName: 'Realme Note 50', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Alice Gou' },
-  { id: 3, orderId: '#3', deviceName: 'Oppo A12', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'John Doe' },
-  { id: 2, orderId: '#2', deviceName: 'Oppo A12', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Leon Kennedy' },
-  { id: 1, orderId: '#1', deviceName: 'Realme C85', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Ethan Winters' },
+  { id: 7, orderId: '#7', deviceName: 'Techno Pova Pro 5g', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Charlie Kirk', date: '04/26/2026' },
+  { id: 6, orderId: '#6', deviceName: 'Iphone Pro Max', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'P. Diddy', date: '04/25/2026' },
+  { id: 5, orderId: '#5', deviceName: 'Realme C85', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Jeffrey Epstein', date: '04/24/2026' },
+  { id: 4, orderId: '#4', deviceName: 'Realme Note 50', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Alice Gou', date: '04/23/2026' },
+  { id: 3, orderId: '#3', deviceName: 'Oppo A12', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'John Doe', date: '04/22/2026' },
+  { id: 2, orderId: '#2', deviceName: 'Oppo A12', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Leon Kennedy', date: '04/21/2026' },
+  { id: 1, orderId: '#1', deviceName: 'Realme C85', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Ethan Winters', date: '04/20/2026' },
 ];
 
 export default function CashierSaleRecord() {
@@ -65,8 +66,7 @@ export default function CashierSaleRecord() {
     doc.text('Official Receipt', 105, 30, { align: 'center' });
     
     doc.setFontSize(10);
-    const date = new Date().toLocaleString();
-    doc.text(`Date: ${date}`, 20, 45);
+    doc.text(`Date: ${record.date}`, 20, 45);
     doc.text(`Order ID: ${record.orderId}`, 20, 52);
     doc.text(`Customer Name: ${record.customerName}`, 20, 59);
 
@@ -167,6 +167,7 @@ export default function CashierSaleRecord() {
               <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent">Order ID</th>
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent">Device Name</th>
+                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Date</th>
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Price</th>
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Amount</th>
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Change</th>
@@ -188,6 +189,7 @@ export default function CashierSaleRecord() {
                 >
                   <td className="px-5 py-4 font-semibold text-black">{record.orderId}</td>
                   <td className="px-5 py-4 text-gray-700 font-medium whitespace-pre-wrap">{record.deviceName.replace(' ', '\n')}</td>
+                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.date}</td>
                   <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.price}</td>
                   <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.amount}</td>
                   <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.change}</td>
@@ -206,7 +208,7 @@ export default function CashierSaleRecord() {
               ))}
               {sortedAndFilteredRecords.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-gray-500 font-medium">No records found.</td>
+                  <td colSpan={9} className="text-center py-8 text-gray-500 font-medium">No records found.</td>
                 </tr>
               )}
             </tbody>
@@ -234,6 +236,10 @@ export default function CashierSaleRecord() {
               <div className="flex justify-between items-center pb-3 border-b border-gray-100">
                 <span className="text-[#666] font-medium">Order ID</span>
                 <span className="font-bold text-[#111]">{selectedRecord.orderId}</span>
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-100">
+                <span className="text-[#666] font-medium">Date</span>
+                <span className="font-bold text-[#111]">{selectedRecord.date}</span>
               </div>
               <div className="flex flex-col pb-3 border-b border-gray-100">
                 <span className="text-[#666] font-medium mb-1">Device Name</span>
