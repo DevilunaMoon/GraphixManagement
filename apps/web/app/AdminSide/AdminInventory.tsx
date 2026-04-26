@@ -15,6 +15,7 @@ export default function AdminInventory() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+  const [viewMoreProduct, setViewMoreProduct] = useState<any | null>(null);
 
   const [initialProducts, setInitialProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -209,8 +210,12 @@ export default function AdminInventory() {
                 paginatedProducts.map((prod, index) => (
                   <tr 
                     key={index} 
-                    className={`last:border-b-2 last:${styles.borderMain} cursor-pointer hover:bg-black/5 transition-colors`}
-                    onClick={() => setSelectedProduct(prod)}
+                    className={`last:border-b-2 last:${styles.borderMain} cursor-pointer md:cursor-default hover:bg-black/5 transition-colors`}
+                    onClick={() => {
+                      if (window.innerWidth < 768) {
+                        setSelectedProduct(prod);
+                      }
+                    }}
                   >
                     <td className={`py-4 px-5 border-b ${styles.borderMain}`}>
                       <div className="flex items-center gap-4 text-left">
@@ -225,7 +230,21 @@ export default function AdminInventory() {
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} truncate max-w-[100px] sm:max-w-none`}>{prod.id}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{prod.price}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{prod.stock}</td>
-                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{prod.type}</td>
+                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell max-w-[200px]`}>
+                      {prod.type && prod.type.length > 80 ? (
+                        <div className="inline-block">
+                          {prod.type.substring(0, 80)}...
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setViewMoreProduct(prod); }}
+                            className="text-[#bd00ff] hover:underline font-bold bg-transparent border-none cursor-pointer ml-1 text-sm inline"
+                          >
+                            View More
+                          </button>
+                        </div>
+                      ) : (
+                        prod.type
+                      )}
+                    </td>
                     <td className={`py-4 px-5 border-b ${styles.borderMain} hidden md:table-cell`}>
                       <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(prod.dbId); }} className="text-red-600 hover:text-red-700 hover:scale-110 transition-all cursor-pointer bg-transparent border-none flex items-center justify-center w-full">
                         <Trash2 size={20} />
@@ -428,6 +447,37 @@ export default function AdminInventory() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View More Description Modal */}
+      {viewMoreProduct && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4 overflow-y-auto" onClick={() => setViewMoreProduct(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-purple-500/20 overflow-hidden my-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-purple-50/50">
+              <div className="flex items-center gap-3">
+                <img src={viewMoreProduct.img} alt={viewMoreProduct.name} className="w-10 h-10 object-cover rounded-full border border-purple-200" />
+                <h3 className="font-bold text-[#111] text-lg leading-tight">
+                  <span className="block text-xs text-[#bd00ff] uppercase tracking-wide">Product Type / Specs</span>
+                  {viewMoreProduct.name}
+                </h3>
+              </div>
+              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer p-1" onClick={() => setViewMoreProduct(null)}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-8 text-[#444] text-[1.05rem] leading-relaxed max-h-[60vh] overflow-y-auto whitespace-pre-wrap font-medium">
+              {viewMoreProduct.type}
+            </div>
+            <div className="p-4 bg-gray-50/80 border-t border-black/5">
+              <button 
+                onClick={() => setViewMoreProduct(null)}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-[#bd00ff] hover:bg-[#8f00c2] transition-colors shadow-sm cursor-pointer border-none"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
