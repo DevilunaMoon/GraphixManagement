@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Filter, Search, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, Filter, Search, ChevronRight, X, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { useRouter } from 'next/navigation';
 
 interface Record {
@@ -50,6 +51,62 @@ export default function CashierSaleRecord() {
     if (sortFilter === 'Newest') return b.id - a.id;
     return a.id - b.id;
   });
+
+  const generateReceiptPDF = (record: Record) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('GRAPHIX POS SYSTEM', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Official Receipt', 105, 30, { align: 'center' });
+    
+    doc.setFontSize(10);
+    const date = new Date().toLocaleString();
+    doc.text(`Date: ${date}`, 20, 45);
+    doc.text(`Order ID: ${record.orderId}`, 20, 52);
+    doc.text(`Customer Name: ${record.customerName}`, 20, 59);
+
+    // Divider
+    doc.setLineWidth(0.5);
+    doc.line(20, 65, 190, 65);
+
+    // Item Details Headers
+    doc.setFont('helvetica', 'bold');
+    doc.text('Description', 20, 75);
+    doc.text('Qty', 140, 75);
+    doc.text('Price', 170, 75);
+
+    // Item Details
+    doc.setFont('helvetica', 'normal');
+    doc.text(record.deviceName, 20, 85);
+    doc.text(record.qty, 140, 85);
+    doc.text(record.price, 170, 85);
+
+    // Divider
+    doc.line(20, 95, 190, 95);
+
+    // Totals
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total:', 140, 105);
+    doc.text(record.price, 170, 105);
+
+    doc.text('Amount Paid:', 140, 115);
+    doc.text(record.amount, 170, 115);
+
+    doc.text('Change:', 140, 125);
+    doc.text(record.change, 170, 125);
+
+    // Footer
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.text('Thank you for your business!', 105, 145, { align: 'center' });
+
+    doc.save(`Graphix_Receipt_${record.orderId.replace('#', '')}.pdf`);
+  };
 
   return (
     <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Signika'] overflow-y-auto w-auto">
@@ -115,6 +172,7 @@ export default function CashierSaleRecord() {
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Change</th>
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Quantity</th>
                 <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Customer Name</th>
+                <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -135,11 +193,20 @@ export default function CashierSaleRecord() {
                   <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.change}</td>
                   <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.qty}</td>
                   <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.customerName}</td>
+                  <td className="px-5 py-4 text-center">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); generateReceiptPDF(record); }}
+                      className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
+                      title="Download Receipt"
+                    >
+                      <Download size={18} />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {sortedAndFilteredRecords.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-500 font-medium">No records found.</td>
+                  <td colSpan={8} className="text-center py-8 text-gray-500 font-medium">No records found.</td>
                 </tr>
               )}
             </tbody>
@@ -197,7 +264,14 @@ export default function CashierSaleRecord() {
                 </div>
               </div>
             </div>
-            <div className="p-4 bg-gray-50/80 border-t border-black/5">
+            <div className="p-4 bg-gray-50/80 border-t border-black/5 flex flex-col gap-2">
+              <button 
+                className="w-full py-2.5 rounded-xl bg-white border-2 border-[#bd00ff] text-[#bd00ff] font-semibold hover:bg-purple-50 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                onClick={() => generateReceiptPDF(selectedRecord)}
+              >
+                <Download size={18} />
+                Download Receipt
+              </button>
               <button 
                 className="w-full py-2.5 rounded-xl bg-[#bd00ff] text-white font-semibold hover:bg-purple-700 transition-colors cursor-pointer border-none"
                 onClick={() => setSelectedRecord(null)}
