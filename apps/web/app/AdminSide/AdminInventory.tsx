@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
+import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminInventory() {
@@ -16,6 +16,9 @@ export default function AdminInventory() {
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [viewMoreProduct, setViewMoreProduct] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<any | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [initialProducts, setInitialProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +110,38 @@ export default function AdminInventory() {
       alert('An error occurred while adding the product');
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleEditClick = (prod: any) => {
+    setProductToEdit(prod);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!productToEdit) return;
+    setIsEditing(true);
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const res = await fetch(`/api/devices/${productToEdit.dbId}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (res.ok) {
+        fetchProducts();
+        setIsEditModalOpen(false);
+        setProductToEdit(null);
+      } else {
+        alert('Failed to edit product');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while editing the product');
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -246,8 +281,8 @@ export default function AdminInventory() {
                       )}
                     </td>
                     <td className={`py-4 px-5 border-b ${styles.borderMain} hidden md:table-cell`}>
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(prod.dbId); }} className="text-red-600 hover:text-red-700 hover:scale-110 transition-all cursor-pointer bg-transparent border-none flex items-center justify-center w-full">
-                        <Trash2 size={20} />
+                      <button onClick={(e) => { e.stopPropagation(); handleEditClick(prod); }} className="text-[#5c0099] hover:text-[#bd00ff] hover:scale-110 transition-all cursor-pointer bg-transparent border-none flex items-center justify-center w-full" title="Edit Product">
+                        <Pencil size={20} />
                       </button>
                     </td>
                   </tr>
@@ -478,6 +513,86 @@ export default function AdminInventory() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Device Modal */}
+      {isEditModalOpen && productToEdit && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-purple-500/20 overflow-hidden my-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b border-black/5 flex justify-between items-center bg-gray-50/50 text-[#5c0099]">
+              <h3 className="font-bold text-xl flex items-center gap-2">
+                <Pencil size={24} />
+                Edit Device
+              </h3>
+              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer" onClick={() => setIsEditModalOpen(false)}>
+                <X size={24} />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="p-6 flex flex-col gap-5">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-bold text-[#444]">Device Name *</label>
+                <input required type="text" name="deviceName" defaultValue={productToEdit.name} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-sm font-bold text-[#444]">Price (₱) *</label>
+                  <input required type="number" step="0.01" name="devicePrice" defaultValue={productToEdit.price.replace(/[^\d.]/g, '')} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-sm font-bold text-[#444]">Stock *</label>
+                  <input required type="number" name="deviceStocks" defaultValue={productToEdit.stock.replace(/[^\d]/g, '')} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-bold text-[#444]">Specifications</label>
+                <input type="text" name="deviceSpecs" defaultValue={productToEdit.type !== 'N/A' ? productToEdit.type : ''} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-bold text-[#444]">Product Image (Leave blank to keep current)</label>
+                <div className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-[#5c0099] transition-colors bg-gray-50/50">
+                  <input type="file" name="deviceImage" accept="image/*" className="text-sm text-gray-500 w-full cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-[#5c0099] hover:file:bg-purple-100 transition-colors" />
+                </div>
+              </div>
+              
+              <div className="flex gap-4 mt-2">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    handleDeleteClick(productToEdit.dbId);
+                  }}
+                  disabled={isEditing}
+                  className="w-[60px] py-3.5 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer disabled:opacity-50 flex justify-center items-center gap-2"
+                  title="Delete Product"
+                >
+                  <Trash2 size={20} />
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  disabled={isEditing}
+                  className="w-1/3 py-3.5 rounded-xl font-bold text-[#666] bg-gray-100 hover:bg-gray-200 transition-colors border-none cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isEditing}
+                  className="flex-1 py-3.5 rounded-xl font-bold text-white bg-[#5c0099] hover:bg-[#3d0066] shadow-[0_4px_15px_rgba(92,0,153,0.3)] transition-all border-none cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isEditing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
