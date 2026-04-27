@@ -22,6 +22,39 @@ export default function AdminAccounts() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
 
+  const [createModal, setCreateModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsCreating(true);
+    setCreateError('');
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const res = await fetch('/api/admin/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        const newUser = await res.json();
+        setAccounts(prev => [newUser, ...prev]);
+        setCreateModal(false);
+      } else {
+        const err = await res.json();
+        setCreateError(err.error || 'Failed to create account');
+      }
+    } catch (error) {
+      setCreateError('An unexpected error occurred');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const openDeleteModal = (id: string, name: string) => {
     setDeleteModal({ isOpen: true, id, name, error: undefined });
   };
@@ -129,6 +162,13 @@ export default function AdminAccounts() {
               </div>
             )}
           </div>
+          
+          <button 
+            onClick={() => setCreateModal(true)}
+            className={`flex items-center justify-center bg-[#8b00cc] text-white rounded-full px-6 py-2 cursor-pointer text-[1.1rem] font-semibold hover:bg-[#bd00ff] transition-all w-full sm:w-auto shadow-sm whitespace-nowrap`}
+          >
+            Create Account
+          </button>
         </div>
       </div>
 
@@ -248,6 +288,77 @@ export default function AdminAccounts() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Account Modal */}
+      {createModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
+              <h3 className="font-bold text-[#111] text-xl">Create Account</h3>
+              <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setCreateModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateAccount} className="p-6 flex flex-col gap-4">
+              {createError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-bold border border-red-100 text-center animate-in fade-in">
+                  {createError}
+                </div>
+              )}
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-700">Name</label>
+                <input required name="name" type="text" placeholder="Full Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-700">Email</label>
+                <input required name="email" type="email" placeholder="Email Address" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-700">Password</label>
+                <input required name="password" type="password" placeholder="Password" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-bold text-gray-700">Role</label>
+                <select name="role" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium appearance-none">
+                  <option value="CASHIER">Cashier</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="CUSTOMER">Customer</option>
+                </select>
+              </div>
+
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCreateModal(false)}
+                  disabled={isCreating}
+                  className="flex-1 px-4 py-3 text-[#111] bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="flex-1 px-4 py-3 bg-[#8b00cc] hover:bg-[#bd00ff] text-white rounded-xl font-bold transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isCreating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    'Create'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

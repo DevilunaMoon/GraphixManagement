@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Minus, Plus, UserCircle2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Comment {
@@ -22,6 +22,7 @@ export default function CustomerProductInfo() {
   const [loading, setLoading] = useState(true);
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
   const [selectedVariations, setSelectedVariations] = useState<Record<string, any>>({});
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const variationGroups = useMemo(() => {
     if (!product?.variations || product.variations.length === 0) return null;
@@ -71,6 +72,18 @@ export default function CustomerProductInfo() {
   const updateQty = (change: number) => {
     if (!product) return;
     setQty(prev => Math.min(Math.max(1, prev + change), currentStock));
+  };
+
+  const handlePrevImage = () => {
+    if (product?.images && product.images.length > 1) {
+      setActiveImageIndex((prev) => (prev === 0 ? product.images.length - 1 : prev - 1));
+    }
+  };
+
+  const handleNextImage = () => {
+    if (product?.images && product.images.length > 1) {
+      setActiveImageIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
+    }
   };
 
   const handlePostComment = async () => {
@@ -130,11 +143,44 @@ export default function CustomerProductInfo() {
         {/* Product Info Card */}
         <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-10">
           
-          <div className="w-full h-[400px] bg-gray-50 rounded-2xl flex justify-center items-center p-6 border border-gray-100">
-            {product.image ? (
-              <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
-            ) : (
-              <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 font-bold">No Image</div>
+          <div className="flex flex-col gap-4 w-full h-[400px]">
+            <div className="w-full h-[320px] bg-gray-50 rounded-2xl flex justify-center items-center p-4 border border-gray-100 relative group/gallery">
+              {product.images && product.images.length > 1 && (
+                <>
+                  <button 
+                    onClick={handlePrevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#bd00ff] transition-all opacity-0 group-hover/gallery:opacity-100 border-none cursor-pointer z-10"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button 
+                    onClick={handleNextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#bd00ff] transition-all opacity-0 group-hover/gallery:opacity-100 border-none cursor-pointer z-10"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </>
+              )}
+              {product.images && product.images.length > 0 ? (
+                <img src={product.images[activeImageIndex]} alt={product.name} className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300" />
+              ) : product.image ? (
+                <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+              ) : (
+                <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center text-gray-400 font-bold">No Image</div>
+              )}
+            </div>
+            {product.images && product.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar justify-center">
+                {product.images.map((img: string, idx: number) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden bg-white ${activeImageIndex === idx ? 'border-[#bd00ff] shadow-sm' : 'border-gray-200 opacity-70'} transition-all hover:border-[#bd00ff] hover:opacity-100 p-1 cursor-pointer`}
+                  >
+                    <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-contain mix-blend-multiply" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 

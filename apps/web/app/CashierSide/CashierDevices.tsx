@@ -8,6 +8,7 @@ interface Device {
   id: string;
   name: string;
   image: string | null;
+  images?: string[];
   cost: number;
   price: number;
   stock: number;
@@ -39,8 +40,8 @@ export default function CashierDevices() {
   const [editDeviceStocks, setEditDeviceStocks] = useState('');
   const [editDeviceCategory, setEditDeviceCategory] = useState('');
   const [editDeviceSpecs, setEditDeviceSpecs] = useState('');
-  const [editDeviceImage, setEditDeviceImage] = useState<File | null>(null);
-  const [editDeviceImagePreview, setEditDeviceImagePreview] = useState<string | null>(null);
+  const [editDeviceImages, setEditDeviceImages] = useState<File[]>([]);
+  const [editDeviceImagePreviews, setEditDeviceImagePreviews] = useState<string[]>([]);
   const [isEditingDevice, setIsEditingDevice] = useState(false);
   const [editDeviceError, setEditDeviceError] = useState<string | null>(null);
 
@@ -52,8 +53,8 @@ export default function CashierDevices() {
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
   const [newDeviceSpecs, setNewDeviceSpecs] = useState('');
-  const [newDeviceImage, setNewDeviceImage] = useState<File | null>(null);
-  const [newDeviceImagePreview, setNewDeviceImagePreview] = useState<string | null>(null);
+  const [newDeviceImages, setNewDeviceImages] = useState<File[]>([]);
+  const [newDeviceImagePreviews, setNewDeviceImagePreviews] = useState<string[]>([]);
   const [variationGroups, setVariationGroups] = useState<{section: string, variations: {name: string, price: string, cost: string, stock: string}[]}[]>([]);
   const [isAddingDevice, setIsAddingDevice] = useState(false);
   const [addDeviceError, setAddDeviceError] = useState<string | null>(null);
@@ -68,11 +69,17 @@ export default function CashierDevices() {
   };
 
   const handleDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setNewDeviceImage(file);
-      setNewDeviceImagePreview(URL.createObjectURL(file));
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setNewDeviceImages(prev => [...prev, ...files]);
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setNewDeviceImagePreviews(prev => [...prev, ...newPreviews]);
     }
+  };
+
+  const removeNewDeviceImage = (index: number) => {
+    setNewDeviceImages(prev => prev.filter((_, i) => i !== index));
+    setNewDeviceImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAddDevice = async () => {
@@ -91,8 +98,10 @@ export default function CashierDevices() {
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
     formData.append('deviceSpecs', newDeviceSpecs);
-    if (newDeviceImage) {
-      formData.append('deviceImage', newDeviceImage);
+    if (newDeviceImages.length > 0) {
+      newDeviceImages.forEach(file => {
+        formData.append('deviceImages', file);
+      });
     }
     if (variationGroups.length > 0) {
       const flattened = variationGroups.flatMap(group => 
@@ -126,8 +135,8 @@ export default function CashierDevices() {
       setNewDeviceStocks('');
       setNewDeviceCategory('');
       setNewDeviceSpecs('');
-      setNewDeviceImage(null);
-      setNewDeviceImagePreview(null);
+      setNewDeviceImages([]);
+      setNewDeviceImagePreviews([]);
       setVariationGroups([]);
       
       setSuccessModalContent({ title: 'Success!', message: 'The device has been successfully added to the inventory.' });
@@ -142,11 +151,17 @@ export default function CashierDevices() {
   };
 
   const handleEditDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setEditDeviceImage(file);
-      setEditDeviceImagePreview(URL.createObjectURL(file));
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setEditDeviceImages(prev => [...prev, ...files]);
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setEditDeviceImagePreviews(prev => [...prev, ...newPreviews]);
     }
+  };
+
+  const removeEditDeviceImage = (index: number) => {
+    setEditDeviceImages(prev => prev.filter((_, i) => i !== index));
+    setEditDeviceImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const openEditModal = (device: Device) => {
@@ -157,8 +172,8 @@ export default function CashierDevices() {
     setEditDeviceStocks(device.stock.toString());
     setEditDeviceCategory(device.categoryId || '');
     setEditDeviceSpecs(device.specs || '');
-    setEditDeviceImagePreview(device.image);
-    setEditDeviceImage(null);
+    setEditDeviceImagePreviews(device.images && device.images.length > 0 ? device.images : (device.image ? [device.image] : []));
+    setEditDeviceImages([]);
     setEditDeviceError(null);
     setEditModalOpen(true);
   };
@@ -179,8 +194,10 @@ export default function CashierDevices() {
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
     formData.append('deviceSpecs', editDeviceSpecs);
-    if (editDeviceImage) {
-      formData.append('deviceImage', editDeviceImage);
+    if (editDeviceImages.length > 0) {
+      editDeviceImages.forEach(file => {
+        formData.append('deviceImages', file);
+      });
     }
 
     try {
@@ -493,18 +510,22 @@ export default function CashierDevices() {
               
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Image Upload */}
-                <div className="shrink-0 flex flex-col items-center gap-2 w-full md:w-[150px]">
-                  <label className="w-[120px] h-[120px] rounded-full border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#bd00ff] overflow-hidden relative bg-white mx-auto">
-                    {newDeviceImagePreview ? (
-                      <img src={newDeviceImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <>
-                        <Upload size={24} />
-                        <span className="text-xs font-semibold text-center leading-tight">Upload Photo</span>
-                      </>
-                    )}
-                    <input type="file" onChange={handleDeviceImageChange} accept="image/*" className="hidden" />
+                <div className="shrink-0 flex flex-col gap-2 w-full md:w-[200px]">
+                  <label className="w-full h-[120px] rounded-xl border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#bd00ff] bg-white">
+                    <Upload size={24} />
+                    <span className="text-xs font-semibold text-center leading-tight">Upload Photos</span>
+                    <input type="file" multiple onChange={handleDeviceImageChange} accept="image/*" className="hidden" />
                   </label>
+                  {newDeviceImagePreviews.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                      {newDeviceImagePreviews.map((preview, idx) => (
+                        <div key={idx} className="relative w-[60px] h-[60px] shrink-0 border border-gray-200 rounded-lg overflow-hidden group">
+                          <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => removeNewDeviceImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"><X size={10} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Main Inputs */}
@@ -719,18 +740,22 @@ export default function CashierDevices() {
               
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Image Upload */}
-                <div className="shrink-0 flex flex-col items-center gap-2 w-full md:w-[150px]">
-                  <label className="w-[120px] h-[120px] rounded-full border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#bd00ff] overflow-hidden relative bg-white mx-auto">
-                    {editDeviceImagePreview ? (
-                      <img src={editDeviceImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <>
-                        <Upload size={24} />
-                        <span className="text-xs font-semibold text-center leading-tight">Upload Photo</span>
-                      </>
-                    )}
-                    <input type="file" onChange={handleEditDeviceImageChange} accept="image/*" className="hidden" />
+                <div className="shrink-0 flex flex-col gap-2 w-full md:w-[200px]">
+                  <label className="w-full h-[120px] rounded-xl border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#bd00ff] bg-white">
+                    <Upload size={24} />
+                    <span className="text-xs font-semibold text-center leading-tight">Upload Photos</span>
+                    <input type="file" multiple onChange={handleEditDeviceImageChange} accept="image/*" className="hidden" />
                   </label>
+                  {editDeviceImagePreviews.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                      {editDeviceImagePreviews.map((preview, idx) => (
+                        <div key={idx} className="relative w-[60px] h-[60px] shrink-0 border border-gray-200 rounded-lg overflow-hidden group">
+                          <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => removeEditDeviceImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"><X size={10} /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Main Inputs */}

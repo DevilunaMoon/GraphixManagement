@@ -38,6 +38,7 @@ model Device {
   sold        Int      @default(0)
   specs       String?
   image       String?
+  images      String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   reviews     Review[]
