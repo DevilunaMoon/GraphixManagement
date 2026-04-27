@@ -19,22 +19,26 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    
+
     const name = formData.get('deviceName') as string;
     const priceStr = formData.get('devicePrice') as string;
     const costStr = formData.get('deviceCost') as string;
     const stockStr = formData.get('deviceStocks') as string;
     const categoryId = formData.get('deviceCategory') as string;
     const specs = formData.get('deviceSpecs') as string;
+    const asLowAs = formData.get('deviceAsLowAs') as string;
+    const warranty = formData.get('deviceWarranty') as string;
+    const downpayment = formData.get('deviceDownpayment') as string;
     const imagesForm = formData.getAll('deviceImages') as File[];
     const singleImage = formData.get('deviceImage') as File | null;
+    const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
     const variationsStr = formData.get('variations') as string;
 
     let variations = [];
     if (variationsStr) {
       try {
         variations = JSON.parse(variationsStr);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (!name || !priceStr || !costStr || !stockStr || !categoryId) {
@@ -46,8 +50,8 @@ export async function POST(req: Request) {
 
     if (filesToUpload.length > 0) {
       const uploadDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true }).catch(() => {});
-      
+      await mkdir(uploadDir, { recursive: true }).catch(() => { });
+
       for (const file of filesToUpload) {
         if (file && file.name && file.size > 0) {
           const bytes = await file.arrayBuffer();
@@ -62,6 +66,18 @@ export async function POST(req: Request) {
 
     const primaryImage = imageUrls.length > 0 ? imageUrls[0] : null;
 
+    let downpaymentImageUrl = null;
+    if (downpaymentFormImage && downpaymentFormImage.name && downpaymentFormImage.size > 0) {
+      const uploadDir = join(process.cwd(), 'public', 'uploads');
+      await mkdir(uploadDir, { recursive: true }).catch(() => { });
+      const bytes = await downpaymentFormImage.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const fileName = `dp-${Date.now()}-${downpaymentFormImage.name.replace(/\s+/g, '-')}`;
+      const filePath = join(uploadDir, fileName);
+      await writeFile(filePath, buffer);
+      downpaymentImageUrl = `/uploads/${fileName}`;
+    }
+
     const device = await prisma.device.create({
       data: {
         name,
@@ -72,6 +88,10 @@ export async function POST(req: Request) {
         specs: specs || null,
         image: primaryImage,
         images: imageUrls,
+        downpaymentImage: downpaymentImageUrl,
+        asLowAs: asLowAs || null,
+        warranty: warranty || null,
+        downpayment: downpayment || null,
         variations: variations.length > 0 ? {
           create: variations.map((v: any) => ({
             type: v.type,

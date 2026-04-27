@@ -12,11 +12,11 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       where: { id },
       include: { variations: true }
     });
-    
+
     if (!device) {
       return NextResponse.json({ error: 'Device not found' }, { status: 404 });
     }
-    
+
     let hasPurchased = false;
     const session = await getSession();
     if (session && session.userId) {
@@ -30,7 +30,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
         hasPurchased = true;
       }
     }
-    
+
     return NextResponse.json({ ...device, hasPurchased });
   } catch (error) {
     console.error('Error fetching device:', error);
@@ -57,23 +57,27 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const params = await props.params;
     const { id } = params;
     const formData = await req.formData();
-    
+
     const name = formData.get('deviceName') as string;
     const priceStr = formData.get('devicePrice') as string;
     const costStr = formData.get('deviceCost') as string;
     const stockStr = formData.get('deviceStocks') as string;
     const categoryId = formData.get('deviceCategory') as string;
     const specs = formData.get('deviceSpecs') as string;
+    const asLowAs = formData.get('deviceAsLowAs') as string;
+    const warranty = formData.get('deviceWarranty') as string;
+    const downpayment = formData.get('deviceDownpayment') as string;
     const imagesForm = formData.getAll('deviceImages') as File[];
     const singleImage = formData.get('deviceImage') as File | null;
+    const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
 
     const filesToUpload = imagesForm.length > 0 ? imagesForm : (singleImage ? [singleImage] : []);
     let imageUrls: string[] = [];
 
     if (filesToUpload.length > 0) {
       const uploadDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true }).catch(() => {});
-      
+      await mkdir(uploadDir, { recursive: true }).catch(() => { });
+
       for (const file of filesToUpload) {
         if (file && file.name && file.size > 0) {
           const bytes = await file.arrayBuffer();
@@ -88,7 +92,19 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
     const imageUrl = imageUrls.length > 0 ? imageUrls[0] : undefined;
     const updateImages = imageUrls.length > 0 ? imageUrls : undefined;
-    
+
+    let downpaymentImageUrl = undefined;
+    if (downpaymentFormImage && downpaymentFormImage.name && downpaymentFormImage.size > 0) {
+      const uploadDir = join(process.cwd(), 'public', 'uploads');
+      await mkdir(uploadDir, { recursive: true }).catch(() => { });
+      const bytes = await downpaymentFormImage.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const fileName = `dp-${Date.now()}-${downpaymentFormImage.name.replace(/\s+/g, '-')}`;
+      const filePath = join(uploadDir, fileName);
+      await writeFile(filePath, buffer);
+      downpaymentImageUrl = `/uploads/${fileName}`;
+    }
+
     const device = await prisma.device.update({
       where: { id },
       data: {
@@ -97,9 +113,13 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(costStr && { cost: parseFloat(costStr) }),
         ...(stockStr && { stock: parseInt(stockStr, 10) }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),
-        ...(specs && { specs }),
+        ...(specs !== null && { specs: specs || null }),
+        ...(asLowAs !== null && { asLowAs: asLowAs || null }),
+        ...(warranty !== null && { warranty: warranty || null }),
+        ...(downpayment !== null && { downpayment: downpayment || null }),
         ...(imageUrl && { image: imageUrl }),
         ...(updateImages && { images: updateImages }),
+        ...(downpaymentImageUrl && { downpaymentImage: downpaymentImageUrl }),
       }
     });
     return NextResponse.json(device);

@@ -15,7 +15,8 @@ import {
   LogOut,
   Image as ImageIcon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ReceiptText
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
           {[
             { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
+            { href: '/admin/transactions', label: 'Transactions', icon: ReceiptText },
             { href: '/admin/accounts', label: 'Accounts', icon: User },
             { href: '/admin/inventory', label: 'Inventory', icon: Box },
             { href: '/admin/banners', label: 'Banners', icon: ImageIcon },

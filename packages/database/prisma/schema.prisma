@@ -39,6 +39,10 @@ model Device {
   specs       String?
   image       String?
   images      String[] @default([])
+  downpaymentImage String?
+  asLowAs     String?
+  warranty    String?
+  downpayment String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   reviews     Review[]
@@ -123,10 +127,13 @@ model Policy {
 }
 
 model Purchase {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId  String
-  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  amount     Float    @default(0)
+  quantity   Int      @default(1)
+  variations String?
+  createdAt  DateTime @default(now())
 }

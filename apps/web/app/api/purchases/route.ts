@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { deviceId } = await req.json();
+    const { deviceId, amount, quantity, variations } = await req.json();
 
     if (!deviceId) {
       return NextResponse.json({ error: 'Missing deviceId' }, { status: 400 });
@@ -18,7 +18,10 @@ export async function POST(req: Request) {
     const purchase = await prisma.purchase.create({
       data: {
         userId: session.userId,
-        deviceId: deviceId
+        deviceId: deviceId,
+        amount: amount || 0,
+        quantity: quantity || 1,
+        variations: variations || null
       }
     });
 

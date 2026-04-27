@@ -21,6 +21,7 @@ export default function CustomerProductInfo() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [isDownpaymentModalOpen, setIsDownpaymentModalOpen] = useState(false);
   const [selectedVariations, setSelectedVariations] = useState<Record<string, any>>({});
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -264,7 +265,13 @@ export default function CustomerProductInfo() {
 
             <div className="flex items-center gap-4 mt-auto pt-4">
               <button 
-                onClick={() => navigate(`/customer/downpayment?deviceId=${product.id}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}`)}
+                onClick={() => {
+                  if (product?.downpaymentImage || product?.asLowAs || product?.warranty || product?.downpayment) {
+                    setIsDownpaymentModalOpen(true);
+                  } else {
+                    alert('No downpayment information is available for this device.');
+                  }
+                }}
                 disabled={currentStock === 0 || !hasSelectedAllSections}
                 className="flex-1 py-3.5 border-2 border-[#bd00ff] bg-white rounded-xl text-[#bd00ff] font-bold text-lg hover:bg-purple-50 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -358,6 +365,69 @@ export default function CustomerProductInfo() {
               <button
                 onClick={() => setIsDescriptionModalOpen(false)}
                 className="px-8 py-3 bg-[#bd00ff] text-white rounded-xl font-bold hover:bg-[#9c00d6] transition-colors shadow-lg shadow-purple-500/30 cursor-pointer border-none"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Downpayment Modal */}
+      {isDownpaymentModalOpen && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md flex flex-col shadow-2xl border-2 border-[#01f0ff]/20 animate-in zoom-in-95 duration-200 max-h-[90vh]">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-[#f0ffff] rounded-t-3xl shrink-0">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight m-0 border-none">
+                Downpayment QR
+              </h3>
+              <button
+                onClick={() => setIsDownpaymentModalOpen(false)}
+                className="p-2 hover:bg-cyan-100 rounded-full text-gray-500 hover:text-cyan-700 transition cursor-pointer border-none bg-transparent flex items-center justify-center"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 md:p-8 flex flex-col items-center bg-gray-50 gap-6 overflow-y-auto">
+              {(product?.asLowAs || product?.warranty || product?.downpayment) && (
+                <div className="w-full flex flex-col gap-2 p-4 bg-cyan-50/50 border border-cyan-100 rounded-2xl">
+                  <h4 className="text-cyan-800 font-bold m-0 text-sm mb-1 uppercase tracking-wide text-center">Installment Options</h4>
+                  <div className="grid grid-cols-2 gap-y-3 gap-x-4">
+                    {product.asLowAs && (
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase">As Low As</span>
+                        <span className="text-black font-bold text-sm">{product.asLowAs}</span>
+                      </div>
+                    )}
+                    {product.warranty && (
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase">Warranty</span>
+                        <span className="text-black font-bold text-sm">{product.warranty}</span>
+                      </div>
+                    )}
+                    {product.downpayment && (
+                      <div className="flex flex-col col-span-2">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase">Downpayment Required</span>
+                        <span className="text-black font-bold text-sm">{product.downpayment}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {product?.downpaymentImage ? (
+                <div className="flex flex-col gap-2 items-center w-full">
+                  <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Scan to Pay Downpayment</span>
+                  <img src={product.downpaymentImage} alt="Downpayment QR" className="w-full max-w-[250px] h-auto object-contain rounded-xl shadow-sm border border-gray-200" />
+                </div>
+              ) : (
+                <div className="text-gray-500 font-semibold">No QR Code available</div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-white rounded-b-3xl flex justify-end">
+              <button
+                onClick={() => setIsDownpaymentModalOpen(false)}
+                className="px-8 py-3 bg-[#01f0ff] text-gray-900 rounded-xl font-bold hover:bg-[#00d0e0] transition-colors shadow-lg shadow-cyan-500/30 cursor-pointer border-none"
               >
                 Close
               </button>
