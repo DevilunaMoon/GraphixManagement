@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { uploadToCloudinary } from '../../../lib/cloudinary';
 
 export async function GET() {
   try {
@@ -33,18 +32,8 @@ export async function POST(req: Request) {
 
     let imageUrl = null;
     if (image && image.name && image.size > 0) {
-      const bytes = await image.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
-      const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
-      const uploadDir = join(process.cwd(), 'public', 'uploads');
-      
-      await mkdir(uploadDir, { recursive: true }).catch(() => {});
-      
-      const filePath = join(uploadDir, fileName);
-      await writeFile(filePath, buffer);
-      
-      imageUrl = `/uploads/${fileName}`;
+      const buffer = Buffer.from(await image.arrayBuffer());
+      imageUrl = await uploadToCloudinary(buffer, 'monitoring');
     }
 
     const request = await prisma.repairRequest.create({

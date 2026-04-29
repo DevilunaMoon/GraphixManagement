@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { uploadToCloudinary } from '../../../lib/cloudinary';
 
 export async function GET() {
   // Force hot module reload
@@ -27,20 +26,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    const bytes = await image.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
-    const fileName = `${Date.now()}-${image.name.replace(/\s+/g, '-')}`;
-    const uploadDir = join(process.cwd(), 'public', 'banners');
-    
-    // Ensure the banners directory exists just in case
-    await mkdir(uploadDir, { recursive: true }).catch(() => {});
-    
-    const filePath = join(uploadDir, fileName);
-    await writeFile(filePath, buffer);
-    
-    // Web-accessible path starts with /banners/
-    const imageUrl = `/banners/${fileName}`;
+    const buffer = Buffer.from(await image.arrayBuffer());
+    const imageUrl = await uploadToCloudinary(buffer, 'banners');
 
     const banner = await prisma.banner.create({
       data: {

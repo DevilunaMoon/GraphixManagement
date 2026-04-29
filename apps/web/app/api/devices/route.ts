@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { uploadToCloudinary } from '../../../lib/cloudinary';
 
 export async function GET() {
   try {
@@ -49,17 +48,11 @@ export async function POST(req: Request) {
     let imageUrls: string[] = [];
 
     if (filesToUpload.length > 0) {
-      const uploadDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true }).catch(() => { });
-
       for (const file of filesToUpload) {
         if (file && file.name && file.size > 0) {
-          const bytes = await file.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-          const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
-          const filePath = join(uploadDir, fileName);
-          await writeFile(filePath, buffer);
-          imageUrls.push(`/uploads/${fileName}`);
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const imageUrl = await uploadToCloudinary(buffer, 'devices');
+          imageUrls.push(imageUrl);
         }
       }
     }
@@ -68,14 +61,8 @@ export async function POST(req: Request) {
 
     let downpaymentImageUrl = null;
     if (downpaymentFormImage && downpaymentFormImage.name && downpaymentFormImage.size > 0) {
-      const uploadDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadDir, { recursive: true }).catch(() => { });
-      const bytes = await downpaymentFormImage.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const fileName = `dp-${Date.now()}-${downpaymentFormImage.name.replace(/\s+/g, '-')}`;
-      const filePath = join(uploadDir, fileName);
-      await writeFile(filePath, buffer);
-      downpaymentImageUrl = `/uploads/${fileName}`;
+      const buffer = Buffer.from(await downpaymentFormImage.arrayBuffer());
+      downpaymentImageUrl = await uploadToCloudinary(buffer, 'devices/downpayments');
     }
 
     const device = await prisma.device.create({
