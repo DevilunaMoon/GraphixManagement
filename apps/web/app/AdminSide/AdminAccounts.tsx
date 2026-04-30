@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Trash2, X, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminAccounts() {
@@ -25,6 +25,7 @@ export default function AdminAccounts() {
   const [createModal, setCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleCreateAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -322,7 +323,16 @@ export default function AdminAccounts() {
 
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-bold text-gray-700">Password</label>
-                <input required name="password" type="password" placeholder="Password" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+                <div className="relative">
+                  <input required name="password" type={showPassword ? "text" : "password"} placeholder="Password" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium pr-12" />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 p-1 flex items-center justify-center transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -22,9 +22,21 @@ import {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [adminName, setAdminName] = useState('Admin');
   const router = useRouter();
   const pathname = usePathname();
   const { styles, bgClass } = useTheme();
+
+  useEffect(() => {
+    fetch('/api/auth/status')
+      .then(res => res.json())
+      .then(data => {
+        if (data.loggedIn && data.name) {
+          setAdminName(data.name);
+        }
+      })
+      .catch(err => console.error("Failed to fetch admin status", err));
+  }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
@@ -68,7 +80,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className={`p-6 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-white/10 h-[85px]`}>
           <div className="flex items-center gap-3">
             <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-white object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
-            {!isCollapsed && <span className="text-2xl font-extrabold tracking-wide">Graphix</span>}
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span className="text-2xl font-extrabold tracking-wide leading-none">Graphix</span>
+                <span className="text-xs font-medium text-white/80 mt-1 truncate max-w-[130px]">{adminName}</span>
+              </div>
+            )}
           </div>
           {!isCollapsed && (
             <button onClick={toggleSidebar} className="md:hidden text-white">
@@ -120,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className={`bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 flex justify-between items-center shadow-sm transition-all duration-300`}>
           <div>
             <h1 className="text-2xl font-bold mb-1">Dashboard Overview</h1>
-            <p className="text-sm text-white/90">Welcome Back Admin. Here's the daily summary</p>
+            <p className="text-sm text-white/90">Welcome Back {adminName}. Here's the daily summary</p>
           </div>
           <button 
             onClick={async () => {

@@ -1,6 +1,11 @@
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load the root .env file so Next.js can read the DATABASE_URL
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 const globalForPrisma = global as unknown as { prisma_new: PrismaClient };
 
@@ -11,6 +16,8 @@ if (process.env.DATABASE_URL) {
     if (urlUrl.password) parsedPassword = String(decodeURIComponent(urlUrl.password));
   } catch (e) {}
 }
+
+console.log("DEBUG: DATABASE_URL is", process.env.DATABASE_URL);
 
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
