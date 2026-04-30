@@ -97,7 +97,7 @@ function CustomerPaymentContent() {
 
 export default function CustomerPayment() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className="flex-1 flex justify-center items-center h-screen"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
       <CustomerPaymentContent />
     </Suspense>
   );

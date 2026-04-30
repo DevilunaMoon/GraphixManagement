@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, CheckCircle2, Upload } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function CashierEditDevice() {
+import { Suspense } from 'react';
+
+function CashierEditDeviceContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const deviceId = searchParams.get('id');
@@ -200,5 +202,13 @@ export default function CashierEditDevice() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function CashierEditDevice() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex justify-center items-center h-screen"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
+      <CashierEditDeviceContent />
+    </Suspense>
   );
 }

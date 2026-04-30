@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function CustomerProducts() {
+import { Suspense } from 'react';
+
+function CustomerProductsContent() {
   const router = useRouter();
   const navigate = router.push;
   const [products, setProducts] = useState<any[]>([]);
@@ -187,5 +189,13 @@ export default function CustomerProducts() {
 
       </div>
     </main>
+  );
+}
+
+export default function CustomerProducts() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex justify-center items-center h-screen"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
+      <CustomerProductsContent />
+    </Suspense>
   );
 }

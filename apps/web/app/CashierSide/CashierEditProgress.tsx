@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronDown, Upload } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function CashierEditProgress() {
+import { Suspense } from 'react';
+
+function CashierEditProgressContent() {
   const router = useRouter();
   const navigate = router.push;
   const searchParams = useSearchParams();
@@ -209,5 +211,13 @@ export default function CashierEditProgress() {
         </div>
 
     </main>
+  );
+}
+
+export default function CashierEditProgress() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex justify-center items-center h-screen"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
+      <CashierEditProgressContent />
+    </Suspense>
   );
 }

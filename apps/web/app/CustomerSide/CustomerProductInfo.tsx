@@ -11,7 +11,9 @@ interface Comment {
   text: string;
 }
 
-export default function CustomerProductInfo() {
+import { Suspense } from 'react';
+
+function CustomerProductInfoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
@@ -436,5 +438,13 @@ export default function CustomerProductInfo() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function CustomerProductInfo() {
+  return (
+    <Suspense fallback={<div className="flex-1 flex justify-center items-center h-screen"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
+      <CustomerProductInfoContent />
+    </Suspense>
   );
 }

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, User, Phone, ArrowLeft, CheckSquare, Square, Eye, EyeOff, CheckCircle } from "lucide-react";
 import { login, register } from "../../actions/auth";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [rememberMe, setRememberMe] = useState(false);
@@ -322,5 +322,13 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

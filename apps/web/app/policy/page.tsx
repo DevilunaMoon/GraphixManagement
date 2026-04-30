@@ -4,7 +4,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ChevronLeft, Scale } from 'lucide-react';
 
-export default function PolicyPage() {
+import { Suspense } from 'react';
+
+function PolicyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const type = searchParams.get('type') || 'PURCHASE'; // Default to PURCHASE
@@ -76,5 +78,13 @@ export default function PolicyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PolicyPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
+      <PolicyContent />
+    </Suspense>
   );
 }
