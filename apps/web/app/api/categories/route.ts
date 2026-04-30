@@ -16,7 +16,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData(); 423423
+    const formData = await req.formData();
 
     const name = formData.get('categoryName') as string;
     const image = formData.get('categoryImage') as File | null;

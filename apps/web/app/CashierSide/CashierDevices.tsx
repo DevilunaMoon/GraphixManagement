@@ -319,8 +319,13 @@ export default function CashierDevices() {
         setNewCatImage(null);
         setNewCatImagePreview(null);
         fetchCategories();
+        setSuccessModalContent({ title: 'Success', message: 'Category added successfully.' });
+        setSuccessModalOpen(true);
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || 'Failed to add category');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
     } finally {
       setIsAddingCat(false);
