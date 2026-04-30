@@ -6,10 +6,10 @@ import { stat } from 'fs/promises';
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const bannerId = params.id;
+    const bannerId = (await params).id;
     
     // First find the banner to get its imageUrl so we can delete the file
     const banner = await prisma.banner.findUnique({
