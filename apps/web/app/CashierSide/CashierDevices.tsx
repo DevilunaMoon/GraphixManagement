@@ -33,6 +33,8 @@ export default function CashierDevices() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successModalContent, setSuccessModalContent] = useState({ title: '', message: '' });
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
 
   // Edit Device Modal State
@@ -323,7 +325,8 @@ export default function CashierDevices() {
         setSuccessModalOpen(true);
       } else {
         const errorData = await res.json();
-        alert(errorData.error || 'Failed to add category');
+        setErrorModalContent({ title: 'Error', message: errorData.error || 'Failed to add category' });
+        setErrorModalOpen(true);
       }
     } catch (err: any) {
       console.error(err);
@@ -527,6 +530,25 @@ export default function CashierDevices() {
                 Yes, Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorModalOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
+            <h3 className="text-xl font-bold mb-3 text-black">{errorModalContent.title}</h3>
+            <p className="text-gray-600 mb-8 font-medium">
+              {errorModalContent.message}
+            </p>
+            <button
+              onClick={() => setErrorModalOpen(false)}
+              className="px-8 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors cursor-pointer border-none w-full max-w-[200px]"
+            >
+              Okay
+            </button>
           </div>
         </div>
       )}
