@@ -47,6 +47,10 @@ export async function updatePassword(oldPassword: string, newPassword: string) {
 
     if (!user) return { error: "User not found" };
 
+    if (!user.password) {
+      return { error: "Account does not have a password set" };
+    }
+
     // Verify exactly what the user typed against the known database hash
     const isValid = await bcrypt.compare(oldPassword, user.password);
     if (!isValid) return { error: "Incorrect old password." };

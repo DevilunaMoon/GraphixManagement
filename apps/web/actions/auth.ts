@@ -146,6 +146,10 @@ export async function changePassword(formData: FormData) {
       return { error: "User not found" };
     }
 
+    if (!user.password) {
+      return { error: "Account does not have a password set" };
+    }
+
     const passwordsMatch = await bcrypt.compare(oldPassword, user.password);
     if (!passwordsMatch) {
       return { error: "Incorrect old password" };
