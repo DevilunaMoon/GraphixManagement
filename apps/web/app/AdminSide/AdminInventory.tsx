@@ -634,7 +634,7 @@ export default function AdminInventory() {
                                   </div>
                                   <div className="flex-1">
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cost</label>
-                                    <input type="number" step="0.01" value={v.cost} onChange={e => {
+                                    <input type="number" step="0.01" value={v?.cost || ''} onChange={e => {
                                       const updated = [...newDeviceVariations];
                                       if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
                                         updated[groupIdx].variations[vIdx].cost = e.target.value;
@@ -644,7 +644,7 @@ export default function AdminInventory() {
                                   </div>
                                   <div className="flex-1">
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Stock</label>
-                                    <input type="number" value={v.stock} onChange={e => {
+                                    <input type="number" value={v?.stock || ''} onChange={e => {
                                       const updated = [...newDeviceVariations];
                                       if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
                                         updated[groupIdx].variations[vIdx].stock = e.target.value;
