@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Link as LinkIcon } from 'lucide-react';
+import { X, Link as LinkIcon, AlertCircle } from 'lucide-react';
 
 // Banner interface matching Prisma model
 interface Banner {
@@ -23,6 +23,10 @@ export default function AdminBanners() {
   const [newBannerPreview, setNewBannerPreview] = useState<string | null>(null);
   const [newBannerLink, setNewBannerLink] = useState('');
   
+  // Delete Modal states
+  const [bannerToDelete, setBannerToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch banners on load
@@ -87,22 +91,26 @@ export default function AdminBanners() {
     }
   };
 
-  const handleDeleteBanner = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this banner?')) return;
+  const confirmDeleteBanner = async () => {
+    if (!bannerToDelete) return;
+    setIsDeleting(true);
 
     try {
-      const res = await fetch('/api/banners/' + id, {
+      const res = await fetch('/api/banners/' + bannerToDelete, {
         method: 'DELETE',
       });
 
       if (res.ok) {
-        setBanners(banners.filter(b => b.id !== id));
+        setBanners(banners.filter(b => b.id !== bannerToDelete));
+        setBannerToDelete(null);
       } else {
         alert('Failed to delete banner');
       }
     } catch (err) {
       console.error(err);
       alert('An error occurred while deleting');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -134,8 +142,8 @@ export default function AdminBanners() {
                     <img src={banner.imageUrl} alt={banner.name || 'Banner'} className="w-full h-full object-contain" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                       <button 
-                        onClick={() => handleDeleteBanner(banner.id)}
-                        className="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 cursor-pointer border-none transition-colors"
+                        onClick={() => setBannerToDelete(banner.id)}
+                        className="px-4 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 cursor-pointer border-none transition-colors shadow-lg"
                       >
                         Delete
                       </button>
@@ -187,7 +195,7 @@ export default function AdminBanners() {
                   <div className="relative w-full h-40 border-2 border-gray-200 rounded-xl overflow-hidden group">
                     <img src={newBannerPreview} className="w-full h-full object-contain bg-gray-50" alt="Preview" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-white text-black font-bold rounded-lg cursor-pointer border-none">
+                      <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-white text-black font-bold rounded-lg cursor-pointer border-none shadow-md">
                         Change Image
                       </button>
                     </div>
@@ -235,6 +243,37 @@ export default function AdminBanners() {
                 className="px-6 py-2 bg-[#5c0099] text-white font-bold rounded-xl hover:bg-[#3d0066] transition-colors border-none cursor-pointer flex items-center gap-2 shadow-sm disabled:opacity-50"
               >
                 {isUploading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Upload Banner'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {bannerToDelete && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-5">
+              <AlertCircle className="text-red-500 w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold mb-3 text-black">Delete Banner</h3>
+            <p className="text-gray-600 mb-8 font-medium">
+              Are you sure you want to delete this banner? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => setBannerToDelete(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer border-none"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteBanner}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors cursor-pointer border-none flex justify-center items-center"
+              >
+                {isDeleting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Delete'}
               </button>
             </div>
           </div>
