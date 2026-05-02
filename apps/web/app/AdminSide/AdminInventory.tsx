@@ -808,11 +808,11 @@ export default function AdminInventory() {
                             }} className="h-8 w-8 flex items-center justify-center shrink-0 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-colors border-none cursor-pointer shadow-sm" title="Remove Section"><Trash size={14} /></button>
                           </div>
                           <div className="flex flex-col gap-2 pl-2 border-l-2 border-purple-200 ml-2">
-                            {group.variations.map((v, vIdx) => (
+                            {group?.variations?.map((v, vIdx) => (
                               <div key={vIdx} className="flex flex-col sm:flex-row gap-2 items-start sm:items-end relative group/var">
                                 <div className="w-full sm:w-1/3">
                                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variation Name</label>
-                                  <input type="text" value={v.name} onChange={e => {
+                                  <input type="text" value={v?.name || ''} onChange={e => {
                                     const updated = [...editDeviceVariations];
                                     if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
                                       updated[groupIdx].variations[vIdx].name = e.target.value;
