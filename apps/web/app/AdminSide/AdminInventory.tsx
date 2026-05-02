@@ -82,11 +82,11 @@ export default function AdminInventory() {
         if (Array.isArray(data)) {
           setInitialProducts(data.map(device => ({
             dbId: device.id,
-            name: device.name,
+            name: device.name || 'Unnamed',
             img: device.image || '/Images/Aula.jpg',
-            id: `#${device.id.substring(device.id.length - 8).toUpperCase()}`,
-            displayPrice: `₱ ${device.price.toLocaleString()}`,
-            displayStock: `${device.stock} pcs`,
+            id: device.id ? `#${String(device.id).substring(String(device.id).length - 8).toUpperCase()}` : '#UNKNOWN',
+            displayPrice: `₱ ${Number(device.price || 0).toLocaleString()}`,
+            displayStock: `${device.stock || 0} pcs`,
             type: device.specs || 'N/A',
             // Raw values for editing
             price: device.price?.toString() || '',
@@ -309,9 +309,9 @@ export default function AdminInventory() {
   };
 
   const filteredProducts = initialProducts.filter(prod => 
-    prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    prod.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    prod.type.toLowerCase().includes(searchQuery.toLowerCase())
+    (prod.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (prod.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (prod.type || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
   const products = sortOrder === 'oldest' ? [...filteredProducts].reverse() : filteredProducts;
   const totalPages = Math.max(1, Math.ceil(products.length / itemsPerPage));
