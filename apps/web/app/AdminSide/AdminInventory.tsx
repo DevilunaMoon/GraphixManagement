@@ -543,12 +543,42 @@ export default function AdminInventory() {
                   <textarea value={newDeviceSpecs} onChange={e => setNewDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-medium resize-y min-h-[80px]" />
                 </div>
                 
+                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
+                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
+                      <label className="block text-xs font-bold text-[#444]">QR Code</label>
+                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
+                        {newDeviceDownpaymentImagePreview ? (<img src={newDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />) : (<><Upload size={16} /><span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span></>)}
+                        <input type="file" onChange={handleNewDownpaymentImageChange} accept="image/*" className="hidden" />
+                      </label>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-3 justify-end">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="block text-xs font-bold text-[#444]">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                          <input type="text" value={newDeviceAsLowAs} onChange={e => setNewDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="block text-xs font-bold text-[#444]">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                          <input type="text" value={newDeviceWarranty} onChange={e => setNewDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="block text-xs font-bold text-[#444]">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                        <input type="text" value={newDeviceDownpayment} onChange={e => setNewDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Variations Section */}
-                <div className="flex flex-col gap-3 border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-bold text-[#444]">Product Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                    <button type="button" onClick={() => setNewDeviceVariations([...newDeviceVariations, { type: '', name: '', price: '', cost: '', stock: '' }])} className="text-xs font-bold text-[#5c0099] bg-purple-100 px-3 py-1.5 rounded-lg hover:bg-purple-200 transition-colors border-none cursor-pointer flex items-center gap-1">
-                      <Plus size={14} /> Add Variation
+                <div className="flex flex-col gap-3 mt-2">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="block text-sm font-bold text-[#444]">Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                    <button type="button" onClick={() => setNewDeviceVariations([...newDeviceVariations, { type: '', name: '', price: '', cost: '', stock: '' }])} className="text-xs font-bold text-[#bd00ff] hover:text-[#8f00c2] transition-colors border-none bg-transparent cursor-pointer flex items-center gap-1">
+                      <Plus size={14} /> Add Section
                     </button>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -590,36 +620,6 @@ export default function AdminInventory() {
                     {newDeviceVariations.length === 0 && (
                       <div className="text-center text-sm text-gray-400 py-2">No variations added yet.</div>
                     )}
-                  </div>
-                </div>
-
-                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
-                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
-                      <label className="block text-xs font-bold text-[#444]">QR Code</label>
-                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
-                        {newDeviceDownpaymentImagePreview ? (<img src={newDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />) : (<><Upload size={16} /><span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span></>)}
-                        <input type="file" onChange={handleNewDownpaymentImageChange} accept="image/*" className="hidden" />
-                      </label>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-3 justify-end">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-[#444]">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={newDeviceAsLowAs} onChange={e => setNewDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
-                        </div>
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-[#444]">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={newDeviceWarranty} onChange={e => setNewDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="block text-xs font-bold text-[#444]">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                        <input type="text" value={newDeviceDownpayment} onChange={e => setNewDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -699,12 +699,42 @@ export default function AdminInventory() {
                   <textarea value={editDeviceSpecs} onChange={e => setEditDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-medium resize-y min-h-[80px]" />
                 </div>
                 
+                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
+                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
+                      <label className="block text-xs font-bold text-[#444]">QR Code</label>
+                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
+                        {editDeviceDownpaymentImagePreview ? (<img src={editDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />) : (<><Upload size={16} /><span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span></>)}
+                        <input type="file" onChange={handleEditDownpaymentImageChange} accept="image/*" className="hidden" />
+                      </label>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-3 justify-end">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="block text-xs font-bold text-[#444]">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                          <input type="text" value={editDeviceAsLowAs} onChange={e => setEditDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="block text-xs font-bold text-[#444]">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                          <input type="text" value={editDeviceWarranty} onChange={e => setEditDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="block text-xs font-bold text-[#444]">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                        <input type="text" value={editDeviceDownpayment} onChange={e => setEditDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Variations Section */}
-                <div className="flex flex-col gap-3 border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-bold text-[#444]">Product Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                    <button type="button" onClick={() => setEditDeviceVariations([...editDeviceVariations, { type: '', name: '', price: '', cost: '', stock: '' }])} className="text-xs font-bold text-[#5c0099] bg-purple-100 px-3 py-1.5 rounded-lg hover:bg-purple-200 transition-colors border-none cursor-pointer flex items-center gap-1">
-                      <Plus size={14} /> Add Variation
+                <div className="flex flex-col gap-3 mt-2">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="block text-sm font-bold text-[#444]">Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                    <button type="button" onClick={() => setEditDeviceVariations([...editDeviceVariations, { type: '', name: '', price: '', cost: '', stock: '' }])} className="text-xs font-bold text-[#bd00ff] hover:text-[#8f00c2] transition-colors border-none bg-transparent cursor-pointer flex items-center gap-1">
+                      <Plus size={14} /> Add Section
                     </button>
                   </div>
                   <div className="flex flex-col gap-2">
@@ -746,36 +776,6 @@ export default function AdminInventory() {
                     {editDeviceVariations.length === 0 && (
                       <div className="text-center text-sm text-gray-400 py-2">No variations added yet.</div>
                     )}
-                  </div>
-                </div>
-
-                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
-                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
-                      <label className="block text-xs font-bold text-[#444]">QR Code</label>
-                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
-                        {editDeviceDownpaymentImagePreview ? (<img src={editDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />) : (<><Upload size={16} /><span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span></>)}
-                        <input type="file" onChange={handleEditDownpaymentImageChange} accept="image/*" className="hidden" />
-                      </label>
-                    </div>
-                    <div className="flex-1 flex flex-col gap-3 justify-end">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-[#444]">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={editDeviceAsLowAs} onChange={e => setEditDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
-                        </div>
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-[#444]">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={editDeviceWarranty} onChange={e => setEditDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="block text-xs font-bold text-[#444]">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                        <input type="text" value={editDeviceDownpayment} onChange={e => setEditDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
