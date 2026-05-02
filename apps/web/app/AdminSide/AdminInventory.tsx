@@ -564,25 +564,25 @@ export default function AdminInventory() {
                         <div className="flex gap-3">
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Type (e.g. Color)</label>
-                            <input type="text" required value={v.type} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].type = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="text" required value={v.type} onChange={(e) => { const newVars = [...newDeviceVariations]; if (newVars[idx]) newVars[idx].type = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Name (e.g. Red)</label>
-                            <input type="text" required value={v.name} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].name = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="text" required value={v.name} onChange={(e) => { const newVars = [...newDeviceVariations]; if (newVars[idx]) newVars[idx].name = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                         </div>
                         <div className="flex gap-3">
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Price</label>
-                            <input type="number" required step="0.01" value={v.price} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].price = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="number" required step="0.01" value={v.price} onChange={(e) => { const newVars = [...newDeviceVariations]; if (newVars[idx]) newVars[idx].price = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Cost</label>
-                            <input type="number" step="0.01" value={v.cost} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].cost = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="number" step="0.01" value={v.cost} onChange={(e) => { const newVars = [...newDeviceVariations]; if (newVars[idx]) newVars[idx].cost = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Stock</label>
-                            <input type="number" required value={v.stock} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].stock = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="number" required value={v.stock} onChange={(e) => { const newVars = [...newDeviceVariations]; if (newVars[idx]) newVars[idx].stock = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                         </div>
                       </div>
@@ -720,25 +720,25 @@ export default function AdminInventory() {
                         <div className="flex gap-3">
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Type (e.g. Color)</label>
-                            <input type="text" required value={v.type} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].type = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="text" required value={v.type} onChange={(e) => { const newVars = [...editDeviceVariations]; if (newVars[idx]) newVars[idx].type = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Name (e.g. Red)</label>
-                            <input type="text" required value={v.name} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].name = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="text" required value={v.name} onChange={(e) => { const newVars = [...editDeviceVariations]; if (newVars[idx]) newVars[idx].name = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                         </div>
                         <div className="flex gap-3">
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Price</label>
-                            <input type="number" required step="0.01" value={v.price} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].price = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="number" required step="0.01" value={v.price} onChange={(e) => { const newVars = [...editDeviceVariations]; if (newVars[idx]) newVars[idx].price = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Cost</label>
-                            <input type="number" step="0.01" value={v.cost} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].cost = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="number" step="0.01" value={v.cost} onChange={(e) => { const newVars = [...editDeviceVariations]; if (newVars[idx]) newVars[idx].cost = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                           <div className="flex-1">
                             <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Stock</label>
-                            <input type="number" required value={v.stock} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].stock = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                            <input type="number" required value={v.stock} onChange={(e) => { const newVars = [...editDeviceVariations]; if (newVars[idx]) newVars[idx].stock = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
                           </div>
                         </div>
                       </div>
