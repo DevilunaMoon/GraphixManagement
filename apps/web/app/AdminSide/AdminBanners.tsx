@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Link as LinkIcon } from 'lucide-react';
@@ -91,7 +91,7 @@ export default function AdminBanners() {
     if (!confirm('Are you sure you want to delete this banner?')) return;
 
     try {
-      const res = await fetch(/api/banners/ + id, {
+      const res = await fetch('/api/banners/' + id, {
         method: 'DELETE',
       });
 
