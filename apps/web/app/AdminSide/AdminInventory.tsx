@@ -448,7 +448,7 @@ export default function AdminInventory() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-bold text-[#444]">Specifications</label>
-                <input type="text" name="deviceSpecs" placeholder="e.g. 256GB Storage, Space Black" className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+                <textarea name="deviceSpecs" placeholder="e.g. 256GB Storage, Space Black" rows={4} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors resize-y" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-bold text-[#444]">Product Image</label>
@@ -547,7 +547,7 @@ export default function AdminInventory() {
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-bold text-[#444]">Specifications</label>
-                <input type="text" name="deviceSpecs" defaultValue={productToEdit.type !== 'N/A' ? productToEdit.type : ''} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+                <textarea name="deviceSpecs" defaultValue={productToEdit.type !== 'N/A' ? productToEdit.type : ''} rows={4} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors resize-y" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-bold text-[#444]">Product Image (Leave blank to keep current)</label>
