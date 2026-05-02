@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil } from 'lucide-react';
+import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminInventory() {
@@ -14,8 +14,10 @@ export default function AdminInventory() {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
+  
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [viewMoreProduct, setViewMoreProduct] = useState<any | null>(null);
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -23,10 +25,27 @@ export default function AdminInventory() {
   const [initialProducts, setInitialProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Add Product State
+  // Categories
+  const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+  
+  // Add Product State (Cashier style)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [newDeviceName, setNewDeviceName] = useState('');
+  const [newDeviceCost, setNewDeviceCost] = useState('');
+  const [newDevicePrice, setNewDevicePrice] = useState('');
+  const [newDeviceStocks, setNewDeviceStocks] = useState('');
+  const [newDeviceCategory, setNewDeviceCategory] = useState('');
+  const [newDeviceSpecs, setNewDeviceSpecs] = useState('');
+  const [newDeviceAsLowAs, setNewDeviceAsLowAs] = useState('');
+  const [newDeviceWarranty, setNewDeviceWarranty] = useState('');
+  const [newDeviceDownpayment, setNewDeviceDownpayment] = useState('');
+  
+  const [newDeviceImages, setNewDeviceImages] = useState<File[]>([]);
+  const [newDeviceImagePreviews, setNewDeviceImagePreviews] = useState<string[]>([]);
+  const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
+  const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -58,6 +77,13 @@ export default function AdminInventory() {
 
   useEffect(() => {
     fetchProducts();
+    
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCategories(data);
+      })
+      .catch(err => console.error("Error fetching categories:", err));
   }, []);
 
   const handleDeleteClick = (dbId: string) => {
@@ -88,11 +114,52 @@ export default function AdminInventory() {
     }
   };
 
+  const handleDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setNewDeviceImages(prev => [...prev, ...filesArray]);
+      const newPreviews = filesArray.map(file => URL.createObjectURL(file));
+      setNewDeviceImagePreviews(prev => [...prev, ...newPreviews]);
+    }
+  };
+
+  const removeNewDeviceImage = (index: number) => {
+    setNewDeviceImages(prev => prev.filter((_, i) => i !== index));
+    setNewDeviceImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleNewDownpaymentImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewDeviceDownpaymentImage(file);
+      setNewDeviceDownpaymentImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsAdding(true);
-    const formData = new FormData(e.currentTarget);
+    if (!newDeviceName || !newDeviceCost || !newDevicePrice || !newDeviceStocks || !newDeviceCategory) {
+      alert("Please fill in all required fields.");
+      return;
+    }
     
+    setIsAdding(true);
+    const formData = new FormData();
+    formData.append('deviceName', newDeviceName);
+    formData.append('deviceCost', newDeviceCost);
+    formData.append('devicePrice', newDevicePrice);
+    formData.append('deviceStocks', newDeviceStocks);
+    formData.append('deviceCategory', newDeviceCategory);
+    formData.append('deviceSpecs', newDeviceSpecs);
+    formData.append('deviceAsLowAs', newDeviceAsLowAs);
+    formData.append('deviceWarranty', newDeviceWarranty);
+    formData.append('deviceDownpayment', newDeviceDownpayment);
+    
+    newDeviceImages.forEach(img => formData.append('deviceImages', img));
+    if (newDeviceDownpaymentImage) {
+      formData.append('deviceDownpaymentImage', newDeviceDownpaymentImage);
+    }
+
     try {
       const res = await fetch('/api/devices', {
         method: 'POST',
@@ -102,6 +169,12 @@ export default function AdminInventory() {
       if (res.ok) {
         fetchProducts();
         setIsAddModalOpen(false);
+        // Reset
+        setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice('');
+        setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceSpecs('');
+        setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
+        setNewDeviceImages([]); setNewDeviceImagePreviews([]);
+        setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
       } else {
         alert('Failed to add product');
       }
@@ -245,7 +318,7 @@ export default function AdminInventory() {
                 paginatedProducts.map((prod, index) => (
                   <tr 
                     key={index} 
-                    className={`last:border-b-2 last:${styles.borderMain} cursor-pointer md:cursor-default hover:bg-black/5 transition-colors`}
+                    className={`cursor-pointer md:cursor-default hover:bg-black/5 transition-colors border-b ${styles.borderMain}`}
                     onClick={() => {
                       if (window.innerWidth < 768) {
                         setSelectedProduct(prod);
@@ -418,47 +491,139 @@ export default function AdminInventory() {
         </div>
       )}
 
-      {/* Add Device Modal */}
+      {/* Add Device Modal (Cashier Style) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-purple-500/20 overflow-hidden my-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b border-black/5 flex justify-between items-center bg-gray-50/50 text-[#5c0099]">
-              <h3 className="font-bold text-xl flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]">
+
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50 shrink-0">
+              <h3 className="text-xl font-bold text-[#5c0099] flex items-center gap-2 m-0">
                 <Plus size={24} />
                 Add New Device
               </h3>
-              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer" onClick={() => setIsAddModalOpen(false)}>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-500 hover:text-black hover:bg-gray-200 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleAddProduct} className="p-6 flex flex-col gap-5">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-[#444]">Device Name *</label>
-                <input required type="text" name="deviceName" placeholder="e.g. iPhone 14 Pro" className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <label className="text-sm font-bold text-[#444]">Price (₱) *</label>
-                  <input required type="number" step="0.01" name="devicePrice" placeholder="0.00" className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+
+            <form onSubmit={handleAddProduct} className="overflow-y-auto p-6 flex flex-col gap-6">
+
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Image Uploads */}
+                <div className="shrink-0 flex flex-col gap-6 w-full md:w-[200px]">
+                  <div className="flex flex-col gap-2">
+                    <label className="w-full h-[120px] rounded-xl border-2 border-dashed border-[#5c0099] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#5c0099] bg-white">
+                      <Upload size={24} />
+                      <span className="text-xs font-semibold text-center leading-tight">Upload Photos</span>
+                      <input type="file" multiple onChange={handleDeviceImageChange} accept="image/*" className="hidden" />
+                    </label>
+                    {newDeviceImagePreviews.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                        {newDeviceImagePreviews.map((preview, idx) => (
+                          <div key={idx} className="relative w-[60px] h-[60px] shrink-0 border border-gray-200 rounded-lg overflow-hidden group">
+                            <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => removeNewDeviceImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"><X size={10} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <label className="text-sm font-bold text-[#444]">Initial Stock *</label>
-                  <input required type="number" name="deviceStocks" placeholder="0" className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors" />
+
+                {/* Main Inputs */}
+                <div className="flex-1 flex flex-col gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-[#444] mb-1">Device Name <span className="text-red-500">*</span></label>
+                    <input required type="text" value={newDeviceName} onChange={e => setNewDeviceName(e.target.value)} placeholder="e.g. iPhone 15 Pro" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-bold text-[#444] mb-1">Cost <span className="text-red-500">*</span></label>
+                      <input required type="number" step="0.01" value={newDeviceCost} onChange={e => setNewDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-bold text-[#444] mb-1">Selling Price <span className="text-red-500">*</span></label>
+                      <input required type="number" step="0.01" value={newDevicePrice} onChange={e => setNewDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-bold text-[#444] mb-1">Stocks <span className="text-red-500">*</span></label>
+                      <input required type="number" value={newDeviceStocks} onChange={e => setNewDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-[#444]">Specifications</label>
-                <textarea name="deviceSpecs" placeholder="e.g. 256GB Storage, Space Black" rows={4} className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#5c0099] transition-colors resize-y" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-[#444]">Product Image</label>
-                <div className="w-full border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-[#5c0099] transition-colors bg-gray-50/50">
-                  <input type="file" name="deviceImage" accept="image/*" ref={fileInputRef} className="text-sm text-gray-500 w-full cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-[#5c0099] hover:file:bg-purple-100 transition-colors" />
+
+              {/* Specifications and Category */}
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-[#444]">Category <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={newDeviceCategory}
+                      onChange={e => setNewDeviceCategory(e.target.value)}
+                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
+                    >
+                      <option value="" disabled className="text-gray-400">Select a category...</option>
+                      {categories.map((cat, idx) => (
+                        <option key={idx} value={cat.id} className="font-medium text-[#111]">
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-[#444]">Specs / Description</label>
+                  <textarea value={newDeviceSpecs} onChange={e => setNewDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-medium resize-y min-h-[80px]" />
+                </div>
+
+                {/* Downpayment Section */}
+                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
+                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
+                  
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* QR Uploader */}
+                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
+                      <label className="block text-xs font-bold text-[#444]">QR Code</label>
+                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
+                        {newDeviceDownpaymentImagePreview ? (
+                          <img src={newDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload size={16} />
+                            <span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span>
+                          </>
+                        )}
+                        <input type="file" onChange={handleNewDownpaymentImageChange} accept="image/*" className="hidden" />
+                      </label>
+                    </div>
+
+                    {/* Text Fields */}
+                    <div className="flex-1 flex flex-col gap-3 justify-end">
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="block text-xs font-bold text-[#444]">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                          <input type="text" value={newDeviceAsLowAs} onChange={e => setNewDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                        </div>
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="block text-xs font-bold text-[#444]">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                          <input type="text" value={newDeviceWarranty} onChange={e => setNewDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              
+
               <div className="flex gap-4 mt-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
                   disabled={isAdding}
@@ -466,10 +631,10 @@ export default function AdminInventory() {
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={isAdding}
-                  className="flex-1 py-3.5 rounded-xl font-bold text-white bg-[#5c0099] hover:bg-[#3d0066] shadow-[0_4px_15px_rgba(92,0,153,0.3)] transition-all border-none cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 rounded-xl font-bold text-white bg-[#5c0099] hover:bg-[#3d0066] shadow-[0_4px_15px_rgba(92,0,153,0.3)] transition-all border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isAdding ? (
                     <>
@@ -481,38 +646,8 @@ export default function AdminInventory() {
                   )}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* View More Description Modal */}
-      {viewMoreProduct && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4 overflow-y-auto" onClick={() => setViewMoreProduct(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-purple-500/20 overflow-hidden my-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-purple-50/50">
-              <div className="flex items-center gap-3">
-                <img src={viewMoreProduct.img} alt={viewMoreProduct.name} className="w-10 h-10 object-cover rounded-full border border-purple-200" />
-                <h3 className="font-bold text-[#111] text-lg leading-tight">
-                  <span className="block text-xs text-[#bd00ff] uppercase tracking-wide">Product Type / Specs</span>
-                  {viewMoreProduct.name}
-                </h3>
-              </div>
-              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer p-1" onClick={() => setViewMoreProduct(null)}>
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-8 text-[#444] text-[1.05rem] leading-relaxed max-h-[60vh] overflow-y-auto whitespace-pre-wrap font-medium">
-              {viewMoreProduct.type}
-            </div>
-            <div className="p-4 bg-gray-50/80 border-t border-black/5">
-              <button 
-                onClick={() => setViewMoreProduct(null)}
-                className="w-full py-3.5 rounded-xl font-bold text-white bg-[#bd00ff] hover:bg-[#8f00c2] transition-colors shadow-sm cursor-pointer border-none"
-              >
-                Close
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
@@ -522,11 +657,11 @@ export default function AdminInventory() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-purple-500/20 overflow-hidden my-auto" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-black/5 flex justify-between items-center bg-gray-50/50 text-[#5c0099]">
-              <h3 className="font-bold text-xl flex items-center gap-2">
+              <h3 className="font-bold text-xl flex items-center gap-2 m-0">
                 <Pencil size={24} />
                 Edit Device
               </h3>
-              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer" onClick={() => setIsEditModalOpen(false)}>
+              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer flex justify-center items-center" onClick={() => setIsEditModalOpen(false)}>
                 <X size={24} />
               </button>
             </div>
@@ -593,6 +728,37 @@ export default function AdminInventory() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View More Description Modal */}
+      {viewMoreProduct && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in p-4 overflow-y-auto" onClick={() => setViewMoreProduct(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-purple-500/20 overflow-hidden my-auto flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-purple-50/50">
+              <div className="flex items-center gap-3">
+                <img src={viewMoreProduct.img} alt={viewMoreProduct.name} className="w-10 h-10 object-cover rounded-full border border-purple-200" />
+                <h3 className="font-bold text-[#111] text-lg leading-tight m-0">
+                  <span className="block text-xs text-[#bd00ff] uppercase tracking-wide">Product Type / Specs</span>
+                  {viewMoreProduct.name}
+                </h3>
+              </div>
+              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer p-1 flex justify-center items-center" onClick={() => setViewMoreProduct(null)}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-8 text-[#444] text-[1.05rem] leading-relaxed max-h-[60vh] overflow-y-auto whitespace-pre-wrap font-medium">
+              {viewMoreProduct.type}
+            </div>
+            <div className="p-4 bg-gray-50/80 border-t border-black/5">
+              <button 
+                onClick={() => setViewMoreProduct(null)}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-[#bd00ff] hover:bg-[#8f00c2] transition-colors shadow-sm cursor-pointer border-none"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
