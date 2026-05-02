@@ -105,6 +105,7 @@ model Banner {
   id        String   @id @default(cuid())
   imageUrl  String
   name      String?
+  linkUrl   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

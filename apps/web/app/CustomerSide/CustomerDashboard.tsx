@@ -114,11 +114,21 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                 }}
                 className="absolute w-full h-full flex items-center justify-center pointer-events-auto"
               >
-                <img 
-                  src={banners[currentBannerIndex].imageUrl} 
-                  alt={banners[currentBannerIndex].name || `Promotional Banner`} 
-                  className="w-full h-full object-contain"
-                />
+                {banners[currentBannerIndex].linkUrl ? (
+                  <a href={banners[currentBannerIndex].linkUrl} target="_blank" rel="noopener noreferrer" className="w-full h-full block cursor-pointer">
+                    <img 
+                      src={banners[currentBannerIndex].imageUrl} 
+                      alt={banners[currentBannerIndex].name || `Promotional Banner`} 
+                      className="w-full h-full object-contain hover:scale-[1.02] transition-transform duration-300"
+                    />
+                  </a>
+                ) : (
+                  <img 
+                    src={banners[currentBannerIndex].imageUrl} 
+                    alt={banners[currentBannerIndex].name || `Promotional Banner`} 
+                    className="w-full h-full object-contain"
+                  />
+                )}
               </motion.div>
             )}
           </AnimatePresence>

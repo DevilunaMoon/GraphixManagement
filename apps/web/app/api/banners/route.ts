@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     
     const image = formData.get('bannerImage') as File | null;
     const name = formData.get('bannerName') as string | null;
+    const linkUrl = formData.get('bannerLink') as string | null;
 
     if (!image || !image.name || image.size === 0) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -33,6 +34,7 @@ export async function POST(req: Request) {
       data: {
         imageUrl,
         name: name || null,
+        linkUrl: linkUrl || null,
       }
     });
 
