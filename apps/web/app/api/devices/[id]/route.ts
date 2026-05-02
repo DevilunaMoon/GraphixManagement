@@ -69,6 +69,14 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const imagesForm = formData.getAll('deviceImages') as File[];
     const singleImage = formData.get('deviceImage') as File | null;
     const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
+    const variationsStr = formData.get('variations') as string;
+
+    let variations = [];
+    if (variationsStr) {
+      try {
+        variations = JSON.parse(variationsStr);
+      } catch (e) { }
+    }
 
     const filesToUpload = imagesForm.length > 0 ? imagesForm : (singleImage ? [singleImage] : []);
     let imageUrls: string[] = [];
@@ -107,6 +115,18 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(imageUrl && { image: imageUrl }),
         ...(updateImages && { images: updateImages }),
         ...(downpaymentImageUrl && { downpaymentImage: downpaymentImageUrl }),
+        ...(variationsStr && {
+          variations: {
+            deleteMany: {},
+            create: variations.map((v: any) => ({
+              type: v.type,
+              name: v.name,
+              price: parseFloat(v.price),
+              cost: parseFloat(v.cost || 0),
+              stock: parseInt(v.stock || 0, 10),
+            }))
+          }
+        }),
       }
     });
     return NextResponse.json(device);

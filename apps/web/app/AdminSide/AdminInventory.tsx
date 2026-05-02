@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
+type Variation = { id?: string; type: string; name: string; price: string; cost: string; stock: string };
+
 export default function AdminInventory() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
@@ -42,6 +44,7 @@ export default function AdminInventory() {
   const [newDeviceImagePreviews, setNewDeviceImagePreviews] = useState<string[]>([]);
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
   const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
+  const [newDeviceVariations, setNewDeviceVariations] = useState<Variation[]>([]);
 
   // Edit Product State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -62,6 +65,7 @@ export default function AdminInventory() {
   const [editDeviceImagePreviews, setEditDeviceImagePreviews] = useState<string[]>([]);
   const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
   const [editDeviceDownpaymentImagePreview, setEditDeviceDownpaymentImagePreview] = useState<string | null>(null);
+  const [editDeviceVariations, setEditDeviceVariations] = useState<Variation[]>([]);
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -93,7 +97,8 @@ export default function AdminInventory() {
             warranty: device.warranty || '',
             downpayment: device.downpayment || '',
             images: device.images || [],
-            downpaymentImage: device.downpaymentImage || null
+            downpaymentImage: device.downpaymentImage || null,
+            variations: device.variations || []
           })));
         }
       })
@@ -179,6 +184,10 @@ export default function AdminInventory() {
     formData.append('deviceWarranty', newDeviceWarranty);
     formData.append('deviceDownpayment', newDeviceDownpayment);
     
+    if (newDeviceVariations.length > 0) {
+      formData.append('variations', JSON.stringify(newDeviceVariations));
+    }
+    
     newDeviceImages.forEach(img => formData.append('deviceImages', img));
     if (newDeviceDownpaymentImage) {
       formData.append('deviceDownpaymentImage', newDeviceDownpaymentImage);
@@ -194,6 +203,7 @@ export default function AdminInventory() {
         setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
+        setNewDeviceVariations([]);
       } else {
         alert('Failed to add product');
       }
@@ -221,6 +231,16 @@ export default function AdminInventory() {
     setEditDeviceImages([]);
     setEditDeviceDownpaymentImagePreview(prod.downpaymentImage);
     setEditDeviceDownpaymentImage(null);
+    setEditDeviceVariations(
+      (prod.variations || []).map((v: any) => ({
+        id: v.id,
+        type: v.type,
+        name: v.name,
+        price: v.price?.toString() || '',
+        cost: v.cost?.toString() || '',
+        stock: v.stock?.toString() || '',
+      }))
+    );
     setIsEditModalOpen(true);
   };
 
@@ -259,6 +279,12 @@ export default function AdminInventory() {
     formData.append('deviceAsLowAs', editDeviceAsLowAs);
     formData.append('deviceWarranty', editDeviceWarranty);
     formData.append('deviceDownpayment', editDeviceDownpayment);
+    
+    if (editDeviceVariations.length > 0) {
+      formData.append('variations', JSON.stringify(editDeviceVariations));
+    } else {
+      formData.append('variations', JSON.stringify([])); // Explicitly send empty array to clear variations if all removed
+    }
     
     editDeviceImages.forEach(img => formData.append('deviceImages', img));
     if (editDeviceDownpaymentImage) {
@@ -452,7 +478,7 @@ export default function AdminInventory() {
         </div>
       )}
 
-      {/* Add Device Modal (Cashier Style) */}
+      {/* Add Device Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]">
@@ -516,6 +542,57 @@ export default function AdminInventory() {
                   <label className="block text-sm font-bold text-[#444]">Specs / Description</label>
                   <textarea value={newDeviceSpecs} onChange={e => setNewDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-medium resize-y min-h-[80px]" />
                 </div>
+                
+                {/* Variations Section */}
+                <div className="flex flex-col gap-3 border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-bold text-[#444]">Product Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                    <button type="button" onClick={() => setNewDeviceVariations([...newDeviceVariations, { type: '', name: '', price: '', cost: '', stock: '' }])} className="text-xs font-bold text-[#5c0099] bg-purple-100 px-3 py-1.5 rounded-lg hover:bg-purple-200 transition-colors border-none cursor-pointer flex items-center gap-1">
+                      <Plus size={14} /> Add Variation
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {newDeviceVariations.map((v, idx) => (
+                      <div key={idx} className="flex flex-col gap-2 p-3 bg-white border border-gray-200 rounded-lg relative group">
+                        <button type="button" onClick={() => {
+                          const newVars = [...newDeviceVariations];
+                          newVars.splice(idx, 1);
+                          setNewDeviceVariations(newVars);
+                        }} className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border-none cursor-pointer shadow-sm z-10">
+                          <X size={12} />
+                        </button>
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Type (e.g. Color)</label>
+                            <input type="text" required value={v.type} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].type = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Name (e.g. Red)</label>
+                            <input type="text" required value={v.name} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].name = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Price</label>
+                            <input type="number" required step="0.01" value={v.price} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].price = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Cost</label>
+                            <input type="number" step="0.01" value={v.cost} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].cost = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Stock</label>
+                            <input type="number" required value={v.stock} onChange={(e) => { const newVars = [...newDeviceVariations]; newVars[idx].stock = e.target.value; setNewDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {newDeviceVariations.length === 0 && (
+                      <div className="text-center text-sm text-gray-400 py-2">No variations added yet.</div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
                   <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
@@ -557,7 +634,7 @@ export default function AdminInventory() {
         </div>
       )}
 
-      {/* Edit Device Modal (Cashier Style) */}
+      {/* Edit Device Modal */}
       {isEditModalOpen && productToEdit && (
         <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]">
@@ -621,6 +698,57 @@ export default function AdminInventory() {
                   <label className="block text-sm font-bold text-[#444]">Specs / Description</label>
                   <textarea value={editDeviceSpecs} onChange={e => setEditDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-medium resize-y min-h-[80px]" />
                 </div>
+                
+                {/* Variations Section */}
+                <div className="flex flex-col gap-3 border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-bold text-[#444]">Product Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                    <button type="button" onClick={() => setEditDeviceVariations([...editDeviceVariations, { type: '', name: '', price: '', cost: '', stock: '' }])} className="text-xs font-bold text-[#5c0099] bg-purple-100 px-3 py-1.5 rounded-lg hover:bg-purple-200 transition-colors border-none cursor-pointer flex items-center gap-1">
+                      <Plus size={14} /> Add Variation
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {editDeviceVariations.map((v, idx) => (
+                      <div key={idx} className="flex flex-col gap-2 p-3 bg-white border border-gray-200 rounded-lg relative group">
+                        <button type="button" onClick={() => {
+                          const newVars = [...editDeviceVariations];
+                          newVars.splice(idx, 1);
+                          setEditDeviceVariations(newVars);
+                        }} className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-500 hover:text-white transition-all border-none cursor-pointer shadow-sm z-10">
+                          <X size={12} />
+                        </button>
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Type (e.g. Color)</label>
+                            <input type="text" required value={v.type} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].type = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Name (e.g. Red)</label>
+                            <input type="text" required value={v.name} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].name = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                        </div>
+                        <div className="flex gap-3">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Price</label>
+                            <input type="number" required step="0.01" value={v.price} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].price = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Cost</label>
+                            <input type="number" step="0.01" value={v.cost} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].cost = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Stock</label>
+                            <input type="number" required value={v.stock} onChange={(e) => { const newVars = [...editDeviceVariations]; newVars[idx].stock = e.target.value; setEditDeviceVariations(newVars); }} className="w-full h-9 border border-gray-200 rounded-md px-3 text-sm focus:border-[#5c0099] outline-none" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {editDeviceVariations.length === 0 && (
+                      <div className="text-center text-sm text-gray-400 py-2">No variations added yet.</div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
                   <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
