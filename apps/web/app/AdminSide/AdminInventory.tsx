@@ -538,6 +538,10 @@ export default function AdminInventory() {
                           <input type="text" value={newDeviceWarranty} onChange={e => setNewDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
                         </div>
                       </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="block text-xs font-bold text-[#444]">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                        <input type="text" value={newDeviceDownpayment} onChange={e => setNewDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -638,6 +642,10 @@ export default function AdminInventory() {
                           <label className="block text-xs font-bold text-[#444]">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
                           <input type="text" value={editDeviceWarranty} onChange={e => setEditDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
                         </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="block text-xs font-bold text-[#444]">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                        <input type="text" value={editDeviceDownpayment} onChange={e => setEditDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-[#111] text-sm" />
                       </div>
                     </div>
                   </div>
