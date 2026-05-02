@@ -790,13 +790,13 @@ export default function AdminInventory() {
                       <Plus size={14} /> Add Section
                     </button>
                   </div>
-                  {editDeviceVariations.length > 0 && (
+                  {editDeviceVariations?.length > 0 && (
                     <div className="flex flex-col gap-4 mt-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {editDeviceVariations.map((group, groupIdx) => (
+                      {editDeviceVariations?.map((group, groupIdx) => (
                         <div key={groupIdx} className="flex flex-col gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 relative">
                           <div className="flex items-center gap-3">
                             <label className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Section</label>
-                            <input type="text" value={group.section} onChange={e => {
+                            <input type="text" value={group?.section || ''} onChange={e => {
                               const updated = [...editDeviceVariations];
                               if (updated[groupIdx]) updated[groupIdx].section = e.target.value;
                               setEditDeviceVariations(updated);
@@ -833,7 +833,7 @@ export default function AdminInventory() {
                                   </div>
                                   <div className="flex-1">
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Cost</label>
-                                    <input type="number" step="0.01" value={v.cost} onChange={e => {
+                                    <input type="number" step="0.01" value={v?.cost || ''} onChange={e => {
                                       const updated = [...editDeviceVariations];
                                       if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
                                         updated[groupIdx].variations[vIdx].cost = e.target.value;
@@ -843,7 +843,7 @@ export default function AdminInventory() {
                                   </div>
                                   <div className="flex-1">
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Stock</label>
-                                    <input type="number" value={v.stock} onChange={e => {
+                                    <input type="number" value={v?.stock || ''} onChange={e => {
                                       const updated = [...editDeviceVariations];
                                       if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
                                         updated[groupIdx].variations[vIdx].stock = e.target.value;
