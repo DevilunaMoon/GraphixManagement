@@ -18,8 +18,8 @@ export default function AdminAccounts() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, filter]);
-  const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string, name: string, error?: string}>({ isOpen: false, id: '', name: '' });
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [suspendModal, setSuspendModal] = useState<{isOpen: boolean, id: string, name: string, error?: string, status?: string, suspendedUntil?: string}>({ isOpen: false, id: '', name: '' });
+  const [isSuspending, setIsSuspending] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
 
   const [createModal, setCreateModal] = useState(false);
