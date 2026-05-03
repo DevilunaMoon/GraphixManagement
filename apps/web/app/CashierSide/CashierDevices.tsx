@@ -996,7 +996,6 @@ export default function CashierDevices() {
                     </div>
                   </div>
                 </div>
-                </div>
                 {/* Edit Variations Section */}
                 <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
                   <div className="flex justify-between items-center">
