@@ -56,30 +56,36 @@ export default function AdminAccounts() {
     }
   };
 
-  const openDeleteModal = (id: string, name: string) => {
-    setDeleteModal({ isOpen: true, id, name, error: undefined });
+  const openSuspendModal = (id: string, name: string, status?: string, suspendedUntil?: string) => {
+    setSuspendModal({ isOpen: true, id, name, status, suspendedUntil, error: undefined });
   };
 
-  const confirmDelete = async () => {
-    const { id } = deleteModal;
+  const handleSuspend = async (duration: string) => {
+    const { id } = suspendModal;
     if (!id) return;
     
-    setIsDeleting(true);
-    setDeleteModal(prev => ({ ...prev, error: undefined }));
+    setIsSuspending(true);
+    setSuspendModal(prev => ({ ...prev, error: undefined }));
     try {
-      const res = await fetch(`/api/admin/accounts/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/accounts/${id}/suspend`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ duration })
+      });
+      
       if (res.ok) {
-        setAccounts(prev => prev.filter(acc => acc.id !== id));
-        setDeleteModal({ isOpen: false, id: '', name: '' });
+        const updatedUser = await res.json();
+        setAccounts(prev => prev.map(acc => acc.id === id ? { ...acc, status: updatedUser.status, suspendedUntil: updatedUser.suspendedUntil } : acc));
+        setSuspendModal({ isOpen: false, id: '', name: '' });
       } else {
         const errorData = await res.json().catch(() => ({}));
-        setDeleteModal(prev => ({ ...prev, error: errorData.error || 'Failed to delete account' }));
+        setSuspendModal(prev => ({ ...prev, error: errorData.error || 'Failed to update suspension' }));
       }
     } catch (error) {
-      console.error('Error deleting account:', error);
-      setDeleteModal(prev => ({ ...prev, error: 'An error occurred while deleting the account' }));
+      console.error('Error suspending account:', error);
+      setSuspendModal(prev => ({ ...prev, error: 'An error occurred while updating the account' }));
     } finally {
-      setIsDeleting(false);
+      setIsSuspending(false);
     }
   };
 
