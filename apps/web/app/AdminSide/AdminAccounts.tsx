@@ -100,7 +100,9 @@ export default function AdminAccounts() {
             email: user.email,
             phone: user.phone || 'N/A',
             dob: user.dateOfBirth || 'N/A',
-            password: '••••••••'
+            password: '••••••••',
+            status: user.status || 'Active',
+            suspendedUntil: user.suspendedUntil
           })));
         }
       })

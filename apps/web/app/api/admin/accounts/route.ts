@@ -10,6 +10,8 @@ export async function GET() {
         email: true,
         phone: true,
         dateOfBirth: true,
+        status: true,
+        suspendedUntil: true,
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -51,6 +53,8 @@ export async function POST(req: Request) {
         phone: true,
         dateOfBirth: true,
         role: true,
+        status: true,
+        suspendedUntil: true,
       }
     });
 
