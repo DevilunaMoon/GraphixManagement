@@ -8,7 +8,7 @@ type VariationGroup = { section: string, variations: { name: string, price: stri
 
 export default function AdminInventory() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const { styles } = useTheme();
 
@@ -72,7 +72,7 @@ export default function AdminInventory() {
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, sortOrder]);
+  }, [searchQuery, selectedCategory]);
 
   const fetchProducts = () => {
     setIsLoading(true);
@@ -309,12 +309,14 @@ export default function AdminInventory() {
     }
   };
 
-  const filteredProducts = initialProducts.filter(prod => 
-    (prod.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (prod.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (prod.type || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const products = sortOrder === 'oldest' ? [...filteredProducts].reverse() : filteredProducts;
+  const filteredProducts = initialProducts.filter(prod => {
+    const matchesSearch = (prod.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (prod.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (prod.type || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || prod.categoryId === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+  const products = filteredProducts;
   const totalPages = Math.max(1, Math.ceil(products.length / itemsPerPage));
   const paginatedProducts = products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -342,9 +344,13 @@ export default function AdminInventory() {
               <ChevronDown className={`w-5 h-5 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
             </button>
             {isFilterOpen && (
-              <div className="absolute top-[115%] right-0 w-[150px] bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-black/10 overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2">
-                <button onClick={() => { setSortOrder('newest'); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${sortOrder === 'newest' ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>Newest</button>
-                <button onClick={() => { setSortOrder('oldest'); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${sortOrder === 'oldest' ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>Oldest</button>
+              <div className="absolute top-[115%] right-0 w-[150px] bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-black/10 overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto custom-scrollbar">
+                <button onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${selectedCategory === 'All' ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>All Categories</button>
+                {categories.map(cat => (
+                  <button key={cat.id} onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${selectedCategory === cat.id ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>
+                    {cat.name}
+                  </button>
+                ))}
               </div>
             )}
           </div>
