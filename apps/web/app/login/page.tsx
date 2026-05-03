@@ -48,9 +48,9 @@ function LoginContent() {
       setErrorMsg(result.error);
       setIsLoading(false);
     } else if (result?.success) {
-      if (result.role === "admin" || result.role === "ADMIN") router.push("/admin/dashboard");
-      else if (result.role === "cashier" || result.role === "CASHIER") router.push("/cashier/dashboard");
-      else router.push("/customer/dashboard");
+      if (result.role === "admin" || result.role === "ADMIN") window.location.href = "/admin/dashboard";
+      else if (result.role === "cashier" || result.role === "CASHIER") window.location.href = "/cashier/dashboard";
+      else window.location.href = "/customer/dashboard";
     }
   };
 
