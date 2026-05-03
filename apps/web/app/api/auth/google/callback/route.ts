@@ -77,6 +77,28 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Suspension check
+    if (user.status === 'Suspended') {
+      if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+        const dateStr = user.suspendedUntil.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = user.suspendedUntil.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        
+        let errorMsg = `Your account is suspended until ${dateStr} at ${timeStr}.`;
+        if (user.suspendedUntil.getFullYear() > 2090) {
+          errorMsg = "Your account has been permanently suspended.";
+        }
+        return NextResponse.redirect(new URL("/login?error=" + encodeURIComponent(errorMsg), baseUrl));
+      } else if (!user.suspendedUntil || user.suspendedUntil <= new Date()) {
+        // Automatically lift suspension if it's expired
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: 'Active', suspendedUntil: null }
+        });
+        user.status = 'Active';
+        user.suspendedUntil = null;
+      }
+    }
+
     // Set the session using the same logic as your regular login
     await setSession(user.id, user.role);
 
