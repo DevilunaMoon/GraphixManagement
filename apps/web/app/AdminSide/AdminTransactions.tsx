@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck } from 'lucide-react';
 
 interface Transaction {
   id: string;
@@ -66,6 +66,7 @@ export default function AdminTransactions() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
 
   const handleDownloadPDF = (tx: Transaction) => {
@@ -239,7 +240,11 @@ export default function AdminTransactions() {
               </thead>
               <tbody>
                 {paginatedTransactions.map((tx) => (
-                  <tr key={tx.id} className="bg-gray-50 hover:bg-purple-50/50 transition-colors group">
+                  <tr 
+                    key={tx.id} 
+                    onClick={() => setSelectedTransaction(tx)}
+                    className="bg-gray-50 hover:bg-purple-50/50 transition-colors group cursor-pointer"
+                  >
                     <td className="px-4 py-4 rounded-l-2xl border-y border-l border-transparent group-hover:border-purple-100">
                       <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
                         {tx.id.substring(0, 8).toUpperCase()}
@@ -288,7 +293,7 @@ export default function AdminTransactions() {
                     </td>
                     <td className="px-4 py-4 rounded-r-2xl border-y border-r border-transparent group-hover:border-purple-100 text-right">
                       <button 
-                        onClick={() => handleDownloadPDF(tx)}
+                        onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
                         className="p-2 bg-white text-purple-600 rounded-xl shadow-sm border border-purple-100 hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-all cursor-pointer inline-flex items-center justify-center group/btn"
                         title="Download Receipt"
                       >
@@ -327,6 +332,80 @@ export default function AdminTransactions() {
           </div>
         )}
       </div>
+
+      {/* Transaction Details Modal */}
+      {selectedTransaction && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTransaction(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <ReceiptText className="text-purple-600" size={24} />
+                <h3 className="font-bold text-[#111] text-xl">Transaction Details</h3>
+              </div>
+              <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setSelectedTransaction(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                  <span className="text-gray-500 font-semibold text-sm">Transaction ID</span>
+                  <span className="font-bold text-gray-900">{selectedTransaction.id.toUpperCase()}</span>
+                </div>
+                
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                  <span className="text-gray-500 font-semibold text-sm">Customer</span>
+                  <div className="text-right">
+                    <div className="font-bold text-gray-900">{selectedTransaction.user?.name || 'Anonymous'}</div>
+                    <div className="text-xs text-gray-500">{selectedTransaction.user?.email}</div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                  <span className="text-gray-500 font-semibold text-sm">Device</span>
+                  <div className="text-right">
+                    <div className="font-bold text-gray-900">{selectedTransaction.device?.name}</div>
+                    <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${selectedTransaction.variations}`}</div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                  <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
+                  <span className="font-bold text-gray-900">
+                    {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+                </div>
+
+                {/* Warranty Section */}
+                <div className="mt-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 p-4 rounded-xl border border-purple-100 flex items-start gap-4">
+                  <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-purple-900 m-0 text-base">12 Months Warranty</h4>
+                    <p className="text-sm text-purple-700 mt-1 mb-0">
+                      Valid until <span className="font-bold text-purple-900">
+                        {new Date(new Date(selectedTransaction.createdAt).setMonth(new Date(selectedTransaction.createdAt).getMonth() + 12)).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+              
+              <div className="mt-6 pt-4">
+                <button
+                  onClick={() => setSelectedTransaction(null)}
+                  className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-colors shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
