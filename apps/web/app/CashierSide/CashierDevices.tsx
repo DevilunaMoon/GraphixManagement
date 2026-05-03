@@ -79,9 +79,18 @@ export default function CashierDevices() {
 
   const fetchDevices = () => {
     setIsLoading(true);
-    fetch('/api/devices')
-      .then(res => res.json())
-      .then(data => setDevices(Array.isArray(data) ? data : []))
+    fetch(`/api/devices?t=${Date.now()}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDevices(data);
+        } else {
+          console.error('Expected array of devices, got:', data);
+        }
+      })
       .catch(console.error)
       .finally(() => setIsLoading(false));
   };
