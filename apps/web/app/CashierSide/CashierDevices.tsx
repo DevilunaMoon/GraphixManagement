@@ -359,8 +359,8 @@ export default function CashierDevices() {
   };
 
   const filteredDevices = devices.filter(device =>
-    device.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    device.id.toLowerCase().includes(searchQuery.toLowerCase())
+    (device.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (device.id || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredDevices.length / itemsPerPage));
@@ -442,20 +442,20 @@ export default function CashierDevices() {
                         )}
                       </div>
                     </td>
-                    <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.name}</td>
+                    <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.name || 'Unnamed'}</td>
                     <td className="p-4 font-bold text-[1.05rem] text-gray-600 align-middle">
-                      ₱{device.cost ? device.cost.toFixed(2) : '0.00'}
+                      ₱{device.cost ? Number(device.cost).toFixed(2) : '0.00'}
                     </td>
                     <td className="p-4 font-bold text-[1.05rem] text-[#bd00ff] align-middle">
-                      ₱{device.price ? device.price.toFixed(2) : '0.00'}
+                      ₱{device.price ? Number(device.price).toFixed(2) : '0.00'}
                     </td>
                     <td className="p-4 text-center align-middle">
-                      <span className={`font-bold text-[1.1rem] ${device.stock === 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                        {device.stock} <span className="text-[0.8rem] font-bold opacity-50 tracking-wider ml-1">PCS</span>
+                      <span className={`font-bold text-[1.1rem] ${(device.stock || 0) === 0 ? 'text-red-600' : 'text-gray-800'}`}>
+                        {device.stock || 0} <span className="text-[0.8rem] font-bold opacity-50 tracking-wider ml-1">PCS</span>
                       </span>
                     </td>
                     <td className="p-4 font-mono text-[0.9rem] text-gray-800 align-middle hidden sm:table-cell">
-                      <span className="bg-gray-200 px-3 py-1.5 rounded border border-gray-300 font-extrabold tracking-wider shadow-sm text-[0.95rem]">#{device.id.slice(-6).toUpperCase()}</span>
+                      <span className="bg-gray-200 px-3 py-1.5 rounded border border-gray-300 font-extrabold tracking-wider shadow-sm text-[0.95rem]">#{device.id ? String(device.id).slice(-6).toUpperCase() : 'UNKNOWN'}</span>
                     </td>
                     <td className="p-4 align-middle">
                       <div className="flex gap-4 justify-center items-center">
