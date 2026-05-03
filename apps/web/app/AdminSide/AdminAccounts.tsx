@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Ban, X, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminAccounts() {
@@ -204,7 +204,12 @@ export default function AdminAccounts() {
                     className={`last:border-b-2 last:${styles.borderMain} cursor-pointer hover:bg-black/5 transition-colors`}
                     onClick={() => setSelectedAccount(acc)}
                   >
-                    <td className={`py-4 px-5 text-[0.95rem] font-bold text-[#111] border-b ${styles.borderMain} max-w-[120px] sm:max-w-none truncate`}>{acc.name}</td>
+                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} max-w-[120px] sm:max-w-none truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>
+                      <div className="flex items-center justify-center gap-2">
+                        {acc.name}
+                        {acc.status === 'Suspended' && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block">Suspended</span>}
+                      </div>
+                    </td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} max-w-[150px] sm:max-w-none truncate`}>{acc.email}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.phone}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.dob}</td>
@@ -252,42 +257,77 @@ export default function AdminAccounts() {
       </div>
 
       {/* Delete Confirmation Modal */}
-      {deleteModal.isOpen && (
+      {suspendModal.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full animate-in zoom-in duration-200">
-            <h3 className="text-xl font-bold text-[#111] mb-2">Delete Account</h3>
-            <p className="text-gray-600 mb-6 font-medium">
-              Are you sure you want to delete <span className="font-bold text-[#111]">{deleteModal.name}</span>? This action cannot be undone.
-            </p>
-            
-            {deleteModal.error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm font-bold border border-red-100 text-center">
-                {deleteModal.error}
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-md animate-in zoom-in duration-200">
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <Ban className="text-orange-500" size={24} />
+                <h3 className="font-bold text-[#111] text-xl">Manage Suspension</h3>
               </div>
-            )}
+              <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setSuspendModal({ isOpen: false, id: '', name: '' })}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <p className="text-gray-600 mb-2 font-medium">
+                Choose a suspension duration for <span className="font-bold text-[#111]">{suspendModal.name}</span>.
+              </p>
+              {suspendModal.status === 'Suspended' && (
+                <div className="mb-4 text-sm font-bold text-red-600 bg-red-50 p-2 rounded text-center border border-red-100">
+                  Currently suspended until: {suspendModal.suspendedUntil ? new Date(suspendModal.suspendedUntil).toLocaleDateString() : 'Permanent'}
+                </div>
+              )}
+              
+              {suspendModal.error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm font-bold border border-red-100 text-center">
+                  {suspendModal.error}
+                </div>
+              )}
 
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteModal({ isOpen: false, id: '', name: '' })}
-                disabled={isDeleting}
-                className="px-4 py-2.5 text-[#111] hover:bg-gray-100 rounded-xl font-bold transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className="px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete Account'
-                )}
-              </button>
+              <div className="grid grid-cols-2 gap-3 mt-6">
+                <button
+                  onClick={() => handleSuspend('1_week')}
+                  disabled={isSuspending}
+                  className="px-4 py-3 bg-white border-2 border-orange-200 hover:border-orange-500 hover:bg-orange-50 text-orange-700 rounded-xl font-bold transition-all disabled:opacity-50"
+                >
+                  1 Week
+                </button>
+                <button
+                  onClick={() => handleSuspend('1_month')}
+                  disabled={isSuspending}
+                  className="px-4 py-3 bg-white border-2 border-orange-200 hover:border-orange-500 hover:bg-orange-50 text-orange-700 rounded-xl font-bold transition-all disabled:opacity-50"
+                >
+                  1 Month
+                </button>
+                <button
+                  onClick={() => handleSuspend('1_year')}
+                  disabled={isSuspending}
+                  className="px-4 py-3 bg-white border-2 border-red-200 hover:border-red-500 hover:bg-red-50 text-red-700 rounded-xl font-bold transition-all disabled:opacity-50"
+                >
+                  1 Year
+                </button>
+                <button
+                  onClick={() => handleSuspend('permanent')}
+                  disabled={isSuspending}
+                  className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white border-2 border-transparent rounded-xl font-bold transition-all disabled:opacity-50 shadow-sm"
+                >
+                  Permanent
+                </button>
+              </div>
+
+              {suspendModal.status === 'Suspended' && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => handleSuspend('lift')}
+                    disabled={isSuspending}
+                    className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors disabled:opacity-50 shadow-sm"
+                  >
+                    Lift Suspension
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

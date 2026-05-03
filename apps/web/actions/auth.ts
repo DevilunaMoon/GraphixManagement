@@ -86,6 +86,26 @@ export async function login(formData: FormData) {
       return { error: attemptData.lockedUntil ? "Too many failed attempts. Try again in 15 minute(s)." : "Invalid credentials" };
     }
 
+    if (user.status === 'Suspended') {
+      if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+        const dateStr = user.suspendedUntil.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = user.suspendedUntil.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        // Handle permanent suspension
+        if (user.suspendedUntil.getFullYear() > 2090) {
+          return { error: "Your account has been permanently suspended." };
+        }
+        return { error: `Your account is suspended until ${dateStr} at ${timeStr}.` };
+      } else if (!user.suspendedUntil || user.suspendedUntil <= new Date()) {
+        // Automatically lift suspension if it's expired
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { status: 'Active', suspendedUntil: null }
+        });
+        user.status = 'Active';
+        user.suspendedUntil = null;
+      }
+    }
+
     if (!user.password) {
       if (user.authProvider === "GOOGLE") {
         return { error: "This account was created via Google. Please sign in with Google." };
