@@ -82,7 +82,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4ebff] to-[#e4caff] flex py-10 items-center justify-center p-4 font-['Signika'] relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#f4ebff] to-[#e4caff] flex py-10 items-center justify-center p-4 font-['Inter'] relative overflow-hidden">
       <button
         onClick={() => router.push('/')}
         className="absolute top-4 left-4 sm:top-8 sm:left-8 z-40 flex items-center gap-1 sm:gap-2 text-[#8b00cc] font-bold hover:text-[#bd00ff] transition-colors bg-white/80 backdrop-blur-md px-3 sm:px-4 py-2 rounded-full shadow-md text-sm sm:text-base"

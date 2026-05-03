@@ -88,7 +88,7 @@ function CashierEditProgressContent() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 p-6 md:p-10 font-['Signika'] flex justify-center items-center h-screen">
+      <main className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center items-center h-screen">
         <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
       </main>
     );
@@ -96,7 +96,7 @@ function CashierEditProgressContent() {
 
   if (!deviceData && !isLoading) {
     return (
-      <main className="flex-1 p-6 md:p-10 font-['Signika'] flex flex-col justify-center items-center h-screen gap-4">
+      <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col justify-center items-center h-screen gap-4">
         <h2 className="text-xl font-bold">Device Data Not Found</h2>
         <button onClick={() => navigate('/cashier/monitoring')} className="px-6 py-2 bg-[#bd00ff] text-white rounded-lg">Return to Monitoring</button>
       </main>
@@ -104,7 +104,7 @@ function CashierEditProgressContent() {
   }
 
   return (
-    <main className="flex-1 flex flex-col p-5 md:p-8 gap-8 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Signika'] overflow-y-auto w-auto">
+    <main className="flex-1 flex flex-col p-5 md:p-8 gap-8 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-gray-100 pb-4">

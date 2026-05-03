@@ -42,7 +42,7 @@ function PolicyContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f8] font-['Signika'] py-12 px-4 flex flex-col items-center">
+    <div className="min-h-screen bg-[#f3f4f8] font-['Inter'] py-12 px-4 flex flex-col items-center">
       <div className="w-full max-w-4xl flex justify-between items-center mb-8">
         <button 
           onClick={() => router.back()}

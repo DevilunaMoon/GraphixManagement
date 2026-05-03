@@ -77,7 +77,7 @@ export default function CashierAddProgress() {
   };
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Signika'] flex justify-center items-start">
+    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center items-start">
       <div className="w-full max-w-4xl bg-white border-2 border-[#bd00ff] rounded-2xl p-6 md:p-10 flex flex-col gap-8 shadow-sm">
         
         {/* Header */}

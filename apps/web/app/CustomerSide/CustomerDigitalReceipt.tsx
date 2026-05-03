@@ -36,7 +36,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
   const currentItems = sortedReceipts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Signika'] flex justify-center overflow-y-auto">
+    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6">
 
         {/* Sidebar */}

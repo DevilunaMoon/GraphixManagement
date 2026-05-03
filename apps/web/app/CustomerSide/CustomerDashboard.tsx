@@ -92,7 +92,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
   const displayCategories = categoriesData.length > 0 ? categoriesData : fallbackCategories;
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Signika'] flex flex-col gap-10">
+    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col gap-10">
       
 
       {/* Banner Carousel Section */}

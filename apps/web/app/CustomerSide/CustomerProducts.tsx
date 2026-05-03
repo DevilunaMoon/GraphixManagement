@@ -79,7 +79,7 @@ function CustomerProductsContent() {
     });
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Signika'] flex flex-col items-center">
+    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center">
       <div className="w-full max-w-7xl flex flex-col gap-6">
 
         {/* Header & Filters */}

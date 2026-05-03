@@ -137,7 +137,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f3f4f8] font-['Signika'] flex flex-col overflow-x-hidden selection:bg-[#bd00ff] selection:text-white">
+    <div className="min-h-screen bg-[#f3f4f8] font-['Inter'] flex flex-col overflow-x-hidden selection:bg-[#bd00ff] selection:text-white">
       {/* Navbar */}
       <nav
         className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled

@@ -23,7 +23,7 @@ export default function CustomerNotificationPreferences() {
   };
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Signika'] flex justify-center overflow-y-auto">
+    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">
       <div className="w-full max-w-4xl bg-white border-2 border-[#5c0099] rounded-2xl p-4 sm:p-6 md:p-10 flex flex-col shadow-sm relative">
         
         <button 

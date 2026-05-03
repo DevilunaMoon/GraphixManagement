@@ -8,7 +8,7 @@ export default function CustomerSettings() {
   const navigate = router.push;
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Signika'] flex justify-center">
+    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center">
       <div className="w-full max-w-4xl flex flex-col gap-4 sm:gap-6">
         
         <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-gray-100 flex flex-col">

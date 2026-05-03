@@ -4,7 +4,7 @@ import { Info } from 'lucide-react';
 
 export default function CustomerAbout() {
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Signika'] flex justify-center items-start overflow-y-auto bg-[#f4f5f7]">
+    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center items-start overflow-y-auto bg-[#f4f5f7]">
       <div className="w-full max-w-4xl mt-6 sm:mt-10">
         
         <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-12 shadow-md border-t-8 border-[#bd00ff]">

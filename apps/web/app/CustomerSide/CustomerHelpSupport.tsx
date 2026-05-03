@@ -23,7 +23,7 @@ export default function CustomerHelpSupport() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Signika'] flex justify-center overflow-y-auto">
+    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">
       <div className="w-full max-w-4xl bg-white border-2 border-[#5c0099] rounded-2xl p-4 sm:p-6 md:p-10 flex flex-col gap-6 sm:gap-10 shadow-sm relative">
         
         <button 

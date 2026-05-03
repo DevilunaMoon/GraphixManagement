@@ -97,14 +97,14 @@ function CashierEditDeviceContent() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 flex justify-center items-center p-6 font-['Signika']">
+      <main className="flex-1 flex justify-center items-center p-6 font-['Inter']">
         <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
       </main>
     );
   }
 
   return (
-    <main className="flex-1 flex justify-center items-start p-6 md:p-10 font-['Signika']">
+    <main className="flex-1 flex justify-center items-start p-6 md:p-10 font-['Inter']">
       <div className="w-full max-w-4xl bg-white border border-[#bd00ff] rounded-2xl p-6 md:p-10 flex flex-col gap-8 shadow-sm">
         
         {/* Header */}

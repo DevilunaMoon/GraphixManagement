@@ -27,7 +27,7 @@ function CustomerPaymentContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Signika']">
+    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter']">
       <div className="w-full max-w-lg bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-8">
         
         {/* Header */}
@@ -69,7 +69,7 @@ function CustomerPaymentContent() {
             <textarea 
               placeholder="Enter your message here" 
               rows={3}
-              className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Signika'] resize-vertical focus:border-[#bd00ff] transition-colors"
+              className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] resize-vertical focus:border-[#bd00ff] transition-colors"
             />
           </div>
 

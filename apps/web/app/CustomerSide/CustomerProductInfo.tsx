@@ -113,7 +113,7 @@ function CustomerProductInfoContent() {
 
   if (loading) {
     return (
-      <main className="flex-1 p-6 md:p-10 font-['Signika'] flex justify-center items-center">
+      <main className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center items-center">
         <div className="text-2xl font-bold text-[#bd00ff]">Loading Device Details...</div>
       </main>
     );
@@ -121,7 +121,7 @@ function CustomerProductInfoContent() {
 
   if (!product || product.error) {
     return (
-      <main className="flex-1 p-6 md:p-10 font-['Signika'] flex flex-col justify-center items-center gap-4">
+      <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col justify-center items-center gap-4">
         <div className="text-2xl font-bold text-red-500">Device Not Found</div>
         <button onClick={() => navigate('/customer/products')} className="px-6 py-2 bg-[#bd00ff] text-white rounded-lg border-none cursor-pointer font-bold">Back to Products</button>
       </main>
@@ -129,7 +129,7 @@ function CustomerProductInfoContent() {
   }
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Signika'] flex justify-center overflow-y-auto">
+    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">
       <div className="w-full max-w-5xl flex flex-col gap-8">
         
         {/* Header */}
@@ -303,7 +303,7 @@ function CustomerProductInfoContent() {
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder="Write a review about this product..." 
-                    className="w-full min-h-[100px] border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Signika'] resize-vertical focus:border-[#bd00ff] transition-colors"
+                    className="w-full min-h-[100px] border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] resize-vertical focus:border-[#bd00ff] transition-colors"
                   />
                   <button 
                     onClick={handlePostComment}

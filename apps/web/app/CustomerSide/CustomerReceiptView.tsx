@@ -69,7 +69,7 @@ export default function CustomerReceiptView({ user, orderId }: { user?: any; ord
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Signika'] py-12">
+    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter'] py-12">
       <div 
         ref={receiptRef}
         className="w-full max-w-2xl bg-white rounded-[2.5rem] p-8 md:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col gap-8"

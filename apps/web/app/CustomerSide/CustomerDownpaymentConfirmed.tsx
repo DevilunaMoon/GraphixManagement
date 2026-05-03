@@ -15,7 +15,7 @@ export default function CustomerDownpaymentConfirmed() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Signika']">
+    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter']">
       
       {/* Hide surrounding UI during print */}
       <style>{`

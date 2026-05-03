@@ -64,7 +64,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
   if (!deviceId) return <div className="p-10 text-center">No device specified.</div>;
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Signika'] flex flex-col items-center overflow-y-auto">
+    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center overflow-y-auto">
       <div className="w-full max-w-4xl flex flex-col gap-8">
         
         {/* Device Information Card */}
@@ -138,7 +138,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="Type your feedback here..."
-              className="w-full min-h-[150px] border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Signika'] resize-vertical focus:border-[#bd00ff] transition-colors mt-2"
+              className="w-full min-h-[150px] border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] resize-vertical focus:border-[#bd00ff] transition-colors mt-2"
             />
             <div className="flex justify-end mt-2 items-center gap-4">
               {isSaved && <span className="text-green-500 font-bold animate-in fade-in">Feedback saved!</span>}
