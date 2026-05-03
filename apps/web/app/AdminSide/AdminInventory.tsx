@@ -238,16 +238,7 @@ export default function AdminInventory() {
     setEditDeviceImages([]);
     setEditDeviceDownpaymentImagePreview(prod.downpaymentImage);
     setEditDeviceDownpaymentImage(null);
-    setEditDeviceVariations(
-      (prod.variations || []).map((v: any) => ({
-        id: v.id,
-        type: v.type,
-        name: v.name,
-        price: v.price?.toString() || '',
-        cost: v.cost?.toString() || '',
-        stock: v.stock?.toString() || '',
-      }))
-    );
+    setEditDeviceVariations(prod.variations || []);
     setIsEditModalOpen(true);
   };
 
