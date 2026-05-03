@@ -216,11 +216,11 @@ export default function AdminAccounts() {
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.password}</td>
                     <td className={`py-4 px-5 border-b ${styles.borderMain} hidden md:table-cell`}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); openDeleteModal(acc.id, acc.name); }}
-                        className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50 cursor-pointer flex items-center justify-center mx-auto"
-                        title="Delete Account"
+                        onClick={(e) => { e.stopPropagation(); openSuspendModal(acc.id, acc.name, acc.status, acc.suspendedUntil); }}
+                        className="text-orange-500 hover:text-orange-700 transition-colors p-2 rounded-full hover:bg-orange-50 cursor-pointer flex items-center justify-center mx-auto"
+                        title="Suspend Account"
                       >
-                        <Trash2 size={20} />
+                        <Ban size={20} />
                       </button>
                     </td>
                   </tr>
@@ -304,7 +304,7 @@ export default function AdminAccounts() {
                 <button
                   onClick={() => handleSuspend('1_year')}
                   disabled={isSuspending}
-                  className="px-4 py-3 bg-white border-2 border-red-200 hover:border-red-500 hover:bg-red-50 text-red-700 rounded-xl font-bold transition-all disabled:opacity-50"
+                  className="px-4 py-3 bg-white border-2 border-red-200 hover:border-red-500 hover:bg-orange-50 text-red-700 rounded-xl font-bold transition-all disabled:opacity-50"
                 >
                   1 Year
                 </button>
@@ -421,14 +421,14 @@ export default function AdminAccounts() {
               <h3 className="font-bold text-[#111] text-lg">Account Details</h3>
               <div className="flex items-center gap-3">
                 <button 
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-full transition-colors flex items-center justify-center"
-                  title="Delete Account"
+                  className="text-orange-500 hover:text-orange-700 hover:bg-orange-50 p-1.5 rounded-full transition-colors flex items-center justify-center"
+                  title="Suspend Account"
                   onClick={() => {
-                     openDeleteModal(selectedAccount.id, selectedAccount.name);
+                     openSuspendModal(selectedAccount.id, selectedAccount.name, selectedAccount.status, selectedAccount.suspendedUntil);
                      setSelectedAccount(null);
                   }}
                 >
-                  <Trash2 size={20} />
+                  <Ban size={20} />
                 </button>
                 <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setSelectedAccount(null)}>
                   <X size={20} />
