@@ -4,6 +4,21 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "SESSION_SECRET",
+        "OTP_SERVICE_API_KEY",
+        "CLOUDINARY_CLOUD_NAME",
+        "CLOUDINARY_API_KEY",
+        "CLOUDINARY_API_SECRET",
+        "ENABLE_EXPERIMENTAL_COREPACK",
+        "GOOGLE_CLIENT_SECRET",
+        "GOOGLE_CLIENT_ID"
+      ],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"]
     },

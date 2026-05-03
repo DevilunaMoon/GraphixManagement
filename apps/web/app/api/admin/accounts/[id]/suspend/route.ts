@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { duration } = await req.json();
-    const { id } = params;
+    const { id } = await params;
 
     let suspendedUntil: Date | null = null;
     let status = 'Suspended';
