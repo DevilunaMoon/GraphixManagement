@@ -18,6 +18,7 @@ interface Device {
   stock: number;
   categoryId: string | null;
   specs: string | null;
+  variations?: any[];
 }
 
 export default function CashierDevices() {
@@ -224,6 +225,11 @@ export default function CashierDevices() {
     setEditDeviceWarranty(device.warranty || '');
     setEditDeviceDownpayment(device.downpayment || '');
     setEditDeviceError(null);
+    setEditVariationGroups(device.variations ? Object.values(device.variations.reduce((acc: any, v: any) => {
+      if (!acc[v.type]) acc[v.type] = { section: v.type, variations: [] };
+      acc[v.type].variations.push({ name: v.name, price: v.price?.toString() || '0', cost: v.cost?.toString() || '0', stock: v.stock?.toString() || '0' });
+      return acc;
+    }, {})) : []);
     setEditModalOpen(true);
   };
 
