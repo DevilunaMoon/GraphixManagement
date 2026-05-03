@@ -55,6 +55,7 @@ export default function CashierDevices() {
   const [editDeviceDownpayment, setEditDeviceDownpayment] = useState('');
   const [isEditingDevice, setIsEditingDevice] = useState(false);
   const [editDeviceError, setEditDeviceError] = useState<string | null>(null);
+  const [editVariationGroups, setEditVariationGroups] = useState<{ section: string, variations: { name: string, price: string, cost: string, stock: string }[] }[]>([]);
 
   // Add Device Modal State
   const [addDeviceModalOpen, setAddDeviceModalOpen] = useState(false);
@@ -253,6 +254,18 @@ export default function CashierDevices() {
     formData.append('deviceAsLowAs', editDeviceAsLowAs);
     formData.append('deviceWarranty', editDeviceWarranty);
     formData.append('deviceDownpayment', editDeviceDownpayment);
+    if (editVariationGroups.length > 0) {
+      const flattened = editVariationGroups.flatMap(group =>
+        group.variations.map(v => ({
+          type: group.section,
+          name: v.name,
+          price: v.price,
+          cost: v.cost,
+          stock: v.stock
+        }))
+      );
+      formData.append('variations', JSON.stringify(flattened));
+    }
 
     try {
       const res = await fetch(`/api/devices/${editDeviceId}`, {
@@ -982,6 +995,123 @@ export default function CashierDevices() {
                       </div>
                     </div>
                   </div>
+                </div>
+                </div>
+                {/* Edit Variations Section */}
+                <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-bold text-gray-700">Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditVariationGroups([...editVariationGroups, { section: '', variations: [{ name: '', price: editDevicePrice || '0', cost: editDeviceCost || '0', stock: '0' }] }])
+                      }}
+                      className="text-xs font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus size={14} /> Add Section
+                    </button>
+                  </div>
+
+                  {editVariationGroups.length > 0 && (
+                    <div className="flex flex-col gap-4 mt-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {editVariationGroups.map((group, groupIdx) => (
+                        <div key={groupIdx} className="flex flex-col gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 relative">
+                          <div className="flex items-center gap-3">
+                            <label className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Section</label>
+                            <input
+                              type="text"
+                              value={group.section}
+                              onChange={e => {
+                                const updated = [...editVariationGroups];
+                                if (updated[groupIdx]) updated[groupIdx].section = e.target.value;
+                                setEditVariationGroups(updated);
+                              }}
+                              className="h-9 border border-gray-300 rounded-lg px-3 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold flex-1 max-w-[200px]"
+                              placeholder="e.g. Color"
+                            />
+                            <div className="flex-1"></div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = editVariationGroups.filter((_, i) => i !== groupIdx);
+                                setEditVariationGroups(updated);
+                              }}
+                              className="h-8 w-8 flex items-center justify-center shrink-0 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-colors border-none cursor-pointer shadow-sm"
+                              title="Remove Section"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
+
+                          <div className="flex flex-col gap-2 pl-2 border-l-2 border-purple-200 ml-2">
+                            {group.variations.map((v, vIdx) => (
+                              <div key={vIdx} className="flex flex-col sm:flex-row gap-2 items-start sm:items-end relative group/var">
+                                <div className="w-full sm:w-1/3">
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variation Name</label>
+                                  <input type="text" value={v.name} onChange={e => {
+                                    const updated = [...editVariationGroups];
+                                    if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
+                                      updated[groupIdx].variations[vIdx].name = e.target.value;
+                                      setEditVariationGroups(updated);
+                                    }
+                                  }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="e.g. Red" />
+                                </div>
+                                <div className="flex gap-2 w-full sm:w-[50%]">
+                                  <div className="flex-1">
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Price</label>
+                                    <input type="number" step="0.01" value={v.price} onChange={e => {
+                                      const updated = [...editVariationGroups];
+                                      if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
+                                        updated[groupIdx].variations[vIdx].price = e.target.value;
+                                        setEditVariationGroups(updated);
+                                      }
+                                    }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="Price" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Stock</label>
+                                    <input type="number" value={v.stock} onChange={e => {
+                                      const updated = [...editVariationGroups];
+                                      if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
+                                        updated[groupIdx].variations[vIdx].stock = e.target.value;
+                                        setEditVariationGroups(updated);
+                                      }
+                                    }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="Stock" />
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...editVariationGroups];
+                                    if (updated[groupIdx]) {
+                                      updated[groupIdx].variations = updated[groupIdx].variations.filter((_, i) => i !== vIdx);
+                                      setEditVariationGroups(updated);
+                                    }
+                                  }}
+                                  className="absolute -top-1 -right-1 h-5 w-5 sm:relative sm:top-0 sm:right-0 sm:h-9 sm:w-9 flex items-center justify-center shrink-0 rounded-full sm:rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors border-none cursor-pointer"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ))}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...editVariationGroups];
+                                if (updated[groupIdx]) {
+                                  updated[groupIdx].variations.push({ name: '', price: editDevicePrice || '0', cost: editDeviceCost || '0', stock: '0' });
+                                  setEditVariationGroups(updated);
+                                }
+                              }}
+                              className="mt-2 self-start text-[11px] font-bold text-[#bd00ff] bg-transparent hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors border-2 border-dashed border-[#bd00ff]/50 hover:border-[#bd00ff] cursor-pointer flex items-center gap-1"
+                            >
+                              <Plus size={12} /> Add Variation
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
               </div>
