@@ -21,6 +21,9 @@ console.log("DEBUG: DATABASE_URL is", process.env.DATABASE_URL);
 
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
+  max: 1, // Limit each serverless instance to 1 connection to prevent hitting pool_size: 15
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
   ...(parsedPassword ? { password: parsedPassword } : {})
 });
 
