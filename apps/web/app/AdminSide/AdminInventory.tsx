@@ -24,7 +24,56 @@ export default function AdminInventory() {
   const [isLoading, setIsLoading] = useState(true);
   
   // Categories
-  const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string, name: string, logoUrl?: string }[]>([]);
+  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatImage, setNewCatImage] = useState<File | null>(null);
+  const [newCatImagePreview, setNewCatImagePreview] = useState<string | null>(null);
+  const [isAddingCat, setIsAddingCat] = useState(false);
+
+  const fetchCategories = () => {
+    fetch('/api/categories')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCategories(data);
+      })
+      .catch(err => console.error("Error fetching categories:", err));
+  };
+  
+  const handleCatImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setNewCatImage(file);
+      setNewCatImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCatName) return;
+    setIsAddingCat(true);
+    const formData = new FormData();
+    formData.append('categoryName', newCatName);
+    if (newCatImage) formData.append('categoryImage', newCatImage);
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        setNewCatName('');
+        setNewCatImage(null);
+        setNewCatImagePreview(null);
+        fetchCategories();
+      } else {
+        alert('Failed to add category');
+      }
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setIsAddingCat(false);
+    }
+  };
   
   // Add Product State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -112,12 +161,7 @@ export default function AdminInventory() {
 
   useEffect(() => {
     fetchProducts();
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setCategories(data);
-      })
-      .catch(err => console.error("Error fetching categories:", err));
+    fetchCategories();
   }, []);
 
   const handleDeleteClick = (dbId: string) => {
@@ -355,7 +399,10 @@ export default function AdminInventory() {
             )}
           </div>
           
-          <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-[#5c0099] text-white px-5 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none ml-auto lg:ml-0 flex-shrink-0">
+          <button onClick={() => setCategoriesModalOpen(true)} className="flex items-center gap-2 bg-purple-100 text-[#5c0099] px-5 py-2.5 rounded-full font-bold hover:bg-purple-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap">
+            <span>Manage Categories</span>
+          </button>
+          <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-[#5c0099] text-white px-5 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none ml-auto lg:ml-0 flex-shrink-0 whitespace-nowrap">
             <Plus size={20} />
             <span>Add Device</span>
           </button>
@@ -906,6 +953,80 @@ export default function AdminInventory() {
             <div className="p-4 bg-gray-50/80 border-t border-black/5">
               <button onClick={() => setViewMoreProduct(null)} className="w-full py-3.5 rounded-xl font-bold text-white bg-[#bd00ff] hover:bg-[#8f00c2] transition-colors shadow-sm cursor-pointer border-none">Close</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Categories Management Modal */}
+      {categoriesModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[90vh]">
+
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-xl font-bold text-black m-0">Manage Categories</h3>
+              <button onClick={() => setCategoriesModalOpen(false)} className="text-gray-500 hover:text-black hover:bg-gray-200 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar">
+
+              {/* Add Category Form */}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+                <label className="shrink-0 w-16 h-16 rounded-full border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center cursor-pointer hover:bg-white transition-colors text-[#bd00ff] overflow-hidden relative bg-transparent">
+                  {newCatImagePreview ? (
+                    <img src={newCatImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <Upload size={20} />
+                  )}
+                  <input type="file" onChange={handleCatImageChange} accept="image/*" className="hidden" />
+                </label>
+
+                <div className="flex-1 w-full relative">
+                  <input
+                    type="text"
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="Enter new category name..."
+                    className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddCategory();
+                    }}
+                  />
+                </div>
+
+                <button
+                  onClick={handleAddCategory}
+                  disabled={!newCatName || isAddingCat}
+                  className="w-full sm:w-auto h-12 px-6 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors border-none cursor-pointer flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                >
+                  {isAddingCat ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Plus size={20} /> Add</>}
+                </button>
+              </div>
+
+              {/* List Categories */}
+              <div className="flex flex-col gap-3">
+                <h4 className="text-gray-500 font-bold uppercase text-sm mb-2">Existing Categories</h4>
+                {categories.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">No categories found. Add one above!</div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {categories.map((cat, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-[#bd00ff] transition-colors">
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                          {cat.logoUrl ? (
+                            <img src={cat.logoUrl} alt={cat.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs text-gray-400 font-bold text-center leading-tight">No<br/>Img</span>
+                          )}
+                        </div>
+                        <span className="font-semibold text-black break-words line-clamp-2 text-sm">{cat.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
