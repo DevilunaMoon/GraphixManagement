@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const session = await getSession();
     const isCustomer = session?.role === 'CUSTOMER';
-    const whereClause = isCustomer && session?.userId ? { userId: session.userId } : {};
+    const whereClause: any = isCustomer && session?.userId ? { userId: session.userId } : {};
 
     const requests = await prisma.repairRequest.findMany({
       where: whereClause,
