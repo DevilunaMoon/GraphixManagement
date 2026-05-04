@@ -1,0 +1,450 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+interface DeviceProgress {
+  id: string;
+  deviceName: string;
+  ownerName: string;
+  progress: string;
+  image: string | null;
+  status: string;
+  cause: string | null;
+  technician: string | null;
+  repairCost: string | null;
+}
+
+
+
+export default function AdminMonitoring() {
+  const router = useRouter();
+  const navigate = router.push;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [devices, setDevices] = useState<DeviceProgress[]>([]);
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
+  const [successCompleteOpen, setSuccessCompleteOpen] = useState(false);
+  const [deviceToComplete, setDeviceToComplete] = useState<DeviceProgress | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
+  const [editProgress, setEditProgress] = useState('0%');
+  const [initialEditProgress, setInitialEditProgress] = useState('0%');
+  const [editCause, setEditCause] = useState('');
+  const [editTechnician, setEditTechnician] = useState('');
+  const [editRepairCost, setEditRepairCost] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const progressLevels = ['0%', '25%', '50%', '75%', '100%'];
+  const initialProgressIndex = progressLevels.indexOf(initialEditProgress);
+
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch('/api/monitoring')
+      .then(res => res.json())
+      .then(data => setDevices(Array.isArray(data) ? data : []))
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const activeDevices = devices.filter(d => d.status !== 'Completed');
+  const filteredDevices = activeDevices.filter(d => 
+    d.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const sortedDevices = [...filteredDevices].sort((a, b) => {
+    if (a.progress === '100%' && b.progress !== '100%') return 1;
+    if (a.progress !== '100%' && b.progress === '100%') return -1;
+    return 0;
+  });
+
+  const totalPages = Math.ceil(sortedDevices.length / ITEMS_PER_PAGE) || 1;
+  const paginatedDevices = sortedDevices.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const getProgressColor = (progress: string) => {
+    switch (progress) {
+      case '100%': return 'text-green-600';
+      case '75%': 
+      case '50%': return 'text-yellow-500';
+      case '25%':
+      case '0%': return 'text-red-500';
+      default: return 'text-black';
+    }
+  };
+
+  const openCompleteModal = (device: DeviceProgress) => {
+    setDeviceToComplete(device);
+    setCompleteModalOpen(true);
+  };
+
+  const confirmComplete = async () => {
+    if (deviceToComplete) {
+      setIsCompleting(true);
+      try {
+        const res = await fetch(`/api/monitoring/${deviceToComplete.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Completed' }),
+        });
+
+        if (res.ok) {
+          setDevices(prev => prev.map(d => d.id === deviceToComplete.id ? { ...d, status: 'Completed' } : d));
+          setCompleteModalOpen(false);
+          setSuccessCompleteOpen(true);
+        } else {
+          alert('Failed to complete request');
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsCompleting(false);
+      }
+    }
+  };
+
+  const openEditModal = (device: DeviceProgress) => {
+    setDeviceToEdit(device);
+    setEditProgress(device.progress || '0%');
+    setInitialEditProgress(device.progress || '0%');
+    setEditCause(device.cause || '');
+    setEditTechnician(device.technician || '');
+    setEditRepairCost(device.repairCost || '');
+    setEditModalOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!deviceToEdit) return;
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          progress: editProgress,
+          cause: editCause,
+          technician: editTechnician,
+          repairCost: editRepairCost
+        })
+      });
+
+      if (res.ok) {
+        setDevices(prev => prev.map(d => d.id === deviceToEdit.id ? { 
+          ...d, 
+          progress: editProgress,
+          cause: editCause,
+          technician: editTechnician,
+          repairCost: editRepairCost
+        } : d));
+        setEditModalOpen(false);
+      } else {
+        alert('Failed to update progress.');
+      }
+    } catch (error) {
+      console.error('Error saving progress:', error);
+      alert('An external error occurred.');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  return (
+    <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
+        
+        {/* Header and Search */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#bd00ff] pb-4">
+          <h2 className="text-2xl font-bold text-black border-none">Devices Monitoring</h2>
+          
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="flex items-center border border-[#bd00ff] rounded-lg px-4 py-2 bg-white w-full md:w-[300px]">
+              <Search size={20} className="text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search by the Owner..." 
+                className="border-none outline-none pl-3 text-sm w-full text-black placeholder-gray-400 bg-transparent font-medium"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <button 
+              onClick={() => navigate('/admin/add-progress')}
+              className="bg-[#bd00ff] hover:bg-[#9c00d6] text-white px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm whitespace-nowrap w-full md:w-auto cursor-pointer border-none"
+            >
+              Add Request Form +
+            </button>
+          </div>
+        </div>
+
+        {/* Devices Table */}
+        <div className="w-full mt-2">
+          {isLoading ? (
+            <div className="w-full py-20 flex flex-col items-center justify-center gap-4 border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm">
+              <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
+              <p className="text-[#666] font-semibold animate-pulse text-lg">Loading devices...</p>
+            </div>
+          ) : paginatedDevices.length > 0 ? (
+            <div className="overflow-x-auto w-full border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-[#bd00ff]/20 text-gray-700">
+                    <th className="p-4 font-bold text-center w-28 text-[1.05rem]">Device</th>
+                    <th className="p-4 font-bold text-[1.05rem]">Device Name</th>
+                    <th className="p-4 font-bold text-[1.05rem]">Owner Name</th>
+                    <th className="p-4 font-bold text-center text-[1.05rem]">Progress</th>
+                    <th className="p-4 font-bold text-center text-[1.05rem]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedDevices.map(device => (
+                    <tr key={device.id} className="border-b border-gray-100/80 hover:bg-purple-50/50 transition-colors group">
+                      <td className="p-4 flex justify-center align-middle">
+                        <div className="h-16 w-16 shrink-0 rounded-full border border-gray-200 flex justify-center items-center overflow-hidden bg-white shadow-sm group-hover:border-[#bd00ff]/40 transition-colors">
+                          {device.image ? (
+                            <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
+                          ) : (
+                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">No Img</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.deviceName}</td>
+                      <td className="p-4 text-gray-600 font-semibold text-base align-middle">{device.ownerName}</td>
+                      <td className="p-4 align-middle text-center">
+                        <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{device.progress}</span>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <div className="flex gap-4 justify-center items-center">
+                          <button 
+                            onClick={() => openEditModal(device)}
+                            className="w-11 h-11 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md"
+                            title="Edit Progress"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="w-full py-12 text-center flex flex-col items-center justify-center border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm gap-2">
+               <AlertCircle className="text-gray-400 w-12 h-12 mb-2" />
+               <span className="text-gray-500 font-bold text-lg">No tracking requests available.</span>
+               <span className="text-gray-400 text-sm">Add a new request form to see it here.</span>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        {filteredDevices.length > ITEMS_PER_PAGE && (
+          <div className="flex justify-center w-full mt-6">
+            <div className="flex items-center justify-center gap-6 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 mx-auto">
+              <button 
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="bg-transparent border-none text-black cursor-pointer hover:text-[#bd00ff] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-black flex justify-center items-center p-0"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <span className="font-bold text-lg text-black">
+                {currentPage}/{totalPages}
+              </span>
+              <button 
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="bg-transparent border-none text-black cursor-pointer hover:text-[#bd00ff] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-black flex justify-center items-center p-0"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          </div>
+        )}
+
+      {/* Complete Confirmation Modal */}
+      {completeModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <AlertCircle className="text-yellow-500 w-16 h-16 mb-5" />
+            <h3 className="text-xl font-bold mb-3 text-black">Complete Request?</h3>
+            <p className="text-gray-600 mb-8">
+              Are you sure you want to complete the request for <strong className="text-black">{deviceToComplete?.deviceName}</strong>?
+            </p>
+            <div className="flex gap-4 w-full justify-center">
+              <button 
+                onClick={() => setCompleteModalOpen(false)}
+                className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmComplete}
+                disabled={isCompleting}
+                className="px-6 py-2.5 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-colors disabled:opacity-50"
+              >
+                {isCompleting ? 'Completing...' : 'Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successCompleteOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <CheckCircle2 className="text-green-500 w-16 h-16 mb-5" />
+            <h3 className="text-xl font-bold mb-3 text-black">Completed Successfully</h3>
+            <p className="text-gray-600 mb-8">
+              The request for <strong className="text-black">{deviceToComplete?.deviceName}</strong> has been marked as completed.
+            </p>
+            <button 
+              onClick={() => setSuccessCompleteOpen(false)}
+              className="px-8 py-2.5 bg-[#bd00ff] text-white rounded-lg font-medium hover:bg-[#9c00d6] transition-colors w-full"
+            >
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Progress Modal */}
+      {editModalOpen && deviceToEdit && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h2 className="text-xl font-bold text-black border-none">Edit Device Progress</h2>
+              <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
+              
+              {/* Internal Image Display */}
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-white flex justify-center items-center overflow-hidden p-2">
+                  {deviceToEdit.image ? (
+                    <img src={deviceToEdit.image} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
+                  ) : (
+                    <span className="text-gray-400 font-bold">No Image</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic Form Fields */}
+              <div className="flex flex-col gap-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Device Name</label>
+                    <input type="text" value={deviceToEdit.deviceName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Name of the Owner</label>
+                    <input type="text" value={deviceToEdit.ownerName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Progress</label>
+                  <div className="relative">
+                    <select 
+                      value={editProgress}
+                      onChange={(e) => setEditProgress(e.target.value)}
+                      className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
+                    >
+                      <option value="0%" disabled={progressLevels.indexOf('0%') < initialProgressIndex} className="text-red-500 font-semibold">0%</option>
+                      <option value="25%" disabled={progressLevels.indexOf('25%') < initialProgressIndex} className="text-red-500 font-semibold">25%</option>
+                      <option value="50%" disabled={progressLevels.indexOf('50%') < initialProgressIndex} className="text-yellow-500 font-semibold">50%</option>
+                      <option value="75%" disabled={progressLevels.indexOf('75%') < initialProgressIndex} className="text-yellow-500 font-semibold">75%</option>
+                      <option value="100%" disabled={progressLevels.indexOf('100%') < initialProgressIndex} className="text-green-600 font-semibold">100%</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                      <ChevronDown size={20} className="text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Cause of the problem</label>
+                  <input 
+                    type="text" 
+                    value={editCause}
+                    onChange={(e) => setEditCause(e.target.value)}
+                    placeholder="e.g. Broken LCD" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Technician</label>
+                    <input 
+                      type="text" 
+                      value={editTechnician}
+                      onChange={(e) => setEditTechnician(e.target.value)}
+                      placeholder="Technician Name" 
+                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Repair Cost</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
+                      <input 
+                        type="text" 
+                        value={editRepairCost}
+                        onChange={(e) => setEditRepairCost(e.target.value)}
+                        placeholder="2,000" 
+                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-4 mt-2">
+               <button 
+                 onClick={() => setEditModalOpen(false)}
+                 className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={handleEditSave}
+                 disabled={isSavingEdit}
+                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50"
+               >
+                 {isSavingEdit ? "Saving..." : "Save Changes"}
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </main>
+  );
+}
+
