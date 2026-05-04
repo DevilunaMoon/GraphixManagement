@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         repairCost: repairCost || null,
         image: imageUrl,
         userId: userId || null,
-      }
+      } as any
     });
 
     return NextResponse.json(request, { status: 201 });
