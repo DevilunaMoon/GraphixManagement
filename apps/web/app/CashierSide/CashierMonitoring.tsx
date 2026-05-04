@@ -75,7 +75,7 @@ export default function CashierMonitoring() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('/api/monitoring')
+    fetch(`/api/monitoring?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => setDevices(Array.isArray(data) ? data : []))
       .catch(console.error)
@@ -196,7 +196,7 @@ export default function CashierMonitoring() {
 
       if (res.ok) {
         setAddModalOpen(false);
-        fetch('/api/monitoring')
+        fetch(`/api/monitoring?t=${Date.now()}`)
           .then(r => r.json())
           .then(data => setDevices(Array.isArray(data) ? data : []));
         setAddDeviceName('');
