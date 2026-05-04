@@ -45,3 +45,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Failed to update repair request' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+
+    await prisma.repairRequest.delete({
+      where: { id }
+    });
+
+    return NextResponse.json({ message: 'Repair request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting repair request:', error);
+    return NextResponse.json({ error: 'Failed to delete repair request' }, { status: 500 });
+  }
+}

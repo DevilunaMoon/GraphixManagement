@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface DeviceProgress {
@@ -256,6 +256,27 @@ export default function CashierMonitoring() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deviceToEdit) return;
+    if (!confirm('Are you sure you want to delete this repair request?')) return;
+    
+    try {
+      const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        setDevices(prev => prev.filter(d => d.id !== deviceToEdit.id));
+        setEditModalOpen(false);
+      } else {
+        alert('Failed to delete the request.');
+      }
+    } catch (error) {
+      console.error('Error deleting request:', error);
+      alert('An external error occurred while deleting.');
+    }
+  };
+
   return (
     <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
         
@@ -425,9 +446,18 @@ export default function CashierMonitoring() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <h2 className="text-xl font-bold text-black border-none">Edit Device Progress</h2>
-              <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
-                ✕
-              </button>
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={handleDelete} 
+                  className="text-red-500 hover:text-red-700 transition-colors cursor-pointer bg-transparent border-none p-1 flex items-center justify-center hover:bg-red-50 rounded-lg"
+                  title="Delete Request"
+                >
+                  <Trash2 size={24} />
+                </button>
+                <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+                  ✕
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
