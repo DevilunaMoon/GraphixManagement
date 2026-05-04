@@ -29,6 +29,18 @@ export default function AdminMonitoring() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Add Modal State
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addDeviceName, setAddDeviceName] = useState('');
+  const [addOwnerName, setAddOwnerName] = useState('');
+  const [addProgress, setAddProgress] = useState('');
+  const [addCause, setAddCause] = useState('');
+  const [addTechnician, setAddTechnician] = useState('');
+  const [addRepairCost, setAddRepairCost] = useState('');
+  const [addImage, setAddImage] = useState<File | null>(null);
+  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
+
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
@@ -126,6 +138,63 @@ export default function AdminMonitoring() {
     setEditModalOpen(true);
   };
 
+  const handleAddImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAddImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setAddImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddSave = async () => {
+    if (!addDeviceName || !addOwnerName || !addProgress) {
+      alert("Device Name, Owner Name, and Progress are required.");
+      return;
+    }
+
+    setIsSubmittingAdd(true);
+    const formData = new FormData();
+    formData.append('deviceName', addDeviceName);
+    formData.append('ownerName', addOwnerName);
+    formData.append('progress', addProgress);
+    if (addCause) formData.append('cause', addCause);
+    if (addTechnician) formData.append('technician', addTechnician);
+    if (addRepairCost) formData.append('repairCost', addRepairCost);
+    if (addImage) formData.append('image', addImage);
+
+    try {
+      const res = await fetch('/api/monitoring', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        setAddModalOpen(false);
+        fetch('/api/monitoring')
+          .then(r => r.json())
+          .then(data => setDevices(Array.isArray(data) ? data : []));
+        setAddDeviceName('');
+        setAddOwnerName('');
+        setAddProgress('');
+        setAddCause('');
+        setAddTechnician('');
+        setAddRepairCost('');
+        setAddImage(null);
+        setAddImagePreview(null);
+      } else {
+        const errorData = await res.json();
+        alert('Error: ' + errorData.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to save the request.');
+    } finally {
+      setIsSubmittingAdd(false);
+    }
+  };
+
   const handleEditSave = async () => {
     if (!deviceToEdit) return;
     setIsSavingEdit(true);
@@ -181,7 +250,7 @@ export default function AdminMonitoring() {
             </div>
 
             <button 
-              onClick={() => navigate('/admin/add-progress')}
+              onClick={() => setAddModalOpen(true)}
               className="bg-[#bd00ff] hover:bg-[#9c00d6] text-white px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm whitespace-nowrap w-full md:w-auto cursor-pointer border-none"
             >
               Add Request Form +
@@ -438,6 +507,133 @@ export default function AdminMonitoring() {
                  className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50"
                >
                  {isSavingEdit ? "Saving..." : "Save Changes"}
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Progress Modal */}
+      {addModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h2 className="text-xl font-bold text-black border-none">Add Device Request</h2>
+              <button onClick={() => setAddModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
+              
+              {/* Internal Image Display */}
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-[#f4f5f7] flex justify-center items-center text-gray-400 overflow-hidden relative">
+                  {addImagePreview ? (
+                    <img src={addImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-gray-400 font-bold text-center text-sm">No Image<br/>(Optional)</span>
+                  )}
+                </div>
+                <label className="flex items-center gap-2 text-black font-semibold cursor-pointer hover:text-[#bd00ff] transition-colors text-sm">
+                  Upload image
+                  <input type="file" accept="image/*" onChange={handleAddImageChange} className="hidden" />
+                </label>
+              </div>
+
+              {/* Dynamic Form Fields */}
+              <div className="flex flex-col gap-4">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Device Name</label>
+                    <input type="text" value={addDeviceName} onChange={(e) => setAddDeviceName(e.target.value)} className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Name of the Owner</label>
+                    <input type="text" value={addOwnerName} onChange={(e) => setAddOwnerName(e.target.value)} className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Progress</label>
+                  <div className="relative">
+                    <select 
+                      value={addProgress}
+                      onChange={(e) => setAddProgress(e.target.value)}
+                      className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
+                    >
+                      <option value="" disabled className="text-gray-400">Select Progress</option>
+                      <option value="0%" className="text-red-500 font-semibold">0%</option>
+                      <option value="25%" className="text-red-500 font-semibold">25%</option>
+                      <option value="50%" className="text-yellow-500 font-semibold">50%</option>
+                      <option value="75%" className="text-yellow-500 font-semibold">75%</option>
+                      <option value="100%" className="text-green-600 font-semibold">100%</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                      <ChevronDown size={20} className="text-gray-500" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Cause of the problem</label>
+                  <input 
+                    type="text" 
+                    value={addCause}
+                    onChange={(e) => setAddCause(e.target.value)}
+                    placeholder="e.g. Broken LCD" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Technician</label>
+                    <input 
+                      type="text" 
+                      value={addTechnician}
+                      onChange={(e) => setAddTechnician(e.target.value)}
+                      placeholder="Technician Name" 
+                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black">Repair Cost</label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
+                      <input 
+                        type="text" 
+                        value={addRepairCost}
+                        onChange={(e) => setAddRepairCost(e.target.value)}
+                        placeholder="2,000" 
+                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-4 mt-2">
+               <button 
+                 onClick={() => setAddModalOpen(false)}
+                 className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-white"
+               >
+                 Cancel
+               </button>
+               <button 
+                 onClick={handleAddSave}
+                 disabled={isSubmittingAdd}
+                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50 cursor-pointer border-none"
+               >
+                 {isSubmittingAdd ? "Saving..." : "Save and Send Notifications"}
                </button>
             </div>
           </div>
