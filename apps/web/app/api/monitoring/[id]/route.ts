@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
+import { sendNotificationEmail } from '../../../../lib/email';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -36,8 +37,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const request = await prisma.repairRequest.update({
       where: { id },
-      data: updateData
+      data: updateData,
+      include: {
+        user: true
+      }
     });
+
+    if (progress !== undefined && request.user && request.user.email) {
+      await sendNotificationEmail(request.user.email, request.deviceName, progress, false);
+    }
 
     return NextResponse.json(request);
   } catch (error) {

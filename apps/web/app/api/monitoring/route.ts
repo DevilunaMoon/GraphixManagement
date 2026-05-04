@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { getSession } from '../../../lib/session';
+import { sendNotificationEmail } from '../../../lib/email';
 
 export async function GET() {
   try {
@@ -55,6 +56,13 @@ export async function POST(req: Request) {
         userId: userId || null,
       } as any
     });
+
+    if (userId) {
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && user.email) {
+        await sendNotificationEmail(user.email, deviceName, progress, true);
+      }
+    }
 
     return NextResponse.json(request, { status: 201 });
   } catch (error) {
