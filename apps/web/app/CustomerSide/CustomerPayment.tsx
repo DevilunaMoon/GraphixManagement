@@ -27,8 +27,8 @@ function CustomerPaymentContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter']">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-8">
+    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-6 sm:gap-8">
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b-2 border-gray-100 pb-4">
@@ -73,11 +73,11 @@ function CustomerPaymentContent() {
             />
           </div>
 
-          <div className="flex flex-col justify-center items-center w-full border border-[#bd00ff] rounded-2xl p-6 bg-purple-50 shadow-[0_4px_15px_rgba(189,0,255,0.1)] mt-2 border-dashed border-2">
-            <span className="font-bold text-black text-xl uppercase tracking-widest mb-2 opacity-80">Total To Pay</span>
-            <div className="flex items-center text-red-600 font-extrabold text-5xl tracking-tight">
-              <span className="text-3xl mr-2 -mt-2">₱</span>
-              <span>10,000.00</span>
+          <div className="flex flex-col justify-center items-center w-full border-dashed border-2 border-[#bd00ff] rounded-2xl p-4 sm:p-6 bg-purple-50 shadow-[0_4px_15px_rgba(189,0,255,0.1)] mt-2">
+            <span className="font-bold text-black text-lg sm:text-xl uppercase tracking-widest mb-1 sm:mb-2 opacity-80 text-center">Total To Pay</span>
+            <div className="flex items-center justify-center flex-wrap text-red-600 font-extrabold text-4xl sm:text-5xl tracking-tight text-center px-2 w-full">
+              <span className="text-2xl sm:text-3xl mr-1 sm:mr-2">₱</span>
+              <span className="truncate max-w-full">10,000.00</span>
             </div>
           </div>
 
