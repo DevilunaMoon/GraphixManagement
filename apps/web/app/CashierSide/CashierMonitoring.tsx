@@ -16,6 +16,12 @@ interface DeviceProgress {
   repairCost: string | null;
 }
 
+interface UserData {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
 
 
 export default function CashierMonitoring() {
@@ -40,6 +46,12 @@ export default function CashierMonitoring() {
   const [addImage, setAddImage] = useState<File | null>(null);
   const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
+
+  // Account Linking States
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [addCustomerEmail, setAddCustomerEmail] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [addUserId, setAddUserId] = useState<string | null>(null);
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -68,7 +80,18 @@ export default function CashierMonitoring() {
       .then(data => setDevices(Array.isArray(data) ? data : []))
       .catch(console.error)
       .finally(() => setIsLoading(false));
+      
+    fetch('/api/admin/accounts')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setUsers(data);
+      })
+      .catch(console.error);
   }, []);
+
+  const filteredUsers = addCustomerEmail 
+    ? users.filter(u => u.email.toLowerCase().includes(addCustomerEmail.toLowerCase()))
+    : users;
 
   const activeDevices = devices.filter(d => d.status !== 'Completed');
   const filteredDevices = activeDevices.filter(d => 
@@ -163,6 +186,7 @@ export default function CashierMonitoring() {
     if (addTechnician) formData.append('technician', addTechnician);
     if (addRepairCost) formData.append('repairCost', addRepairCost);
     if (addImage) formData.append('image', addImage);
+    if (addUserId) formData.append('userId', addUserId);
 
     try {
       const res = await fetch('/api/monitoring', {
@@ -183,6 +207,8 @@ export default function CashierMonitoring() {
         setAddRepairCost('');
         setAddImage(null);
         setAddImagePreview(null);
+        setAddCustomerEmail('');
+        setAddUserId(null);
       } else {
         const errorData = await res.json();
         alert('Error: ' + errorData.error);
@@ -546,6 +572,49 @@ export default function CashierMonitoring() {
               {/* Dynamic Form Fields */}
               <div className="flex flex-col gap-4">
                 
+                <div className="flex flex-col gap-2 relative">
+                  <label className="font-semibold text-base text-black flex justify-between">
+                    <span>Link Customer Account (Optional)</span>
+                    {addUserId && <span className="text-green-600 text-sm">Account Linked ✓</span>}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={addCustomerEmail} 
+                    onChange={(e) => {
+                      setAddCustomerEmail(e.target.value);
+                      setShowDropdown(true);
+                      if (addUserId) setAddUserId(null);
+                    }}
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                    placeholder="Search by email..."
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" 
+                  />
+                  {showDropdown && addCustomerEmail && (
+                    <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border border-[#bd00ff] rounded-xl shadow-lg z-50 max-h-40 overflow-y-auto">
+                      {filteredUsers.length > 0 ? (
+                        filteredUsers.map(user => (
+                          <div 
+                            key={user.id} 
+                            className="px-4 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-none"
+                            onClick={() => {
+                              setAddCustomerEmail(user.email);
+                              setAddUserId(user.id);
+                              if (user.name) setAddOwnerName(user.name);
+                              setShowDropdown(false);
+                            }}
+                          >
+                            <p className="text-black font-semibold m-0">{user.email}</p>
+                            <p className="text-gray-500 text-xs m-0">{user.name || 'No Name'}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-gray-500 text-sm">No accounts found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-base text-black">Device Name</label>
@@ -643,3 +712,5 @@ export default function CashierMonitoring() {
     </main>
   );
 }
+
+

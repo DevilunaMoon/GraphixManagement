@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
+import { getSession } from '../../../lib/session';
 
 export async function GET() {
   try {
+    const session = await getSession();
+    const isCustomer = session?.role === 'CUSTOMER';
+    const whereClause = isCustomer && session?.userId ? { userId: session.userId } : {};
+
     const requests = await prisma.repairRequest.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' }
     });
     return NextResponse.json(requests);
@@ -25,6 +31,7 @@ export async function POST(req: Request) {
     const technician = formData.get('technician') as string;
     const repairCost = formData.get('repairCost') as string;
     const image = formData.get('image') as File | null;
+    const userId = formData.get('userId') as string | null;
 
     if (!deviceName || !ownerName || !progress) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -45,6 +52,7 @@ export async function POST(req: Request) {
         technician: technician || null,
         repairCost: repairCost || null,
         image: imageUrl,
+        userId: userId || null,
       }
     });
 
