@@ -33,6 +33,11 @@ export default function CashierMonitoring() {
   const [successCompleteOpen, setSuccessCompleteOpen] = useState(false);
   const [deviceToComplete, setDeviceToComplete] = useState<DeviceProgress | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+
+  // Delete Modal State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Add Modal State
@@ -256,9 +261,14 @@ export default function CashierMonitoring() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deviceToEdit) return;
-    if (!confirm('Are you sure you want to delete this repair request?')) return;
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deviceToEdit) return;
+    setIsDeleting(true);
     
     try {
       const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
@@ -267,6 +277,7 @@ export default function CashierMonitoring() {
 
       if (res.ok) {
         setDevices(prev => prev.filter(d => d.id !== deviceToEdit.id));
+        setDeleteModalOpen(false);
         setEditModalOpen(false);
       } else {
         alert('Failed to delete the request.');
@@ -274,6 +285,8 @@ export default function CashierMonitoring() {
     } catch (error) {
       console.error('Error deleting request:', error);
       alert('An external error occurred while deleting.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -421,7 +434,7 @@ export default function CashierMonitoring() {
 
       {/* Success Modal */}
       {successCompleteOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <CheckCircle2 className="text-green-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">Completed Successfully</h3>
@@ -434,6 +447,34 @@ export default function CashierMonitoring() {
             >
               Okay
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <Trash2 className="text-red-500 w-16 h-16 mb-5" />
+            <h3 className="text-xl font-bold mb-3 text-black">Delete Request?</h3>
+            <p className="text-gray-600 mb-8">
+              Are you sure you want to delete the repair request for <strong className="text-black">{deviceToEdit?.deviceName}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex gap-4 w-full justify-center">
+              <button 
+                onClick={() => setDeleteModalOpen(false)}
+                className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-6 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 border-none"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}
