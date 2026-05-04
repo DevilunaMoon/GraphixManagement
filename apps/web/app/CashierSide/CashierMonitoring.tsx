@@ -86,13 +86,29 @@ export default function CashierMonitoring() {
       .catch(console.error)
       .finally(() => setIsLoading(false));
       
-    fetch('/api/admin/accounts')
+      fetch('/api/admin/accounts')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setUsers(data);
       })
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!addCustomerEmail) {
+      setAddUserId(null);
+      return;
+    }
+    const matchedUser = users.find(u => u.email.toLowerCase() === addCustomerEmail.toLowerCase());
+    if (matchedUser) {
+      setAddUserId(matchedUser.id);
+      if (matchedUser.name && !addOwnerName) {
+        setAddOwnerName(matchedUser.name);
+      }
+    } else {
+      setAddUserId(null);
+    }
+  }, [addCustomerEmail, users]);
 
   const filteredUsers = addCustomerEmail 
     ? users.filter(u => u.email.toLowerCase().includes(addCustomerEmail.toLowerCase()))
