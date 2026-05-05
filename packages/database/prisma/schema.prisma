@@ -25,6 +25,8 @@ model User {
   dateOfBirth String?
   status        String   @default("Active")
   suspendedUntil DateTime?
+  resetToken    String?
+  resetTokenExpiry DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   reviews     Review[]
