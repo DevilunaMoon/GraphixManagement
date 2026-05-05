@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, User, Phone, ArrowLeft, CheckSquare, Square, Eye, EyeOff, CheckCircle } from "lucide-react";
+import Link from "next/link";
 import { login, register } from "../../actions/auth";
 
 function LoginContent() {
@@ -135,13 +136,12 @@ function LoginContent() {
                 {rememberMe ? <CheckSquare size={20} className="text-[#a200ea]" /> : <Square size={20} className="text-gray-400" />}
                 <span className="text-sm font-extrabold text-[#111]">Remember Me</span>
               </div>
-              <button 
-                type="button" 
-                onClick={() => router.push('/forgot-password')} 
+              <Link 
+                href="/forgot-password"
                 className="text-sm font-bold text-[#8b00cc] hover:text-[#bd00ff] transition-colors"
               >
                 Forgot Password?
-              </button>
+              </Link>
             </div>
 
             <div className="flex justify-center mt-6">
