@@ -136,12 +136,12 @@ function LoginContent() {
                 {rememberMe ? <CheckSquare size={20} className="text-[#a200ea]" /> : <Square size={20} className="text-gray-400" />}
                 <span className="text-sm font-extrabold text-[#111]">Remember Me</span>
               </div>
-              <Link 
+              <a 
                 href="/forgot-password"
                 className="text-sm font-bold text-[#8b00cc] hover:text-[#bd00ff] transition-colors"
               >
                 Forgot Password?
-              </Link>
+              </a>
             </div>
 
             <div className="flex justify-center mt-6">
