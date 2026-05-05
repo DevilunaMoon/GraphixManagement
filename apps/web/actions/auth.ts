@@ -44,7 +44,6 @@ export async function register(formData: FormData) {
       },
     });
 
-    await setSession(user.id, user.role);
     return { success: true, role: user.role };
   } catch (err: any) {
     console.error("Register Error:", err);
