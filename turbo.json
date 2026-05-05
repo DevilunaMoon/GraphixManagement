@@ -17,7 +17,9 @@
         "CLOUDINARY_API_SECRET",
         "ENABLE_EXPERIMENTAL_COREPACK",
         "GOOGLE_CLIENT_SECRET",
-        "GOOGLE_CLIENT_ID"
+        "GOOGLE_CLIENT_ID",
+        "GMAIL_USER",
+        "GMAIL_APP_PASSWORD"
       ],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"]
