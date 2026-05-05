@@ -12,6 +12,8 @@ export async function proxy(request: NextRequest) {
     currentPath.startsWith('/uploads') || 
     currentPath.startsWith('/api') || 
     currentPath.startsWith('/policy') ||
+    currentPath.startsWith('/forgot-password') ||
+    currentPath.startsWith('/reset-password') ||
     currentPath === '/' || 
     currentPath === '/homepage'
   ) {
