@@ -361,26 +361,17 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className="bg-[#111111] border border-gray-800 rounded-3xl p-8 shadow-xl flex flex-col gap-6 w-full h-[400px]">
-            {/* Abstract Representation */}
-            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
-              <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center border border-green-500/30">
-                <div className="w-4 h-4 bg-green-400 rounded-full"></div>
-              </div>
-              <div className="flex-1">
-                <div className="w-1/3 h-3 bg-white/20 rounded mb-2"></div>
-                <div className="w-2/3 h-2 bg-white/10 rounded"></div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 flex-1">
-              <div className="bg-[#8b00cc]/20 rounded-xl p-6 border border-[#8b00cc]/30"></div>
-              <div className="flex flex-col gap-4">
-                <div className="bg-white/5 border border-white/10 rounded-xl flex-1 flex items-center justify-center">
-                  <MonitorSmartphone size={32} className="text-white/40" />
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl flex-1"></div>
-              </div>
-            </div>
+          <div className="bg-[#111111] border border-gray-800 rounded-3xl p-4 shadow-xl flex flex-col w-full h-[400px] overflow-hidden relative">
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d123504.11642864612!2d120.9842195!3d14.5995124!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397ca03571ec38b%3A0x69d1d5751069c11f!2sManila%2C%20Metro%20Manila%2C%20Philippines!5e0!3m2!1sen!2sus!4v1715012345678!5m2!1sen!2sus" 
+              width="100%" 
+              height="100%" 
+              style={{ border: 0, borderRadius: '1rem', filter: 'invert(90%) hue-rotate(180deg)' }} 
+              allowFullScreen={true} 
+              loading="lazy" 
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Store Location"
+            ></iframe>
           </div>
         </div>
       </section>
