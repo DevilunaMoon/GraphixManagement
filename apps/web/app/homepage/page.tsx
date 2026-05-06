@@ -46,6 +46,7 @@ export default function HomePage() {
   };
 
   const [products, setProducts] = useState<any[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -90,6 +91,8 @@ export default function HomePage() {
         }
       } catch (err) {
         console.error('Error fetching devices', err);
+      } finally {
+        setIsLoadingProducts(false);
       }
     };
     fetchDevices();
@@ -247,7 +250,11 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {currentProducts.length > 0 ? currentProducts.map((product) => (
+            {isLoadingProducts ? (
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex justify-center items-center py-20">
+                <div className="w-12 h-12 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
+              </div>
+            ) : currentProducts.length > 0 ? currentProducts.map((product) => (
               <div
                 key={product.id}
                 className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
