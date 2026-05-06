@@ -10,20 +10,6 @@ import {
   ChevronLeft, Sparkles
 } from "lucide-react";
 
-const MOCK_PRODUCTS = [
-  { id: '1', name: 'Samsung Galaxy S25', description: 'Latest flagship smartphone with advanced AI capabilities.', price: 999.00, originalPrice: null, image: '/Images/Samsung S25.jpg', tag: 'New', tagColor: 'purple' },
-  { id: '2', name: 'Wireless Headphones', description: 'Premium noise-canceling audio for immersive listening.', price: 199.00, originalPrice: 249.00, image: '/Images/Headphone.jpg', tag: 'Sale', tagColor: 'red' },
-  { id: '3', name: 'IPhone', description: 'Industry-leading performance with a gorgeous Retina display.', price: 899.00, originalPrice: null, image: '/Images/iphone.jpg', tag: null, tagColor: null },
-  { id: '4', name: '65W Fast Charger', description: 'Ultra-fast dual port charging brick for all your devices.', price: 39.00, originalPrice: null, image: '/Images/Charger.jpg', tag: 'In Stock', tagColor: 'green' },
-  { id: '5', name: 'Samsung Galaxy Z FOLD 7', description: 'Innovative folding design with massive screen space.', price: 1299.00, originalPrice: null, image: '/Images/Samsung Galaxy Z FOLD 7.jpg', tag: 'Premium', tagColor: 'purple' },
-  { id: '6', name: 'Tecno Pova Pro', description: 'High performance gaming phone with large battery.', price: 299.00, originalPrice: 349.00, image: '/Images/Tecno Pova Pro 5g.png', tag: 'Sale', tagColor: 'red' },
-  { id: '7', name: 'Aula Keyboard', description: 'Mechanical keyboard for gaming and typing.', price: 59.00, originalPrice: null, image: '/Images/Aula.jpg', tag: 'New', tagColor: 'purple' },
-  { id: '8', name: 'HDMI Cable', description: 'High-speed 4K HDMI braided cable.', price: 15.00, originalPrice: null, image: '/Images/HDMI.jpg', tag: 'In Stock', tagColor: 'green' },
-  { id: '9', name: 'Realme Note 50', description: 'Affordable entry-level smartphone.', price: 149.00, originalPrice: null, image: '/Images/Realme note 50.jpg', tag: null, tagColor: null },
-  { id: '10', name: 'RedMagic', description: 'Ultimate gaming monster phone.', price: 799.00, originalPrice: null, image: '/Images/RedMagic.jpg', tag: 'Gaming', tagColor: 'red' },
-  { id: '11', name: 'Elago Case', description: 'Premium silicone case for your devices.', price: 25.00, originalPrice: null, image: '/Images/Elago.jpg', tag: null, tagColor: null },
-  { id: '12', name: 'Xiaomi Phone', description: 'Great value for everyday tasks.', price: 249.00, originalPrice: null, image: '/Images/Xiaomi.jpg', tag: 'In Stock', tagColor: 'green' },
-];
 
 export default function HomePage() {
   const router = useRouter();
@@ -59,7 +45,7 @@ export default function HomePage() {
     }
   };
 
-  const [products, setProducts] = useState(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
@@ -97,9 +83,9 @@ export default function HomePage() {
               tagColor: device.stock > 0 ? 'green' : 'gray'
             }));
 
-            const combined = [...dbProducts, ...MOCK_PRODUCTS];
-            const unique = combined.filter((v, i, a) => a.findIndex((t: any) => (t.name === v.name)) === i);
-            setProducts(unique);
+            setProducts(dbProducts);
+          } else {
+            setProducts([]);
           }
         }
       } catch (err) {
@@ -261,7 +247,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {currentProducts.map((product) => (
+            {currentProducts.length > 0 ? currentProducts.map((product) => (
               <div
                 key={product.id}
                 className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
@@ -294,7 +280,13 @@ export default function HomePage() {
                   </button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col items-center justify-center py-16 text-gray-500">
+                <ShoppingBag size={48} className="text-gray-300 mb-4" />
+                <h3 className="text-xl font-bold text-gray-700">No products available</h3>
+                <p>Check back later for new inventory.</p>
+              </div>
+            )}
           </div>
 
           {/* Pagination Controls */}
