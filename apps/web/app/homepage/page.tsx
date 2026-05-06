@@ -48,7 +48,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -249,17 +249,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
             {isLoadingProducts ? (
-              <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex justify-center items-center py-20">
+              <div className="col-span-1 sm:col-span-2 md:grid-cols-3 lg:col-span-5 flex justify-center items-center py-20">
                 <div className="w-12 h-12 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
               </div>
             ) : currentProducts.length > 0 ? currentProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
+                className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
               >
-                <div className="w-full aspect-square bg-[#f8f9fc] rounded-xl mb-4 overflow-hidden relative border border-gray-100 flex items-center justify-center p-4">
+                <div className="w-full aspect-square bg-[#f8f9fc] rounded-lg mb-3 overflow-hidden relative border border-gray-100 flex items-center justify-center p-3">
                   <img
                     src={product.image}
                     alt={product.name}
@@ -271,24 +271,24 @@ export default function HomePage() {
                     </div>
                   )}
                 </div>
-                <h4 className="font-bold text-gray-900 text-lg mb-1 line-clamp-1">{product.name}</h4>
-                <p className="text-gray-500 font-medium text-sm mb-4 line-clamp-2 leading-relaxed">{product.description}</p>
+                <h4 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">{product.name}</h4>
+                <p className="text-gray-500 font-medium text-xs mb-3 line-clamp-2 leading-relaxed">{product.description}</p>
                 <div className="mt-auto flex justify-between items-center">
                   <div className="flex flex-col">
                     {product.originalPrice && (
                       <span className="text-xs text-gray-400 line-through font-bold">₱{product.originalPrice.toFixed(2)}</span>
                     )}
-                    <span className="font-black text-2xl text-[#8b00cc]">₱{product.price.toFixed(2)}</span>
+                    <span className="font-black text-xl text-[#8b00cc]">₱{product.price.toFixed(2)}</span>
                   </div>
                   <button
-                    className="w-12 h-12 rounded-xl bg-purple-50 text-[#8b00cc] flex justify-center items-center hover:bg-[#8b00cc] hover:text-white transition-all shadow-sm"
+                    className="w-10 h-10 rounded-lg bg-purple-50 text-[#8b00cc] flex justify-center items-center hover:bg-[#8b00cc] hover:text-white transition-all shadow-sm"
                   >
-                    <ShoppingBag size={20} className="stroke-[2.5]" />
+                    <ShoppingBag size={18} className="stroke-[2.5]" />
                   </button>
                 </div>
               </div>
             )) : (
-              <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex flex-col items-center justify-center py-16 text-gray-500">
+              <div className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5 flex flex-col items-center justify-center py-16 text-gray-500">
                 <ShoppingBag size={48} className="text-gray-300 mb-4" />
                 <h3 className="text-xl font-bold text-gray-700">No products available</h3>
                 <p>Check back later for new inventory.</p>
