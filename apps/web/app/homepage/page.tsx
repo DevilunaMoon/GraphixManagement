@@ -363,7 +363,7 @@ export default function HomePage() {
           </div>
           <div className="bg-[#111111] border border-gray-800 rounded-3xl p-4 shadow-xl flex flex-col w-full h-[400px] overflow-hidden relative">
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d123504.11642864612!2d120.9842195!3d14.5995124!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397ca03571ec38b%3A0x69d1d5751069c11f!2sManila%2C%20Metro%20Manila%2C%20Philippines!5e0!3m2!1sen!2sus!4v1715012345678!5m2!1sen!2sus" 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3945.6080787723067!2d124.75142957478778!3d8.53737499150564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32ffef54dd5fc27f%3A0xa3526601c268e1b1!2sGraphix!5e0!3m2!1sen!2sph!4v1778072713852!5m2!1sen!2sph" 
               width="100%" 
               height="100%" 
               style={{ border: 0, borderRadius: '1rem', filter: 'invert(90%) hue-rotate(180deg)' }} 
