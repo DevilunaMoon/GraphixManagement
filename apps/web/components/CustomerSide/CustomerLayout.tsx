@@ -157,7 +157,9 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       }`}>
         
         {/* Top Header */}
-        <header className={`bg-gradient-to-r ${styles.gradient} border-b border-white/10 px-5 md:px-10 py-4 flex justify-between items-center shadow-sm sticky top-[60px] md:top-0 z-30 transition-all`}>
+        <header className={`bg-gradient-to-r ${styles.gradient} border-b border-white/10 px-5 md:px-10 py-4 flex justify-between items-center shadow-sm fixed top-[60px] md:top-0 right-0 z-30 transition-all duration-300 ${
+          isCollapsed ? 'left-0 md:left-[80px]' : 'left-0 md:left-[260px]'
+        }`}>
           
           {/* Search Bar */}
           <div className="flex-1 max-w-xl relative" ref={searchContainerRef}>
@@ -240,7 +242,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         </header>
 
         {/* Content */}
-        <div className="flex-1 w-full bg-gray-50/50">
+        <div className="flex-1 w-full bg-gray-50/50 mt-[76px]">
           {children}
         </div>
 
