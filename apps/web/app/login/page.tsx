@@ -97,11 +97,11 @@ function LoginContent() {
       </button>
 
       {/* Main Container */}
-      <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[680px] flex flex-col relative transition-all duration-700">
+      <div className="bg-white/85 backdrop-blur-xl rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[680px] flex flex-col relative transition-all duration-700 border border-white/50">
 
         {/* --- Sign In Form --- */}
         <div 
-          className={`w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:left-0
+          className={`w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:left-0
             ${isLogin ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-[20%] pointer-events-none hidden md:flex'}
             ${isLogin ? 'flex' : 'hidden md:flex'}
           `}
@@ -181,7 +181,7 @@ function LoginContent() {
 
         {/* --- Sign Up Form --- */}
         <div 
-          className={`w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:right-0
+          className={`w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:right-0
             ${!isLogin ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-[20%] pointer-events-none hidden md:flex'}
             ${!isLogin ? 'flex' : 'hidden md:flex'}
           `}
@@ -264,7 +264,7 @@ function LoginContent() {
 
         {/* --- Sliding Overlay (Purple Box) --- */}
         <div 
-          className={`hidden md:block absolute top-0 left-0 w-1/2 h-full z-30 transition-transform duration-700 ease-in-out bg-gradient-to-b from-[#b100ff] to-[#7f00bc] shadow-[-10px_0_30px_rgba(0,0,0,0.15)]
+          className={`hidden md:block absolute top-0 left-0 w-1/2 h-full z-30 transition-transform duration-700 ease-in-out bg-gradient-to-b from-[#b100ff]/85 to-[#7f00bc]/85 backdrop-blur-md shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-white/20
             ${isLogin ? 'translate-x-[100%]' : 'translate-x-0'}
           `}
         >
