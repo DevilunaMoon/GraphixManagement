@@ -83,7 +83,10 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4ebff] to-[#e4caff] flex py-10 items-center justify-center p-4 font-['Inter'] relative overflow-hidden">
+    <div 
+      className="min-h-screen flex py-10 items-center justify-center p-4 font-['Inter'] relative overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
+    >
       <button
         onClick={() => router.push('/')}
         className="absolute top-4 left-4 sm:top-8 sm:left-8 z-40 flex items-center gap-1 sm:gap-2 text-[#8b00cc] font-bold hover:text-[#bd00ff] transition-colors bg-white/80 backdrop-blur-md px-3 sm:px-4 py-2 rounded-full shadow-md text-sm sm:text-base"
@@ -183,64 +186,64 @@ function LoginContent() {
             ${!isLogin ? 'flex' : 'hidden md:flex'}
           `}
         >
-          <h2 className="text-3xl font-extrabold text-[#111] mb-4 text-center tracking-tight">Create Account</h2>
+          <h2 className="text-4xl font-extrabold text-[#111] mb-6 text-center tracking-tight">Create Account</h2>
 
           {errorMsg && !isLogin && (
-            <div className="bg-red-50 text-red-600 p-2 rounded-xl mb-4 text-sm font-bold border border-red-100 text-center animate-in fade-in">
+            <div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm font-bold border border-red-100 text-center animate-in fade-in">
               {errorMsg}
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="flex flex-col gap-4">
+          <form onSubmit={handleRegister} className="flex flex-col gap-6">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                <User size={18} />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                <User size={22} />
               </div>
-              <input type="text" name="name" required placeholder="Name" className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400 text-sm" />
+              <input type="text" name="name" required placeholder="Name" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                <Mail size={18} />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                <Mail size={22} />
               </div>
-              <input type="text" name="email" required placeholder="Email" className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400 text-sm" />
+              <input type="text" name="email" required placeholder="Email" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                <Phone size={18} />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                <Phone size={22} />
               </div>
-              <input type="tel" name="phone" required placeholder="Phone Number" className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400 text-sm" />
+              <input type="tel" name="phone" required placeholder="Phone Number" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                <Lock size={18} />
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                <Lock size={22} />
               </div>
-              <input type={showSignUpPassword ? "text" : "password"} name="password" required placeholder="Password" className="w-full pl-10 pr-10 py-2.5 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400 text-sm" />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <input type={showSignUpPassword ? "text" : "password"} name="password" required placeholder="Password" className="w-full pl-12 pr-12 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                 <button type="button" onClick={() => setShowSignUpPassword(!showSignUpPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors">
-                  {showSignUpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showSignUpPassword ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 cursor-pointer mt-2" onClick={() => setAcceptTerms(!acceptTerms)}>
-              {acceptTerms ? <CheckSquare size={16} className="text-[#a200ea]" /> : <Square size={16} className="text-gray-400 border-gray-400" />}
-              <span className="text-xs font-bold text-[#111]">I Accept the <span className="text-[#a200ea]">Terms and Regulation</span></span>
+            <div className="flex items-center gap-2 cursor-pointer mt-1" onClick={() => setAcceptTerms(!acceptTerms)}>
+              {acceptTerms ? <CheckSquare size={20} className="text-[#a200ea]" /> : <Square size={20} className="text-gray-400" />}
+              <span className="text-sm font-extrabold text-[#111]">I Accept the <span className="text-[#a200ea]">Terms and Regulation</span></span>
             </div>
 
-            <div className="flex justify-center mt-4">
-              <button disabled={isLoading} type="submit" className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full md:w-2/3 py-2.5 rounded-[1rem] font-bold shadow-[0_8px_15px_-3px_rgba(139,0,204,0.4)] hover:shadow-[0_12px_20px_-3px_rgba(139,0,204,0.6)] hover:-translate-y-1 transition-all text-lg disabled:opacity-50">
+            <div className="flex justify-center mt-2">
+              <button disabled={isLoading} type="submit" className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full md:w-3/4 py-3 rounded-full font-bold shadow-[0_8px_15px_-3px_rgba(139,0,204,0.4)] hover:shadow-[0_12px_20px_-3px_rgba(139,0,204,0.6)] hover:-translate-y-1 transition-all text-lg disabled:opacity-50">
                 {isLoading ? "Signing Up..." : "Sign Up"}
               </button>
             </div>
 
-            <div className="flex items-center justify-center my-1 w-full md:w-2/3 mx-auto">
+            <div className="flex items-center justify-center my-1 w-full md:w-3/4 mx-auto">
               <div className="h-px bg-gray-200 flex-1"></div>
               <span className="px-4 text-gray-400 text-sm font-bold">OR</span>
               <div className="h-px bg-gray-200 flex-1"></div>
             </div>
 
             <div className="flex justify-center">
-              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full md:w-2/3 py-2.5 rounded-[1rem] font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
+              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full md:w-3/4 py-3 rounded-full font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
