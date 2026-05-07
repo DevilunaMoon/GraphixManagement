@@ -68,7 +68,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
   // Optional auto-slide for banners
   useEffect(() => {
     if (banners.length === 0) return;
-    const timer = setInterval(nextBanner, 5000);
+    const timer = setInterval(nextBanner, 8000);
     return () => clearInterval(timer);
   }, [banners.length]);
 
@@ -109,8 +109,8 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                 animate="center"
                 exit="exit"
                 transition={{
-                  x: { type: "spring", stiffness: 300, damping: 30 },
-                  opacity: { duration: 0.2 }
+                  x: { type: "spring", stiffness: 120, damping: 25 },
+                  opacity: { duration: 0.4 }
                 }}
                 className="absolute w-full h-full flex items-center justify-center pointer-events-auto"
               >
