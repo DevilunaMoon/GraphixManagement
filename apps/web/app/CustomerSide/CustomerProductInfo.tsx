@@ -393,7 +393,7 @@ function CustomerProductInfoContent() {
             <div className="p-6 md:p-8 flex flex-col items-center bg-gray-50 gap-6 overflow-y-auto">
               {(product?.asLowAs || product?.warranty || product?.downpayment) && (
                 <div className="w-full flex flex-col gap-2 p-4 bg-cyan-50/50 border border-cyan-100 rounded-2xl">
-                  <h4 className="text-cyan-800 font-bold m-0 text-sm mb-1 uppercase tracking-wide text-center">Installment Options</h4>
+                  <h4 className="text-cyan-800 font-bold m-0 text-sm mb-1 uppercase tracking-wide text-center">WARRANTY INFO</h4>
                   <div className="grid grid-cols-2 gap-y-3 gap-x-4">
                     {product.asLowAs && (
                       <div className="flex flex-col">
