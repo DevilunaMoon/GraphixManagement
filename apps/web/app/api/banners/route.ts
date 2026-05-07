@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 
+export const revalidate = 30;
+
 export async function GET() {
   // Force hot module reload
   try {
     const banners = await prisma.banner.findMany({
       orderBy: { createdAt: 'desc' }
     });
-    return NextResponse.json(banners);
+    return NextResponse.json(banners, {
+      headers: {
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=300'
+      }
+    });
   } catch (error) {
     console.error('Error fetching banners:', error);
     return NextResponse.json({ error: 'Failed to fetch banners' }, { status: 500 });

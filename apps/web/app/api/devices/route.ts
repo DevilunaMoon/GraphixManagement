@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 
+export const revalidate = 30;
+
 export async function GET() {
   try {
     const devices = await prisma.device.findMany({
       include: { category: true, variations: true },
       orderBy: { createdAt: 'desc' }
     });
-    return NextResponse.json(devices);
+    return NextResponse.json(devices, {
+      headers: {
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=300'
+      }
+    });
   } catch (error) {
     console.error('Error fetching devices:', error);
     return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 });
