@@ -97,7 +97,7 @@ function LoginContent() {
       </button>
 
       {/* Main Container */}
-      <div className="bg-white/85 backdrop-blur-xl rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[680px] flex flex-col relative transition-all duration-700 border border-white/50">
+      <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[680px] flex flex-col relative transition-all duration-700 border border-white/50">
 
         {/* --- Sign In Form --- */}
         <div 
@@ -119,14 +119,14 @@ function LoginContent() {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <User size={22} />
               </div>
-              <input type="text" name="email" required placeholder="Email" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <input type="text" name="email" required placeholder="Email" className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
             </div>
 
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <Lock size={22} />
               </div>
-              <input type={showPassword ? "text" : "password"} name="password" required placeholder="Password" className="w-full pl-12 pr-12 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <input type={showPassword ? "text" : "password"} name="password" required placeholder="Password" className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors">
                   {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
@@ -199,25 +199,25 @@ function LoginContent() {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <User size={22} />
               </div>
-              <input type="text" name="name" required placeholder="Name" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <input type="text" name="name" required placeholder="Name" className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <Mail size={22} />
               </div>
-              <input type="text" name="email" required placeholder="Email" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <input type="text" name="email" required placeholder="Email" className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <Phone size={22} />
               </div>
-              <input type="tel" name="phone" required placeholder="Phone Number" className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <input type="tel" name="phone" required placeholder="Phone Number" className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <Lock size={22} />
               </div>
-              <input type={showSignUpPassword ? "text" : "password"} name="password" required placeholder="Password" className="w-full pl-12 pr-12 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" />
+              <input type={showSignUpPassword ? "text" : "password"} name="password" required placeholder="Password" className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                 <button type="button" onClick={() => setShowSignUpPassword(!showSignUpPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors">
                   {showSignUpPassword ? <EyeOff size={22} /> : <Eye size={22} />}
@@ -264,7 +264,7 @@ function LoginContent() {
 
         {/* --- Sliding Overlay (Purple Box) --- */}
         <div 
-          className={`hidden md:block absolute top-0 left-0 w-1/2 h-full z-30 transition-transform duration-700 ease-in-out bg-gradient-to-b from-[#b100ff]/85 to-[#7f00bc]/85 backdrop-blur-md shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-white/20
+          className={`hidden md:block absolute top-0 left-0 w-1/2 h-full z-30 transition-transform duration-700 ease-in-out bg-gradient-to-b from-[#b100ff]/40 to-[#7f00bc]/50 backdrop-blur-md shadow-[-10px_0_30px_rgba(0,0,0,0.15)] border-l border-white/20
             ${isLogin ? 'translate-x-[100%]' : 'translate-x-0'}
           `}
         >
