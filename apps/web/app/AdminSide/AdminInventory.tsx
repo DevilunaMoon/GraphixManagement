@@ -599,7 +599,7 @@ export default function AdminInventory() {
                 
                 <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
-                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
+                  <h4 className="text-cyan-800 font-bold text-sm m-0">Downpayment Options</h4>
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
                       <label className="block text-xs font-bold text-[#444]">QR Code</label>
@@ -798,7 +798,7 @@ export default function AdminInventory() {
                 
                 <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
-                  <h4 className="text-cyan-800 font-bold text-sm m-0">Installment & Downpayment Options</h4>
+                  <h4 className="text-cyan-800 font-bold text-sm m-0">Downpayment Options</h4>
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
                       <label className="block text-xs font-bold text-[#444]">QR Code</label>
