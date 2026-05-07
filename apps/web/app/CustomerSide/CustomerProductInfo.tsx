@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle2 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Comment {
@@ -27,6 +27,7 @@ function CustomerProductInfoContent() {
   const [selectedVariations, setSelectedVariations] = useState<Record<string, any>>({});
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleAddToCart = async () => {
     if (!product || currentStock === 0 || !hasSelectedAllSections) return;
@@ -43,6 +44,8 @@ function CustomerProductInfoContent() {
       });
       if (res.ok) {
         window.dispatchEvent(new Event('cartUpdated'));
+        setShowSuccessModal(true);
+        setTimeout(() => setShowSuccessModal(false), 3000);
       } else {
         alert('Failed to add to cart.');
       }
@@ -469,6 +472,31 @@ function CustomerProductInfoContent() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add to Cart Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-2">
+              <CheckCircle2 size={48} className="text-green-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 m-0 text-center">Added to Cart!</h3>
+            <p className="text-gray-500 text-center font-medium m-0">Your item has been successfully added to your shopping cart.</p>
+            <button 
+              onClick={() => setShowSuccessModal(false)}
+              className="mt-4 px-8 py-3 bg-[#bd00ff] text-white rounded-xl font-bold text-lg hover:bg-[#9c00d6] transition-colors border-none cursor-pointer w-full"
+            >
+              Continue Shopping
+            </button>
+            <button 
+              onClick={() => navigate('/customer/cart')}
+              className="px-8 py-3 bg-purple-50 text-[#bd00ff] rounded-xl font-bold text-lg hover:bg-purple-100 transition-colors border-none cursor-pointer w-full mt-[-8px]"
+            >
+              View Cart
+            </button>
           </div>
         </div>
       )}
