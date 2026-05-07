@@ -97,7 +97,7 @@ function LoginContent() {
       </button>
 
       {/* Main Container */}
-      <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[600px] flex flex-col relative transition-all duration-700">
+      <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[680px] flex flex-col relative transition-all duration-700">
 
         {/* --- Sign In Form --- */}
         <div 
@@ -148,19 +148,19 @@ function LoginContent() {
             </div>
 
             <div className="flex justify-center mt-6">
-              <button disabled={isLoading} type="submit" className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full md:w-3/4 py-3 rounded-full font-bold text-lg shadow-[0_8px_15px_-3px_rgba(139,0,204,0.4)] hover:shadow-[0_12px_20px_-3px_rgba(139,0,204,0.6)] hover:-translate-y-1 transition-all disabled:opacity-50">
+              <button disabled={isLoading} type="submit" className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full py-3 rounded-xl font-bold text-lg shadow-[0_8px_15px_-3px_rgba(139,0,204,0.4)] hover:shadow-[0_12px_20px_-3px_rgba(139,0,204,0.6)] hover:-translate-y-1 transition-all disabled:opacity-50">
                 {isLoading ? "Signing In..." : "Sign In"}
               </button>
             </div>
 
-            <div className="flex items-center justify-center my-1 w-full md:w-3/4 mx-auto">
+            <div className="flex items-center justify-center my-2 w-full mx-auto">
               <div className="h-px bg-gray-200 flex-1"></div>
               <span className="px-4 text-gray-400 text-sm font-bold">OR</span>
               <div className="h-px bg-gray-200 flex-1"></div>
             </div>
 
             <div className="flex justify-center">
-              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full md:w-3/4 py-3 rounded-full font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
+              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full py-3 rounded-xl font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -194,7 +194,7 @@ function LoginContent() {
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="flex flex-col gap-6">
+          <form onSubmit={handleRegister} className="flex flex-col gap-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <User size={22} />
@@ -230,20 +230,20 @@ function LoginContent() {
               <span className="text-sm font-extrabold text-[#111]">I Accept the <span className="text-[#a200ea]">Terms and Regulation</span></span>
             </div>
 
-            <div className="flex justify-center mt-2">
-              <button disabled={isLoading} type="submit" className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full md:w-3/4 py-3 rounded-full font-bold shadow-[0_8px_15px_-3px_rgba(139,0,204,0.4)] hover:shadow-[0_12px_20px_-3px_rgba(139,0,204,0.6)] hover:-translate-y-1 transition-all text-lg disabled:opacity-50">
+            <div className="flex justify-center mt-3">
+              <button disabled={isLoading} type="submit" className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full py-3 rounded-xl font-bold shadow-[0_8px_15px_-3px_rgba(139,0,204,0.4)] hover:shadow-[0_12px_20px_-3px_rgba(139,0,204,0.6)] hover:-translate-y-1 transition-all text-lg disabled:opacity-50">
                 {isLoading ? "Signing Up..." : "Sign Up"}
               </button>
             </div>
 
-            <div className="flex items-center justify-center my-1 w-full md:w-3/4 mx-auto">
+            <div className="flex items-center justify-center my-2 w-full mx-auto">
               <div className="h-px bg-gray-200 flex-1"></div>
               <span className="px-4 text-gray-400 text-sm font-bold">OR</span>
               <div className="h-px bg-gray-200 flex-1"></div>
             </div>
 
             <div className="flex justify-center">
-              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full md:w-3/4 py-3 rounded-full font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
+              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full py-3 rounded-xl font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
