@@ -485,18 +485,6 @@ function CustomerProductInfoContent() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 m-0 text-center">Added to Cart!</h3>
             <p className="text-gray-500 text-center font-medium m-0">Your item has been successfully added to your shopping cart.</p>
-            <button 
-              onClick={() => setShowSuccessModal(false)}
-              className="mt-4 px-8 py-3 bg-[#bd00ff] text-white rounded-xl font-bold text-lg hover:bg-[#9c00d6] transition-colors border-none cursor-pointer w-full"
-            >
-              Continue Shopping
-            </button>
-            <button 
-              onClick={() => navigate('/customer/cart')}
-              className="px-8 py-3 bg-purple-50 text-[#bd00ff] rounded-xl font-bold text-lg hover:bg-purple-100 transition-colors border-none cursor-pointer w-full mt-[-8px]"
-            >
-              View Cart
-            </button>
           </div>
         </div>
       )}
