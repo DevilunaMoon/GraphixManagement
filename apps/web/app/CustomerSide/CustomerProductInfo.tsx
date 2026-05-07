@@ -22,7 +22,7 @@ function CustomerProductInfoContent() {
   const [newComment, setNewComment] = useState('');
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isDescriptionModalOpen, setIsDescriptionModalOpen] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDownpaymentModalOpen, setIsDownpaymentModalOpen] = useState(false);
   const [selectedVariations, setSelectedVariations] = useState<Record<string, any>>({});
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -174,7 +174,8 @@ function CustomerProductInfoContent() {
         </div>
 
         {/* Product Info Card */}
-        <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-10">
+        <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-gray-100 flex flex-col gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           
           <div className="flex flex-col gap-4 w-full h-[400px]">
             <div className="w-full h-[320px] bg-gray-50 rounded-2xl flex justify-center items-center p-4 border border-gray-100 relative group/gallery">
@@ -270,21 +271,6 @@ function CustomerProductInfoContent() {
                 </div>
               )}
               
-              {product.specs && (
-                <div className="flex items-start gap-4">
-                  <span className="w-24 text-gray-500 font-semibold pt-1">Description:</span>
-                  <div className="flex-1 flex flex-col items-start gap-2">
-                    <p className="text-black font-semibold pt-1 m-0 whitespace-pre-wrap line-clamp-3">{product.specs}</p>
-                    <button 
-                      onClick={() => setIsDescriptionModalOpen(true)}
-                      className="text-[#bd00ff] hover:text-[#9c00d6] font-bold text-sm bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline transition-all"
-                    >
-                      View More
-                    </button>
-                  </div>
-                </div>
-              )}
-              
               <div className="flex items-center gap-4">
                 <span className="w-24 text-gray-500 font-semibold">Quantity:</span>
                 <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden w-max">
@@ -326,6 +312,26 @@ function CustomerProductInfoContent() {
               </button>
             </div>
           </div>
+          </div>
+
+          {/* Description Section */}
+          {product.specs && (
+            <div className="flex flex-col gap-4 pt-6 border-t border-gray-100">
+              <h3 className="text-xl font-bold text-black border-none m-0">Description</h3>
+              <div className={`relative transition-all duration-300 ${!isDescriptionExpanded ? 'max-h-[120px] overflow-hidden' : ''}`}>
+                <p className="text-gray-700 font-medium whitespace-pre-wrap m-0 leading-relaxed text-base">{product.specs}</p>
+                {!isDescriptionExpanded && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                )}
+              </div>
+              <button 
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="self-start text-[#bd00ff] hover:text-[#9c00d6] font-bold text-sm bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline transition-all"
+              >
+                {isDescriptionExpanded ? 'Show Less' : 'View More'}
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Comments Section */}
@@ -380,38 +386,6 @@ function CustomerProductInfoContent() {
         </section>
 
       </div>
-
-      {/* Description Modal */}
-      {isDescriptionModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border-2 border-purple-500/20 animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-[#fcf8ff] rounded-t-3xl">
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight m-0 border-none">
-                Product Description
-              </h3>
-              <button
-                onClick={() => setIsDescriptionModalOpen(false)}
-                className="p-2 hover:bg-purple-100 rounded-full text-gray-500 hover:text-purple-700 transition cursor-pointer border-none bg-transparent flex items-center justify-center"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-6 md:p-8 overflow-y-auto">
-              <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap font-medium m-0">
-                {product.specs}
-              </p>
-            </div>
-            <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-3xl flex justify-end">
-              <button
-                onClick={() => setIsDescriptionModalOpen(false)}
-                className="px-8 py-3 bg-[#bd00ff] text-white rounded-xl font-bold hover:bg-[#9c00d6] transition-colors shadow-lg shadow-purple-500/30 cursor-pointer border-none"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Downpayment Modal */}
       {isDownpaymentModalOpen && (
