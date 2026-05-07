@@ -157,11 +157,11 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       }`}>
         
         {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 px-5 md:px-10 py-4 flex justify-between items-center shadow-sm sticky top-[60px] md:top-0 z-30 transition-all">
+        <header className={`bg-gradient-to-r ${styles.gradient} border-b border-white/10 px-5 md:px-10 py-4 flex justify-between items-center shadow-sm sticky top-[60px] md:top-0 z-30 transition-all`}>
           
           {/* Search Bar */}
           <div className="flex-1 max-w-xl relative" ref={searchContainerRef}>
-            <div className={`flex items-center w-full bg-gray-100 rounded-full px-4 py-2.5 border-2 transition-colors ${isSearchOpen ? 'border-[#bd00ff] bg-white shadow-sm' : 'border-transparent hover:border-gray-200'}`}>
+            <div className={`flex items-center w-full bg-white rounded-full px-4 py-2.5 border-2 transition-colors ${isSearchOpen ? 'border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' : 'border-transparent hover:border-white/50'}`}>
               <Search size={20} className="text-gray-400 shrink-0" />
               <input 
                 type="text" 
@@ -224,17 +224,17 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             onClick={() => navigate('/customer/profile')}
           >
             {user && (
-              <div className="hidden sm:flex flex-col items-end mr-1">
-                <span className="text-sm font-bold text-gray-800 leading-tight">{user.name}</span>
-                <span className="text-xs text-gray-500 leading-tight">{user.role}</span>
+              <div className="hidden sm:flex flex-col items-end mr-1 text-white">
+                <span className="text-sm font-bold leading-tight">{user.name}</span>
+                <span className="text-xs opacity-80 leading-tight">{user.role}</span>
               </div>
             )}
             {user?.image ? (
-              <div className="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-gray-200 group-hover:border-[#bd00ff] transition-all bg-gray-100 shrink-0">
+              <div className="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-white/50 group-hover:border-white transition-all bg-white shrink-0">
                 <img src={user.image} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
             ) : (
-              <UserCircle2 size={42} className="text-gray-400 group-hover:text-[#bd00ff] transition-colors shrink-0" strokeWidth={1.5} />
+              <UserCircle2 size={42} className="text-white group-hover:scale-110 transition-transform shrink-0" strokeWidth={1.5} />
             )}
           </div>
         </header>
