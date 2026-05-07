@@ -48,7 +48,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Inter'] transition-colors duration-300`}>
+    <div className={`${bgClass} min-h-screen flex font-['Inter'] transition-colors duration-300`}>
       
       {/* Mobile Header */}
       <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-5 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
