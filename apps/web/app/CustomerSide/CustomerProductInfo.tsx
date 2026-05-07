@@ -326,7 +326,7 @@ function CustomerProductInfoContent() {
               </div>
               <button 
                 onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                className="self-start text-[#bd00ff] hover:text-[#9c00d6] font-bold text-sm bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline transition-all"
+                className="self-center text-[#bd00ff] hover:text-[#9c00d6] font-bold text-sm bg-transparent border-none cursor-pointer p-0 underline-offset-2 hover:underline transition-all"
               >
                 {isDescriptionExpanded ? 'Show Less' : 'View More'}
               </button>
