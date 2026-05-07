@@ -9,7 +9,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { deviceId, amount, quantity, variations } = await req.json();
+    const { deviceId, amount, quantity, variations, cartItemIds } = await req.json();
+
+    if (cartItemIds && Array.isArray(cartItemIds)) {
+      // Fetch cart items to get their details
+      const cartItems = await prisma.cartItem.findMany({
+        where: { id: { in: cartItemIds }, userId: session.userId }
+      });
+
+      if (cartItems.length > 0) {
+        // Create purchases
+        await prisma.purchase.createMany({
+          data: cartItems.map(item => {
+            const vars = item.variations ? JSON.parse(item.variations) : [];
+            const price = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : 0;
+            return {
+              userId: session.userId,
+              deviceId: item.deviceId,
+              amount: price * item.quantity,
+              quantity: item.quantity,
+              variations: item.variations
+            };
+          })
+        });
+
+        // Delete from cart
+        await prisma.cartItem.deleteMany({
+          where: { id: { in: cartItemIds }, userId: session.userId }
+        });
+
+        return NextResponse.json({ success: true, message: 'Cart items purchased' }, { status: 201 });
+      }
+    }
 
     if (!deviceId) {
       return NextResponse.json({ error: 'Missing deviceId' }, { status: 400 });

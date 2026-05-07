@@ -32,6 +32,7 @@ model User {
   reviews     Review[]
   purchases   Purchase[]
   repairRequests RepairRequest[]
+  cartItems   CartItem[]
 }
 
 model Device {
@@ -53,6 +54,7 @@ model Device {
   reviews     Review[]
   purchases   Purchase[]
   variations  DeviceVariation[]
+  cartItems   CartItem[]
 
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
@@ -144,4 +146,16 @@ model Purchase {
   quantity   Int      @default(1)
   variations String?
   createdAt  DateTime @default(now())
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String
+  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  quantity   Int      @default(1)
+  variations String?  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

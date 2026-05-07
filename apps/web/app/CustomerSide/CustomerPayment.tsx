@@ -8,20 +8,66 @@ function CustomerPaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const deviceId = searchParams.get('deviceId');
+  const variationIds = searchParams.get('variationIds');
+  const cartItemIdsParam = searchParams.get('cartItemIds');
   const navigate = router.push;
   const [method, setMethod] = useState('cash');
+  const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTotal = async () => {
+      try {
+        if (cartItemIdsParam) {
+          const ids = cartItemIdsParam.split(',');
+          const res = await fetch('/api/cart');
+          if (res.ok) {
+            const cartItems = await res.json();
+            const selectedItems = cartItems.filter((item: any) => ids.includes(item.id));
+            const total = selectedItems.reduce((acc: number, item: any) => {
+              const vars = item.variations ? JSON.parse(item.variations) : [];
+              const price = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
+              return acc + (price * item.quantity);
+            }, 0);
+            setTotalPrice(total);
+          }
+        } else if (deviceId) {
+          const res = await fetch(`/api/devices/${deviceId}`);
+          if (res.ok) {
+            const device = await res.json();
+            if (variationIds && device.variations) {
+              const selectedVarIds = variationIds.split(',');
+              const vars = device.variations.filter((v: any) => selectedVarIds.includes(v.id));
+              const varTotal = vars.reduce((acc: number, v: any) => acc + (v.price || 0), 0);
+              setTotalPrice(varTotal > 0 ? varTotal : device.price);
+            } else {
+              setTotalPrice(device.price);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTotal();
+  }, [deviceId, variationIds, cartItemIdsParam]);
 
   const handlePlaceOrder = async () => {
-    if (deviceId) {
-      try {
-        await fetch('/api/purchases', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId })
-        });
-      } catch (err) {
-        console.error('Failed to record purchase:', err);
-      }
+    try {
+      await fetch('/api/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          deviceId, 
+          variationIds,
+          cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined
+        })
+      });
+      window.dispatchEvent(new Event('cartUpdated')); // update badge if cart items were purchased
+    } catch (err) {
+      console.error('Failed to record purchase:', err);
     }
     navigate('/customer/purchase-confirmed');
   };
@@ -77,7 +123,7 @@ function CustomerPaymentContent() {
             <span className="font-bold text-black text-lg sm:text-xl uppercase tracking-widest mb-1 sm:mb-2 opacity-80 text-center">Total To Pay</span>
             <div className="flex items-center justify-center flex-wrap text-red-600 font-extrabold text-4xl sm:text-5xl tracking-tight text-center px-2 w-full">
               <span className="text-2xl sm:text-3xl mr-1 sm:mr-2">₱</span>
-              <span className="truncate max-w-full">10,000.00</span>
+              <span className="truncate max-w-full">{loading ? '...' : totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
 

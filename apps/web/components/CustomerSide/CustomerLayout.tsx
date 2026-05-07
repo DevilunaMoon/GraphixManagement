@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { logoutUser } from '../../actions/auth';
 import {
   Menu, X, Search, UserCircle2, ChevronLeft, ChevronRight, LogOut,
-  Grid, Bell, Settings, Info
+  Grid, Bell, Settings, Info, ShoppingCart
 } from 'lucide-react';
 
 export default function CustomerLayout({ children, user }: { children: React.ReactNode, user?: any }) {
@@ -22,6 +22,20 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const [searchQuery, setSearchQuery] = useState('');
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  const fetchCartCount = () => {
+    fetch('/api/cart')
+      .then(res => res.json())
+      .then(data => setCartCount(Array.isArray(data) ? data.length : 0))
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchCartCount();
+    window.addEventListener('cartUpdated', fetchCartCount);
+    return () => window.removeEventListener('cartUpdated', fetchCartCount);
+  }, []);
 
   useEffect(() => {
     fetch('/api/devices')
@@ -220,24 +234,40 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             )}
           </div>
 
-          {/* User Profile */}
-          <div 
-            className="flex items-center gap-3 ml-4 cursor-pointer group shrink-0"
-            onClick={() => navigate('/customer/profile')}
-          >
-            {user && (
-              <div className="hidden sm:flex flex-col items-end mr-1 text-white">
-                <span className="text-sm font-bold leading-tight">{user.name}</span>
-                <span className="text-xs opacity-80 leading-tight">{user.role}</span>
-              </div>
-            )}
-            {user?.image ? (
-              <div className="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-white/50 group-hover:border-white transition-all bg-white shrink-0">
-                <img src={user.image} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              </div>
-            ) : (
-              <UserCircle2 size={42} className="text-white group-hover:scale-110 transition-transform shrink-0" strokeWidth={1.5} />
-            )}
+          {/* Header Right Side */}
+          <div className="flex items-center gap-4 ml-4 shrink-0">
+            {/* Cart Button */}
+            <button 
+              onClick={() => navigate('/customer/cart')}
+              className="relative p-2 rounded-full hover:bg-white/10 transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center group"
+            >
+              <ShoppingCart size={28} className="text-white group-hover:scale-110 transition-transform" />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-purple-800 animate-in zoom-in">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            {/* User Profile */}
+            <div 
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => navigate('/customer/profile')}
+            >
+              {user && (
+                <div className="hidden sm:flex flex-col items-end mr-1 text-white">
+                  <span className="text-sm font-bold leading-tight">{user.name}</span>
+                  <span className="text-xs opacity-80 leading-tight">{user.role}</span>
+                </div>
+              )}
+              {user?.image ? (
+                <div className="w-[42px] h-[42px] rounded-full overflow-hidden border-2 border-white/50 group-hover:border-white transition-all bg-white shrink-0">
+                  <img src={user.image} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              ) : (
+                <UserCircle2 size={42} className="text-white group-hover:scale-110 transition-transform shrink-0" strokeWidth={1.5} />
+              )}
+            </div>
           </div>
         </header>
 

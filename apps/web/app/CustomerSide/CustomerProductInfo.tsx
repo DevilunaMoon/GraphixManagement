@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Comment {
@@ -26,6 +26,33 @@ function CustomerProductInfoContent() {
   const [isDownpaymentModalOpen, setIsDownpaymentModalOpen] = useState(false);
   const [selectedVariations, setSelectedVariations] = useState<Record<string, any>>({});
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (!product || currentStock === 0 || !hasSelectedAllSections) return;
+    setIsAddingToCart(true);
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: product.id,
+          quantity: qty,
+          variations: selectedVariationsArray.length > 0 ? JSON.stringify(selectedVariationsArray) : null
+        })
+      });
+      if (res.ok) {
+        window.dispatchEvent(new Event('cartUpdated'));
+      } else {
+        alert('Failed to add to cart.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error adding to cart.');
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const variationGroups = useMemo(() => {
     if (!product?.variations || product.variations.length === 0) return null;
@@ -278,6 +305,14 @@ function CustomerProductInfoContent() {
                 className="flex-1 py-3.5 border-2 border-[#bd00ff] bg-white rounded-xl text-[#bd00ff] font-bold text-lg hover:bg-purple-50 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Downpayment
+              </button>
+              <button 
+                onClick={handleAddToCart}
+                disabled={currentStock === 0 || !hasSelectedAllSections || isAddingToCart}
+                className="flex-1 py-3.5 flex items-center justify-center gap-2 border-2 border-[#bd00ff] bg-purple-50 rounded-xl text-[#bd00ff] font-bold text-lg hover:bg-purple-100 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ShoppingCart size={22} />
+                {isAddingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
               <button 
                 onClick={() => navigate(`/customer/payment?deviceId=${product.id}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}`)}
