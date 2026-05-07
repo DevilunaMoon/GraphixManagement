@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Comment {
@@ -69,8 +69,8 @@ function CustomerProductInfoContent() {
   useEffect(() => {
     if (id) {
       Promise.all([
-        fetch(`/api/devices/${id}`).then(res => res.json()),
-        fetch(`/api/devices/${id}/reviews`).then(res => res.json())
+        fetch(`/api/devices/${id}`, { cache: 'no-store' }).then(res => res.json()),
+        fetch(`/api/devices/${id}/reviews`, { cache: 'no-store' }).then(res => res.json())
       ])
         .then(([productData, reviewsData]) => {
           setProduct(productData);
@@ -481,7 +481,7 @@ function CustomerProductInfoContent() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-2">
-              <CheckCircle2 size={48} className="text-green-500" />
+              <CheckCircle size={48} className="text-green-500" />
             </div>
             <h3 className="text-2xl font-bold text-gray-900 m-0 text-center">Added to Cart!</h3>
             <p className="text-gray-500 text-center font-medium m-0">Your item has been successfully added to your shopping cart.</p>
