@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { ChevronLeft, Wifi } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
