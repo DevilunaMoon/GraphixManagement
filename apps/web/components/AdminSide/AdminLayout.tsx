@@ -98,7 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
           {[
             { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
-            { href: '/admin/transactions', label: 'Transactions', icon: ReceiptText },
+            { href: '/admin/transactions', label: 'Order History', icon: ReceiptText },
             { href: '/admin/accounts', label: 'Accounts', icon: User },
             { href: '/admin/inventory', label: 'Inventory', icon: Box },
             { href: '/admin/monitoring', label: 'Monitoring', icon: Wrench },
