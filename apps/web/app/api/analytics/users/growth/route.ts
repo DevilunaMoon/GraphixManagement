@@ -43,7 +43,7 @@ export async function GET() {
       
       // Look at the PREVIOUS chronological month (which is index i+1 in our array)
       if (i < lastMonths.length - 1) {
-        const prevMonthCount = lastMonths[i + 1].count;
+        const prevMonthCount = lastMonths[i + 1]?.count || 0;
         if (prevMonthCount > 0) {
           const diff = m.count - prevMonthCount;
           const percent = Math.round((Math.abs(diff) / prevMonthCount) * 100);
