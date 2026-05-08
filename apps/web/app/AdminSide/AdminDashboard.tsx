@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Users, Package, TrendingUp, TrendingDown, X } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -35,13 +36,15 @@ export default function AdminDashboard() {
       <div className="flex flex-col gap-8">
         {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard 
-          icon={<Users size={24} />} 
-          label="Registered Acc" 
-          value={userCount.toString()} 
-          iconBg="bg-sky-100" 
-          iconColor="text-sky-600" 
-        />
+        <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1">
+          <StatCard 
+            icon={<Users size={24} />} 
+            label="User Management" 
+            value={userCount.toString()} 
+            iconBg="bg-sky-100" 
+            iconColor="text-sky-600" 
+          />
+        </Link>
         <StatCard 
           icon={<span className="text-[22px] font-bold">₱</span>}
           label="Sales" 
