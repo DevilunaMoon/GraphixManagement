@@ -35,9 +35,9 @@ export async function GET(request: Request) {
     users.forEach(u => {
       const d = new Date(u.createdAt);
       if (d.getFullYear() === year) {
-        monthlyCounts[d.getMonth() + 1]++; // getMonth is 0-indexed (0=Jan -> 1)
+        monthlyCounts[d.getMonth() + 1] = (monthlyCounts[d.getMonth() + 1] || 0) + 1;
       } else if (d.getFullYear() === year - 1 && d.getMonth() === 11) {
-        monthlyCounts[0]++; // Dec prev year
+        monthlyCounts[0] = (monthlyCounts[0] || 0) + 1;
       }
     });
 
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
       }
 
       result.push({
-        month: months[i - 1],
+        month: months[i - 1] || '',
         users: currentMonthCount.toLocaleString(),
         trend: trendStr,
         trendUp: trendUp
