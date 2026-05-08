@@ -46,8 +46,8 @@ export async function GET(request: Request) {
     const result: { month: string, users: string, trend: string, trendUp: boolean }[] = [];
     
     for (let i = 1; i <= 12; i++) {
-      const currentMonthCount = monthlyCounts[i];
-      const prevMonthCount = monthlyCounts[i - 1];
+      const currentMonthCount = monthlyCounts[i] || 0;
+      const prevMonthCount = monthlyCounts[i - 1] || 0;
       
       let trendStr = "0%";
       let trendUp = true;
