@@ -101,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { href: '/admin/transactions', label: 'Order History', icon: ReceiptText },
             { href: '/admin/accounts', label: 'Accounts', icon: User },
             { href: '/admin/inventory', label: 'Inventory', icon: Box },
-            { href: '/admin/monitoring', label: 'Monitoring', icon: Wrench },
+            { href: '/admin/monitoring', label: 'Gadget Repair', icon: Wrench },
             { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
             { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
             { href: '/admin/settings', label: 'Settings', icon: Settings },
