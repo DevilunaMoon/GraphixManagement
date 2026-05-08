@@ -20,7 +20,7 @@ export async function GET() {
       monthlyCounts[key]++;
     });
 
-    const lastMonths = [];
+    const lastMonths: { key: string, monthName: string, count: number }[] = [];
     const now = new Date();
     
     // Get data for the last 5 months (to show 4 months + 1 for trend calculation)
