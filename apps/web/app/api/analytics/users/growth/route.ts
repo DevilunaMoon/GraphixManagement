@@ -1,11 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 
+export const revalidate = 3600; // Cache this route for 1 hour to optimize database hits
+
 export async function GET() {
   try {
+    const now = new Date();
+    // Get the start date of the month, 5 months ago
+    const fiveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    // Optimized: Only fetch the 'createdAt' field for customers who registered in the last 5 months
     const users = await prisma.user.findMany({
       select: { createdAt: true },
-      where: { role: 'CUSTOMER' }
+      where: { 
+        role: 'CUSTOMER',
+        createdAt: {
+          gte: fiveMonthsAgo
+        }
+      }
     });
 
     const monthlyCounts: Record<string, number> = {};
@@ -21,7 +33,6 @@ export async function GET() {
     });
 
     const lastMonths: { key: string, monthName: string, count: number }[] = [];
-    const now = new Date();
     
     // Get data for the last 5 months (to show 4 months + 1 for trend calculation)
     for (let i = 0; i < 5; i++) {
