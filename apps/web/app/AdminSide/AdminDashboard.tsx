@@ -8,19 +8,13 @@ export default function AdminDashboard() {
   const [userCount, setUserCount] = useState<string | number>("...");
   const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean } | null>(null);
 
-  const userGrowthData = [
-    { month: 'December', users: '1,245', trend: '15%', trendUp: true },
-    { month: 'November', users: '1,080', trend: '8%', trendUp: true },
-    { month: 'October', users: '995', trend: '2%', trendUp: false },
-    { month: 'September', users: '1,015', trend: '12%', trendUp: true }
-  ];
+  const [userGrowthData, setUserGrowthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean }[]>([]);
 
   useEffect(() => {
     fetch('/api/analytics/users/count')
       .then(res => res.json())
       .then(data => {
         if (typeof data.count === 'number') {
-          // Format numbers >= 1000 nicely (e.g. 5010 -> 5.01k)
           if (data.count >= 1000) {
             setUserCount((data.count / 1000).toFixed(2) + 'k');
           } else {
@@ -29,6 +23,15 @@ export default function AdminDashboard() {
         }
       })
       .catch(err => console.error("Failed to fetch user count:", err));
+
+    fetch('/api/analytics/users/growth')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setUserGrowthData(data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch user growth data:", err));
   }, []);
 
   return (
