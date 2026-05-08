@@ -65,6 +65,7 @@ export default function AdminTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterDate, setFilterDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
@@ -176,12 +177,22 @@ export default function AdminTransactions() {
     fetchTransactions();
   }, []);
 
-  const filteredTransactions = transactions.filter(t => 
-    t.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.device?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTransactions = transactions.filter(t => {
+    const matchesSearch = t.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.device?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.id.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    if (!matchesSearch) return false;
+    
+    if (filterDate) {
+      // Compare just the YYYY-MM-DD part
+      const txDate = new Date(t.createdAt).toISOString().split('T')[0];
+      return txDate === filterDate;
+    }
+    
+    return true;
+  });
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
   const paginatedTransactions = filteredTransactions.slice(
@@ -203,15 +214,26 @@ export default function AdminTransactions() {
             </div>
           </div>
           
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
             <input 
-              type="text" 
-              placeholder="Search transactions..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold"
+              type="date" 
+              value={filterDate}
+              onChange={(e) => {
+                setFilterDate(e.target.value);
+                setCurrentPage(1); // Reset to page 1 on filter
+              }}
+              className="w-full sm:w-auto px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold text-gray-600"
             />
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <input 
+                type="text" 
+                placeholder="Search transactions..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold"
+              />
+            </div>
           </div>
         </div>
 

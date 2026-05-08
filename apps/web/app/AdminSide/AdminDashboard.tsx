@@ -6,6 +6,7 @@ import { Users, Package, TrendingUp, TrendingDown, X } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [userCount, setUserCount] = useState<string | number>("...");
+  const [monthlySales, setMonthlySales] = useState<string | number>("10.1k"); // Mock data default
   const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean } | null>(null);
 
   const [userGrowthData, setUserGrowthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean }[]>([]);
@@ -32,6 +33,20 @@ export default function AdminDashboard() {
         }
       })
       .catch(err => console.error("Failed to fetch user growth data:", err));
+
+    // Try to fetch real monthly sales data, fallback to mock if 0 or error
+    fetch('/api/analytics/sales/monthly-total')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data.total === 'number' && data.total > 0) {
+          if (data.total >= 1000) {
+            setMonthlySales((data.total / 1000).toFixed(1) + 'k');
+          } else {
+            setMonthlySales(data.total.toLocaleString());
+          }
+        }
+      })
+      .catch(err => console.error("Failed to fetch monthly sales:", err));
   }, []);
 
   return (
@@ -48,13 +63,15 @@ export default function AdminDashboard() {
             iconColor="text-sky-600" 
           />
         </Link>
-        <StatCard 
-          icon={<span className="text-[22px] font-bold">₱</span>}
-          label="Sales" 
-          value="10.1k" 
-          iconBg="bg-green-100" 
-          iconColor="text-green-600" 
-        />
+        <Link href="/admin/transactions" className="block transition-transform hover:-translate-y-1">
+          <StatCard 
+            icon={<span className="text-[22px] font-bold">₱</span>}
+            label="Monthly Sales" 
+            value={monthlySales.toString()} 
+            iconBg="bg-green-100" 
+            iconColor="text-green-600" 
+          />
+        </Link>
         <StatCard 
           icon={<Package size={24} />} 
           label="Revenue" 
