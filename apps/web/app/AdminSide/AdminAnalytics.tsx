@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Filter, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import { Filter, ChevronDown, FileSpreadsheet, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminAnalytics() {
@@ -9,6 +9,7 @@ export default function AdminAnalytics() {
   const [year, setYear] = useState('2026');
 
   const [reportData, setReportData] = useState<{month: string; salesGrowth: number; userGrowth: number}[]>([]);
+  const [userGrowthData, setUserGrowthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean }[]>([]);
   const { styles } = useTheme();
 
   // Triggering re-render to simulate animation like original HTML
@@ -22,6 +23,16 @@ export default function AdminAnalytics() {
       salesGrowth: Math.floor(Math.random() * 60) + 30,
       userGrowth: Math.floor(Math.random() * 60) + 30,
     })));
+
+    // Fetch real User Growth data based on selected year
+    fetch(`/api/analytics/users/yearly-growth?year=${year}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setUserGrowthData(data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch user growth data:", err));
   }, [year]);
 
   const handleYearChange = (newYear: string) => {
@@ -115,18 +126,46 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        {/* User Growth Chart */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-[#111] mb-1">User Growth</h3>
-            <p className="text-sm text-[#666]">Monthly Registration Overview</p>
-          </div>
-          
-          <div className={`w-full overflow-x-auto border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
-            <div className="w-full min-w-[500px] h-[300px] p-5 flex justify-around items-end gap-2 text-xs md:text-sm">
-              {reportData.map((data) => (
-                <ChartBar key={`user-${data.month}`} label={data.month} height={() => `${data.userGrowth}%`} color="bg-[#0284c7]" />
-              ))}
+        {/* User Growth Table */}
+        <div className="w-full">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col">
+            <div className="mb-5 pb-4 border-b border-black/5 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold text-[#111] mb-1">User Growth ({year})</h3>
+                <p className="text-sm text-[#666]">Monthly Registration Overview</p>
+              </div>
+            </div>
+            <div className={`w-full border-2 ${styles.borderMain} rounded-xl overflow-hidden`}>
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="bg-black/5">
+                    <th className="py-4 px-5 font-bold text-[#111] text-sm uppercase tracking-wide border-b border-black/5">Month</th>
+                    <th className="py-4 px-5 font-bold text-[#111] text-sm uppercase tracking-wide border-b border-black/5">New Users</th>
+                    <th className="py-4 px-5 font-bold text-[#111] text-sm uppercase tracking-wide border-b border-black/5 hidden md:table-cell">Trend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userGrowthData.map((data, idx) => (
+                    <tr 
+                      key={idx} 
+                      className="border-b border-black/5 hover:bg-black/5 transition-colors"
+                    >
+                      <td className="py-4 px-5 font-medium text-[#111] text-sm">{data.month}</td>
+                      <td className="py-4 px-5 font-medium text-[#111] text-sm">{data.users}</td>
+                      <td className="py-4 px-5 hidden md:table-cell">
+                        <div className={`font-bold text-sm flex items-center gap-1.5 ${data.trendUp ? 'text-green-600' : 'text-red-600'}`}>
+                          {data.trendUp ? <TrendingUp size={18} /> : <TrendingDown size={18} />} {data.trend}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {userGrowthData.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-[#666] font-medium">Loading user data...</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
