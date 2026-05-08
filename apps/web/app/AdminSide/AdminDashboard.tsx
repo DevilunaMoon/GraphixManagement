@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Users, DollarSign, Package, TrendingUp, TrendingDown, X } from 'lucide-react';
+import { Users, Package, TrendingUp, TrendingDown, X } from 'lucide-react';
 
 export default function AdminDashboard() {
   const [userCount, setUserCount] = useState<string | number>("...");
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
           iconColor="text-sky-600" 
         />
         <StatCard 
-          icon={<DollarSign size={24} />} 
+          icon={<span className="text-[22px] font-bold">₱</span>}
           label="Sales" 
           value="10.1k" 
           iconBg="bg-green-100" 
