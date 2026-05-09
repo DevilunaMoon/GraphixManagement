@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Trash2, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import imageCompression from 'browser-image-compression';
 
 interface DeviceProgress {
   id: string;
@@ -187,13 +188,23 @@ export default function AdminMonitoring() {
     setEditModalOpen(true);
   };
 
-  const handleAddImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAddImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setAddImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      try {
+        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+        const compressedFile = await imageCompression(file, options);
+        setAddImage(compressedFile);
+        const reader = new FileReader();
+        reader.onloadend = () => setAddImagePreview(reader.result as string);
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.error("Compression error:", error);
+        setAddImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setAddImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -247,13 +258,23 @@ export default function AdminMonitoring() {
     }
   };
 
-  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setEditImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setEditImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      try {
+        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+        const compressedFile = await imageCompression(file, options);
+        setEditImage(compressedFile);
+        const reader = new FileReader();
+        reader.onloadend = () => setEditImagePreview(reader.result as string);
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.error("Compression error:", error);
+        setEditImage(file);
+        const reader = new FileReader();
+        reader.onloadend = () => setEditImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   };
 
