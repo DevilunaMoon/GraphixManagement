@@ -47,7 +47,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
       if (proofImage && proofImage.name && proofImage.size > 0) {
         const buffer = Buffer.from(await proofImage.arrayBuffer());
-        const imageUrl = await uploadToCloudinary(buffer, 'monitoring/proofs');
+        const imageUrl = await uploadToCloudinary(buffer, 'proofs');
         updateData.proofImage = imageUrl;
       }
     } else {

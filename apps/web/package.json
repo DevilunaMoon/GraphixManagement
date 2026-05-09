@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "node -e \"fs.rmSync('.next', {recursive:true, force:true})\" && next dev --webpack --port 3000 -H 0.0.0.0",
-    "build": "next build",
+    "build": "cd ../../packages/database && npx prisma generate && cd ../../apps/web && next build",
     "start": "next start",
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit"
