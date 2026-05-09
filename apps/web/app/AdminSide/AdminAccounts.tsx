@@ -126,7 +126,7 @@ export default function AdminAccounts() {
     <div className="flex flex-col gap-6">
       {/* Accounts Header Row */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
-        <h2 className="text-[1.6rem] font-bold text-[#111] whitespace-nowrap">Customer Accounts</h2>
+        <h2 className="text-[1.6rem] font-bold text-[#111] whitespace-nowrap">User Management</h2>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
           {/* Search Box */}

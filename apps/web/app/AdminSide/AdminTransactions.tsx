@@ -209,7 +209,7 @@ export default function AdminTransactions() {
               <ReceiptText size={28} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 m-0">Transaction History</h2>
+              <h2 className="text-2xl font-bold text-gray-900 m-0">Order History</h2>
               <p className="text-gray-500 m-0 text-sm">View all completed purchases</p>
             </div>
           </div>
