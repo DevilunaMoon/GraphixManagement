@@ -88,11 +88,21 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
             <div className="py-20 text-center text-red-500 font-bold">Device not found.</div>
           ) : (
             <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-              <div className="w-full md:w-[300px] h-[300px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-4 flex justify-center items-center bg-gray-50 overflow-hidden shrink-0">
-                {device.image ? (
-                  <img src={device.image} alt={device.deviceName} className="w-full h-full object-contain mix-blend-multiply" />
-                ) : (
-                  <div className="text-gray-400 font-bold">No Image</div>
+              <div className="flex flex-col gap-4 w-full md:w-[300px] shrink-0">
+                <div className="w-full h-[300px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-4 flex justify-center items-center bg-gray-50 overflow-hidden">
+                  {device.image ? (
+                    <img src={device.image} alt={device.deviceName} className="w-full h-full object-contain mix-blend-multiply" />
+                  ) : (
+                    <div className="text-gray-400 font-bold">No Image</div>
+                  )}
+                </div>
+                {device.proofImage && (
+                  <div className="w-full flex flex-col gap-2 mt-4">
+                    <span className="font-bold text-gray-700 text-center uppercase tracking-wider text-sm">Proof of Repair</span>
+                    <div className="w-full h-[200px] border-2 border-dashed border-gray-300 rounded-2xl p-2 flex justify-center items-center bg-gray-50 overflow-hidden">
+                      <img src={device.proofImage} alt="Proof of Repair" className="w-full h-full object-cover rounded-xl" />
+                    </div>
+                  </div>
                 )}
               </div>
               
