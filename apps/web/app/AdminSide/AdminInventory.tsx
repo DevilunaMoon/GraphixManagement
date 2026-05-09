@@ -371,7 +371,7 @@ export default function AdminInventory() {
     <div className="flex flex-col gap-6">
       {/* Header Row */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
-        <h2 className="text-[1.6rem] font-bold text-[#111] whitespace-nowrap">Inventory Product</h2>
+        <h2 className="text-[1.6rem] font-bold text-[#111] whitespace-nowrap">Inventory Management</h2>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
           {/* Search Box */}
           <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:w-[250px] transition-colors duration-300`}>
