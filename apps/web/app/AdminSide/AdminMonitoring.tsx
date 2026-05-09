@@ -10,6 +10,7 @@ interface DeviceProgress {
   ownerName: string;
   progress: string;
   image: string | null;
+  proofImage: string | null;
   status: string;
   cause: string | null;
   technician: string | null;
@@ -182,7 +183,7 @@ export default function AdminMonitoring() {
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
     setEditImage(null);
-    setEditImagePreview(device.image || null);
+    setEditImagePreview(device.proofImage || null);
     setEditModalOpen(true);
   };
 
@@ -265,7 +266,7 @@ export default function AdminMonitoring() {
     if (editCause) formData.append('cause', editCause);
     if (editTechnician) formData.append('technician', editTechnician);
     if (editRepairCost) formData.append('repairCost', editRepairCost);
-    if (editImage) formData.append('image', editImage);
+    if (editImage) formData.append('proofImage', editImage);
 
     try {
       const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
@@ -281,7 +282,7 @@ export default function AdminMonitoring() {
           cause: updatedDevice.cause,
           technician: updatedDevice.technician,
           repairCost: updatedDevice.repairCost,
-          image: updatedDevice.image
+          proofImage: updatedDevice.proofImage
         } : d));
         setEditModalOpen(false);
       } else {
@@ -540,17 +541,12 @@ export default function AdminMonitoring() {
               {/* Internal Image Display */}
               <div className="flex flex-col items-center gap-4 mt-2">
                 <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-white flex justify-center items-center overflow-hidden p-2">
-                  {editImagePreview ? (
-                    <img src={editImagePreview} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
+                  {deviceToEdit.image ? (
+                    <img src={deviceToEdit.image} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
                   ) : (
                     <span className="text-gray-400 font-bold">No Image</span>
                   )}
                 </div>
-                <label className="flex items-center gap-2 text-[#bd00ff] font-bold cursor-pointer hover:text-[#9c00d6] transition-colors text-sm bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">
-                  <Upload size={16} />
-                  Change Proof Image
-                  <input type="file" accept="image/*" onChange={handleEditImageChange} className="hidden" />
-                </label>
               </div>
 
               {/* Dynamic Form Fields */}
@@ -622,6 +618,26 @@ export default function AdminMonitoring() {
                         placeholder="2,000" 
                         className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
                       />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mt-2">
+                  <label className="font-semibold text-base text-black">Proof of Repair</label>
+                  <div className="flex flex-col items-start gap-4">
+                    <div className="w-full max-w-[200px] aspect-video rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex justify-center items-center overflow-hidden relative group">
+                      {editImagePreview ? (
+                        <img src={editImagePreview} alt="Proof" className="w-full h-full object-contain bg-white" />
+                      ) : (
+                        <span className="text-gray-400 font-semibold text-sm">No Proof Image</span>
+                      )}
+                      <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                        <span className="text-white font-bold flex items-center gap-2 bg-[#bd00ff] px-4 py-2 rounded-lg">
+                          <Upload size={16} />
+                          Upload
+                        </span>
+                        <input type="file" accept="image/*" onChange={handleEditImageChange} className="hidden" />
+                      </label>
                     </div>
                   </div>
                 </div>

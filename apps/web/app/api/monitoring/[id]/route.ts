@@ -37,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const cause = formData.get('cause') as string | null;
       const technician = formData.get('technician') as string | null;
       const repairCost = formData.get('repairCost') as string | null;
-      const image = formData.get('image') as File | null;
+      const proofImage = formData.get('proofImage') as File | null;
 
       if (status !== null) updateData.status = status;
       if (progress !== undefined && progress !== null) updateData.progress = progress;
@@ -45,10 +45,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (technician !== null) updateData.technician = technician;
       if (repairCost !== null) updateData.repairCost = repairCost;
 
-      if (image && image.name && image.size > 0) {
-        const buffer = Buffer.from(await image.arrayBuffer());
-        const imageUrl = await uploadToCloudinary(buffer, 'monitoring');
-        updateData.image = imageUrl;
+      if (proofImage && proofImage.name && proofImage.size > 0) {
+        const buffer = Buffer.from(await proofImage.arrayBuffer());
+        const imageUrl = await uploadToCloudinary(buffer, 'monitoring/proofs');
+        updateData.proofImage = imageUrl;
       }
     } else {
       const body = await req.json();
