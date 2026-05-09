@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Graphix",
   description: "Graphix Management System",
   icons: {
-    icon: '/icon.jpg',
+    icon: '/icon.jpg?v=2',
   },
 };
 
