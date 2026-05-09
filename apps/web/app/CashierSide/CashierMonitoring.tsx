@@ -286,12 +286,17 @@ export default function CashierMonitoring() {
         } : d));
         setEditModalOpen(false);
       } else {
-        const err = await res.json();
-        alert('Failed to update progress: ' + (err.error || 'Unknown error'));
+        const text = await res.text();
+        let errMsg = text;
+        try {
+          const errObj = JSON.parse(text);
+          errMsg = errObj.error || 'Unknown error';
+        } catch (e) {}
+        alert(`Failed to update (${res.status}): ${errMsg.slice(0, 100)}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving progress:', error);
-      alert('An external error occurred.');
+      alert('An external error occurred: ' + (error.message || 'Network error'));
     } finally {
       setIsSavingEdit(false);
     }
