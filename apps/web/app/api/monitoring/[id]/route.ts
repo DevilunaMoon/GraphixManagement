@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { sendNotificationEmail } from '../../../../lib/email';
+import { uploadToCloudinary } from '../../../../lib/cloudinary';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,16 +25,42 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const contentType = req.headers.get('content-type') || '';
+    
+    let updateData: any = {};
+    let progress: string | undefined;
 
-    const body = await req.json();
-    const { status, progress, cause, technician, repairCost } = body;
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const status = formData.get('status') as string | null;
+      progress = formData.get('progress') as string | undefined;
+      const cause = formData.get('cause') as string | null;
+      const technician = formData.get('technician') as string | null;
+      const repairCost = formData.get('repairCost') as string | null;
+      const image = formData.get('image') as File | null;
 
-    const updateData: any = {};
-    if (status !== undefined) updateData.status = status;
-    if (progress !== undefined) updateData.progress = progress;
-    if (cause !== undefined) updateData.cause = cause;
-    if (technician !== undefined) updateData.technician = technician;
-    if (repairCost !== undefined) updateData.repairCost = repairCost;
+      if (status !== null) updateData.status = status;
+      if (progress !== undefined && progress !== null) updateData.progress = progress;
+      if (cause !== null) updateData.cause = cause;
+      if (technician !== null) updateData.technician = technician;
+      if (repairCost !== null) updateData.repairCost = repairCost;
+
+      if (image && image.name && image.size > 0) {
+        const buffer = Buffer.from(await image.arrayBuffer());
+        const imageUrl = await uploadToCloudinary(buffer, 'monitoring');
+        updateData.image = imageUrl;
+      }
+    } else {
+      const body = await req.json();
+      const { status, cause, technician, repairCost } = body;
+      progress = body.progress;
+
+      if (status !== undefined) updateData.status = status;
+      if (progress !== undefined) updateData.progress = progress;
+      if (cause !== undefined) updateData.cause = cause;
+      if (technician !== undefined) updateData.technician = technician;
+      if (repairCost !== undefined) updateData.repairCost = repairCost;
+    }
 
     const request = await prisma.repairRequest.update({
       where: { id },

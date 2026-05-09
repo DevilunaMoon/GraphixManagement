@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Trash2 } from 'lucide-react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Trash2, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface DeviceProgress {
@@ -66,6 +66,8 @@ export default function CashierMonitoring() {
   const [editCause, setEditCause] = useState('');
   const [editTechnician, setEditTechnician] = useState('');
   const [editRepairCost, setEditRepairCost] = useState('');
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const progressLevels = ['0%', '25%', '50%', '75%', '100%'];
@@ -179,6 +181,8 @@ export default function CashierMonitoring() {
     setEditCause(device.cause || '');
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
+    setEditImage(null);
+    setEditImagePreview(device.image || null);
     setEditModalOpen(true);
   };
 
@@ -242,28 +246,42 @@ export default function CashierMonitoring() {
     }
   };
 
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setEditImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleEditSave = async () => {
     if (!deviceToEdit) return;
     setIsSavingEdit(true);
+
+    const formData = new FormData();
+    formData.append('progress', editProgress);
+    if (editCause) formData.append('cause', editCause);
+    if (editTechnician) formData.append('technician', editTechnician);
+    if (editRepairCost) formData.append('repairCost', editRepairCost);
+    if (editImage) formData.append('image', editImage);
+
     try {
       const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          progress: editProgress,
-          cause: editCause,
-          technician: editTechnician,
-          repairCost: editRepairCost
-        })
+        body: formData
       });
 
       if (res.ok) {
+        const updatedDevice = await res.json();
         setDevices(prev => prev.map(d => d.id === deviceToEdit.id ? { 
           ...d, 
-          progress: editProgress,
-          cause: editCause,
-          technician: editTechnician,
-          repairCost: editRepairCost
+          progress: updatedDevice.progress,
+          cause: updatedDevice.cause,
+          technician: updatedDevice.technician,
+          repairCost: updatedDevice.repairCost,
+          image: updatedDevice.image
         } : d));
         setEditModalOpen(false);
       } else {
@@ -522,12 +540,17 @@ export default function CashierMonitoring() {
               {/* Internal Image Display */}
               <div className="flex flex-col items-center gap-4 mt-2">
                 <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-white flex justify-center items-center overflow-hidden p-2">
-                  {deviceToEdit.image ? (
-                    <img src={deviceToEdit.image} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
+                  {editImagePreview ? (
+                    <img src={editImagePreview} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
                   ) : (
                     <span className="text-gray-400 font-bold">No Image</span>
                   )}
                 </div>
+                <label className="flex items-center gap-2 text-[#bd00ff] font-bold cursor-pointer hover:text-[#9c00d6] transition-colors text-sm bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-100">
+                  <Upload size={16} />
+                  Change Proof Image
+                  <input type="file" accept="image/*" onChange={handleEditImageChange} className="hidden" />
+                </label>
               </div>
 
               {/* Dynamic Form Fields */}
