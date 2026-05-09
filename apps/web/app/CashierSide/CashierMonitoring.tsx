@@ -286,7 +286,8 @@ export default function CashierMonitoring() {
         } : d));
         setEditModalOpen(false);
       } else {
-        alert('Failed to update progress.');
+        const err = await res.json();
+        alert('Failed to update progress: ' + (err.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error saving progress:', error);

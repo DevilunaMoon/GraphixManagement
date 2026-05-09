@@ -75,9 +75,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     return NextResponse.json(request);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating repair request:', error);
-    return NextResponse.json({ error: 'Failed to update repair request' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to update repair request' }, { status: 500 });
   }
 }
 
