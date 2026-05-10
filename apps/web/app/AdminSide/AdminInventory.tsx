@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle, Trash } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import imageCompression from 'browser-image-compression';
 
 type VariationGroup = { section: string, variations: { name: string, price: string, cost: string, stock: string }[] };
 
@@ -40,11 +41,18 @@ export default function AdminInventory() {
       .catch(err => console.error("Error fetching categories:", err));
   };
   
-  const handleCatImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCatImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setNewCatImage(file);
-      setNewCatImagePreview(URL.createObjectURL(file));
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 800, useWebWorker: true });
+        setNewCatImage(compressed);
+        setNewCatImagePreview(URL.createObjectURL(compressed));
+      } catch (err) {
+        console.error("Compression error:", err);
+        setNewCatImage(file);
+        setNewCatImagePreview(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -66,10 +74,14 @@ export default function AdminInventory() {
         setNewCatImagePreview(null);
         fetchCategories();
       } else {
-        alert('Failed to add category');
+        const text = await res.text();
+        let errMsg = text;
+        try { errMsg = JSON.parse(text).error || errMsg; } catch(e){}
+        alert('Failed to add category: ' + errMsg.slice(0, 150));
       }
     } catch (err: any) {
       console.error(err);
+      alert('Failed to add category: ' + (err.message || 'Unknown error'));
     } finally {
       setIsAddingCat(false);
     }

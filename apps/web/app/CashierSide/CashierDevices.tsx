@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Pencil, Trash, ChevronRight, AlertCircle, CheckCircle2, Search, Upload, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import imageCompression from 'browser-image-compression';
 
 interface Device {
   id: string;
@@ -95,11 +96,12 @@ export default function CashierDevices() {
       .finally(() => setIsLoading(false));
   };
 
-  const handleDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDeviceImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
-      setNewDeviceImages(prev => [...prev, ...files]);
-      const newPreviews = files.map(file => URL.createObjectURL(file));
+      const compressedFiles = await Promise.all(files.map(file => imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }).catch(() => file)));
+      setNewDeviceImages(prev => [...prev, ...compressedFiles]);
+      const newPreviews = compressedFiles.map(file => URL.createObjectURL(file));
       setNewDeviceImagePreviews(prev => [...prev, ...newPreviews]);
     }
   };
@@ -109,11 +111,17 @@ export default function CashierDevices() {
     setNewDeviceImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleNewDownpaymentImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewDownpaymentImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setNewDeviceDownpaymentImage(file);
-      setNewDeviceDownpaymentImagePreview(URL.createObjectURL(file));
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true });
+        setNewDeviceDownpaymentImage(compressed);
+        setNewDeviceDownpaymentImagePreview(URL.createObjectURL(compressed));
+      } catch(err) {
+        setNewDeviceDownpaymentImage(file);
+        setNewDeviceDownpaymentImagePreview(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -196,11 +204,12 @@ export default function CashierDevices() {
     }
   };
 
-  const handleEditDeviceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditDeviceImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const files = Array.from(e.target.files);
-      setEditDeviceImages(prev => [...prev, ...files]);
-      const newPreviews = files.map(file => URL.createObjectURL(file));
+      const compressedFiles = await Promise.all(files.map(file => imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }).catch(() => file)));
+      setEditDeviceImages(prev => [...prev, ...compressedFiles]);
+      const newPreviews = compressedFiles.map(file => URL.createObjectURL(file));
       setEditDeviceImagePreviews(prev => [...prev, ...newPreviews]);
     }
   };
@@ -324,11 +333,18 @@ export default function CashierDevices() {
     fetchCategories();
   }, []);
 
-  const handleCatImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCatImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setNewCatImage(file);
-      setNewCatImagePreview(URL.createObjectURL(file));
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 800, useWebWorker: true });
+        setNewCatImage(compressed);
+        setNewCatImagePreview(URL.createObjectURL(compressed));
+      } catch (err) {
+        console.error("Compression error:", err);
+        setNewCatImage(file);
+        setNewCatImagePreview(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -352,12 +368,16 @@ export default function CashierDevices() {
         setSuccessModalContent({ title: 'Success', message: 'Category added successfully.' });
         setSuccessModalOpen(true);
       } else {
-        const errorData = await res.json();
-        setErrorModalContent({ title: 'Error', message: errorData.error || 'Failed to add category' });
+        const text = await res.text();
+        let errMsg = text;
+        try { errMsg = JSON.parse(text).error || errMsg; } catch(e){}
+        setErrorModalContent({ title: 'Error', message: errMsg.slice(0, 150) });
         setErrorModalOpen(true);
       }
     } catch (err: any) {
       console.error(err);
+      setErrorModalContent({ title: 'Error', message: 'Network error: ' + (err.message || '') });
+      setErrorModalOpen(true);
     } finally {
       setIsAddingCat(false);
     }
