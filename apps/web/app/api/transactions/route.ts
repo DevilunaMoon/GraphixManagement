@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type');
+    
+    // Build where clause
+    const whereClause: any = {};
+    if (type === 'downpayment') {
+      whereClause.paymentType = 'Downpayment';
+    } else if (type === 'full') {
+      whereClause.paymentType = 'Full';
+    }
+
     const transactions = await prisma.purchase.findMany({
+      where: whereClause,
       include: {
         user: {
           select: { name: true, email: true, id: true }

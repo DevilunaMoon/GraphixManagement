@@ -17,7 +17,7 @@ function CustomerDownpaymentContent() {
         await fetch('/api/purchases', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId })
+          body: JSON.stringify({ deviceId, paymentType: 'Downpayment' })
         });
       } catch (err) {
         console.error('Failed to record purchase:', err);

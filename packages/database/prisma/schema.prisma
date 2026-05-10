@@ -146,6 +146,7 @@ model Purchase {
   amount     Float    @default(0)
   quantity   Int      @default(1)
   variations String?
+  paymentType String  @default("Full")
   createdAt  DateTime @default(now())
 }
 

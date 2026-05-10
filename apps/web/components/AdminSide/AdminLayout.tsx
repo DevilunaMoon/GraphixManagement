@@ -23,6 +23,7 @@ import {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
   const router = useRouter();
   const pathname = usePathname();
@@ -98,16 +99,71 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
           {[
             { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
-            { href: '/admin/transactions', label: 'Order History', icon: ReceiptText },
+            { 
+              label: 'Order History', 
+              icon: ReceiptText,
+              subItems: [
+                { href: '/admin/transactions', label: 'Completed Purchases' },
+                { href: '/admin/transactions/downpayments', label: 'Downpayments' }
+              ]
+            },
             { href: '/admin/accounts', label: 'User Management', icon: User },
             { href: '/admin/inventory', label: 'Inventory Management', icon: Box },
             { href: '/admin/monitoring', label: 'Gadget Repair', icon: Wrench },
             { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
             { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
             { href: '/admin/settings', label: 'Settings', icon: Settings },
-          ].map((item) => {
-            const isActive = pathname === item.href;
+          ].map((item: any, idx) => {
             const Icon = item.icon;
+            if (item.subItems) {
+              const isAnySubActive = item.subItems.some((s: any) => pathname === s.href);
+              return (
+                <div key={idx} className="flex flex-col">
+                  <div 
+                    onClick={() => {
+                      if (isCollapsed) toggleCollapse();
+                      setIsOrderHistoryOpen(!isOrderHistoryOpen);
+                    }}
+                    title={isCollapsed ? item.label : undefined}
+                    className={`cursor-pointer flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                      isAnySubActive && !isOrderHistoryOpen
+                        ? isCollapsed 
+                          ? 'bg-white/20 text-white shadow-sm' 
+                          : 'bg-white/15 text-white border-l-4 border-l-white' 
+                        : isCollapsed
+                          ? 'text-white/70'
+                          : 'text-white/70 border-l-4 border-l-transparent'
+                    }`}
+                  >
+                    <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                    {!isCollapsed && (
+                      <div className="flex items-center justify-between flex-1">
+                        <span>{item.label}</span>
+                        {isOrderHistoryOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </div>
+                    )}
+                  </div>
+                  {!isCollapsed && isOrderHistoryOpen && (
+                    <div className="flex flex-col bg-black/10">
+                      {item.subItems.map((sub: any) => (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={`pl-14 py-3 text-sm font-medium transition-colors ${
+                            pathname === sub.href ? 'text-white bg-white/5 border-l-4 border-white' : 'text-white/60 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
+                          }`}
+                        >
+                          {sub.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const isActive = pathname === item.href;
             return (
               <Link 
                 key={item.href}

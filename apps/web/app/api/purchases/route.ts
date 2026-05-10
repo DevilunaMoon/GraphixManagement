@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { deviceId, amount, quantity, variations, cartItemIds } = await req.json();
+    const { deviceId, amount, quantity, variations, cartItemIds, paymentType } = await req.json();
 
     if (cartItemIds && Array.isArray(cartItemIds)) {
       // Fetch cart items to get their details
@@ -28,7 +28,8 @@ export async function POST(req: Request) {
               deviceId: item.deviceId,
               amount: price * item.quantity,
               quantity: item.quantity,
-              variations: item.variations
+              variations: item.variations,
+              paymentType: paymentType || 'Full'
             };
           })
         });
@@ -52,7 +53,8 @@ export async function POST(req: Request) {
         deviceId: deviceId,
         amount: amount || 0,
         quantity: quantity || 1,
-        variations: variations || null
+        variations: variations || null,
+        paymentType: paymentType || 'Full'
       }
     });
 

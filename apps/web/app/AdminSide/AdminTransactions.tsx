@@ -61,7 +61,7 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   }
 ];
 
-export default function AdminTransactions() {
+export default function AdminTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,7 +157,7 @@ export default function AdminTransactions() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const res = await fetch('/api/transactions');
+        const res = await fetch(`/api/transactions?type=${type}`);
         if (res.ok) {
           const data = await res.json();
           // If the database is empty, display the mock data so the user can see the UI
@@ -209,8 +209,8 @@ export default function AdminTransactions() {
               <ReceiptText size={28} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 m-0">Order History</h2>
-              <p className="text-gray-500 m-0 text-sm">View all completed purchases</p>
+              <h2 className="text-2xl font-bold text-gray-900 m-0">{type === "downpayment" ? "Downpayments" : "Order History"}</h2>
+              <p className="text-gray-500 m-0 text-sm">{type === "downpayment" ? "View all downpayment purchases" : "View all completed purchases"}</p>
             </div>
           </div>
           
