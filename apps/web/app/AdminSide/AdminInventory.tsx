@@ -33,7 +33,7 @@ export default function AdminInventory() {
   const [isAddingCat, setIsAddingCat] = useState(false);
 
   const fetchCategories = () => {
-    fetch('/api/categories')
+    fetch('/api/categories?t=' + Date.now())
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCategories(data);

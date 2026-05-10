@@ -323,7 +323,7 @@ export default function CashierDevices() {
   const [isAddingCat, setIsAddingCat] = useState(false);
 
   const fetchCategories = () => {
-    fetch('/api/categories')
+    fetch('/api/categories?t=' + Date.now())
       .then(res => res.json())
       .then(data => setCategories(Array.isArray(data) ? data : []))
       .catch(console.error);
@@ -557,7 +557,7 @@ export default function CashierDevices() {
       </div>
       {/* Delete Confirmation Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">Delete Device?</h3>
@@ -584,7 +584,7 @@ export default function CashierDevices() {
 
       {/* Error Modal */}
       {errorModalOpen && (
-        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">{errorModalContent.title}</h3>
@@ -603,7 +603,7 @@ export default function CashierDevices() {
 
       {/* Success Modal */}
       {successModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <CheckCircle2 className="text-green-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">{successModalContent.title}</h3>
