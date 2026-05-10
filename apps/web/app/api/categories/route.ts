@@ -50,3 +50,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message || 'Failed to create category' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { ids } = await req.json();
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'No category IDs provided' }, { status: 400 });
+    }
+
+    // Prisma deleteMany
+    await prisma.category.deleteMany({
+      where: {
+        id: { in: ids }
+      }
+    });
+
+    return NextResponse.json({ success: true, deletedCount: ids.length });
+  } catch (error: any) {
+    console.error('Error deleting categories:', error);
+    return NextResponse.json({ error: 'Failed to delete categories. Some categories might be in use by devices.' }, { status: 500 });
+  }
+}
