@@ -350,7 +350,6 @@ export default function CashierDevices() {
     } catch (err: any) {
       setErrorModalContent({ title: 'Error', message: 'Network error: ' + (err.message || '') });
       setErrorModalOpen(true);
-    }
     } finally {
       setIsDeletingCats(false);
     }
