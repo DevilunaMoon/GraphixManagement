@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     // Check expiration dynamically for downpayments
     const now = Date.now();
-    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+    const THREE_DAYS_MS = 0; // Temporarily set to 0 to demonstrate the expired badge
 
     const processedTransactions = transactions.map((tx: any) => {
       let isExpired = false;
