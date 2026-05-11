@@ -24,7 +24,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   ];
 
   return (
-    <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Signika'] transition-colors duration-300`}>
+    <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Inter'] transition-colors duration-300`}>
       {/* Mobile Header */}
       <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-4 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
         <div className="flex items-center gap-3">
