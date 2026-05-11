@@ -83,65 +83,7 @@ export default function AdminDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-          <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Transaction Count</h3>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
-              <h4 className="text-4xl font-black text-[#111] mt-1">{dashboardData?.transactions?.total || 0}</h4>
-            </div>
-            <div className="text-right flex flex-col gap-1">
-              <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {dashboardData?.transactions?.online || 0}</p>
-              <p className="text-sm font-bold bg-orange-50 text-orange-600 px-3 py-1 rounded-lg">Physical: {dashboardData?.transactions?.physical || 0}</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-          <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><span className="font-bold text-[22px] text-[#bd00ff]">₱</span> Revenue Breakdown</h3>
-          <div className="flex justify-between items-end">
-            <div>
-              <p className="text-[#666] text-sm font-semibold">Total Revenue</p>
-              <h4 className="text-4xl font-black text-[#111] mt-1">₱{dashboardData?.breakdown?.total?.toLocaleString() || 0}</h4>
-            </div>
-            <div className="text-right flex flex-col gap-1">
-              <p className="text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg">Retail: ₱{dashboardData?.breakdown?.retail?.toLocaleString() || 0}</p>
-              <p className="text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg">Repair: ₱{dashboardData?.breakdown?.repair?.toLocaleString() || 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-          <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><Wrench size={20} className="text-[#bd00ff]" /> Technician Workload</h3>
-          {(() => {
-            // Use live data if available, otherwise fallback to mock data to present the UI
-            const pending = dashboardData?.workload?.pendingRepairs ?? 8;
-            const techs = dashboardData?.workload?.activeTechnicians ?? 2;
-            
-            const isBottleneck = (pending > techs * 3) || (pending > 0 && techs === 0);
-            const isModerate = !isBottleneck && (pending > techs * 2);
-            
-            const statusColor = isBottleneck ? 'bg-red-50 text-red-600 border-red-200' : isModerate ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 'bg-green-50 text-green-600 border-green-200';
-            const statusText = isBottleneck ? 'Bottleneck' : isModerate ? 'Moderate' : 'Manageable';
-
-            return (
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[#666] text-sm font-semibold">Repair Queue Status</p>
-                  <h4 className={`text-3xl font-black mt-2 ${isBottleneck ? 'text-red-600' : 'text-[#111]'}`}>
-                    {statusText}
-                  </h4>
-                </div>
-                <div className="text-right flex flex-col gap-1.5">
-                  <p className="text-xs font-bold bg-gray-50 text-gray-600 px-2.5 py-1 rounded-lg border border-gray-100">Pending: {pending}</p>
-                  <p className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${statusColor}`}>Active Techs: {techs}</p>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      </div>
 
       {/* Chart Section */}
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
@@ -168,39 +110,103 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Secondary Stats Grid (User Growth) */}
-      <div className="w-full">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col">
-          <div className="mb-5 pb-4 border-b border-black/5">
-            <h3 className="text-lg text-[#111] font-bold">User Growth</h3>
+      {/* Lower Section Grid: Cards on left, Table on right */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        {/* Left Column: Stacked Cards */}
+        <div className="flex flex-col gap-6 lg:col-span-1">
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+            <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Transaction Count</h3>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
+                <h4 className="text-4xl font-black text-[#111] mt-1">{dashboardData?.transactions?.total || 0}</h4>
+              </div>
+              <div className="text-right flex flex-col gap-1">
+                <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {dashboardData?.transactions?.online || 0}</p>
+                <p className="text-sm font-bold bg-orange-50 text-orange-600 px-3 py-1 rounded-lg">Physical: {dashboardData?.transactions?.physical || 0}</p>
+              </div>
+            </div>
           </div>
-          <div className="w-full">
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr>
-                  <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Month</th>
-                  <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">New Users</th>
-                  <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5 hidden md:table-cell">Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userGrowthData.map((data, idx) => (
-                  <tr 
-                    key={idx} 
-                    className="border-b border-black/5 cursor-pointer hover:bg-black/5 transition-colors"
-                    onClick={() => setSelectedMonthData(data)}
-                  >
-                    <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.month}</td>
-                    <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.users}</td>
-                    <td className="py-3 px-4 hidden md:table-cell">
-                      <div className={`font-bold text-sm flex items-center gap-1 ${data.trendUp ? 'text-green-600' : 'text-red-600'}`}>
-                        {data.trendUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />} {data.trend}
-                      </div>
-                    </td>
+
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+            <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><span className="font-bold text-[22px] text-[#bd00ff]">₱</span> Revenue Breakdown</h3>
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-[#666] text-sm font-semibold">Total Revenue</p>
+                <h4 className="text-4xl font-black text-[#111] mt-1">₱{dashboardData?.breakdown?.total?.toLocaleString() || 0}</h4>
+              </div>
+              <div className="text-right flex flex-col gap-1">
+                <p className="text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg">Retail: ₱{dashboardData?.breakdown?.retail?.toLocaleString() || 0}</p>
+                <p className="text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg">Repair: ₱{dashboardData?.breakdown?.repair?.toLocaleString() || 0}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+            <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><Wrench size={20} className="text-[#bd00ff]" /> Technician Workload</h3>
+            {(() => {
+              // Use live data if available, otherwise fallback to mock data to present the UI
+              const pending = dashboardData?.workload?.pendingRepairs ?? 8;
+              const techs = dashboardData?.workload?.activeTechnicians ?? 2;
+              
+              const isBottleneck = (pending > techs * 3) || (pending > 0 && techs === 0);
+              const isModerate = !isBottleneck && (pending > techs * 2);
+              
+              const statusColor = isBottleneck ? 'bg-red-50 text-red-600 border-red-200' : isModerate ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 'bg-green-50 text-green-600 border-green-200';
+              const statusText = isBottleneck ? 'Bottleneck' : isModerate ? 'Moderate' : 'Manageable';
+
+              return (
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[#666] text-sm font-semibold">Repair Queue Status</p>
+                    <h4 className={`text-3xl font-black mt-2 ${isBottleneck ? 'text-red-600' : 'text-[#111]'}`}>
+                      {statusText}
+                    </h4>
+                  </div>
+                  <div className="text-right flex flex-col gap-1.5">
+                    <p className="text-xs font-bold bg-gray-50 text-gray-600 px-2.5 py-1 rounded-lg border border-gray-100">Pending: {pending}</p>
+                    <p className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${statusColor}`}>Active Techs: {techs}</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
+        {/* Right Column: User Growth */}
+        <div className="lg:col-span-2">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col h-full">
+            <div className="mb-5 pb-4 border-b border-black/5">
+              <h3 className="text-lg text-[#111] font-bold">User Growth</h3>
+            </div>
+            <div className="w-full">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr>
+                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Month</th>
+                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">New Users</th>
+                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5 hidden md:table-cell">Trend</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {userGrowthData.map((data, idx) => (
+                    <tr 
+                      key={idx} 
+                      className="border-b border-black/5 cursor-pointer hover:bg-black/5 transition-colors"
+                      onClick={() => setSelectedMonthData(data)}
+                    >
+                      <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.month}</td>
+                      <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.users}</td>
+                      <td className="py-3 px-4 hidden md:table-cell">
+                        <div className={`font-bold text-sm flex items-center gap-1 ${data.trendUp ? 'text-green-600' : 'text-red-600'}`}>
+                          {data.trendUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />} {data.trend}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
