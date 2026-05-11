@@ -26,6 +26,18 @@ export async function GET() {
       where: { status: 'Completed' }
     });
 
+    // Fetch active repairs for workload
+    const activeRepairs = await prisma.repairRequest.findMany({
+      where: { status: { not: 'Completed' } }
+    });
+
+    const pendingRepairs = activeRepairs.length;
+    const activeTechnicians = new Set(
+      activeRepairs
+        .map(r => r.technician)
+        .filter(t => t && t.trim() !== '')
+    ).size;
+
     let todaySales = 0;
     let yesterdaySales = 0;
     let weeklySales = 0;
@@ -98,6 +110,10 @@ export async function GET() {
         retail: totalRetail,
         repair: totalRepair,
         total: totalRetail + totalRepair
+      },
+      workload: {
+        pendingRepairs,
+        activeTechnicians
       }
     });
   } catch (error) {
