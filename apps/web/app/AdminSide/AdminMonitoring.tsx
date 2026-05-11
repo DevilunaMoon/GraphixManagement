@@ -352,9 +352,57 @@ export default function AdminMonitoring() {
     }
   };
 
+  const getSnapshotText = () => {
+    if (activeDevices.length === 0) return "No active repairs in the shop today.";
+    
+    const causesCount: Record<string, number> = {};
+    activeDevices.forEach(d => {
+      const cause = (d.cause || 'Unknown Issue').trim();
+      causesCount[cause] = (causesCount[cause] || 0) + 1;
+    });
+
+    const sortedCauses = Object.entries(causesCount).sort((a, b) => b[1] - a[1]);
+    
+    let summaryText = `Today, there are ${activeDevices.length} devices in the shop`;
+    
+    if (sortedCauses.length > 0) {
+      const parts = sortedCauses.slice(0, 3).map(([cause, count]) => {
+        return `${count} ${count === 1 ? 'is' : 'are'} for ${cause.toLowerCase()}`;
+      });
+      
+      if (parts.length > 1) {
+        const last = parts.pop();
+        summaryText += `: ${parts.join(', ')}, and ${last}.`;
+      } else {
+        summaryText += `: ${parts[0]}.`;
+      }
+      
+      if (sortedCauses.length > 3) {
+        summaryText = summaryText.slice(0, -1) + `, along with other various issues.`;
+      }
+    } else {
+      summaryText += `.`;
+    }
+    
+    return summaryText;
+  };
+
   return (
     <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
         
+        {/* Daily Repair Snapshot */}
+        {!isLoading && (
+          <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 border border-purple-200 rounded-xl p-5 shadow-sm flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="bg-white p-3 rounded-full shadow-sm text-purple-600 shrink-0">
+              <FileText size={24} />
+            </div>
+            <div className="flex flex-col">
+              <h3 className="font-bold text-purple-900 text-lg m-0">Daily Repair Snapshot</h3>
+              <p className="text-purple-800 m-0 mt-1 font-medium leading-relaxed">{getSnapshotText()}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header and Search */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#bd00ff] pb-4">
           <h2 className="text-2xl font-bold text-black border-none">Devices Monitoring</h2>
