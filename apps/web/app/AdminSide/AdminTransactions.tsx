@@ -10,6 +10,8 @@ interface Transaction {
   quantity: number;
   variations: string | null;
   source?: string;
+  status?: string;
+  isExpired?: boolean;
   user: {
     id: string;
     name: string | null;
@@ -272,9 +274,17 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                     className="bg-gray-50 hover:bg-purple-50/50 transition-colors group cursor-pointer"
                   >
                     <td className="px-4 py-4 rounded-l-2xl border-y border-l border-transparent group-hover:border-purple-100">
-                      <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
-                        {tx.id.substring(0, 8).toUpperCase()}
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        {tx.isExpired && tx.status !== 'Cancelled' && (
+                          <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">Expired</span>
+                        )}
+                        {tx.status === 'Cancelled' && (
+                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">Cancelled</span>
+                        )}
+                        <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
+                          {tx.id.substring(0, 8).toUpperCase()}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
                       <div className="flex items-center gap-3">
@@ -410,6 +420,41 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             </div>
             
             <div className="p-6">
+              
+              {selectedTransaction.isExpired && selectedTransaction.status !== 'Cancelled' && (
+                <div className="mb-5 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm shadow-sm flex flex-col gap-2">
+                  <div className="flex items-center gap-2 font-bold text-red-900">
+                    <span className="text-lg">⚠️</span> 3-Day Expiry Passed
+                  </div>
+                  <p className="m-0 leading-relaxed text-red-700">This downpayment has exceeded the 72-hour limit. The customer has not completed the payment.</p>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/transactions/${selectedTransaction.id}/cancel`, { method: 'PATCH' });
+                        if (res.ok) {
+                          setTransactions(prev => prev.map(t => t.id === selectedTransaction.id ? { ...t, status: 'Cancelled' } : t));
+                          setSelectedTransaction({ ...selectedTransaction, status: 'Cancelled' });
+                        } else {
+                          alert('Failed to cancel transaction');
+                        }
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors text-center cursor-pointer border-none shadow-sm"
+                  >
+                    Cancel & Release Inventory
+                  </button>
+                </div>
+              )}
+
+              {selectedTransaction.status === 'Cancelled' && (
+                <div className="mb-5 bg-gray-50 border border-gray-200 text-gray-600 p-4 rounded-xl text-sm shadow-sm">
+                  <div className="font-bold text-gray-800 mb-1">Transaction Cancelled</div>
+                  <p className="m-0">This transaction was cancelled and the reserved inventory has been officially restocked.</p>
+                </div>
+              )}
+
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center border-b border-gray-100 pb-3">
                   <span className="text-gray-500 font-semibold text-sm">Transaction ID</span>

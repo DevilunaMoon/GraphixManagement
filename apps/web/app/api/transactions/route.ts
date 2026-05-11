@@ -29,7 +29,22 @@ export async function GET(req: Request) {
       }
     });
 
-    return NextResponse.json(transactions);
+    // Check expiration dynamically for downpayments
+    const now = Date.now();
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+    const processedTransactions = transactions.map((tx: any) => {
+      let isExpired = false;
+      if (tx.paymentType === 'Downpayment' && tx.status === 'Active') {
+        const txAge = now - new Date(tx.createdAt).getTime();
+        if (txAge > THREE_DAYS_MS) {
+          isExpired = true;
+        }
+      }
+      return { ...tx, isExpired };
+    });
+
+    return NextResponse.json(processedTransactions);
   } catch (error) {
     console.error('Error fetching transactions:', error);
     return NextResponse.json({ error: 'Failed to fetch transactions' }, { status: 500 });
