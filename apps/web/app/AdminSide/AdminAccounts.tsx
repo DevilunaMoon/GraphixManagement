@@ -279,9 +279,13 @@ export default function AdminAccounts() {
             </div>
             
             <div className="p-6">
-              <p className="text-gray-600 mb-2 font-medium">
+              <p className="text-gray-600 mb-4 font-medium">
                 Choose a suspension duration for <span className="font-bold text-[#111]">{suspendModal.name}</span>.
               </p>
+
+              <div className="mb-5 bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-lg text-sm shadow-sm">
+                <span className="font-bold">⚠️ Important Policy:</span> Use the suspend feature <strong className="text-orange-900">only for problematic users</strong> causing trouble. Do not suspend users who are simply inactive.
+              </div>
               {suspendModal.status === 'Suspended' && (
                 <div className="mb-4 text-sm font-bold text-red-600 bg-red-50 p-2 rounded text-center border border-red-100">
                   Currently suspended until: {suspendModal.suspendedUntil ? new Date(suspendModal.suspendedUntil).toLocaleDateString() : 'Permanent'}
