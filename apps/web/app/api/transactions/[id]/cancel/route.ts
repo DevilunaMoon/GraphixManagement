@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     if (!id) return NextResponse.json({ error: 'Missing transaction ID' }, { status: 400 });
 
     const purchase = await prisma.purchase.findUnique({ where: { id } });
