@@ -257,7 +257,9 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Customer</th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Device</th>
                   {type === "downpayment" && <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Source</th>}
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    {type === "downpayment" ? "Payment Info" : "Amount"}
+                  </th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
                 </tr>
@@ -305,13 +307,30 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                         </span>
                       </td>
                     )}
-                    <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-[#bd00ff]">
-                          ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
-                        </span>
-                        {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-wider">Legacy</span>}
-                      </div>
+                    <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100 min-w-[150px]">
+                      {type === "downpayment" ? (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-semibold">Paid:</span>
+                            <span className="font-bold text-green-600">₱{(tx.amount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-1.5">
+                            <span className="text-gray-500 font-semibold">Balance:</span>
+                            <span className="font-bold text-red-500">₱{Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] border-t border-gray-100 pt-1">
+                            <span className="text-gray-400 font-medium">Monthly (12m):</span>
+                            <span className="font-bold text-blue-600">₱{(Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[#bd00ff]">
+                            ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
+                          </span>
+                          {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-wider">Legacy</span>}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-4 rounded-r-2xl border-y border-r border-transparent group-hover:border-purple-100">
                       <span className="text-sm font-semibold text-gray-600">
@@ -419,6 +438,33 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                     {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                   </span>
                 </div>
+
+                {/* Downpayment Breakdown */}
+                {type === "downpayment" && (
+                  <div className="mt-2 p-4 rounded-xl border border-blue-100 bg-blue-50 flex flex-col gap-3">
+                    <h4 className="font-bold text-blue-900 m-0 text-base mb-1">Payment Breakdown</h4>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-blue-700 font-medium">Total Device Price</span>
+                      <span className="font-bold text-blue-900">₱{((selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-blue-700 font-medium">Downpayment Paid</span>
+                      <span className="font-bold text-green-600">₱{(selectedTransaction.amount || 0).toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm border-t border-blue-200 pt-3 mt-1">
+                      <span className="text-blue-800 font-bold">Remaining Balance</span>
+                      <span className="font-bold text-red-500">₱{Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)).toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-blue-700 font-medium">Monthly Installment (12 mos)</span>
+                      <span className="font-bold text-blue-900">₱{(Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)) / 12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Warranty Section */}
                 <div className="mt-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 p-4 rounded-xl border border-purple-100 flex items-start gap-4">
