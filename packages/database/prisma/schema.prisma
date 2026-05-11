@@ -147,6 +147,7 @@ model Purchase {
   quantity   Int      @default(1)
   variations String?
   paymentType String  @default("Full")
+  source     String   @default("Online")
   createdAt  DateTime @default(now())
 }
 

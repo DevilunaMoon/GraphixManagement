@@ -9,6 +9,7 @@ interface Transaction {
   amount: number;
   quantity: number;
   variations: string | null;
+  source?: string;
   user: {
     id: string;
     name: string | null;
@@ -255,6 +256,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Transaction ID</th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Customer</th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Device</th>
+                  {type === "downpayment" && <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Source</th>}
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Amount</th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
@@ -296,6 +298,13 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                         </div>
                       </div>
                     </td>
+                    {type === "downpayment" && (
+                      <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
+                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {tx.source || 'Online'}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
                       <div className="flex flex-col">
                         <span className="font-bold text-[#bd00ff]">
@@ -326,6 +335,18 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Total Sales Summary */}
+        {filteredTransactions.length > 0 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center p-6 bg-purple-50 rounded-2xl border border-purple-100 mt-2 mb-6">
+            <span className="text-gray-600 font-bold text-lg mb-2 sm:mb-0">
+              Total {type === "downpayment" ? "Downpayments" : "Sales"} {filterDate ? `for ${new Date(filterDate).toLocaleDateString()}` : "Found"}
+            </span>
+            <span className="text-3xl font-black text-[#bd00ff]">
+              ₱{filteredTransactions.reduce((acc, tx) => acc + (tx.amount > 0 ? tx.amount : (tx.device?.price || 0)), 0).toLocaleString()}
+            </span>
           </div>
         )}
 
