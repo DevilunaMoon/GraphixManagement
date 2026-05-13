@@ -65,7 +65,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
 
   return (
     <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center overflow-y-auto">
-      <div className="w-full max-w-7xl flex flex-col gap-8">
+      <div className="w-full max-w-5xl flex flex-col gap-8">
         
         {/* Device Information Card */}
         <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col gap-6">
@@ -87,9 +87,9 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
           ) : !device ? (
             <div className="py-20 text-center text-red-500 font-bold">Device not found.</div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-10 lg:gap-16 items-center md:items-start w-full">
-              <div className="flex flex-col gap-4 w-full md:w-[400px] lg:w-[500px] shrink-0">
-                <div className="w-full h-[300px] md:h-[400px] lg:h-[450px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-6 flex justify-center items-center bg-gray-50 overflow-hidden">
+            <div className="flex flex-col md:flex-row gap-8 lg:gap-12 items-center md:items-start w-full">
+              <div className="flex flex-col gap-4 w-full md:w-[350px] shrink-0">
+                <div className="w-full h-[300px] md:h-[350px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-6 flex justify-center items-center bg-gray-50 overflow-hidden">
                   {device.image ? (
                     <img src={device.image} alt={device.deviceName} className="w-full h-full object-contain mix-blend-multiply" />
                   ) : (
