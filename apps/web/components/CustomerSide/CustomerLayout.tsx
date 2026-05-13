@@ -23,6 +23,8 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchCartCount = () => {
     fetch('/api/cart')
@@ -48,6 +50,9 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
     function handleClickOutside(event: MouseEvent) {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setIsSearchOpen(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -148,22 +153,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
           })}
         </nav>
 
-        {/* Log Out at bottom of sidebar */}
-        <div className={`p-4 border-t border-white/10 ${isCollapsed ? 'flex justify-center' : ''}`}>
-          <button
-            onClick={async () => {
-              await logoutUser();
-              window.location.href = '/login';
-            }}
-            title={isCollapsed ? "Log Out" : undefined}
-            className={`flex items-center text-red-300 hover:text-red-100 hover:bg-red-900/30 transition-all rounded-lg bg-transparent border-none outline-none cursor-pointer ${
-              isCollapsed ? 'p-3 justify-center' : 'w-full py-3 px-4 gap-3'
-            }`}
-          >
-            <LogOut size={22} className="shrink-0" />
-            {!isCollapsed && <span className="font-bold text-lg">Log Out</span>}
-          </button>
-        </div>
+
       </aside>
 
       {/* Main Content Area */}
@@ -252,8 +242,9 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
 
             {/* User Profile */}
             <div 
-              className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => navigate('/customer/profile')}
+              className="flex items-center gap-3 cursor-pointer group relative"
+              onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              ref={profileDropdownRef}
             >
               {user && (
                 <div className="hidden sm:flex flex-col items-end mr-1 text-white">
@@ -267,6 +258,29 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                 </div>
               ) : (
                 <UserCircle2 size={42} className="text-white group-hover:scale-110 transition-transform shrink-0" strokeWidth={1.5} />
+              )}
+
+              {/* Dropdown Menu */}
+              {isProfileDropdownOpen && (
+                <div className="absolute top-[120%] right-0 w-[200px] bg-white rounded-xl shadow-xl border border-gray-100 flex flex-col py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); navigate('/customer/profile'); setIsProfileDropdownOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-gray-700 hover:text-[#bd00ff] cursor-pointer transition-colors border-none bg-transparent text-left font-semibold text-sm"
+                  >
+                    <UserCircle2 size={18} /> View Profile
+                  </button>
+                  <div className="h-[1px] bg-gray-100 w-full my-1"></div>
+                  <button 
+                    onClick={async (e) => { 
+                      e.stopPropagation(); 
+                      await logoutUser(); 
+                      window.location.href = '/login'; 
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-500 cursor-pointer transition-colors border-none bg-transparent text-left font-semibold text-sm"
+                  >
+                    <LogOut size={18} /> Log Out
+                  </button>
+                </div>
               )}
             </div>
           </div>
