@@ -166,8 +166,8 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       </aside>
 
       {/* Main Content Area */}
-      <main className={`flex-1 transition-all duration-300 w-full min-h-screen flex flex-col pt-[60px] md:pt-0 ${
-        isCollapsed ? 'md:ml-[80px]' : 'md:ml-[260px]'
+      <main className={`flex-1 transition-all duration-300 min-h-screen flex flex-col pt-[60px] md:pt-0 w-full overflow-x-hidden ${
+        isCollapsed ? 'md:ml-[80px] md:w-[calc(100%-80px)]' : 'md:ml-[260px] md:w-[calc(100%-260px)]'
       }`}>
         
         {/* Top Header */}
