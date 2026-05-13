@@ -65,7 +65,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
 
   return (
     <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center overflow-y-auto">
-      <div className="w-full max-w-5xl flex flex-col gap-8">
+      <div className="w-full max-w-4xl flex flex-col gap-8">
         
         {/* Device Information Card */}
         <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col gap-6">
@@ -87,9 +87,9 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
           ) : !device ? (
             <div className="py-20 text-center text-red-500 font-bold">Device not found.</div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-8 lg:gap-12 items-center md:items-start w-full">
-              <div className="flex flex-col gap-4 w-full md:w-[350px] shrink-0">
-                <div className="w-full h-[300px] md:h-[350px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-6 flex justify-center items-center bg-gray-50 overflow-hidden">
+            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start w-full">
+              <div className="flex flex-col gap-4 w-full md:w-[300px] shrink-0">
+                <div className="w-full h-[300px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-4 flex justify-center items-center bg-gray-50 overflow-hidden">
                   {device.image ? (
                     <img src={device.image} alt={device.deviceName} className="w-full h-full object-contain mix-blend-multiply" />
                   ) : (
@@ -99,21 +99,21 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                 {device.proofImage && (
                   <div className="w-full flex flex-col gap-2 mt-4">
                     <span className="font-bold text-gray-700 text-center uppercase tracking-wider text-sm">Proof of Repair</span>
-                    <div className="w-full h-[250px] md:h-[300px] border-2 border-dashed border-gray-300 rounded-2xl p-2 flex justify-center items-center bg-gray-50 overflow-hidden">
+                    <div className="w-full h-[200px] border-2 border-dashed border-gray-300 rounded-2xl p-2 flex justify-center items-center bg-gray-50 overflow-hidden">
                       <img src={device.proofImage} alt="Proof of Repair" className="w-full h-full object-cover rounded-xl" />
                     </div>
                   </div>
                 )}
               </div>
               
-              <div className="flex flex-col gap-6 text-lg md:text-xl w-full flex-1 pt-4">
+              <div className="flex flex-col gap-5 text-lg w-full flex-1 pt-2">
                 <p className="m-0 text-gray-700"><strong>Device Name:</strong> <span className="text-black">{device.deviceName}</span></p>
                 <div className="h-[1px] bg-gray-100 w-full my-1"></div>
                 <p className="m-0 text-gray-700"><strong>Owner:</strong> <span className="text-black">{device.ownerName}</span></p>
                 <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700">
+                <p className="m-0 text-gray-700 flex items-center">
                   <strong>Status:</strong> 
-                  <span className={`font-bold ml-2 px-4 py-1.5 rounded-full text-base ${device.status === 'Completed' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
+                  <span className={`font-bold ml-3 px-3 py-1 rounded-full text-sm ${device.status === 'Completed' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
                     {device.status}
                   </span>
                 </p>
@@ -122,7 +122,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                 <div className="h-[1px] bg-gray-100 w-full my-1"></div>
                 <p className="m-0 text-gray-700"><strong>Technician:</strong> <span className="text-black">{device.technician || 'Unassigned'}</span></p>
                 <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700"><strong>Repair Cost:</strong> <span className="text-black font-bold text-2xl ml-2">₱{device.repairCost || 'Pending'}</span></p>
+                <p className="m-0 text-gray-700 flex items-center"><strong>Repair Cost:</strong> <span className="text-black font-bold text-xl ml-2">₱{device.repairCost || 'Pending'}</span></p>
               </div>
             </div>
           )}
