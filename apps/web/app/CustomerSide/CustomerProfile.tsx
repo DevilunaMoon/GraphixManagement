@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle, Activity } from 'lucide-react';
+import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 
@@ -20,29 +20,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [devices, setDevices] = useState<any[]>([]);
-  const [isLoadingDevices, setIsLoadingDevices] = useState(true);
-  const [showMonitoring, setShowMonitoring] = useState(false);
 
-  useEffect(() => {
-    setIsLoadingDevices(true);
-    fetch('/api/monitoring')
-      .then(res => res.json())
-      .then(data => {
-        setDevices(Array.isArray(data) ? data : []);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoadingDevices(false));
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('showMonitoring') === 'true') {
-        setShowMonitoring(true);
-      }
-    }
-  }, []);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -98,12 +76,9 @@ export default function CustomerProfile({ user }: { user?: any }) {
             </div>
             <div className="flex flex-col items-center gap-2">
               <span className="text-xl font-bold text-black">{userName}</span>
-              <button 
-                onClick={() => setShowMonitoring(false)}
-                className="flex items-center gap-2 text-gray-500 hover:text-[#bd00ff] bg-transparent border-none cursor-pointer transition-colors font-semibold p-0"
-              >
+              <div className="flex items-center gap-2 text-gray-500 font-semibold p-0">
                 <Pencil size={16} /> Edit Profile
-              </button>
+              </div>
             </div>
           </div>
           
@@ -115,13 +90,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
               <Receipt className="text-[#01f0ff] group-hover:text-[#bd00ff] transition-colors" size={24} />
               <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Digital Receipt</span>
             </button>
-            <button 
-              onClick={() => setShowMonitoring(true)}
-              className={`flex items-center gap-4 w-full p-4 rounded-xl border-2 cursor-pointer text-left transition-colors group ${showMonitoring ? 'bg-purple-50 border-[#bd00ff]' : 'bg-transparent hover:bg-purple-50 border-transparent'}`}
-            >
-              <Activity className={`${showMonitoring ? 'text-[#bd00ff]' : 'text-[#01f0ff]'} group-hover:text-[#bd00ff] transition-colors`} size={24} />
-              <span className={`text-lg font-semibold transition-colors ${showMonitoring ? 'text-[#bd00ff]' : 'text-gray-700 group-hover:text-[#bd00ff]'}`}>Device Monitoring</span>
-            </button>
+
             <button 
               onClick={() => navigate('/customer/change-password')}
               className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
@@ -133,7 +102,6 @@ export default function CustomerProfile({ user }: { user?: any }) {
         </aside>
 
         {/* Main Profile Area */}
-        {!showMonitoring && (
         <section className="flex-1 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col animate-in fade-in duration-300">
           <div className="border-b border-gray-200 pb-4 sm:pb-5 mb-6 sm:mb-8">
             <h2 className="text-2xl font-bold text-black m-0 border-none">My Profile</h2>
@@ -234,54 +202,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
             </button>
           </div>
         </section>
-        )}
 
-        {/* Device Monitoring Section */}
-        {showMonitoring && (
-          <section className="flex-1 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col gap-6 w-full animate-in fade-in duration-300">
-          <h2 className="text-2xl font-bold text-black m-0 border-none">Device Monitoring Progress</h2>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {isLoadingDevices ? (
-              <div className="col-span-full py-16 flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
-                <p className="text-[#666] font-semibold animate-pulse text-lg">Loading devices...</p>
-              </div>
-            ) : devices.length > 0 ? (
-              devices.slice(0, 8).map(device => (
-                <div 
-                  key={device.id} 
-                  onClick={() => navigate(`/customer/device-info/${device.id}`)}
-                  className="bg-white rounded-xl p-2 sm:p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-2 sm:gap-4 border border-[#bd00ff] items-center text-center group"
-                >
-                  <div className="h-24 sm:h-32 w-auto bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2">
-                    {device.image ? (
-                      <img src={device.image} alt={device.deviceName} className="h-full w-auto object-contain mix-blend-multiply md:group-hover:scale-105 transition-transform duration-300" />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-gray-100 text-gray-500 text-sm mix-blend-multiply">No Image</div>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-0.5 sm:gap-1 w-full text-black">
-                    <p className="font-bold text-xs sm:text-sm leading-tight">Device Name: <span className="font-normal">{device.deviceName}</span></p>
-                    <p className="font-bold text-xs sm:text-sm">Owner: <span className="font-normal">{device.ownerName}</span></p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full py-10 text-center text-gray-500 font-bold">No active monitoring devices.</div>
-            )}
-          </div>
-
-          <div className="flex justify-center mt-2">
-             <button 
-               onClick={() => navigate('/customer/monitoring')}
-               className="px-8 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors cursor-pointer border-none shadow-md"
-             >
-               View More
-             </button>
-          </div>
-        </section>
-        )}
         </div>
 
       </div>

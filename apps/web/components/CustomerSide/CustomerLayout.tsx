@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { logoutUser } from '../../actions/auth';
 import {
   Menu, X, Search, UserCircle2, ChevronLeft, ChevronRight, LogOut,
-  Grid, Bell, Settings, Info, ShoppingCart
+  Grid, Bell, Settings, Info, ShoppingCart, Activity
 } from 'lucide-react';
 
 export default function CustomerLayout({ children, user }: { children: React.ReactNode, user?: any }) {
@@ -118,6 +118,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
           {[
             { href: '/customer/dashboard', label: 'Dashboard', icon: Grid },
+            { href: '/customer/monitoring', label: 'Device Monitoring', icon: Activity },
             { href: '/customer/notifications', label: 'Notifications', icon: Bell },
             { href: '/customer/settings', label: 'Settings', icon: Settings },
             { href: '/customer/about', label: 'About', icon: Info },
