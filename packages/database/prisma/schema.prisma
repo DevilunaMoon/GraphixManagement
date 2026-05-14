@@ -13,51 +13,52 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  name        String?
-  phone       String?
-  password      String?
-  authProvider  String   @default("LOCAL")
-  role        String   @default("CUSTOMER")
-  image       String?
-  gender      String?
-  dateOfBirth String?
-  status        String   @default("Active")
-  suspendedUntil DateTime?
-  resetToken    String?
+  id               String          @id @default(cuid())
+  email            String          @unique
+  name             String?
+  phone            String?
+  password         String?
+  authProvider     String          @default("LOCAL")
+  role             String          @default("CUSTOMER")
+  image            String?
+  gender           String?
+  dateOfBirth      String?
+  status           String          @default("Active")
+  suspendedUntil   DateTime?
+  resetToken       String?
   resetTokenExpiry DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  reviews     Review[]
-  purchases   Purchase[]
-  repairRequests RepairRequest[]
-  cartItems   CartItem[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  reviews          Review[]
+  purchases        Purchase[]
+  repairRequests   RepairRequest[]
+  cartItems        CartItem[]
+  notifications    Notification[]
 }
 
 model Device {
-  id          String   @id @default(cuid())
-  name        String
-  price       Float
-  cost        Float    @default(0)
-  stock       Int
-  sold        Int      @default(0)
-  specs       String?
-  image       String?
-  images      String[] @default([])
+  id               String            @id @default(cuid())
+  name             String
+  price            Float
+  cost             Float             @default(0)
+  stock            Int
+  sold             Int               @default(0)
+  specs            String?
+  image            String?
+  images           String[]          @default([])
   downpaymentImage String?
-  asLowAs     String?
-  warranty    String?
-  downpayment String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  reviews     Review[]
-  purchases   Purchase[]
-  variations  DeviceVariation[]
-  cartItems   CartItem[]
+  asLowAs          String?
+  warranty         String?
+  downpayment      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  reviews          Review[]
+  purchases        Purchase[]
+  variations       DeviceVariation[]
+  cartItems        CartItem[]
 
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
 }
 
 model Review {
@@ -66,39 +67,39 @@ model Review {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId  String
-  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 }
 
 model DeviceVariation {
-  id        String   @id @default(cuid())
-  type      String   
-  name      String   
-  price     Float
-  cost      Float    @default(0)
-  stock     Int
-  deviceId  String
-  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  type     String
+  name     String
+  price    Float
+  cost     Float  @default(0)
+  stock    Int
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 }
 
-
 model RepairRequest {
-  id          String   @id @default(cuid())
-  deviceName  String
-  ownerName   String
-  progress    String
-  cause       String?
-  technician  String?
-  repairCost  String?
-  image       String?
-  proofImage  String?
-  status      String   @default("Active")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id         String           @id @default(cuid())
+  deviceName String
+  ownerName  String
+  progress   String
+  cause      String?
+  technician String?
+  repairCost String?
+  image      String?
+  proofImage String?
+  status     String           @default("Active")
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  userId     String?
+  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  timeline   RepairTimeline[]
 }
 
 model TechnicianFeedback {
@@ -138,18 +139,24 @@ model Policy {
 }
 
 model Purchase {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deviceId   String
-  device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  amount     Float    @default(0)
-  quantity   Int      @default(1)
-  variations String?
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId    String
+  device      Device  @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  amount      Float   @default(0)
+  quantity    Int     @default(1)
+  variations  String?
   paymentType String  @default("Full")
-  source     String   @default("Online")
-  status     String   @default("Active")
-  createdAt  DateTime @default(now())
+  source      String  @default("Online")
+  status      String  @default("Active")
+
+  referenceId     String? @unique
+  paymentIntentId String? @unique
+  paymentUrl      String?
+  receiptUrl      String?
+
+  createdAt DateTime @default(now())
 }
 
 model CartItem {
@@ -159,7 +166,28 @@ model CartItem {
   deviceId   String
   device     Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   quantity   Int      @default(1)
-  variations String?  
+  variations String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("SYSTEM")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RepairTimeline {
+  id              String        @id @default(cuid())
+  repairRequestId String
+  repairRequest   RepairRequest @relation(fields: [repairRequestId], references: [id], onDelete: Cascade)
+  status          String
+  description     String?
+  createdAt       DateTime      @default(now())
 }
