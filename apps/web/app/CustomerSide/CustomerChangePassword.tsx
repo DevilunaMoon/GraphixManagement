@@ -86,13 +86,6 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
               <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Digital Receipt</span>
             </button>
             <button 
-              onClick={() => navigate('/customer/profile?showMonitoring=true')}
-              className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
-            >
-              <Activity className="text-[#01f0ff] group-hover:text-[#bd00ff] transition-colors" size={24} />
-              <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Device Monitoring</span>
-            </button>
-            <button 
               className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-[#bd00ff] bg-purple-50 cursor-pointer text-left transition-colors"
             >
               <KeyRound className="text-[#bd00ff]" size={24} />
