@@ -94,6 +94,12 @@ export async function GET() {
       }
     });
 
+    const topProducts = await prisma.device.findMany({
+      orderBy: { sold: 'desc' },
+      take: 5,
+      select: { name: true, sold: true }
+    });
+
     return NextResponse.json({
       sales: {
         today: todaySales,
@@ -114,7 +120,8 @@ export async function GET() {
       workload: {
         pendingRepairs,
         activeTechnicians
-      }
+      },
+      topProducts
     });
   } catch (error) {
     console.error('Error fetching dashboard analytics:', error);
