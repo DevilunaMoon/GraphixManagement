@@ -59,7 +59,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       .catch(console.error);
   }, []);
 
-  const openPolicy = (e: React.MouseEvent, type: string) => {
+  const openPolicy = (e: any, type: string) => {
     e.preventDefault();
     const p = policies.find(p => p.type === type);
     if (p) {
