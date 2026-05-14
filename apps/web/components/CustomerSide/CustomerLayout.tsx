@@ -149,6 +149,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
           {[
             { href: '/customer/dashboard', label: 'Dashboard', icon: Grid },
+            { href: '/customer/products', label: 'Products', icon: ShoppingCart },
             { href: '/customer/monitoring', label: 'Device Monitoring', icon: Activity },
             { href: '/customer/notifications', label: 'Notifications', icon: Bell },
             { href: '/customer/settings', label: 'Settings', icon: Settings },
