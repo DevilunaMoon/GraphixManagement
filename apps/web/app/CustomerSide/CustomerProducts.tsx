@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -15,6 +15,13 @@ function CustomerProductsContent() {
   const [sortOrder, setSortOrder] = useState('default');
   const [budgetFilter, setBudgetFilter] = useState('');
   const searchParams = useSearchParams();
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (scrollOffset: number) => {
+    if (categoryScrollRef.current) {
+      categoryScrollRef.current.scrollBy({ left: scrollOffset, behavior: 'smooth' });
+    }
+  };
 
   const fallbackCategories = [
     { name: "Apple", logo: "/categories/Apple.jpg" },
@@ -118,10 +125,30 @@ function CustomerProductsContent() {
         </div>
 
         {/* Categories Section */}
-        <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full">
+        <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full relative group/cats">
           <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Categories</h2>
           
-          <div className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 scrollbar-hide">
+          {/* Left Chevron */}
+          <button 
+            onClick={() => scrollCategories(-300)}
+            className="absolute left-2 md:left-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+          >
+            <ChevronLeft size={24} />
+          </button>
+
+          {/* Right Chevron */}
+          <button 
+            onClick={() => scrollCategories(300)}
+            className="absolute right-2 md:right-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+          <div 
+            ref={categoryScrollRef}
+            className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
             {displayCategories.map((category, idx) => (
               <div 
                 key={category.id || idx} 
