@@ -231,8 +231,8 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
             </div>
           ) : products.length > 0 ? (
             products.slice(0, 30).map(product => (
-              <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-2 sm:p-4 shadow-sm hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-1.5 sm:gap-3 border-2 border-[#5c0099] group mt-0">
-                <div className="h-28 sm:h-36 w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2">
+              <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border-2 border-[#5c0099] group">
+                <div className="h-28 sm:h-36 w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                   {product.image ? (
                     <img src={product.image} alt={product.name} className="h-full w-auto object-contain mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                   ) : (
@@ -240,13 +240,22 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                   )}
                 </div>
                 <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                <div className="flex justify-between items-end mt-auto w-full">
-                  <p className="text-black font-bold text-sm sm:text-base">₱ {product.price?.toLocaleString() || '0'}</p>
+                <div className="flex justify-between items-end w-full">
+                  <p className="text-[#bd00ff] font-black text-sm sm:text-base">₱ {product.price?.toLocaleString() || '0'}</p>
                   <div className="flex flex-col items-end">
                     <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
                     <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
                   </div>
                 </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/customer/product-info?id=${product.id}`);
+                  }}
+                  className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm"
+                >
+                  View Product
+                </button>
               </div>
             ))
           ) : (
