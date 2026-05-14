@@ -447,7 +447,6 @@ export default function HomePage() {
         </div>
         <div className="max-w-7xl mx-auto text-center font-semibold md:flex md:justify-between items-center text-sm">
           <p>&copy; {new Date().getFullYear()} Graphix Management System.</p>
-          <p className="mt-2 md:mt-0 text-[#8b00cc]">Designed & Built for Efficiency.</p>
         </div>
       </footer>
 

@@ -347,7 +347,6 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
           </div>
           <div className="max-w-7xl mx-auto text-center font-semibold flex flex-col md:flex-row justify-between items-center text-xs">
             <p>&copy; {new Date().getFullYear()} Graphix Management System.</p>
-            <p className="mt-2 md:mt-0 text-[#bd00ff]">Designed & Built for Efficiency.</p>
           </div>
         </footer>
 
