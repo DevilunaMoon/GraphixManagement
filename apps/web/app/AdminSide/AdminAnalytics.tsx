@@ -126,19 +126,31 @@ export default function AdminAnalytics() {
 
 
 
-        {/* Chart Section */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-[#111] mb-1">Year-Over-Year Sales Growth</h3>
-            <p className="text-sm text-[#666]">All-Time Overview</p>
-          </div>
-          
-          <div className={`w-full overflow-x-auto border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
-            <div className="w-full min-w-[500px] h-[300px] p-5 flex justify-around items-end gap-2 text-xs md:text-sm">
-              {reportData.map((data) => (
-                <ChartBar key={`sales-${data.year}`} label={data.year} height={() => `${data.salesGrowth}%`} color={`bg-gradient-to-t ${styles.gradient}`} />
-              ))}
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+          {/* Year-Over-Year Sales Growth Bar Chart */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-[#111] mb-1">Year-Over-Year Sales Growth</h3>
+              <p className="text-sm text-[#666]">All-Time Overview</p>
             </div>
+            
+            <div className={`w-full overflow-x-auto border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
+              <div className="w-full min-w-[500px] h-[300px] p-5 flex justify-around items-end gap-2 text-xs md:text-sm">
+                {reportData.map((data) => (
+                  <ChartBar key={`sales-${data.year}`} label={data.year} height={() => `${data.salesGrowth}%`} color={`bg-gradient-to-t ${styles.gradient}`} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Yearly Best Sellers Pie Chart */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-1 flex flex-col">
+            <div className="mb-4">
+              <h3 className="text-xl font-bold text-[#111] mb-1">Yearly Best Sellers</h3>
+              <p className="text-sm text-[#666]">By Units Sold (This Year)</p>
+            </div>
+            <BestSellersPieChart products={analyticsData?.topProductsThisYear || []} />
           </div>
         </div>
 
@@ -315,6 +327,51 @@ function ChartBar({ label, height, color }: { label: string, height: () => strin
         style={{ height: h }}
       ></div>
       <span className="text-[#111] font-semibold">{label}</span>
+    </div>
+  );
+}
+
+function BestSellersPieChart({ products }: { products: { name: string, sold: number }[] }) {
+  if (!products || products.length === 0) {
+    return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">Loading data...</div>;
+  }
+
+  const colors = ['#bd00ff', '#01f0ff', '#5c0099', '#f000ff', '#8b00cc'];
+  const total = products.reduce((sum, p) => sum + p.sold, 0);
+  
+  if (total === 0) {
+    return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">No sales yet this year</div>;
+  }
+
+  let currentPercentage = 0;
+  const gradientStops = products.map((p, i) => {
+    const percentage = (p.sold / total) * 100;
+    const start = currentPercentage;
+    const end = currentPercentage + percentage;
+    currentPercentage = end;
+    return `${colors[i % colors.length]} ${start}% ${end}%`;
+  }).join(', ');
+
+  return (
+    <div className="flex flex-col h-full justify-between items-center w-full gap-6 mt-4">
+      <div 
+        className="w-[180px] h-[180px] rounded-full shadow-lg border-[6px] border-white transition-transform hover:scale-105 duration-300 cursor-pointer"
+        style={{ background: `conic-gradient(${gradientStops})` }}
+      ></div>
+      <div className="w-full flex flex-col gap-3">
+        {products.map((p, i) => (
+          <div key={i} className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: colors[i % colors.length] }}></span>
+              <span className="font-semibold text-gray-700 truncate max-w-[130px]">{p.name}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-gray-400 text-xs">{p.sold} sold</span>
+              <span className="font-black text-[#111] w-12 text-right">{((p.sold / total) * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

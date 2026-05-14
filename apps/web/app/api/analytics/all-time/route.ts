@@ -12,7 +12,7 @@ export async function GET() {
 
     // Fetch all purchases
     const purchases = await prisma.purchase.findMany({
-      include: { device: { select: { price: true } } }
+      include: { device: { select: { name: true, price: true } } }
     });
 
     // Fetch completed repairs
@@ -82,6 +82,22 @@ export async function GET() {
       }
     });
 
+    // Calculate Top 5 Products for THIS YEAR
+    const thisYearPurchases = purchases.filter(p => new Date(p.createdAt) >= currentYearStart);
+    const productSalesMap: Record<string, { name: string, sold: number }> = {};
+
+    thisYearPurchases.forEach(p => {
+      const id = p.deviceId;
+      if (!productSalesMap[id]) {
+        productSalesMap[id] = { name: p.device?.name || 'Unknown Device', sold: 0 };
+      }
+      productSalesMap[id].sold += p.quantity;
+    });
+
+    const topProductsThisYear = Object.values(productSalesMap)
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 5);
+
     return NextResponse.json({
       sales: {
         thisYear: thisYearSales,
@@ -101,7 +117,8 @@ export async function GET() {
       workload: {
         pendingRepairs,
         activeTechnicians
-      }
+      },
+      topProductsThisYear
     });
   } catch (error) {
     console.error('Error fetching all-time analytics:', error);
