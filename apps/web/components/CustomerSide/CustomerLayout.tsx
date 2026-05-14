@@ -24,6 +24,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [policies, setPolicies] = useState<any[]>([]);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [selectedPolicyTitle, setSelectedPolicyTitle] = useState('');
+  const [selectedPolicyContent, setSelectedPolicyContent] = useState('');
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchCartCount = () => {
@@ -45,6 +49,28 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       .then(data => setAllProducts(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    fetch('/api/policies')
+      .then(res => res.json())
+      .then(data => {
+        if (data.policies) setPolicies(data.policies);
+      })
+      .catch(console.error);
+  }, []);
+
+  const openPolicy = (e: React.MouseEvent, type: string) => {
+    e.preventDefault();
+    const p = policies.find(p => p.type === type);
+    if (p) {
+      setSelectedPolicyTitle(p.title);
+      setSelectedPolicyContent(p.content);
+    } else {
+      setSelectedPolicyTitle(type);
+      setSelectedPolicyContent(`No content available for ${type}.`);
+    }
+    setIsPolicyModalOpen(true);
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -313,9 +339,9 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             </div>
             <div className="flex flex-col gap-3 font-semibold">
               <h4 className="text-gray-900 font-bold text-base mb-1">Legal</h4>
-              <a href="#" className="hover:text-[#bd00ff] transition-colors text-sm text-gray-500 no-underline">Privacy Policy</a>
-              <a href="#" className="hover:text-[#bd00ff] transition-colors text-sm text-gray-500 no-underline">Terms of Service</a>
-              <a href="#" className="hover:text-[#bd00ff] transition-colors text-sm text-gray-500 no-underline">Refund Policy</a>
+              <a href="#" onClick={(e) => openPolicy(e, 'Privacy Policy')} className="hover:text-[#bd00ff] transition-colors text-sm text-gray-500 no-underline cursor-pointer">Privacy Policy</a>
+              <a href="#" onClick={(e) => openPolicy(e, 'Terms of Service')} className="hover:text-[#bd00ff] transition-colors text-sm text-gray-500 no-underline cursor-pointer">Terms of Service</a>
+              <a href="#" onClick={(e) => openPolicy(e, 'Refund Policy')} className="hover:text-[#bd00ff] transition-colors text-sm text-gray-500 no-underline cursor-pointer">Refund Policy</a>
             </div>
           </div>
           <div className="max-w-7xl mx-auto text-center font-semibold flex flex-col md:flex-row justify-between items-center text-xs">
@@ -325,6 +351,28 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         </footer>
 
       </main>
+
+      {/* Policy Modal */}
+      {isPolicyModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-3xl shadow-2xl flex flex-col relative overflow-hidden animate-in fade-in zoom-in duration-300">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="text-2xl font-bold text-gray-900 m-0 border-none">{selectedPolicyTitle}</h2>
+              <button 
+                onClick={() => setIsPolicyModalOpen(false)}
+                className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all border border-gray-200 cursor-pointer shadow-sm p-0"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            {/* Content */}
+            <div className="p-8 overflow-y-auto font-medium text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {selectedPolicyContent}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
