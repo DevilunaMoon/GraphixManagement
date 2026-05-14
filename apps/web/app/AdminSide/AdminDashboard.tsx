@@ -96,19 +96,20 @@ export default function AdminDashboard() {
           
           <div className="w-full overflow-x-auto border-2 border-[#BF00FF] rounded-xl relative">
             <div className="w-full min-w-[500px] h-[300px] flex justify-around items-end gap-2 text-xs md:text-sm p-5">
-              <ChartBar label="Jan" height="45%" />
-              <ChartBar label="Feb" height="60%" />
-              <ChartBar label="Mar" height="50%" />
-              <ChartBar label="Apr" height="80%" />
-              <ChartBar label="May" height="65%" />
-              <ChartBar label="Jun" height="55%" />
-              <ChartBar label="Jul" height="70%" />
-              <ChartBar label="Aug" height="85%" />
-              <ChartBar label="Sep" height="70%" />
-              <ChartBar label="Oct" height="55%" />
-              <ChartBar label="Nov" height="75%" />
-              <ChartBar label="Dec" height="90%" />
-            </div>
+            {(() => {
+              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+              const salesData = dashboardData?.salesGrowth || Array(12).fill(0);
+              const maxSales = Math.max(...salesData, 1); // Avoid division by zero
+              
+              return months.map((month, i) => {
+                const value = salesData[i];
+                // Calculate percentage height, with a minimum of 2% so it's always visible
+                const heightPercent = value > 0 ? Math.max((value / maxSales) * 100, 2) : 2;
+                
+                return <ChartBar key={month} label={month} height={`${heightPercent}%`} value={value} />;
+              });
+            })()}
+          </div>
           </div>
         </div>
 
@@ -276,9 +277,14 @@ function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: Re
   );
 }
 
-function ChartBar({ label, height }: { label: string, height: string }) {
+function ChartBar({ label, height, value }: { label: string, height: string, value?: number }) {
   return (
-    <div className="flex flex-col items-center justify-end h-full w-full gap-2">
+    <div className="flex flex-col items-center justify-end h-full w-full gap-2 group relative">
+      {value !== undefined && (
+        <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+          ₱{value.toLocaleString()}
+        </div>
+      )}
       <div 
         className="w-full max-w-[40px] bg-[#bd00ff] rounded-t-md hover:brightness-125 transition-all duration-300 cursor-pointer" 
         style={{ height }}

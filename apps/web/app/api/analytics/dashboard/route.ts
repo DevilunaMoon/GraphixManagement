@@ -18,7 +18,7 @@ export async function GET() {
 
     // Fetch all purchases
     const purchases = await prisma.purchase.findMany({
-      include: { device: { select: { price: true } } }
+      include: { device: { select: { name: true, price: true } } }
     });
 
     // Fetch completed repairs
@@ -48,6 +48,9 @@ export async function GET() {
     let onlineCount = 0;
     let physicalCount = 0;
 
+    const currentYear = now.getFullYear();
+    const monthlyData = Array(12).fill(0);
+
     // Process Purchases (Retail)
     purchases.forEach(p => {
       const amt = p.amount > 0 ? p.amount : (p.device?.price || 0);
@@ -63,6 +66,10 @@ export async function GET() {
 
       if (createdAt >= startOfWeek) weeklySales += amt;
       if (createdAt >= startOfMonth) monthlySales += amt;
+
+      if (createdAt.getFullYear() === currentYear) {
+        monthlyData[createdAt.getMonth()] += amt;
+      }
 
       // Type checking source (default 'Online' from schema)
       if ((p as any).source === 'In-Store') {
@@ -90,15 +97,29 @@ export async function GET() {
 
           if (createdAt >= startOfWeek) weeklySales += num;
           if (createdAt >= startOfMonth) monthlySales += num;
+
+          if (createdAt.getFullYear() === currentYear) {
+            monthlyData[createdAt.getMonth()] += num;
+          }
         }
       }
     });
 
-    const topProducts = await prisma.device.findMany({
-      orderBy: { sold: 'desc' },
-      take: 5,
-      select: { name: true, sold: true }
+    // Calculate Top 5 Products for the CURRENT MONTH
+    const currentMonthPurchases = purchases.filter(p => new Date(p.createdAt) >= startOfMonth);
+    const productSalesMap: Record<string, { name: string, sold: number }> = {};
+
+    currentMonthPurchases.forEach(p => {
+      const id = p.deviceId;
+      if (!productSalesMap[id]) {
+        productSalesMap[id] = { name: p.device?.name || 'Unknown Device', sold: 0 };
+      }
+      productSalesMap[id].sold += p.quantity;
     });
+
+    const topProducts = Object.values(productSalesMap)
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 5);
 
     return NextResponse.json({
       sales: {
@@ -107,6 +128,7 @@ export async function GET() {
         weekly: weeklySales,
         monthly: monthlySales
       },
+      salesGrowth: monthlyData,
       transactions: {
         online: onlineCount,
         physical: physicalCount,
