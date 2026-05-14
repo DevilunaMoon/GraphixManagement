@@ -65,7 +65,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
 
   return (
     <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center overflow-y-auto">
-      <div className="w-full max-w-4xl flex flex-col gap-8">
+      <div className="w-full max-w-5xl flex flex-col gap-8">
         
         {/* Device Information Card */}
         <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col gap-6">
@@ -87,43 +87,85 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
           ) : !device ? (
             <div className="py-20 text-center text-red-500 font-bold">Device not found.</div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start w-full">
-              <div className="flex flex-col gap-4 w-full md:w-[300px] shrink-0">
-                <div className="w-full h-[300px] border-2 border-dashed border-[#bd00ff] rounded-2xl p-4 flex justify-center items-center bg-gray-50 overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-stretch w-full">
+              
+              {/* Left Column: Images */}
+              <div className="flex flex-col gap-6 w-full lg:w-[380px] shrink-0">
+                <div className="w-full aspect-square md:h-[350px] lg:h-auto rounded-3xl p-6 flex justify-center items-center bg-gray-50 border border-gray-100 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden relative group">
                   {device.image ? (
-                    <img src={device.image} alt={device.deviceName} className="w-full h-full object-contain mix-blend-multiply" />
+                    <img src={device.image} alt={device.deviceName} className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm group-hover:scale-105 transition-transform duration-500" />
                   ) : (
-                    <div className="text-gray-400 font-bold text-lg">No Image</div>
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-2xl">📷</div>
+                      <span className="font-semibold text-sm">No Image Provided</span>
+                    </div>
                   )}
                 </div>
+
                 {device.proofImage && (
-                  <div className="w-full flex flex-col gap-2 mt-4">
-                    <span className="font-bold text-gray-700 text-center uppercase tracking-wider text-sm">Proof of Repair</span>
-                    <div className="w-full h-[200px] border-2 border-dashed border-gray-300 rounded-2xl p-2 flex justify-center items-center bg-gray-50 overflow-hidden">
-                      <img src={device.proofImage} alt="Proof of Repair" className="w-full h-full object-cover rounded-xl" />
+                  <div className="w-full flex flex-col gap-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <div className="w-2 h-2 rounded-full bg-[#bd00ff]"></div>
+                      <span className="font-bold text-gray-800 tracking-wide text-sm uppercase">Proof of Repair</span>
+                    </div>
+                    <div className="w-full h-[220px] rounded-2xl p-2 flex justify-center items-center bg-gray-50 border border-gray-100 shadow-sm overflow-hidden group">
+                      <img src={device.proofImage} alt="Proof of Repair" className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-500" />
                     </div>
                   </div>
                 )}
               </div>
               
-              <div className="flex flex-col gap-5 text-lg w-full flex-1 pt-2">
-                <p className="m-0 text-gray-700"><strong>Device Name:</strong> <span className="text-black">{device.deviceName}</span></p>
-                <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700"><strong>Owner:</strong> <span className="text-black">{device.ownerName}</span></p>
-                <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700 flex items-center">
-                  <strong>Status:</strong> 
-                  <span className={`font-bold ml-3 px-3 py-1 rounded-full text-sm ${device.status === 'Completed' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}>
-                    {device.status}
-                  </span>
-                </p>
-                <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700"><strong>Cause of the problem:</strong> <span className="text-black">{device.cause || 'Not specified'}</span></p>
-                <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700"><strong>Technician:</strong> <span className="text-black">{device.technician || 'Unassigned'}</span></p>
-                <div className="h-[1px] bg-gray-100 w-full my-1"></div>
-                <p className="m-0 text-gray-700 flex items-center"><strong>Repair Cost:</strong> <span className="text-black font-bold text-xl ml-2">₱{device.repairCost || 'Pending'}</span></p>
+              {/* Right Column: Details */}
+              <div className="flex flex-col w-full flex-1 gap-4">
+                <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 h-full shadow-[inset_0_2px_10px_rgba(0,0,0,0.01)]">
+                  
+                  {/* Status Highlight */}
+                  <div className="flex justify-between items-start pb-6 border-b border-gray-200/60">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Current Status</span>
+                      <span className={`inline-flex font-bold px-4 py-1.5 rounded-full text-sm mt-1 w-fit ${device.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {device.status}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 text-right">
+                      <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Repair Cost</span>
+                      <span className="text-2xl font-black text-[#bd00ff]">₱{device.repairCost || 'Pending'}</span>
+                    </div>
+                  </div>
+
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8 pt-2">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Device Name</span>
+                      <span className="text-lg font-semibold text-gray-900">{device.deviceName}</span>
+                    </div>
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Owner</span>
+                      <span className="text-lg font-semibold text-gray-900">{device.ownerName}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cause of Problem</span>
+                      <div className="bg-white border border-gray-100 rounded-xl p-4 mt-1 shadow-sm">
+                        <span className="text-base text-gray-700 leading-relaxed">{device.cause || 'No specific cause recorded.'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned Technician</span>
+                      <div className="flex items-center gap-3 mt-1">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
+                          {device.technician ? device.technician.charAt(0).toUpperCase() : '?'}
+                        </div>
+                        <span className="text-lg font-semibold text-gray-900">{device.technician || 'Pending Assignment'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
+
             </div>
           )}
         </section>
