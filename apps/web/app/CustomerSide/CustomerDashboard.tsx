@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,13 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
   const [isLoading, setIsLoading] = useState(true);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [direction, setDirection] = useState(1);
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (scrollOffset: number) => {
+    if (categoryScrollRef.current) {
+      categoryScrollRef.current.scrollBy({ left: scrollOffset, behavior: 'smooth' });
+    }
+  };
 
   const fallbackCategories = [
     { name: "Apple", logo: "/categories/Apple.jpg" },
@@ -162,17 +169,37 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
       )}
 
       {/* Categories Section */}
-      <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full max-w-7xl mx-auto">
+      <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full max-w-7xl mx-auto relative group/cats">
         <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Categories</h2>
         
-        <div className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 scrollbar-hide">
+        {/* Left Chevron */}
+        <button 
+          onClick={() => scrollCategories(-300)}
+          className="absolute left-2 md:left-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+        >
+          <ChevronLeft size={24} />
+        </button>
+
+        {/* Right Chevron */}
+        <button 
+          onClick={() => scrollCategories(300)}
+          className="absolute right-2 md:right-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+        >
+          <ChevronRight size={24} />
+        </button>
+
+        <div 
+          ref={categoryScrollRef}
+          className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {displayCategories.map((category, idx) => (
             <div 
               key={category.id || idx} 
               onClick={() => navigate(`/customer/products?category=${encodeURIComponent(category.name || category.id)}`)}
               className="flex flex-col items-center gap-3 min-w-[80px] sm:min-w-[100px] cursor-pointer group"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 flex items-center justify-center shadow-sm border border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md transition-all ease-out duration-300 p-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 flex items-center justify-center shadow-sm border border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md transition-all ease-out duration-300 p-4 shrink-0">
                 {category.logoUrl || category.logo ? (
                   <img 
                     src={category.logoUrl || category.logo} 
