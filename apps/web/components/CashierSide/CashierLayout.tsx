@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, Home, Wrench, Smartphone, Plus, Receipt, Bell } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -12,6 +12,26 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const unread = data.filter((n: any) => !n.isRead).length;
+          setUnreadCount(unread);
+        }
+      } catch (err) {
+        console.error('Failed to fetch unread count:', err);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
@@ -99,8 +119,13 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
                       : 'text-white/70 border-l-4 border-l-transparent'
                 }`}
               >
-                <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-start pl-2 gap-3'} items-center w-full transition-all duration-300`}>
+                <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-start pl-2 gap-3'} items-center w-full transition-all duration-300 relative`}>
                   <Icon size={isCollapsed ? 22 : 20} strokeWidth={2} />
+                  {item.label === 'Notifications' && unreadCount > 0 && (
+                    <span className={`absolute bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md ${isCollapsed ? 'top-[-8px] right-[4px] w-4 h-4' : 'top-1/2 -translate-y-1/2 right-4 w-5 h-5'}`}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                   {!isCollapsed && <span className="text-[15px] tracking-wide">{item.label}</span>}
                 </div>
               </button>
