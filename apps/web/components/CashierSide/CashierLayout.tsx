@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, Home, Wrench, Smartphone, Plus, Receipt } from 'lucide-react';
+import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, Home, Wrench, Smartphone, Plus, Receipt, Bell } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function CashierLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +20,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
     { href: '/cashier/dashboard', label: 'Dashboard', icon: Home },
     { href: '/cashier/monitoring', label: 'Gadget Repair', icon: Wrench },
     { href: '/cashier/devices', label: 'Devices', icon: Smartphone },
+    { href: '/cashier/notifications', label: 'Notifications', icon: Bell },
     { href: '/cashier/records', label: 'Records', icon: Receipt },
   ];
 

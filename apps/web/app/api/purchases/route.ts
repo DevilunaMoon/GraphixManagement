@@ -11,6 +11,28 @@ export async function POST(req: Request) {
 
     const { deviceId, amount, quantity, variations, cartItemIds, paymentType } = await req.json();
 
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { name: true, email: true }
+    });
+    const userName = user?.name || user?.email || 'A customer';
+
+    async function notifyCashiers(paymentLabel: string) {
+      const cashiers = await prisma.user.findMany({
+        where: { role: 'CASHIER' },
+        select: { id: true }
+      });
+      if (cashiers.length > 0) {
+        const notifications = cashiers.map(c => ({
+          userId: c.id,
+          title: 'New Checkout Alert',
+          message: `${userName} just checked out via ${paymentLabel}.`,
+          type: 'PAYMENT'
+        }));
+        await prisma.notification.createMany({ data: notifications });
+      }
+    }
+
     if (cartItemIds && Array.isArray(cartItemIds)) {
       // Fetch cart items to get their details
       const cartItems = await prisma.cartItem.findMany({
@@ -39,6 +61,9 @@ export async function POST(req: Request) {
           where: { id: { in: cartItemIds }, userId: session.userId }
         });
 
+        const pTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
+        await notifyCashiers(pTypeLabel);
+
         return NextResponse.json({ success: true, message: 'Cart items purchased' }, { status: 201 });
       }
     }
@@ -57,6 +82,9 @@ export async function POST(req: Request) {
         paymentType: paymentType || 'Full'
       }
     });
+
+    const singlePTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
+    await notifyCashiers(singlePTypeLabel);
 
     return NextResponse.json(purchase, { status: 201 });
   } catch (error) {
