@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
-import { getSession } from '../../../lib/session';
+import { getSession } from '../../../../lib/session';
 
 export async function POST(req: Request) {
   try {
