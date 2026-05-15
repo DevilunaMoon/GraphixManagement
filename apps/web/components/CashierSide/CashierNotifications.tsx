@@ -63,7 +63,7 @@ export default function CashierNotifications() {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto h-[60vh] justify-center items-center">
+      <div className="flex flex-col gap-6 w-full h-[60vh] justify-center items-center">
         <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
         <p className="text-gray-500 font-medium tracking-wide">Loading Alerts...</p>
       </div>
@@ -73,7 +73,7 @@ export default function CashierNotifications() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
+    <div className="flex flex-col gap-6 w-full">
       <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex justify-between items-center">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-purple-100 text-purple-600">
