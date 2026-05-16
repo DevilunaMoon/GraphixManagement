@@ -281,7 +281,7 @@ function CustomerProductInfoContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 mt-auto pt-4">
+            <div className="flex flex-col lg:flex-row items-center gap-3 mt-auto pt-4 w-full">
               <button 
                 onClick={() => {
                   if (product?.downpaymentImage || product?.asLowAs || product?.warranty || product?.downpayment) {
@@ -291,22 +291,22 @@ function CustomerProductInfoContent() {
                   }
                 }}
                 disabled={currentStock === 0 || !hasSelectedAllSections}
-                className="flex-1 py-3.5 border-2 border-[#bd00ff] bg-white rounded-xl text-[#bd00ff] font-bold text-lg hover:bg-purple-50 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full lg:flex-1 py-3.5 border-2 border-[#bd00ff] bg-white rounded-xl text-[#bd00ff] font-bold text-base hover:bg-purple-50 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Downpayment
               </button>
               <button 
                 onClick={handleAddToCart}
                 disabled={currentStock === 0 || !hasSelectedAllSections || isAddingToCart}
-                className="flex-1 py-3.5 flex items-center justify-center gap-2 border-2 border-[#bd00ff] bg-purple-50 rounded-xl text-[#bd00ff] font-bold text-lg hover:bg-purple-100 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full lg:flex-1 py-3.5 flex items-center justify-center gap-2 border-2 border-[#bd00ff] bg-purple-50 rounded-xl text-[#bd00ff] font-bold text-base hover:bg-purple-100 transition-colors cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ShoppingCart size={22} />
+                <ShoppingCart size={20} />
                 {isAddingToCart ? 'Adding...' : 'Add to Cart'}
               </button>
               <button 
                 onClick={() => navigate(`/customer/payment?deviceId=${product.id}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}`)}
                 disabled={currentStock === 0 || !hasSelectedAllSections}
-                className="flex-1 py-3.5 border-none bg-[#bd00ff] rounded-xl text-white font-bold text-lg hover:bg-[#9c00d6] shadow-[0_4px_15px_rgba(189,0,255,0.4)] transition-all cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full lg:flex-1 py-3.5 border-none bg-[#bd00ff] rounded-xl text-white font-bold text-base hover:bg-[#9c00d6] shadow-[0_4px_15px_rgba(189,0,255,0.4)] transition-all cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Buy Now
               </button>
