@@ -149,29 +149,39 @@ function CustomerProductsContent() {
             className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            {displayCategories.map((category, idx) => (
+            {displayCategories.map((category, idx) => {
+              const catName = category.name || category.id;
+              const isActive = categoryFilter === catName;
+              return (
               <div 
                 key={category.id || idx} 
-                onClick={() => navigate(`/customer/products?category=${encodeURIComponent(category.name || category.id)}`)}
+                onClick={() => {
+                  if (isActive) {
+                    navigate('/customer/products');
+                  } else {
+                    navigate(`/customer/products?category=${encodeURIComponent(catName)}`);
+                  }
+                }}
                 className="flex flex-col items-center gap-3 min-w-[80px] sm:min-w-[100px] cursor-pointer group"
               >
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 flex items-center justify-center shadow-sm border border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md transition-all ease-out duration-300 p-4">
+                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-sm border transition-all ease-out duration-300 p-4 ${isActive ? 'bg-purple-100 border-[#bd00ff] shadow-md scale-105' : 'bg-gray-50 border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md'}`}>
                   {category.logoUrl || category.logo ? (
                     <img 
                       src={category.logoUrl || category.logo} 
                       alt={category.name} 
-                      className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                      className={`w-full h-full object-contain transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}
                       style={category.name === 'Apple' ? { paddingBottom: '2px' } : {}}
                     />
                   ) : (
                     <span className="text-xs text-gray-400 font-bold">No Img</span>
                   )}
                 </div>
-                <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center group-hover:text-[#bd00ff] transition-colors leading-tight">
+                <span className={`text-xs sm:text-sm font-semibold text-center transition-colors leading-tight ${isActive ? 'text-[#bd00ff]' : 'text-gray-700 group-hover:text-[#bd00ff]'}`}>
                   {category.name}
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
