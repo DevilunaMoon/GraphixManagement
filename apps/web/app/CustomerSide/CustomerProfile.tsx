@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
+import DatePicker from '../../../components/ui/DatePicker';
 
 export default function CustomerProfile({ user }: { user?: any }) {
   const router = useRouter();
@@ -165,11 +166,10 @@ export default function CustomerProfile({ user }: { user?: any }) {
                   Date of Birth
                 </label>
                 <div className="flex-1">
-                  <input 
-                    type="date" 
+                  <DatePicker 
                     value={dob} 
-                    onChange={e => setDob(e.target.value)}
-                    className="w-full h-11 border-2 border-gray-300 rounded-lg px-4 outline-none focus:border-[#bd00ff] text-black font-semibold transition-colors"
+                    onChange={setDob}
+                    className="w-full h-11 border-2 border-gray-300 rounded-lg px-4 outline-none focus:border-[#bd00ff] transition-colors bg-white"
                   />
                 </div>
               </div>

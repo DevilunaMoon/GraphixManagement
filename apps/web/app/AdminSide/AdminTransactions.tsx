@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck } from 'lucide-react';
+import DatePicker from '../../../components/ui/DatePicker';
 
 interface Transaction {
   id: string;
@@ -224,15 +225,17 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
           </div>
           
           <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
-            <input 
-              type="date" 
-              value={filterDate}
-              onChange={(e) => {
-                setFilterDate(e.target.value);
-                setCurrentPage(1); // Reset to page 1 on filter
-              }}
-              className="w-full sm:w-auto px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold text-gray-600"
-            />
+            <div className="w-full sm:w-40 md:w-48 relative">
+              <DatePicker 
+                value={filterDate}
+                onChange={(val) => {
+                  setFilterDate(val);
+                  setCurrentPage(1);
+                }}
+                className="w-full h-[48px] px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-purple-500 focus-within:bg-white outline-none transition-all text-sm font-semibold text-gray-600"
+                placeholder="Filter date..."
+              />
+            </div>
             <div className="relative w-full md:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input 
