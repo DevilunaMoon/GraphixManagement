@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
-import DatePicker from '../../../components/ui/DatePicker';
+import DatePicker from '../../components/ui/DatePicker';
 
 export default function CustomerProfile({ user }: { user?: any }) {
   const router = useRouter();

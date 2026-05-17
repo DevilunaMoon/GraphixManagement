@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck } from 'lucide-react';
-import DatePicker from '../../../components/ui/DatePicker';
+import DatePicker from '../../components/ui/DatePicker';
 
 interface Transaction {
   id: string;
