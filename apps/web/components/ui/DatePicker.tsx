@@ -69,12 +69,20 @@ export default function DatePicker({ value, onChange, className = '', placeholde
               .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #f3e8ff; border-radius: 12px; }
               .rdp-day { border-radius: 12px; height: 40px; width: 40px; }
               .rdp-nav_button { width: 32px; height: 32px; border-radius: 8px; }
+              .rdp-dropdown { background-color: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px 8px; font-weight: bold; font-family: inherit; color: #111827; outline: none; cursor: pointer; }
+              .rdp-dropdown:focus { border-color: #bd00ff; }
+              .rdp-dropdown_month { margin-right: 8px; }
+              .rdp-caption_label { display: none; }
+              .rdp-dropdown_root { display: flex; align-items: center; }
             `}} />
             
             <DayPicker
               mode="single"
               selected={selectedDate}
               onSelect={handleSelect}
+              captionLayout="dropdown"
+              startMonth={new Date(1950, 0)}
+              endMonth={new Date(2030, 11)}
               className="text-sm font-['Inter'] m-0"
               showOutsideDays
             />
