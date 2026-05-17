@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parse } from 'date-fns';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/dist/style.css';
+import ReactDatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 
 interface DatePickerProps {
@@ -14,7 +14,7 @@ interface DatePickerProps {
 export default function DatePicker({ value, onChange, className = '', placeholder = 'Select date' }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  let selectedDate: Date | undefined = undefined;
+  let selectedDate: Date | null = null;
   if (value) {
     const parsed = parse(value, 'yyyy-MM-dd', new Date());
     if (!isNaN(parsed.getTime())) {
@@ -22,7 +22,7 @@ export default function DatePicker({ value, onChange, className = '', placeholde
     }
   }
 
-  const handleSelect = (date: Date | undefined) => {
+  const handleSelect = (date: Date | null) => {
     if (date) {
       onChange(format(date, 'yyyy-MM-dd'));
     } else {
@@ -49,42 +49,54 @@ export default function DatePicker({ value, onChange, className = '', placeholde
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 m-4"
+            className="bg-white rounded-3xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 m-4 flex flex-col items-center"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+              className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors z-10"
             >
               <X size={18} />
             </button>
             
-            <div className="mb-2 pr-8">
+            <div className="mb-4 pr-8 w-full text-left">
               <h3 className="text-lg font-bold text-gray-900 m-0">Select Date</h3>
             </div>
 
             <style dangerouslySetInnerHTML={{__html: `
-              .rdp-day_selected { background-color: #bd00ff !important; color: white !important; font-weight: bold; border-radius: 12px; }
-              .rdp-day_today { color: #bd00ff; font-weight: bold; }
-              .rdp-button:hover:not([disabled]):not(.rdp-day_selected) { background-color: #f3e8ff; border-radius: 12px; }
-              .rdp-day { border-radius: 12px; height: 40px; width: 40px; }
-              .rdp-nav_button { width: 32px; height: 32px; border-radius: 8px; }
-              .rdp-dropdown { background-color: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 4px 8px; font-weight: bold; font-family: inherit; color: #111827; outline: none; cursor: pointer; }
-              .rdp-dropdown:focus { border-color: #bd00ff; }
-              .rdp-dropdown_month { margin-right: 8px; }
-              .rdp-caption_label { display: none; }
-              .rdp-dropdown_root { display: flex; align-items: center; }
+              .react-datepicker { border: none !important; font-family: 'Inter', sans-serif !important; }
+              .react-datepicker__header { background-color: transparent !important; border-bottom: none !important; padding-top: 0 !important; }
+              .react-datepicker__day--selected, .react-datepicker__day--keyboard-selected { background-color: #bd00ff !important; color: white !important; border-radius: 12px !important; font-weight: bold; }
+              .react-datepicker__day:hover:not(.react-datepicker__day--selected) { background-color: #f3e8ff !important; border-radius: 12px !important; }
+              .react-datepicker__day { border-radius: 12px !important; margin: 0.2rem !important; width: 2.5rem !important; line-height: 2.5rem !important; }
+              .react-datepicker__day-name { margin: 0.2rem !important; width: 2.5rem !important; font-weight: bold; color: #6b7280; }
+              .react-datepicker__current-month { display: none; }
+              .react-datepicker__month-dropdown-container, .react-datepicker__year-dropdown-container { margin: 0 5px !important; }
+              .react-datepicker__month-select, .react-datepicker__year-select { 
+                padding: 6px 10px; 
+                border-radius: 8px; 
+                border: 2px solid #e5e7eb; 
+                background: white; 
+                font-weight: bold; 
+                color: #111827; 
+                outline: none; 
+                cursor: pointer;
+                transition: all 0.2s;
+              }
+              .react-datepicker__month-select:focus, .react-datepicker__year-select:focus { border-color: #bd00ff; }
+              .react-datepicker__navigation { top: 12px !important; }
+              .react-datepicker__header__dropdown { margin-bottom: 12px; }
             `}} />
             
-            <DayPicker
-              mode="single"
+            <ReactDatePicker
               selected={selectedDate}
-              onSelect={handleSelect}
-              captionLayout="dropdown"
-              startMonth={new Date(1950, 0)}
-              endMonth={new Date(2030, 11)}
-              className="text-sm font-['Inter'] m-0"
-              showOutsideDays
+              onChange={handleSelect}
+              inline
+              showMonthDropdown
+              showYearDropdown
+              dropdownMode="select"
+              minDate={new Date(1950, 0, 1)}
+              maxDate={new Date(2030, 11, 31)}
             />
           </div>
         </div>
