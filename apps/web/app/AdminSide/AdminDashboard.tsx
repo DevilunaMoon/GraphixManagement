@@ -103,8 +103,8 @@ export default function AdminDashboard() {
               
               return months.map((month, i) => {
                 const value = salesData[i];
-                // Calculate percentage height, with a minimum of 2% so it's always visible
-                const heightPercent = value > 0 ? Math.max((value / maxSales) * 100, 2) : 2;
+                // Calculate percentage height, maximum 85% so the tooltip has room above the bar
+                const heightPercent = value > 0 ? Math.max((value / maxSales) * 85, 2) : 2;
                 
                 return <ChartBar key={month} label={month} height={`${heightPercent}%`} value={value} />;
               });
