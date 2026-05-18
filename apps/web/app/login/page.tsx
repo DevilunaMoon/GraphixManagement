@@ -84,7 +84,7 @@ function LoginContent() {
 
   return (
     <div 
-      className="min-h-screen flex py-10 items-center justify-center p-4 font-['Inter'] relative overflow-hidden bg-cover bg-center"
+      className="h-[100dvh] w-full flex items-center justify-center p-4 sm:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
       style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
     >
       <button
@@ -97,11 +97,11 @@ function LoginContent() {
       </button>
 
       {/* Main Container */}
-      <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl min-h-[680px] flex flex-col relative transition-all duration-700 border border-white/50">
+      <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-4xl h-full max-h-[680px] flex flex-col relative transition-all duration-700 border border-white/50">
 
         {/* --- Sign In Form --- */}
         <div 
-          className={`w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:left-0
+          className={`w-full h-full flex-1 md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:left-0 overflow-y-auto
             ${isLogin ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-[20%] pointer-events-none hidden md:flex'}
             ${isLogin ? 'flex' : 'hidden md:flex'}
           `}
@@ -181,7 +181,7 @@ function LoginContent() {
 
         {/* --- Sign Up Form --- */}
         <div 
-          className={`w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:right-0
+          className={`w-full h-full flex-1 md:w-1/2 p-6 sm:p-8 md:p-12 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:right-0 overflow-y-auto
             ${!isLogin ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-[20%] pointer-events-none hidden md:flex'}
             ${!isLogin ? 'flex' : 'hidden md:flex'}
           `}
