@@ -279,16 +279,17 @@ function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: Re
 
 function ChartBar({ label, height, value }: { label: string, height: string, value?: number }) {
   return (
-    <div className="flex flex-col items-center justify-end h-full w-full gap-2 group relative">
-      {value !== undefined && (
-        <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
-          ₱{value.toLocaleString()}
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-end h-full w-full gap-2 group">
       <div 
-        className="w-full max-w-[40px] bg-[#bd00ff] rounded-t-md hover:brightness-125 transition-all duration-300 cursor-pointer" 
+        className="w-full max-w-[40px] bg-[#bd00ff] rounded-t-md hover:brightness-125 transition-all duration-300 cursor-pointer relative flex justify-center" 
         style={{ height }}
-      ></div>
+      >
+        {value !== undefined && (
+          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+            ₱{value.toLocaleString()}
+          </div>
+        )}
+      </div>
       <span className="text-[#111] font-semibold">{label}</span>
     </div>
   );
