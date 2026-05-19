@@ -14,6 +14,7 @@ function CustomerPaymentContent() {
   const [method, setMethod] = useState('cash');
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [showGcashQr, setShowGcashQr] = useState(false);
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -69,8 +70,72 @@ function CustomerPaymentContent() {
     } catch (err) {
       console.error('Failed to record purchase:', err);
     }
-    navigate('/customer/purchase-confirmed');
+
+    if (method === 'gcash') {
+      setShowGcashQr(true);
+    } else {
+      navigate('/customer/purchase-confirmed');
+    }
   };
+
+  if (showGcashQr) {
+    return (
+      <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+        <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100 flex flex-col items-center gap-6">
+          
+          {/* GCash QR Card */}
+          <div className="w-full bg-[#005ce6] rounded-xl p-1 relative overflow-hidden flex flex-col shadow-md">
+            {/* Outer thin border wrapper */}
+            <div className="w-full h-full border border-white/40 rounded-lg flex flex-col items-center pt-6 pb-4 px-4 relative z-10">
+              
+              {/* GCash Logo area */}
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                  <div className="text-[#005ce6] font-bold text-2xl tracking-tighter -ml-1">G<Wifi size={14} className="rotate-90 inline-block -ml-1" strokeWidth={4} /></div>
+                </div>
+                <span className="text-white text-3xl font-bold tracking-tight">GCash</span>
+              </div>
+              
+              <span className="text-white text-xs font-medium tracking-wide mb-3 uppercase">Payment Accepted Here</span>
+              
+              <div className="bg-[#0047b3] text-white text-sm font-semibold px-6 py-1.5 rounded-full mb-4 w-[85%] text-center shadow-inner">
+                Graphix Store
+              </div>
+
+              {/* White QR Area */}
+              <div className="bg-white w-full rounded-2xl flex flex-col items-center pt-6 pb-4 px-4 shadow-lg mb-4 relative overflow-hidden">
+                {/* Mock QR Placeholder */}
+                <div className="w-40 h-40 bg-[#f0f4f8] rounded-xl border-2 border-dashed border-blue-300 flex flex-col items-center justify-center relative overflow-hidden mb-4">
+                  <div className="absolute bottom-0 w-full h-1/3 bg-[#85b022] opacity-80 rounded-b-xl"></div>
+                  <div className="absolute bottom-0 w-full h-1/4 bg-[#6c8f1c] rounded-b-xl" style={{ borderTopLeftRadius: '50%', borderTopRightRadius: '20%' }}></div>
+                  <div className="z-10 text-center flex flex-col font-black text-xl text-[#005ce6] tracking-tight leading-tight uppercase px-4 drop-shadow-md">
+                    <span>Insert</span>
+                    <span>QR Code</span>
+                    <span className="text-[#ffd700]">Here !!</span>
+                  </div>
+                </div>
+
+                <div className="text-[#005ce6] font-semibold text-sm mb-0.5">Graphix Management</div>
+                <div className="text-gray-500 font-medium text-sm">09** *** ****</div>
+              </div>
+
+              {/* Bottom text */}
+              <div className="text-white font-bold tracking-widest text-lg mt-auto pb-1">
+                SCAN TO PAY
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full py-4 mt-2 bg-[#4B0082] hover:bg-[#380066] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
