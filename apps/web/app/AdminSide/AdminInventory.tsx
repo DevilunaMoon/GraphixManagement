@@ -415,18 +415,18 @@ export default function AdminInventory() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header Row */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
+      <div className="flex flex-wrap justify-between items-center gap-4 mb-2 w-full">
         <h2 className="text-[1.6rem] font-bold text-[#111] whitespace-nowrap">Inventory Management</h2>
-        <div className="flex flex-col sm:flex-row flex-wrap lg:flex-nowrap items-stretch sm:items-center gap-4 w-full lg:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto flex-1 xl:flex-none justify-start xl:justify-end">
           {/* Search Box */}
-          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:w-[250px] transition-colors duration-300`}>
-            <Search className={`${styles.textActive} w-5 h-5 mr-2`} />
+          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:w-auto sm:min-w-[200px] flex-1 sm:flex-none transition-colors duration-300`}>
+            <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
             <input type="text" placeholder="Search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-[#999]" />
           </div>
 
         {/* Filter Dropdown */}
-          <div className="relative font-['Inter'] flex-shrink-0">
-            <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 cursor-pointer ${styles.textActive} text-[1.1rem] font-semibold hover:bg-black/5 transition-all w-full sm:w-[150px] justify-between`}>
+          <div className="relative font-['Inter'] flex-shrink-0 w-full sm:w-auto">
+            <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 cursor-pointer ${styles.textActive} text-[1.1rem] font-semibold hover:bg-black/5 transition-all w-full sm:w-auto sm:min-w-[140px] justify-between`}>
               <div className="flex items-center gap-2">
                 <Filter className="w-5 h-5" />
               </div>
@@ -444,10 +444,10 @@ export default function AdminInventory() {
             )}
           </div>
           
-          <button onClick={() => setCategoriesModalOpen(true)} className="flex items-center gap-2 bg-purple-100 text-[#5c0099] px-5 py-2.5 rounded-full font-bold hover:bg-purple-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap">
+          <button onClick={() => setCategoriesModalOpen(true)} className="flex items-center justify-center gap-2 bg-purple-100 text-[#5c0099] px-4 py-2.5 rounded-full font-bold hover:bg-purple-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
             <span>Manage Categories</span>
           </button>
-          <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-[#5c0099] text-white px-5 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none ml-auto lg:ml-0 flex-shrink-0 whitespace-nowrap">
+          <button onClick={() => setIsAddModalOpen(true)} className="flex items-center justify-center gap-2 bg-[#5c0099] text-white px-4 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
             <Plus size={20} />
             <span>Add Device</span>
           </button>

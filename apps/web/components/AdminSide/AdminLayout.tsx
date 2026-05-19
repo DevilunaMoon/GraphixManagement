@@ -191,7 +191,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content Area */}
-      <main className={`flex-1 transition-all duration-300 w-full min-h-screen flex flex-col pt-[60px] md:pt-0 ${
+      <main className={`flex-1 min-w-0 transition-all duration-300 min-h-screen flex flex-col pt-[60px] md:pt-0 ${
         isCollapsed ? 'md:ml-[80px]' : 'md:ml-[260px]'
       }`}>
         <header className={`bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 flex justify-between items-center shadow-sm transition-all duration-300`}>
