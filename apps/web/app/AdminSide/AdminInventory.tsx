@@ -417,7 +417,7 @@ export default function AdminInventory() {
       {/* Header Row */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-2">
         <h2 className="text-[1.6rem] font-bold text-[#111] whitespace-nowrap">Inventory Management</h2>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap lg:flex-nowrap items-stretch sm:items-center gap-4 w-full lg:w-auto">
           {/* Search Box */}
           <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:w-[250px] transition-colors duration-300`}>
             <Search className={`${styles.textActive} w-5 h-5 mr-2`} />
@@ -501,8 +501,8 @@ export default function AdminInventory() {
 
       {/* Inventory Table Card */}
       <div className={`bg-white/95 backdrop-blur-md border-2 ${styles.borderMain} rounded-xl overflow-hidden shadow-sm flex flex-col transition-colors duration-300`}>
-        <div className="w-full">
-          <table className="w-full border-collapse text-center">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full border-collapse text-center min-w-[600px] md:min-w-[800px]">
             <thead>
               <tr>
                 <th className={`py-4 px-5 font-bold text-[1.05rem] text-[#111] border-b-2 ${styles.borderMain} text-left`}>Product Name</th>
