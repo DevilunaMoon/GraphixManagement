@@ -259,7 +259,7 @@ function CustomerProductInfoContent() {
                                 ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through' 
                                 : selectedVariations[section]?.id === v.id 
                                   ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] cursor-pointer' 
-                                  : 'border-gray-200 bg-white text-gray-600 hover:border-[#bd00ff] hover:text-[#bd00ff] cursor-pointer'
+                                  : 'border-gray-200 bg-white text-gray-600 md:hover:border-[#bd00ff] md:hover:text-[#bd00ff] active:border-[#bd00ff] active:text-[#bd00ff] cursor-pointer'
                             }`}
                           >
                             {v.name}
