@@ -136,7 +136,7 @@ export default function CustomerPurchaseConfirmed() {
             onClick={() => navigate('/customer/dashboard')}
             className="flex-1 flex justify-center items-center py-4 border-2 border-[#bd00ff] bg-white text-[#bd00ff] font-bold text-lg rounded-xl cursor-pointer hover:bg-purple-50 transition-colors"
           >
-            Return Home
+            Return to Dashboard
           </button>
         </div>
 
