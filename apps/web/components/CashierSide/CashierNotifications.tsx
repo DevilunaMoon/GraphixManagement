@@ -162,7 +162,7 @@ export default function CashierNotifications() {
                   </div>
                 </div>
 
-                {!notification.isRead && (
+                {!(notification.title.toLowerCase().includes('paid') || notification.title.toLowerCase().includes('unpaid')) && (
                   <div className="flex items-center gap-2 sm:self-center">
                     <button 
                       onClick={() => handleAction(notification.id, 'PAID')}
