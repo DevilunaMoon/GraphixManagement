@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       if (cashiers.length > 0) {
         let msg = `${userName} just checked out via ${paymentLabel}.`;
         if (phoneNumber) {
-          msg += ` Contact: ${phoneNumber}.`;
+          msg += ` Cash: ${phoneNumber}.`;
         }
         if (staffMessage) {
           msg += ` Msg: "${staffMessage}".`;
