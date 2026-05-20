@@ -138,10 +138,10 @@ function CustomerPaymentContent() {
           </div>
 
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/customer/dashboard')}
             className="w-full py-4 mt-2 bg-[#4B0082] hover:bg-[#380066] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
           >
-            Return Home
+            Return to Dashboard
           </button>
         </div>
       </div>
