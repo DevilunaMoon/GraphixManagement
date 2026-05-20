@@ -92,7 +92,7 @@ function CustomerPaymentContent() {
   if (showGcashQr) {
     return (
       <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-        <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100 flex flex-col items-center gap-6">
+        <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col items-center gap-6 sm:gap-8">
 
           {/* GCash QR Card */}
           <div className="w-full bg-[#005ce6] rounded-xl p-1 relative overflow-hidden flex flex-col shadow-md">
