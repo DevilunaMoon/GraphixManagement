@@ -15,6 +15,8 @@ function CustomerPaymentContent() {
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [showGcashQr, setShowGcashQr] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [staffMessage, setStaffMessage] = useState('');
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -63,7 +65,9 @@ function CustomerPaymentContent() {
         body: JSON.stringify({ 
           deviceId, 
           variationIds,
-          cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined
+          cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined,
+          phoneNumber,
+          staffMessage
         })
       });
       window.dispatchEvent(new Event('cartUpdated')); // update badge if cart items were purchased
@@ -176,11 +180,24 @@ function CustomerPaymentContent() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <label className="font-bold text-gray-700 text-lg">Phone Number / GCash Number</label>
+            <input 
+              type="text"
+              placeholder={method === 'gcash' ? "Enter your GCash number (e.g., 0917xxxxxxx)" : "Enter your phone number for updates"}
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] focus:border-[#bd00ff] transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
             <label className="font-bold text-gray-700 text-lg">Message for Staff</label>
             <textarea 
               placeholder="Enter your message here" 
-              rows={3}
-              className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] resize-vertical focus:border-[#bd00ff] transition-colors"
+              value={staffMessage}
+              onChange={(e) => setStaffMessage(e.target.value)}
+              rows={1}
+              className="w-full border-2 border-gray-200 rounded-xl p-2.5 px-3.5 text-black outline-none font-['Inter'] resize-none focus:border-[#bd00ff] transition-colors"
             />
           </div>
 

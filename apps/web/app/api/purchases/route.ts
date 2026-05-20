@@ -9,7 +9,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { deviceId, amount, quantity, variations, cartItemIds, paymentType } = await req.json();
+    const { deviceId, amount, quantity, variations, cartItemIds, paymentType, phoneNumber, staffMessage } = await req.json();
+
+    if (phoneNumber) {
+      await prisma.user.update({
+        where: { id: session.userId },
+        data: { phone: phoneNumber }
+      });
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: session.userId },
@@ -23,10 +30,18 @@ export async function POST(req: Request) {
         select: { id: true }
       });
       if (cashiers.length > 0) {
+        let msg = `${userName} just checked out via ${paymentLabel}.`;
+        if (phoneNumber) {
+          msg += ` Contact: ${phoneNumber}.`;
+        }
+        if (staffMessage) {
+          msg += ` Msg: "${staffMessage}".`;
+        }
+
         const notifications = cashiers.map(c => ({
           userId: c.id,
           title: 'New Checkout Alert',
-          message: `${userName} just checked out via ${paymentLabel}.`,
+          message: msg,
           type: 'PAYMENT'
         }));
         await prisma.notification.createMany({ data: notifications });
