@@ -15,13 +15,18 @@ interface Notification {
 export default function CashierNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (pageToFetch = page) => {
     try {
-      const res = await fetch('/api/notifications');
+      const res = await fetch(`/api/notifications?page=${pageToFetch}&limit=10`);
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setNotifications(data);
+      if (data && Array.isArray(data.notifications)) {
+        setNotifications(data.notifications);
+        setTotalPages(data.totalPages || 1);
+        setUnreadCount(data.unreadCount || 0);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -31,11 +36,11 @@ export default function CashierNotifications() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications(page);
     // Refresh every 10 seconds to act as a pseudo-realtime polling system
-    const interval = setInterval(fetchNotifications, 10000);
+    const interval = setInterval(() => fetchNotifications(page), 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [page]);
 
   const handleAction = async (id: string, action: 'PAID' | 'UNPAID') => {
     try {
@@ -49,6 +54,7 @@ export default function CashierNotifications() {
         setNotifications(prev => 
           prev.map(n => n.id === id ? { ...n, isRead: true, title: updated.title } : n)
         );
+        setUnreadCount(prev => Math.max(prev - 1, 0));
       }
     } catch (error) {
       console.error(`Failed to mark notification as ${action}:`, error);
@@ -66,6 +72,7 @@ export default function CashierNotifications() {
         setNotifications(prev => 
           prev.map(n => ({ ...n, isRead: true }))
         );
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
@@ -89,8 +96,6 @@ export default function CashierNotifications() {
       </div>
     );
   }
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -183,6 +188,38 @@ export default function CashierNotifications() {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+          <button
+            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl border border-purple-100 transition-all cursor-pointer select-none"
+          >
+            Previous
+          </button>
+          
+          <div className="flex items-center gap-1.5 px-3">
+            <span className="text-sm font-semibold text-gray-500">Page</span>
+            <span className="px-3 py-1 bg-purple-100 text-purple-700 font-extrabold text-sm rounded-lg shadow-sm">
+              {page}
+            </span>
+            <span className="text-sm font-semibold text-gray-500">of</span>
+            <span className="text-sm font-bold text-gray-700">
+              {totalPages}
+            </span>
+          </div>
+
+          <button
+            onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={page === totalPages}
+            className="px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl border border-purple-100 transition-all cursor-pointer select-none"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
