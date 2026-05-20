@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -37,18 +37,38 @@ export default function CashierNotifications() {
     return () => clearInterval(interval);
   }, []);
 
-  const markAsRead = async (id: string) => {
+  const handleAction = async (id: string, action: 'PAID' | 'UNPAID') => {
     try {
-      await fetch('/api/notifications/mark-read', {
+      const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+        body: JSON.stringify({ id, action })
       });
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-      );
+      if (res.ok) {
+        const updated = await res.json();
+        setNotifications(prev => 
+          prev.map(n => n.id === id ? { ...n, isRead: true, title: updated.title } : n)
+        );
+      }
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      console.error(`Failed to mark notification as ${action}:`, error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true })
+      });
+      if (res.ok) {
+        setNotifications(prev => 
+          prev.map(n => ({ ...n, isRead: true }))
+        );
+      }
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
     }
   };
 
@@ -74,7 +94,7 @@ export default function CashierNotifications() {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex justify-between items-center">
+      <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex justify-between items-center flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-purple-100 text-purple-600">
             <Bell size={24} />
@@ -84,6 +104,15 @@ export default function CashierNotifications() {
             <p className="text-sm font-semibold text-gray-500">You have {unreadCount} unread alert{unreadCount !== 1 ? 's' : ''}</p>
           </div>
         </div>
+
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllAsRead}
+            className="px-4 py-2.5 bg-gradient-to-r from-[#bd00ff] to-[#800080] hover:from-[#9c00d6] hover:to-[#660066] text-white font-bold text-sm rounded-xl border-none cursor-pointer transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+          >
+            <Check size={16} strokeWidth={3} /> Mark all as read
+          </button>
+        )}
       </div>
 
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-hidden">
@@ -104,10 +133,20 @@ export default function CashierNotifications() {
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2.5 mb-1 flex-wrap">
                     <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                       {notification.title}
                     </h3>
+                    {notification.title.toLowerCase().includes('paid') && !notification.title.toLowerCase().includes('unpaid') && (
+                      <span className="shrink-0 bg-green-100 text-green-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
+                        PAID
+                      </span>
+                    )}
+                    {notification.title.toLowerCase().includes('unpaid') && (
+                      <span className="shrink-0 bg-red-100 text-red-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
+                        UNPAID
+                      </span>
+                    )}
                     {!notification.isRead && (
                       <span className="shrink-0 bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm animate-pulse"></span>
                     )}
@@ -124,12 +163,20 @@ export default function CashierNotifications() {
                 </div>
 
                 {!notification.isRead && (
-                  <button 
-                    onClick={() => markAsRead(notification.id)}
-                    className="shrink-0 mt-3 sm:mt-0 px-4 py-2 bg-white border border-gray-200 text-gray-700 font-semibold text-sm rounded-lg hover:bg-gray-50 hover:text-[#bd00ff] hover:border-[#bd00ff]/30 transition-all shadow-sm flex items-center gap-2"
-                  >
-                    <Check size={16} /> Mark as Read
-                  </button>
+                  <div className="flex items-center gap-2 sm:self-center">
+                    <button 
+                      onClick={() => handleAction(notification.id, 'PAID')}
+                      className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                    >
+                      <Check size={16} strokeWidth={3} /> Paid
+                    </button>
+                    <button 
+                      onClick={() => handleAction(notification.id, 'UNPAID')}
+                      className="shrink-0 px-4 py-2 bg-red-50 border border-red-200 text-red-700 font-bold text-sm rounded-lg hover:bg-red-100 hover:border-red-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                    >
+                      <X size={16} strokeWidth={3} /> Unpaid
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
