@@ -3,15 +3,55 @@
 import { useRef } from 'react';
 import { Check, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export default function CustomerPurchaseConfirmed() {
   const router = useRouter();
   const navigate = router.push;
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const handleDownload = () => {
-    // Basic implementation using browser's print to PDF functionality
-    window.print();
+  const handleDownload = async () => {
+    const element = document.getElementById('thermal-receipt-container');
+    if (!element) return;
+
+    try {
+      // Temporarily display off-screen to allow html2canvas to render
+      element.style.display = 'block';
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.style.top = '0';
+
+      const content = element.firstElementChild as HTMLElement;
+      const canvas = await html2canvas(content, {
+        scale: 3, // High quality scale
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+
+      // Restore styling
+      element.style.display = 'none';
+      element.style.position = '';
+      element.style.left = '';
+      element.style.top = '';
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 72; // Standard thermal receipt width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [imgWidth, imgHeight]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save('receipt.pdf');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      // Fallback to standard print dialog
+      window.print();
+    }
   };
 
   return (
@@ -33,7 +73,8 @@ export default function CustomerPurchaseConfirmed() {
           }
           #thermal-receipt-container {
             position: absolute !important;
-            left: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
             top: 0 !important;
             width: 72mm !important;
             margin: 0 !important;
