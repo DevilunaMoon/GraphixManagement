@@ -1,75 +1,55 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Notification {
-  id: number;
+  id: string;
   title: string;
   message: string;
-  unread: boolean;
+  isRead: boolean;
+  createdAt: string;
 }
 
 export default function CustomerNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      title: 'Successfully Place Order',
-      message: 'Your Order Ipad has been successfully ordered please present the digital receipt into the store as your proof',
-      unread: true
-    },
-    {
-      id: 2,
-      title: 'Reminder: Pay the remaining amount',
-      message: 'Pay the remaining amount in 1/1/2026 further delay of the payment will increase the interest',
-      unread: true
-    },
-    {
-      id: 3,
-      title: 'Your Device is completely repaired',
-      message: 'Your device Oppo is now completed its repair',
-      unread: false
-    },
-    {
-      id: 4,
-      title: 'System Update Scheduled',
-      message: 'A system update is scheduled for 15/1/2026 from 2:00 AM to 4:00 AM. Services may be disrupted.',
-      unread: false
-    },
-    {
-      id: 5,
-      title: 'Welcome to Graphix!',
-      message: 'Thank you for joining our community. Check out our getting started guide.',
-      unread: false
-    },
-    {
-      id: 6,
-      title: 'New Product Alert',
-      message: 'The new Samsung Galaxy S26 is now available for pre-order in our shop.',
-      unread: false
-    },
-    {
-      id: 7,
-      title: 'Password Changed Successfully',
-      message: 'Your account password was recently updated. If you did not make this change, please contact support.',
-      unread: false
-    },
-    {
-      id: 8,
-      title: 'Order #10294 Shipped',
-      message: 'Your order for the Aula F75 Keyboard has been shipped and is on its way!',
-      unread: false
-    }
-  ]);
-
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 5;
 
-  const totalPages = Math.ceil(notifications.length / itemsPerPage);
-  const currentItems = notifications.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const fetchNotifications = async (pageToFetch = currentPage) => {
+    try {
+      const res = await fetch(`/api/notifications?page=${pageToFetch}&limit=${itemsPerPage}`);
+      const data = await res.json();
+      if (data && Array.isArray(data.notifications)) {
+        setNotifications(data.notifications);
+        setTotalPages(data.totalPages || 1);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+  useEffect(() => {
+    fetchNotifications(currentPage);
+  }, [currentPage]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true })
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      }
+    } catch (error) {
+      console.error('Failed to mark notifications as read:', error);
+    }
   };
 
   return (
@@ -89,27 +69,38 @@ export default function CustomerNotifications() {
           </div>
 
           <div className="flex flex-col gap-4 flex-1">
-            {currentItems.map((notif) => (
-              <div 
-                key={notif.id} 
-                className={`p-4 sm:p-6 rounded-2xl border transition-all md:hover:translate-x-1 ${
-                  notif.unread 
-                    ? 'bg-gradient-to-r from-purple-50 to-white border-l-4 border-[#bd00ff] border-y-gray-200 border-r-gray-200 shadow-sm' 
-                    : 'bg-white border-gray-200 hover:border-[#bd00ff]'
-                }`}
-              >
-                <h4 className={`text-lg m-0 mb-2 border-none ${notif.unread ? 'font-extrabold text-black' : 'font-bold text-gray-800'}`}>
-                  {notif.title}
-                </h4>
-                <p className={`m-0 leading-relaxed ${notif.unread ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
-                  {notif.message}
-                </p>
+            {loading ? (
+              <div className="flex flex-col gap-4 w-full h-[300px] justify-center items-center">
+                <div className="w-10 h-10 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-medium">Loading Notifications...</p>
               </div>
-            ))}
+            ) : notifications.length === 0 ? (
+              <div className="p-12 text-center flex flex-col items-center justify-center gap-4 text-gray-400 my-auto">
+                <p className="text-lg font-medium">No notifications yet. You're all caught up!</p>
+              </div>
+            ) : (
+              notifications.map((notif) => (
+                <div 
+                  key={notif.id} 
+                  className={`p-4 sm:p-6 rounded-2xl border transition-all md:hover:translate-x-1 ${
+                    !notif.isRead 
+                      ? 'bg-gradient-to-r from-purple-50 to-white border-l-4 border-[#bd00ff] border-y-gray-200 border-r-gray-200 shadow-sm' 
+                      : 'bg-white border-gray-200 hover:border-[#bd00ff]'
+                  }`}
+                >
+                  <h4 className={`text-lg m-0 mb-2 border-none ${!notif.isRead ? 'font-extrabold text-black' : 'font-bold text-gray-800'}`}>
+                    {notif.title}
+                  </h4>
+                  <p className={`m-0 leading-relaxed ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
+                    {notif.message}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Pagination */}
-          {totalPages > 0 && (
+          {!loading && totalPages > 1 && (
             <div className="flex justify-center items-center mt-8 gap-3">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

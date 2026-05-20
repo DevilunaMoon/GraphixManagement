@@ -34,6 +34,8 @@ model User {
   repairRequests   RepairRequest[]
   cartItems        CartItem[]
   notifications    Notification[]
+
+  @@index([name])
 }
 
 model Device {
@@ -198,6 +200,8 @@ model Notification {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 model RepairTimeline {
