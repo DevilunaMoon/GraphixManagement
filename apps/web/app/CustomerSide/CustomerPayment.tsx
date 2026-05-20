@@ -62,8 +62,8 @@ function CustomerPaymentContent() {
       await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          deviceId, 
+        body: JSON.stringify({
+          deviceId,
           variationIds,
           cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined,
           phoneNumber,
@@ -86,12 +86,12 @@ function CustomerPaymentContent() {
     return (
       <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
         <div className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-gray-100 flex flex-col items-center gap-6">
-          
+
           {/* GCash QR Card */}
           <div className="w-full bg-[#005ce6] rounded-xl p-1 relative overflow-hidden flex flex-col shadow-md">
             {/* Outer thin border wrapper */}
             <div className="w-full h-full border border-white/40 rounded-lg flex flex-col items-center pt-6 pb-4 px-4 relative z-10">
-              
+
               {/* GCash Logo area */}
               <div className="flex items-center justify-center gap-2 mb-2">
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
@@ -99,9 +99,9 @@ function CustomerPaymentContent() {
                 </div>
                 <span className="text-white text-3xl font-bold tracking-tight">GCash</span>
               </div>
-              
+
               <span className="text-white text-xs font-medium tracking-wide mb-3 uppercase">Payment Accepted Here</span>
-              
+
               <div className="bg-[#0047b3] text-white text-sm font-semibold px-6 py-1.5 rounded-full mb-4 w-[85%] text-center shadow-inner">
                 Graphix Store
               </div>
@@ -130,7 +130,7 @@ function CustomerPaymentContent() {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="w-full py-4 mt-2 bg-[#4B0082] hover:bg-[#380066] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
           >
@@ -144,11 +144,11 @@ function CustomerPaymentContent() {
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
       <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-6 sm:gap-8">
-        
+
         {/* Header */}
         <div className="flex items-center gap-4 border-b-2 border-gray-100 pb-4">
-          <button 
-            onClick={() => router.back()} 
+          <button
+            onClick={() => router.back()}
             className="text-[#bd00ff] hover:text-[#9c00d6] hover:-translate-x-1 transition-all bg-transparent border-none cursor-pointer p-0"
           >
             <ChevronLeft size={32} />
@@ -157,11 +157,11 @@ function CustomerPaymentContent() {
         </div>
 
         <form className="flex flex-col gap-8">
-          
+
           <div className="flex flex-col gap-3">
             <label className="font-bold text-gray-700 text-lg">Select Payment Method</label>
             <div className="grid grid-cols-2 gap-4">
-              
+
               <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'cash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                 <input type="radio" name="payment" value="cash" checked={method === 'cash'} onChange={() => setMethod('cash')} className="absolute opacity-0" />
                 <span className="text-4xl text-yellow-400 font-bold tracking-tighter">₱</span>
@@ -180,10 +180,10 @@ function CustomerPaymentContent() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-gray-700 text-lg">Phone Number / GCash Number</label>
-            <input 
+            <label className="font-bold text-gray-700 text-lg">Input the amount of money you have</label>
+            <input
               type="text"
-              placeholder={method === 'gcash' ? "Enter your GCash number (e.g., 0917xxxxxxx)" : "Enter your phone number for updates"}
+              placeholder={method === 'gcash' ? "Enter your GCash number (e.g., 0917xxxxxxx)" : "Enter the amount of money you have"}
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] focus:border-[#bd00ff] transition-colors"
@@ -192,8 +192,8 @@ function CustomerPaymentContent() {
 
           <div className="flex flex-col gap-2">
             <label className="font-bold text-gray-700 text-lg">Message for Staff</label>
-            <textarea 
-              placeholder="Enter your message here" 
+            <textarea
+              placeholder="Enter your message here"
               value={staffMessage}
               onChange={(e) => setStaffMessage(e.target.value)}
               rows={1}
@@ -209,7 +209,7 @@ function CustomerPaymentContent() {
             </div>
           </div>
 
-          <button 
+          <button
             type="button"
             onClick={handlePlaceOrder}
             className="w-full py-4 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-xl rounded-xl border-none cursor-pointer shadow-[0_8px_20px_rgba(189,0,255,0.4)] hover:shadow-[0_8px_25px_rgba(189,0,255,0.6)] hover:-translate-y-1 transition-all uppercase tracking-wider"
