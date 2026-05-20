@@ -59,7 +59,7 @@ function CustomerPaymentContent() {
   }, [deviceId, variationIds, cartItemIdsParam]);
 
   const handlePlaceOrder = async () => {
-    if (!phoneNumber.trim()) {
+    if (method === 'cash' && !phoneNumber.trim()) {
       setPhoneError(true);
       return;
     }
@@ -186,24 +186,26 @@ function CustomerPaymentContent() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="font-bold text-gray-700 text-lg">Input the amount of money you have </label>
-            <input
-              type="text"
-              placeholder={method === 'gcash' ? "Enter your GCash number (e.g., 0917xxxxxxx)" : "Enter the amount of money you have"}
-              value={phoneNumber}
-              onChange={(e) => {
-                setPhoneNumber(e.target.value);
-                if (e.target.value.trim()) setPhoneError(false);
-              }}
-              className={`w-full border-2 rounded-xl p-4 text-black outline-none font-['Inter'] transition-colors ${phoneError ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-gray-200 focus:border-[#bd00ff]'}`}
-            />
-            {phoneError && (
-              <span className="text-red-600 text-sm font-semibold mt-1">
-                {method === 'gcash' ? "GCash number is required to place your order." : "Amount of money is required to place your order."}
-              </span>
-            )}
-          </div>
+          {method === 'cash' && (
+            <div className="flex flex-col gap-2">
+              <label className="font-bold text-gray-700 text-lg">Input the amount of money you have </label>
+              <input
+                type="text"
+                placeholder="Enter the amount of money you have"
+                value={phoneNumber}
+                onChange={(e) => {
+                  setPhoneNumber(e.target.value);
+                  if (e.target.value.trim()) setPhoneError(false);
+                }}
+                className={`w-full border-2 rounded-xl p-4 text-black outline-none font-['Inter'] transition-colors ${phoneError ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-gray-200 focus:border-[#bd00ff]'}`}
+              />
+              {phoneError && (
+                <span className="text-red-600 text-sm font-semibold mt-1">
+                  Amount of money is required to place your order.
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label className="font-bold text-gray-700 text-lg">Message for Staff</label>
