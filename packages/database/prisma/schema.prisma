@@ -59,6 +59,8 @@ model Device {
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
 }
 
 model Review {
@@ -71,6 +73,9 @@ model Review {
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   deviceId String
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
 }
 
 model DeviceVariation {
@@ -82,6 +87,8 @@ model DeviceVariation {
   stock    Int
   deviceId String
   device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
 }
 
 model RepairRequest {
@@ -100,6 +107,8 @@ model RepairRequest {
   userId     String?
   user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   timeline   RepairTimeline[]
+
+  @@index([userId])
 }
 
 model TechnicianFeedback {
@@ -157,6 +166,9 @@ model Purchase {
   receiptUrl      String?
 
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([deviceId])
 }
 
 model CartItem {
@@ -169,6 +181,9 @@ model CartItem {
   variations String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([deviceId])
 }
 
 model Notification {
@@ -181,6 +196,8 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model RepairTimeline {
@@ -190,4 +207,6 @@ model RepairTimeline {
   status          String
   description     String?
   createdAt       DateTime      @default(now())
+
+  @@index([repairRequestId])
 }

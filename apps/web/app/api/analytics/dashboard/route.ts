@@ -16,19 +16,38 @@ export async function GET() {
     
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Fetch all purchases
+    // Fetch all purchases with selective columns
     const purchases = await prisma.purchase.findMany({
-      include: { device: { select: { name: true, price: true } } }
+      select: {
+        amount: true,
+        createdAt: true,
+        source: true,
+        deviceId: true,
+        quantity: true,
+        device: {
+          select: {
+            name: true,
+            price: true
+          }
+        }
+      }
     });
 
-    // Fetch completed repairs
+    // Fetch completed repairs (only cost and date needed)
     const repairs = await prisma.repairRequest.findMany({
-      where: { status: 'Completed' }
+      where: { status: 'Completed' },
+      select: {
+        repairCost: true,
+        createdAt: true
+      }
     });
 
-    // Fetch active repairs for workload
+    // Fetch active repairs for workload (only technician field needed)
     const activeRepairs = await prisma.repairRequest.findMany({
-      where: { status: { not: 'Completed' } }
+      where: { status: { not: 'Completed' } },
+      select: {
+        technician: true
+      }
     });
 
     const pendingRepairs = activeRepairs.length;
