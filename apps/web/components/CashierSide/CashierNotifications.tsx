@@ -109,15 +109,6 @@ export default function CashierNotifications() {
             <p className="text-sm font-semibold text-gray-500">You have {unreadCount} unread alert{unreadCount !== 1 ? 's' : ''}</p>
           </div>
         </div>
-
-        {unreadCount > 0 && (
-          <button
-            onClick={markAllAsRead}
-            className="px-4 py-2.5 bg-gradient-to-r from-[#bd00ff] to-[#800080] hover:from-[#9c00d6] hover:to-[#660066] text-white font-bold text-sm rounded-xl border-none cursor-pointer transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-          >
-            <Check size={16} strokeWidth={3} /> Mark all as read
-          </button>
-        )}
       </div>
 
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-hidden">
