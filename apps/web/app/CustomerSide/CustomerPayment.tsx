@@ -187,7 +187,7 @@ function CustomerPaymentContent() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-gray-700 text-lg">Input the amount of money you have</label>
+            <label className="font-bold text-gray-700 text-lg">Input the amount of money you have </label>
             <input
               type="text"
               placeholder={method === 'gcash' ? "Enter your GCash number (e.g., 0917xxxxxxx)" : "Enter the amount of money you have"}

@@ -17,22 +17,27 @@ export default function CustomerDownpaymentConfirmed() {
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter']">
       
-      {/* Hide surrounding UI during print */}
+      {/* Thermal Receipt Print Styles */}
       <style>{`
         @media print {
+          /* Hide all surrounding elements on the page */
           body * {
-            visibility: hidden;
-          }
-          #receipt-content, #receipt-content * {
-            visibility: visible;
-          }
-          #receipt-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+            visibility: hidden !important;
+            background: none !important;
             box-shadow: none !important;
-            border: none !important;
+          }
+          /* Show ONLY the thermal receipt content */
+          #thermal-receipt-container, #thermal-receipt-container * {
+            visibility: visible !important;
+            display: block !important;
+          }
+          #thermal-receipt-container {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 72mm !important;
+            margin: 0 !important;
+            padding: 2mm !important;
           }
           .no-print {
             display: none !important;
@@ -40,10 +45,11 @@ export default function CustomerDownpaymentConfirmed() {
         }
       `}</style>
 
+      {/* On-screen visual Card */}
       <div 
         id="receipt-content"
         ref={receiptRef}
-        className="w-full max-w-[530px] bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col items-center gap-8 relative overflow-hidden"
+        className="w-full max-w-[530px] bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col items-center gap-8 relative overflow-hidden print:hidden"
       >
         
         {/* Top Decorative Arc */}
@@ -105,6 +111,104 @@ export default function CustomerDownpaymentConfirmed() {
         </div>
 
       </div>
+
+      {/* Thermal Receipt (Only rendered/visible in print preview/saved PDF) */}
+      <div id="thermal-receipt-container" className="hidden print:block" style={{ display: 'none' }}>
+        <div style={{
+          fontFamily: "'Courier New', Courier, monospace",
+          width: "72mm",
+          color: "black",
+          background: "white",
+          fontSize: "12px",
+          lineHeight: "1.3",
+          padding: "2mm",
+          margin: "0 auto"
+        }}>
+          <div style={{ textAlign: "center", marginBottom: "12px" }}>
+            <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
+            <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
+            <div style={{ fontSize: "10px" }}>DATE: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+            <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
+              SALES INVOICE<br />
+              (DOWNPAYMENT RECEIPT)<br />
+              #0000000000205045
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+            <span>TECHNO POVA PRO 5G</span>
+            <span>3,100.00 V</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "4px" }}>
+            <span>4800194</span>
+            <span>1 @ 10,000.00</span>
+          </div>
+          <div style={{ fontSize: "11px", color: "#555", marginBottom: "8px" }}>
+            * Downpayment Payment: 3,100.00<br />
+            * Installment plan: 12 Mos @ 1,300.00
+          </div>
+
+          <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+            <span>Paid (Downpayment)</span>
+            <span>Php 3,100.00</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Cash</span>
+            <span>3,100.00</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Change</span>
+            <span>0.00</span>
+          </div>
+
+          <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
+            *** 1 ITEM ***
+          </div>
+
+          <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+            <span>VATable Sales</span>
+            <span>2,767.86</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+            <span>VAT Amount</span>
+            <span>332.14</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+            <span>VAT Exempt Sales</span>
+            <span>0.00</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+            <span>Zero Rated Sales</span>
+            <span>0.00</span>
+          </div>
+
+          <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+          <div style={{ fontSize: "11px", marginTop: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>Sold To:</span>
+              <span>Walk in Customer</span>
+            </div>
+            <div>Address: </div>
+            <div>TIN: </div>
+            <div>Bus Style: </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+              <span>Cashier:</span>
+              <span>DEN-DEN</span>
+            </div>
+            <div>Sales Rep: </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
+              <span>Global Trans No.</span>
+              <span>235176</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
