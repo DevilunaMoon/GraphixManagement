@@ -274,7 +274,7 @@ function CustomerDownpaymentConfirmedContent() {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
             <span>Qty: {purchase.quantity}x {purchase.variations ? `(${purchase.variations})` : ''}</span>
-            <span>1 @ {purchase.device.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{purchase.quantity} @ {purchase.device.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
 
           <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>

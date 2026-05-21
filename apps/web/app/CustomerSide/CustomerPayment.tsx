@@ -58,6 +58,8 @@ function CustomerPaymentContent() {
     fetchTotal();
   }, [deviceId, variationIds, cartItemIdsParam]);
 
+  const [createdPurchaseId, setCreatedPurchaseId] = useState<string | null>(null);
+
   const handlePlaceOrder = async () => {
     if (method === 'cash' && !phoneNumber.trim()) {
       setPhoneError(true);
@@ -65,8 +67,9 @@ function CustomerPaymentContent() {
     }
     setPhoneError(false);
 
+    let createdId = '';
     try {
-      await fetch('/api/purchases', {
+      const res = await fetch('/api/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -77,6 +80,13 @@ function CustomerPaymentContent() {
           staffMessage
         })
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.id) {
+          createdId = data.id;
+          setCreatedPurchaseId(data.id);
+        }
+      }
       window.dispatchEvent(new Event('cartUpdated')); // update badge if cart items were purchased
     } catch (err) {
       console.error('Failed to record purchase:', err);
@@ -85,7 +95,7 @@ function CustomerPaymentContent() {
     if (method === 'gcash') {
       setShowGcashQr(true);
     } else {
-      navigate('/customer/purchase-confirmed?method=cash');
+      navigate(`/customer/purchase-confirmed?method=cash${createdId ? `&id=${createdId}` : ''}`);
     }
   };
 
@@ -138,7 +148,7 @@ function CustomerPaymentContent() {
           </div>
 
           <button
-            onClick={() => navigate('/customer/purchase-confirmed?method=gcash')}
+            onClick={() => navigate(`/customer/purchase-confirmed?method=gcash${createdPurchaseId ? `&id=${createdPurchaseId}` : ''}`)}
             className="w-full py-4 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
           >
             View Confirmed Receipt
