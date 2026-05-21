@@ -77,8 +77,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     });
 
+    let host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3001";
+    if (host.includes("0.0.0.0")) host = host.replace("0.0.0.0", "localhost");
+    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const baseUrl = `${protocol}://${host}`;
+
     if (progress !== undefined && request.user && request.user.email) {
-      await sendNotificationEmail(request.user.email, request.deviceName, progress, false);
+      await sendNotificationEmail(request.user.email, request.deviceName, progress, false, baseUrl);
     }
 
     return NextResponse.json(request);

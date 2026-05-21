@@ -49,9 +49,10 @@ function LoginContent() {
       setErrorMsg(result.error);
       setIsLoading(false);
     } else if (result?.success) {
+      const redirectUrl = searchParams?.get("redirect");
       if (result.role === "admin" || result.role === "ADMIN") window.location.href = "/admin/dashboard";
       else if (result.role === "cashier" || result.role === "CASHIER") window.location.href = "/cashier/dashboard";
-      else window.location.href = "/customer/dashboard";
+      else window.location.href = redirectUrl || "/customer/dashboard";
     }
   };
 
@@ -160,7 +161,7 @@ function LoginContent() {
             </div>
 
             <div className="flex justify-center">
-              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full py-3 rounded-xl font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
+              <a href={`/api/auth/google${searchParams?.get("redirect") ? `?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : ""}`} className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full py-3 rounded-xl font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -243,7 +244,7 @@ function LoginContent() {
             </div>
 
             <div className="flex justify-center">
-              <a href="/api/auth/google" className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full py-3 rounded-xl font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
+              <a href={`/api/auth/google${searchParams?.get("redirect") ? `?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : ""}`} className="flex items-center justify-center gap-3 bg-white border border-gray-200 text-gray-700 w-full py-3 rounded-xl font-bold text-lg shadow-[0_4px_10px_-3px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_15px_-3px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all">
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>

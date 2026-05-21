@@ -8,11 +8,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const sendNotificationEmail = async (to: string, deviceName: string, progress: string, isNew: boolean) => {
+export const sendNotificationEmail = async (to: string, deviceName: string, progress: string, isNew: boolean, baseUrl?: string) => {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.error("GMAIL_USER or GMAIL_APP_PASSWORD is not set");
     return;
   }
+
+  const hostUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || "https://graphix-management-web.vercel.app";
+  const monitoringLink = `${hostUrl}/customer/monitoring`;
 
   let subject = '';
   let text = '';
@@ -20,14 +23,19 @@ export const sendNotificationEmail = async (to: string, deviceName: string, prog
 
   if (isNew) {
     subject = `Graphix Management - Repair Started for ${deviceName}`;
-    text = `Hello,\n\nWe have received your device (${deviceName}) and started the repair process. Current progress: ${progress}.\n\nYou can track the progress on your customer dashboard.\n\nThank you,\nGraphix Team`;
+    text = `Hello,\n\nWe have received your device (${deviceName}) and started the repair process. Current progress: ${progress}.\n\nYou can track the progress live at:\n${monitoringLink}\n\nThank you,\nGraphix Team`;
     html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #bd00ff;">Repair Started</h2>
         <p>Hello,</p>
         <p>We have successfully registered your device <strong>${deviceName}</strong> into our system and the repair process has begun.</p>
         <p><strong>Current Status/Progress:</strong> ${progress}</p>
-        <p>You can track the live progress at any time by logging into your customer dashboard.</p>
+        <p>You can track the live progress at any time by clicking the button below:</p>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="${monitoringLink}" style="background-color: #bd00ff; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px rgba(189,0,255,0.2);">Track Live Progress</a>
+        </div>
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="word-break: break-all;"><a href="${monitoringLink}">${monitoringLink}</a></p>
         <br/>
         <p>Thank you,</p>
         <p><strong>Graphix Management Team</strong></p>
@@ -35,14 +43,19 @@ export const sendNotificationEmail = async (to: string, deviceName: string, prog
     `;
   } else {
     subject = `Graphix Management - Progress Update for ${deviceName}`;
-    text = `Hello,\n\nThere is an update on your device (${deviceName}). Current progress: ${progress}.\n\nYou can track the progress on your customer dashboard.\n\nThank you,\nGraphix Team`;
+    text = `Hello,\n\nThere is an update on your device (${deviceName}). Current progress: ${progress}.\n\nYou can track the progress live at:\n${monitoringLink}\n\nThank you,\nGraphix Team`;
     html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #bd00ff;">Repair Progress Update</h2>
         <p>Hello,</p>
         <p>There has been an update regarding your device: <strong>${deviceName}</strong>.</p>
         <p><strong>New Progress:</strong> ${progress}</p>
-        <p>You can track the live progress at any time by logging into your customer dashboard.</p>
+        <p>You can track the live progress at any time by clicking the button below:</p>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="${monitoringLink}" style="background-color: #bd00ff; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px rgba(189,0,255,0.2);">Track Live Progress</a>
+        </div>
+        <p>Or copy and paste this link into your browser:</p>
+        <p style="word-break: break-all;"><a href="${monitoringLink}">${monitoringLink}</a></p>
         <br/>
         <p>Thank you,</p>
         <p><strong>Graphix Management Team</strong></p>

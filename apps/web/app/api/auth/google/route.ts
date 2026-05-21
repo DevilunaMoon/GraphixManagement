@@ -18,6 +18,8 @@ export async function GET(req: NextRequest) {
 
   const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
+  const redirect = req.nextUrl.searchParams.get("redirect") || "";
+
   const authorizeUrl = client.generateAuthUrl({
     access_type: "offline",
     scope: [
@@ -25,6 +27,7 @@ export async function GET(req: NextRequest) {
       "https://www.googleapis.com/auth/userinfo.email",
     ],
     prompt: "consent",
+    state: redirect,
   });
 
   return NextResponse.redirect(authorizeUrl);

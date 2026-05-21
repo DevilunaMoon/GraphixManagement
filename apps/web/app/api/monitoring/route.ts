@@ -57,10 +57,15 @@ export async function POST(req: Request) {
       } as any
     });
 
+    let host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3001";
+    if (host.includes("0.0.0.0")) host = host.replace("0.0.0.0", "localhost");
+    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const baseUrl = `${protocol}://${host}`;
+
     if (userId) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (user && user.email) {
-        await sendNotificationEmail(user.email, deviceName, progress, true);
+        await sendNotificationEmail(user.email, deviceName, progress, true, baseUrl);
       }
     }
 

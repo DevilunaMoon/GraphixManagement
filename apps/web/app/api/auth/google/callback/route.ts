@@ -102,8 +102,9 @@ export async function GET(req: NextRequest) {
     // Set the session using the same logic as your regular login
     await setSession(user.id, user.role);
 
-    // Redirect strictly to the customer dashboard as requested
-    const redirectPath = "/customer/dashboard";
+    // Redirect strictly to the customer dashboard or state redirect URL if present and starts with /
+    const state = url.searchParams.get("state") || "";
+    const redirectPath = (state && state.startsWith("/")) ? state : "/customer/dashboard";
 
     return NextResponse.redirect(new URL(redirectPath, baseUrl));
 

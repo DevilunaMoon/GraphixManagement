@@ -38,7 +38,9 @@ export async function middleware(request: NextRequest) {
 
   // 2. Prevent logged-out users from seeing Dashboards
   if (!session && !currentPath.startsWith('/login') && !currentPath.startsWith('/homepage')) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', currentPath + request.nextUrl.search);
+    return NextResponse.redirect(loginUrl);
   }
   
   // 3. Strict Role-based routing protection
