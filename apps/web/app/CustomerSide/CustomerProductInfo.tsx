@@ -243,11 +243,6 @@ function CustomerProductInfoContent() {
                     <span className={`w-2 h-2 rounded-full ${currentStock > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                     {currentStock > 0 ? `${currentStock} in stock` : 'Out of stock'}
                   </span>
-                  <div className="flex items-center gap-1 text-amber-500">
-                    <Star size={16} fill="currentColor" />
-                    <span className="text-sm font-extrabold text-gray-800">4.8</span>
-                    <span className="text-xs text-gray-400 font-semibold">({comments.length} reviews)</span>
-                  </div>
                 </div>
               </div>
 
