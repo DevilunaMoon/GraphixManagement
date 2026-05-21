@@ -134,7 +134,7 @@ function CustomerPurchaseConfirmedContent() {
   const vatAmount = totalAmount - vatableSales;
   const paymentMethodLabel = method.toLowerCase() === 'gcash' ? 'GCash' : 'Cash';
 
-  const parsedCash = parseFloat(purchase?.user?.phone || '') || 0;
+  const parsedCash = parseFloat((purchase?.user?.phone || '').replace(/,/g, '')) || 0;
   const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
   const cashPaid = method.toLowerCase() === 'gcash' ? totalAmount : (parsedCash > 0 ? parsedCash : totalAmount);
 

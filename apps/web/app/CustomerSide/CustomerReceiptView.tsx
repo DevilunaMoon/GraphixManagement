@@ -142,7 +142,7 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
     }
   };
 
-  const parsedCash = parseFloat(cashAmount) || 0;
+  const parsedCash = parseFloat(cashAmount.replace(/,/g, '')) || 0;
   const changeAmount = parsedCash >= purchase.amount ? parsedCash - purchase.amount : 0;
 
   return (
