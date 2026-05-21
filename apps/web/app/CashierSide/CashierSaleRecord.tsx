@@ -1,112 +1,222 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Filter, Search, ChevronRight, X, Download } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, X, Download, UserCircle2, Search, ReceiptText, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import DatePicker from '../../components/ui/DatePicker';
 
-interface Record {
-  id: number;
-  orderId: string;
-  deviceName: string;
-  price: string;
-  amount: string;
-  change: string;
-  qty: string;
-  customerName: string;
-  date: string;
+interface Transaction {
+  id: string;
+  createdAt: string;
+  amount: number;
+  quantity: number;
+  variations: string | null;
+  source?: string;
+  status?: string;
+  isExpired?: boolean;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  device: {
+    id: string;
+    name: string;
+    price: number;
+    image: string | null;
+  };
 }
 
-const INITIAL_RECORDS: Record[] = [
-  { id: 7, orderId: '#7', deviceName: 'Techno Pova Pro 5g', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Charlie Kirk', date: '04/26/2026' },
-  { id: 6, orderId: '#6', deviceName: 'Iphone Pro Max', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'P. Diddy', date: '04/25/2026' },
-  { id: 5, orderId: '#5', deviceName: 'Realme C85', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Jeffrey Epstein', date: '04/24/2026' },
-  { id: 4, orderId: '#4', deviceName: 'Realme Note 50', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Alice Gou', date: '04/23/2026' },
-  { id: 3, orderId: '#3', deviceName: 'Oppo A12', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'John Doe', date: '04/22/2026' },
-  { id: 2, orderId: '#2', deviceName: 'Oppo A12', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Leon Kennedy', date: '04/21/2026' },
-  { id: 1, orderId: '#1', deviceName: 'Realme C85', price: '10,000', amount: '11,000', change: '1,000', qty: '1', customerName: 'Ethan Winters', date: '04/20/2026' },
+const MOCK_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'tx_1029384756',
+    createdAt: new Date().toISOString(),
+    amount: 1599,
+    quantity: 1,
+    variations: 'Blue Switch',
+    user: { id: 'u1', name: 'John Doe', email: 'john@example.com' },
+    device: { id: 'd1', name: 'Aula Mechanical Keyboard', price: 1599, image: 'https://picsum.photos/seed/keyboard/150/150' },
+    status: 'Active'
+  },
+  {
+    id: 'tx_5647382910',
+    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+    amount: 45000,
+    quantity: 1,
+    variations: '256GB, Space Gray',
+    user: { id: 'u2', name: 'Jane Smith', email: 'jane.smith@email.com' },
+    device: { id: 'd2', name: 'iPhone 13 Pro', price: 45000, image: 'https://picsum.photos/seed/phone/150/150' },
+    isExpired: true,
+    status: 'Active'
+  },
+  {
+    id: 'tx_9988776655',
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    amount: 1250,
+    quantity: 2,
+    variations: null,
+    user: { id: 'u3', name: 'Michael Johnson', email: 'mjohnson@mail.com' },
+    device: { id: 'd3', name: 'Logitech G102 Mouse', price: 625, image: 'https://picsum.photos/seed/mouse/150/150' },
+    isExpired: true,
+    status: 'Active'
+  },
+  {
+    id: 'tx_1122334455',
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    amount: 8500,
+    quantity: 1,
+    variations: '24-inch, 1080p',
+    user: { id: 'u4', name: 'Sarah Williams', email: 'swilliams@test.com' },
+    device: { id: 'd4', name: 'Samsung IPS Monitor', price: 8500, image: 'https://picsum.photos/seed/monitor/150/150' },
+    status: 'Active'
+  }
 ];
 
 export default function CashierSaleRecord() {
   const router = useRouter();
   const navigate = router.push;
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortFilter, setSortFilter] = useState('Newest');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDate, setFilterDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const itemsPerPage = 8;
+
+  const handleDownloadPDF = (tx: Transaction) => {
+    import('jspdf').then(({ jsPDF }) => {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(189, 0, 255);
+      doc.text("GRAPHIX", 105, 20, { align: "center" });
+      
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Official Receipt", 105, 30, { align: "center" });
+      
+      // Divider
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, 35, 190, 35);
+      
+      // Transaction Info
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Transaction ID:`, 20, 50);
+      doc.setTextColor(0, 0, 0);
+      doc.text(tx.id.toUpperCase(), 60, 50);
+      
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Date:`, 20, 60);
+      doc.text(new Date(tx.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }), 60, 60);
+      
+      // Customer Info
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Customer:`, 20, 75);
+      doc.setTextColor(0, 0, 0);
+      doc.text(tx.user?.name || 'Anonymous', 60, 75);
+      
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Email:`, 20, 85);
+      doc.setTextColor(0, 0, 0);
+      doc.text(tx.user?.email || 'N/A', 60, 85);
+      
+      // Divider
+      doc.setDrawColor(200, 200, 200);
+      doc.line(20, 95, 190, 95);
+      
+      // Item Details
+      doc.setFontSize(14);
+      doc.text("Purchase Details", 20, 110);
+      
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Item:`, 20, 125);
+      doc.setTextColor(0, 0, 0);
+      doc.text(tx.device?.name || 'Unknown Item', 60, 125);
+      
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Quantity:`, 20, 135);
+      doc.setTextColor(0, 0, 0);
+      doc.text(tx.quantity.toString(), 60, 135);
+      
+      let currentY = 145;
+      if (tx.variations) {
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Variations:`, 20, currentY);
+        doc.setTextColor(0, 0, 0);
+        doc.text(tx.variations, 60, currentY);
+        currentY += 10;
+      }
+      
+      // Total Amount
+      doc.setFontSize(16);
+      doc.setTextColor(189, 0, 255);
+      const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0);
+      doc.text(`Total Paid: Php ${totalAmount.toLocaleString()}`, 20, currentY + 15);
+      
+      // Footer
+      doc.setFontSize(10);
+      doc.setTextColor(150, 150, 150);
+      doc.text("Thank you for choosing Graphix!", 105, 280, { align: "center" });
+      
+      // Save
+      doc.save(`Graphix_Receipt_${tx.id.substring(0, 8)}.pdf`);
+    });
+  };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setIsFilterOpen(false);
+    const fetchTransactions = async () => {
+      try {
+        const res = await fetch(`/api/transactions?type=full`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.length === 0) {
+            setTransactions(MOCK_TRANSACTIONS);
+          } else {
+            setTransactions([...data, ...MOCK_TRANSACTIONS]);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch transactions:', error);
+      } finally {
+        setLoading(false);
       }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    };
+    fetchTransactions();
   }, []);
 
-  const sortedAndFilteredRecords = INITIAL_RECORDS.filter(record => 
-    record.orderId.toLowerCase().includes(searchQuery.toLowerCase())
-  ).sort((a, b) => {
-    if (sortFilter === 'Newest') return b.id - a.id;
-    return a.id - b.id;
+  const filteredTransactions = transactions.filter(t => {
+    const matchesSearch = t.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.device?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.id.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    if (!matchesSearch) return false;
+    
+    if (filterDate) {
+      const txDate = new Date(t.createdAt).toISOString().split('T')[0];
+      return txDate === filterDate;
+    }
+    
+    return true;
   });
 
-  const generateReceiptPDF = (record: Record) => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text('GRAPHIX POS SYSTEM', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Official Receipt', 105, 30, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.text(`Date: ${record.date}`, 20, 45);
-    doc.text(`Order ID: ${record.orderId}`, 20, 52);
-    doc.text(`Customer Name: ${record.customerName}`, 20, 59);
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-    // Divider
-    doc.setLineWidth(0.5);
-    doc.line(20, 65, 190, 65);
-
-    // Item Details Headers
-    doc.setFont('helvetica', 'bold');
-    doc.text('Description', 20, 75);
-    doc.text('Qty', 140, 75);
-    doc.text('Price', 170, 75);
-
-    // Item Details
-    doc.setFont('helvetica', 'normal');
-    doc.text(record.deviceName, 20, 85);
-    doc.text(record.qty, 140, 85);
-    doc.text(record.price, 170, 85);
-
-    // Divider
-    doc.line(20, 95, 190, 95);
-
-    // Totals
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total:', 140, 105);
-    doc.text(record.price, 170, 105);
-
-    doc.text('Amount Paid:', 140, 115);
-    doc.text(record.amount, 170, 115);
-
-    doc.text('Change:', 140, 125);
-    doc.text(record.change, 170, 125);
-
-    // Footer
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(10);
-    doc.text('Thank you for your business!', 105, 145, { align: 'center' });
-
-    doc.save(`Graphix_Receipt_${record.orderId.replace('#', '')}.pdf`);
-  };
+  if (loading) {
+    return (
+      <main className="flex-1 flex flex-col p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white justify-center items-center h-[70vh]">
+        <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium tracking-wide">Loading Sale Records...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
@@ -121,169 +231,276 @@ export default function CashierSaleRecord() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            {/* Filter */}
-            <div className="relative" ref={filterRef}>
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="flex items-center justify-center w-full sm:w-auto bg-white border border-[#bd00ff] rounded-lg px-6 py-2.5 text-[1.1rem] text-black cursor-pointer hover:bg-gray-50 transition-colors gap-2"
-              >
-                <Filter size={18} />
-                <span className="font-medium">{sortFilter}</span>
-              </button>
-
-              {isFilterOpen && (
-                <div className="absolute top-[110%] left-0 bg-white border border-[#bd00ff] rounded-lg shadow-lg min-w-[150px] flex flex-col py-2 z-10 transition-all">
-                  {['Newest', 'Oldest'].map(opt => (
-                    <div 
-                      key={opt}
-                      className="px-5 py-2 cursor-pointer hover:bg-purple-50 hover:text-[#bd00ff] font-medium transition-colors text-black"
-                      onClick={() => { setSortFilter(opt); setIsFilterOpen(false); }}
-                    >
-                      {opt}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Search */}
-            <div className="flex items-center border border-[#bd00ff] rounded-lg px-4 py-2 bg-white flex-1 sm:max-w-[300px]">
-              <Search size={18} className="text-gray-400" />
+            <DatePicker 
+              value={filterDate}
+              onChange={(val) => {
+                setFilterDate(val);
+                setCurrentPage(1);
+              }}
+              className="w-full sm:w-40 md:w-48 h-[48px] px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-purple-500 focus-within:bg-white outline-none transition-all text-sm font-semibold text-gray-600"
+              placeholder="Filter date..."
+            />
+            <div className="relative flex-1 sm:max-w-[300px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text" 
-                placeholder="Search By ID or Order ID" 
-                className="border-none outline-none pl-3 text-sm w-full text-black placeholder-gray-400 bg-transparent font-medium"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search transactions..."
+                value={searchTerm}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all font-semibold text-black"
               />
             </div>
           </div>
         </div>
 
         {/* Table container */}
-        <div className="w-full border border-gray-200 rounded-xl mt-2 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent">Order ID</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent">Device Name</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Date</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Price</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Amount</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Change</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Quantity</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent hidden md:table-cell">Customer Name</th>
-                <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedAndFilteredRecords.map((record, index) => (
-                <tr 
-                  key={record.id} 
-                  className={`hover:bg-purple-50 transition-colors cursor-pointer md:cursor-default ${index !== sortedAndFilteredRecords.length - 1 ? 'border-b border-gray-100' : ''}`}
-                  onClick={() => {
-                    if (window.innerWidth < 768) {
-                      setSelectedRecord(record);
-                    }
-                  }}
-                >
-                  <td className="px-5 py-4 font-semibold text-black">{record.orderId}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium whitespace-pre-wrap">{record.deviceName.replace(' ', '\n')}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.date}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.price}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.amount}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.change}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.qty}</td>
-                  <td className="px-5 py-4 text-gray-700 font-medium hidden md:table-cell">{record.customerName}</td>
-                  <td className="px-5 py-4 text-center">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); generateReceiptPDF(record); }}
-                      className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
-                      title="Download Receipt"
-                    >
-                      <Download size={18} />
-                    </button>
-                  </td>
+        {filteredTransactions.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+            <ReceiptText className="mx-auto text-gray-400 mb-3" size={40} />
+            <p className="text-base font-bold text-gray-700 mb-1">No Sale Records Found</p>
+            <p className="text-sm">There are no transactions matching your criteria.</p>
+          </div>
+        ) : (
+          <div className="w-full border border-gray-200 rounded-xl mt-2 overflow-hidden overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Transaction ID</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Amount</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Date</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm text-center">Action</th>
                 </tr>
-              ))}
-              {sortedAndFilteredRecords.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="text-center py-8 text-gray-500 font-medium">No records found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {paginatedTransactions.map((tx) => (
+                  <tr 
+                    key={tx.id} 
+                    onClick={() => setSelectedTransaction(tx)}
+                    className="hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer"
+                  >
+                    <td className="px-5 py-4 font-semibold">
+                      <div className="flex flex-col items-start gap-1">
+                        {tx.isExpired && tx.status !== 'Cancelled' && (
+                          <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Expired</span>
+                        )}
+                        {tx.status === 'Cancelled' && (
+                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Cancelled</span>
+                        )}
+                        <span className="text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-100">
+                          #{tx.id.substring(0, 8).toUpperCase()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <UserCircle2 size={36} className="text-gray-400 animate-pulse" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 text-sm">{tx.user?.name || 'Anonymous'}</span>
+                          <span className="text-xs text-gray-500 font-semibold">{tx.user?.email}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        {tx.device?.image ? (
+                          <img src={tx.device.image} alt={tx.device.name} className="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100 shadow-sm" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gray-200" />
+                        )}
+                        <div className="flex flex-col max-w-[200px]">
+                          <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name}</span>
+                          <span className="text-xs text-gray-500 font-semibold truncate">
+                            Qty: {tx.quantity} {tx.variations && `• ${tx.variations}`}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 min-w-[150px]">
+                      <div className="flex flex-col">
+                        <span className="font-extrabold text-[#bd00ff] text-sm">
+                          ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
+                        </span>
+                        {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-bold text-gray-600">
+                        {new Date(tx.createdAt).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
+                        className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
+                        title="Download Receipt"
+                      >
+                        <Download size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Total Sales Summary */}
+        {filteredTransactions.length > 0 && (
+          <div className="flex flex-col sm:flex-row justify-between items-center p-6 bg-purple-50 rounded-2xl border border-purple-100 mt-2 mb-2">
+            <span className="text-gray-600 font-bold text-lg mb-2 sm:mb-0">
+              Total Sales {filterDate ? `for ${new Date(filterDate).toLocaleDateString()}` : "Found"}
+            </span>
+            <span className="text-3xl font-black text-[#bd00ff]">
+              ₱{filteredTransactions.reduce((acc, tx) => acc + (tx.amount > 0 ? tx.amount : (tx.device?.price || 0)), 0).toLocaleString()}
+            </span>
+          </div>
+        )}
 
         {/* Pagination */}
-        <div className="flex justify-center items-center gap-4 mt-2">
-          <button className="text-black hover:scale-125 transition-transform bg-transparent border-none cursor-pointer"><ChevronLeft size={20} /></button>
-          <span className="font-semibold text-xl text-black">1/1</span>
-          <button className="text-black hover:scale-125 transition-transform bg-transparent border-none cursor-pointer"><ChevronRight size={20} /></button>
-        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+            <span className="text-sm font-semibold text-gray-500">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length}
+            </span>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-xl bg-gray-50 text-gray-600 hover:bg-purple-100 hover:text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-none cursor-pointer"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-xl bg-gray-50 text-gray-600 hover:bg-purple-100 hover:text-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-none cursor-pointer"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          </div>
+        )}
 
-      {/* Mobile Record Info Modal */}
-      {selectedRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedRecord(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-purple-50/50">
-              <h3 className="font-bold text-[#111] text-lg">Sale Record Details</h3>
-              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer" onClick={() => setSelectedRecord(null)}>
+      {/* Transaction Details Modal */}
+      {selectedTransaction && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTransaction(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <ReceiptText className="text-purple-600" size={24} />
+                <h3 className="font-bold text-[#111] text-xl">Transaction Details</h3>
+              </div>
+              <button className="text-gray-400 hover:text-black transition-colors bg-transparent border-none cursor-pointer" onClick={() => setSelectedTransaction(null)}>
                 <X size={20} />
               </button>
             </div>
-            <div className="p-6 flex flex-col gap-4 text-left">
-              <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                <span className="text-[#666] font-medium">Order ID</span>
-                <span className="font-bold text-[#111]">{selectedRecord.orderId}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                <span className="text-[#666] font-medium">Date</span>
-                <span className="font-bold text-[#111]">{selectedRecord.date}</span>
-              </div>
-              <div className="flex flex-col pb-3 border-b border-gray-100">
-                <span className="text-[#666] font-medium mb-1">Device Name</span>
-                <span className="font-bold text-[#111]">{selectedRecord.deviceName}</span>
-              </div>
-              <div className="flex justify-between items-center pb-3 border-b border-gray-100">
-                <span className="text-[#666] font-medium">Customer</span>
-                <span className="font-bold text-[#111] text-right">{selectedRecord.customerName}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <span className="text-[#666] font-medium text-sm">Price</span>
-                  <span className="font-bold text-[#111]">{selectedRecord.price}</span>
+            
+            <div className="p-6">
+              
+              {selectedTransaction.status === 'Cancelled' && (
+                <div className="mb-6 bg-gray-50 border border-gray-200 text-gray-600 p-4 rounded-xl text-sm shadow-sm">
+                  <div className="font-bold text-gray-800 mb-1">Transaction Cancelled</div>
+                  <p className="m-0">This transaction was cancelled and the reserved inventory has been officially restocked.</p>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[#666] font-medium text-sm">Amount Paid</span>
-                  <span className="font-bold text-green-600">{selectedRecord.amount}</span>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                
+                {/* Column 1: Details */}
+                <div className="flex flex-col gap-4">
+                  <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Order Information</h4>
+                  
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Transaction ID</span>
+                    <span className="font-bold text-gray-900">{selectedTransaction.id.toUpperCase()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Customer</span>
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900">{selectedTransaction.user?.name || 'Anonymous'}</div>
+                      <div className="text-xs text-gray-500">{selectedTransaction.user?.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Device</span>
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900">{selectedTransaction.device?.name}</div>
+                      <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${selectedTransaction.variations}`}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
+                    <span className="font-bold text-gray-900">
+                      {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                  
+                  {/* Warranty */}
+                  <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-4 rounded-xl border border-purple-100 flex items-start gap-4 mt-2">
+                    <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
+                      <ShieldCheck size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-purple-900 m-0 text-sm">12 Months Warranty</h4>
+                      <p className="text-xs text-purple-700 mt-1 mb-0 leading-normal">
+                        Valid until <span className="font-bold text-purple-900">
+                          {new Date(new Date(selectedTransaction.createdAt).setMonth(new Date(selectedTransaction.createdAt).getMonth() + 12)).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Column 2: Financials & Actions */}
+                <div className="flex flex-col justify-between gap-6">
+                  
+                  <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col gap-3">
+                    <h4 className="font-bold text-purple-900 m-0 text-base mb-1 border-b border-purple-200/40 pb-2">Payment Breakdown</h4>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-purple-700 font-medium">Device Price</span>
+                      <span className="font-bold text-gray-900">₱{(selectedTransaction.device?.price || 0).toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-purple-700 font-medium">Quantity Purchased</span>
+                      <span className="font-bold text-gray-900">{selectedTransaction.quantity}x</span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-sm border-t border-purple-200/40 pt-3 mt-1">
+                      <span className="text-purple-800 font-bold">Total Paid Amount</span>
+                      <span className="font-black text-xl text-[#bd00ff]">₱{(selectedTransaction.amount > 0 ? selectedTransaction.amount : (selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 mt-auto">
+                    <button
+                      onClick={() => handleDownloadPDF(selectedTransaction)}
+                      className="w-full px-4 py-3 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Download size={18} /> Download PDF Receipt
+                    </button>
+                    <button
+                      onClick={() => setSelectedTransaction(null)}
+                      className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-sm cursor-pointer border-none"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div className="flex flex-col">
-                  <span className="text-[#666] font-medium text-sm">Change</span>
-                  <span className="font-bold text-red-500">{selectedRecord.change}</span>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[#666] font-medium text-sm">Quantity</span>
-                  <span className="font-bold text-[#111]">{selectedRecord.qty}</span>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 bg-gray-50/80 border-t border-black/5 flex flex-col gap-2">
-              <button 
-                className="w-full py-2.5 rounded-xl bg-white border-2 border-[#bd00ff] text-[#bd00ff] font-semibold hover:bg-purple-50 transition-colors cursor-pointer flex items-center justify-center gap-2"
-                onClick={() => generateReceiptPDF(selectedRecord)}
-              >
-                <Download size={18} />
-                Download Receipt
-              </button>
-              <button 
-                className="w-full py-2.5 rounded-xl bg-[#bd00ff] text-white font-semibold hover:bg-purple-700 transition-colors cursor-pointer border-none"
-                onClick={() => setSelectedRecord(null)}
-              >
-                Close
-              </button>
+
             </div>
           </div>
         </div>
