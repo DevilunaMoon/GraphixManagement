@@ -111,6 +111,8 @@ model RepairRequest {
   timeline   RepairTimeline[]
 
   @@index([userId])
+  @@index([createdAt])
+  @@index([ownerName])
 }
 
 model TechnicianFeedback {
@@ -171,6 +173,8 @@ model Purchase {
 
   @@index([userId])
   @@index([deviceId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 model CartItem {

@@ -16,8 +16,22 @@ export async function GET() {
     
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Fetch all purchases with selective columns
+    // 1. Calculate Total Retail of All Time using SQL aggregate (0 row load in server memory!)
+    const totalRetailAggregate = await prisma.purchase.aggregate({
+      _sum: {
+        amount: true
+      }
+    });
+    const totalRetailAllTime = totalRetailAggregate._sum.amount || 0;
+
+    // 2. Fetch only current year's purchases to process daily/weekly/monthly statistics and top products
+    const currentYear = now.getFullYear();
+    const startOfYear = new Date(currentYear, 0, 1);
+
     const purchases = await prisma.purchase.findMany({
+      where: {
+        createdAt: { gte: startOfYear }
+      },
       select: {
         amount: true,
         createdAt: true,
@@ -33,16 +47,27 @@ export async function GET() {
       }
     });
 
-    // Fetch completed repairs (only cost and date needed)
+    // 3. Fetch completed repairs for the current year
     const repairs = await prisma.repairRequest.findMany({
-      where: { status: 'Completed' },
+      where: { 
+        status: 'Completed',
+        createdAt: { gte: startOfYear }
+      },
       select: {
         repairCost: true,
         createdAt: true
       }
     });
 
-    // Fetch active repairs for workload (only technician field needed)
+    // 4. Fetch all-time completed repairs selecting ONLY the cost to sum all-time without loading heavy data
+    const allTimeRepairs = await prisma.repairRequest.findMany({
+      where: { status: 'Completed' },
+      select: {
+        repairCost: true
+      }
+    });
+
+    // 5. Fetch active repairs (only technician is needed)
     const activeRepairs = await prisma.repairRequest.findMany({
       where: { status: { not: 'Completed' } },
       select: {
@@ -61,19 +86,17 @@ export async function GET() {
     let yesterdaySales = 0;
     let weeklySales = 0;
     let monthlySales = 0;
-    let totalRetail = 0;
+    let totalRetail = totalRetailAllTime;
     let totalRepair = 0;
 
     let onlineCount = 0;
     let physicalCount = 0;
 
-    const currentYear = now.getFullYear();
     const monthlyData = Array(12).fill(0);
 
     // Process Purchases (Retail)
     purchases.forEach(p => {
       const amt = p.amount > 0 ? p.amount : (p.device?.price || 0);
-      totalRetail += amt;
       
       const createdAt = new Date(p.createdAt);
 
@@ -98,14 +121,22 @@ export async function GET() {
       }
     });
 
-    // Process Repairs (Services)
+    // Calculate all-time repair sales
+    allTimeRepairs.forEach(r => {
+      if (r.repairCost) {
+        const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
+        if (!isNaN(num)) {
+          totalRepair += num;
+        }
+      }
+    });
+
+    // Process current year Repairs for daily/weekly/monthly trends and charts
     repairs.forEach(r => {
       if (r.repairCost) {
         // Extract numbers from "₱1,500" or similar strings
         const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
         if (!isNaN(num)) {
-          totalRepair += num;
-          
           const createdAt = new Date(r.createdAt);
 
           if (createdAt >= startOfToday) {
