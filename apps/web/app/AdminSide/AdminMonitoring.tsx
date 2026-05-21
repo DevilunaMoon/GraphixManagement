@@ -119,13 +119,23 @@ export default function AdminMonitoring() {
     : users;
 
   const activeDevices = devices.filter(d => d.status !== 'Completed');
-  const filteredDevices = activeDevices.filter(d => 
+  const filteredDevices = devices.filter(d => 
     d.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const sortedDevices = [...filteredDevices].sort((a, b) => {
-    if (a.progress === '100%' && b.progress !== '100%') return 1;
-    if (a.progress !== '100%' && b.progress === '100%') return -1;
+    // 1. Completed status goes to the absolute bottom of the list
+    const aComp = a.status === 'Completed';
+    const bComp = b.status === 'Completed';
+    if (aComp && !bComp) return 1;
+    if (!aComp && bComp) return -1;
+
+    // 2. Otherwise active devices at 100% progress go to the bottom of active ones
+    const a100 = a.progress === '100%';
+    const b100 = b.progress === '100%';
+    if (a100 && !b100) return 1;
+    if (!a100 && b100) return -1;
+
     return 0;
   });
 
