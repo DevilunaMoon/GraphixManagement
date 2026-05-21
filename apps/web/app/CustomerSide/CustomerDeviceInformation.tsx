@@ -123,8 +123,8 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                   <div className="flex justify-between items-start pb-6 border-b border-gray-200/60">
                     <div className="flex flex-col gap-1">
                       <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Current Status</span>
-                      <span className={`inline-flex font-bold px-4 py-1.5 rounded-full text-sm mt-1 w-fit ${device.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                        {device.status}
+                      <span className={`inline-flex font-bold px-4 py-1.5 rounded-full text-sm mt-1 w-fit ${(device.status === 'Completed' || device.progress === '100%') ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                        {(device.status === 'Completed' || device.progress === '100%') ? 'Completed' : device.status}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-1 text-right">

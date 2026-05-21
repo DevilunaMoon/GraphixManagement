@@ -62,6 +62,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (repairCost !== undefined) updateData.repairCost = repairCost;
     }
 
+    if (updateData.progress === '100%') {
+      updateData.status = 'Completed';
+    }
+    if (updateData.status === 'Completed') {
+      updateData.progress = '100%';
+    }
+
     const request = await prisma.repairRequest.update({
       where: { id },
       data: updateData,
