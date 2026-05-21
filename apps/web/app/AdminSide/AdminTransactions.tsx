@@ -260,19 +260,19 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             <p className="text-sm">There are no transactions matching your criteria.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto pb-4">
-            <table className="w-full text-left border-separate border-spacing-y-3">
+          <div className="w-full border border-gray-200 rounded-xl mt-2 overflow-hidden overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Transaction ID</th>
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Customer</th>
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Device</th>
-                  {type === "downpayment" && <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Source</th>}
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Transaction ID</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
+                  {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Source</th>}
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">
                     {type === "downpayment" ? "Payment Info" : "Amount"}
                   </th>
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
-                  <th className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Action</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Date</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -280,34 +280,34 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                   <tr 
                     key={tx.id} 
                     onClick={() => setSelectedTransaction(tx)}
-                    className="bg-gray-50 hover:bg-purple-50/50 transition-colors group cursor-pointer"
+                    className="hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer"
                   >
-                    <td className="px-4 py-4 rounded-l-2xl border-y border-l border-transparent group-hover:border-purple-100">
+                    <td className="px-5 py-4 font-semibold">
                       <div className="flex flex-col items-start gap-1">
                         {tx.isExpired && tx.status !== 'Cancelled' && (
-                          <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">Expired</span>
+                          <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Expired</span>
                         )}
                         {tx.status === 'Cancelled' && (
-                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-bold">Cancelled</span>
+                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Cancelled</span>
                         )}
-                        <span className="text-xs font-bold text-gray-500 bg-white px-2 py-1 rounded-md shadow-sm border border-gray-100">
-                          {tx.id.substring(0, 8).toUpperCase()}
+                        <span className="text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-100">
+                          #{tx.id.substring(0, 8).toUpperCase()}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
+                    <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <UserCircle2 size={36} className="text-gray-400" />
                         <div className="flex flex-col">
                           <span className="font-bold text-gray-900 text-sm">{tx.user?.name || 'Anonymous'}</span>
-                          <span className="text-xs text-gray-500">{tx.user?.email}</span>
+                          <span className="text-xs text-gray-500 font-semibold">{tx.user?.email}</span>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
+                    <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         {tx.device?.image ? (
-                          <img src={tx.device.image} alt={tx.device.name} className="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100" />
+                          <img src={tx.device.image} alt={tx.device.name} className="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100 shadow-sm" />
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-gray-200" />
                         )}
@@ -320,39 +320,39 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                       </div>
                     </td>
                     {type === "downpayment" && (
-                      <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100">
-                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                      <td className="px-5 py-4">
+                        <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm ${tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
                           {tx.source || 'Online'}
                         </span>
                       </td>
                     )}
-                    <td className="px-4 py-4 border-y border-transparent group-hover:border-purple-100 min-w-[150px]">
+                    <td className="px-5 py-4 min-w-[150px]">
                       {type === "downpayment" ? (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-semibold">Paid:</span>
-                            <span className="font-bold text-green-600">₱{(tx.amount || 0).toLocaleString()}</span>
+                            <span className="text-gray-500 font-bold">Paid:</span>
+                            <span className="font-extrabold text-green-600">₱{(tx.amount || 0).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-1.5">
-                            <span className="text-gray-500 font-semibold">Balance:</span>
-                            <span className="font-bold text-red-500">₱{Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)).toLocaleString()}</span>
+                            <span className="text-gray-500 font-bold">Balance:</span>
+                            <span className="font-extrabold text-red-500">₱{Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center text-[11px] border-t border-gray-100 pt-1">
-                            <span className="text-gray-400 font-medium">Monthly (12m):</span>
-                            <span className="font-bold text-blue-600">₱{(Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            <span className="text-gray-400 font-semibold">Monthly (12m):</span>
+                            <span className="font-extrabold text-blue-600">₱{(Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                           </div>
                         </div>
                       ) : (
                         <div className="flex flex-col">
-                          <span className="font-bold text-[#bd00ff]">
+                          <span className="font-extrabold text-[#bd00ff] text-sm">
                             ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
                           </span>
-                          {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-wider">Legacy</span>}
+                          {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-4 rounded-r-2xl border-y border-r border-transparent group-hover:border-purple-100">
-                      <span className="text-sm font-semibold text-gray-600">
+                    <td className="px-5 py-4">
+                      <span className="text-sm font-bold text-gray-600">
                         {new Date(tx.createdAt).toLocaleDateString(undefined, {
                           year: 'numeric',
                           month: 'short',
@@ -360,13 +360,13 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                         })}
                       </span>
                     </td>
-                    <td className="px-4 py-4 rounded-r-2xl border-y border-r border-transparent group-hover:border-purple-100 text-right">
+                    <td className="px-5 py-4 text-center">
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
-                        className="p-2 bg-white text-purple-600 rounded-xl shadow-sm border border-purple-100 hover:bg-purple-600 hover:text-white hover:border-purple-600 transition-all cursor-pointer inline-flex items-center justify-center group/btn"
+                        className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
                         title="Download Receipt"
                       >
-                        <Download size={18} className="group-hover/btn:scale-110 transition-transform" />
+                        <Download size={18} />
                       </button>
                     </td>
                   </tr>
