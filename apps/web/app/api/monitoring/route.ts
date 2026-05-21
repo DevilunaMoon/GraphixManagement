@@ -4,17 +4,62 @@ import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { getSession } from '../../../lib/session';
 import { sendNotificationEmail } from '../../../lib/email';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
     const isCustomer = session?.role === 'CUSTOMER';
+    
+    const { searchParams } = new URL(req.url);
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const search = searchParams.get('search') || '';
+    const sort = searchParams.get('sort') || 'Newest';
+
     const whereClause: any = isCustomer && session?.userId ? { userId: session.userId } : {};
 
-    const requests = await prisma.repairRequest.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' }
+    if (search.trim()) {
+      whereClause.ownerName = {
+        contains: search,
+        mode: 'insensitive'
+      };
+    }
+
+    const orderBy: any = sort === 'Newest' 
+      ? { createdAt: 'desc' }
+      : { createdAt: 'asc' };
+
+    // Backward-compatibility: if page/limit parameters are omitted, return list array directly
+    if (!pageParam && !limitParam) {
+      const requests = await prisma.repairRequest.findMany({
+        where: whereClause,
+        orderBy
+      });
+      return NextResponse.json(requests);
+    }
+
+    const page = parseInt(pageParam || '1') || 1;
+    const limit = parseInt(limitParam || '8') || 8;
+    const skip = (page - 1) * limit;
+
+    const [requests, totalCount] = await Promise.all([
+      prisma.repairRequest.findMany({
+        where: whereClause,
+        orderBy,
+        skip,
+        take: limit
+      }),
+      prisma.repairRequest.count({
+        where: whereClause
+      })
+    ]);
+
+    return NextResponse.json({
+      requests,
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit)
     });
-    return NextResponse.json(requests);
   } catch (error) {
     console.error('Error fetching repair requests:', error);
     return NextResponse.json({ error: 'Failed to fetch repair requests' }, { status: 500 });

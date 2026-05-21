@@ -27,6 +27,8 @@ export default function CustomerMonitoring() {
 
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -34,12 +36,30 @@ export default function CustomerMonitoring() {
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('/api/monitoring')
-      .then(res => res.json())
-      .then(data => setDevices(Array.isArray(data) ? data : []))
-      .catch(console.error)
+    fetch(`/api/monitoring?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(searchQuery)}&sort=${encodeURIComponent(filter)}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch paginated devices");
+        return res.json();
+      })
+      .then(data => {
+        if (data && Array.isArray(data.requests)) {
+          setDevices(data.requests);
+          setTotalCount(data.totalCount || 0);
+          setTotalPages(data.totalPages || 1);
+        } else {
+          setDevices([]);
+          setTotalCount(0);
+          setTotalPages(1);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        setDevices([]);
+        setTotalCount(0);
+        setTotalPages(1);
+      })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [currentPage, searchQuery, filter]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -51,19 +71,7 @@ export default function CustomerMonitoring() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const sortedDevices = [...devices]
-    .filter(d => d.ownerName.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => {
-      // Basic sorting mock: in a real app you'd sort by a createdAt Date string
-      if (filter === 'Newest') return a.deviceName.localeCompare(b.deviceName); // temporary sort
-      return b.deviceName.localeCompare(a.deviceName);
-    });
-
-  const totalPages = Math.ceil(sortedDevices.length / ITEMS_PER_PAGE) || 1;
-  const paginatedDevices = sortedDevices.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedDevices = devices;
 
   const getSemanticStatus = (device: MonitoringDevice) => {
     if (device.status === 'Completed' || device.progress === '100%') return 'Completed';
@@ -179,7 +187,7 @@ export default function CustomerMonitoring() {
         </div>
 
         {/* Pagination */}
-        {sortedDevices.length > ITEMS_PER_PAGE && (
+        {totalCount > ITEMS_PER_PAGE && (
           <div className="flex justify-center w-full mt-6">
             <div className="flex items-center justify-center gap-6 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 mx-auto">
               <button 
