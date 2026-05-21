@@ -23,7 +23,7 @@ function CustomerDownpaymentContent() {
         console.error('Failed to record purchase:', err);
       }
     }
-    navigate('/customer/downpayment-confirmed');
+    navigate(`/customer/downpayment-confirmed?method=${method}`);
   };
 
   return (

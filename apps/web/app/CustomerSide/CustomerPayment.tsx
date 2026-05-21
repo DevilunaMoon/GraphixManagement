@@ -85,7 +85,7 @@ function CustomerPaymentContent() {
     if (method === 'gcash') {
       setShowGcashQr(true);
     } else {
-      navigate('/customer/purchase-confirmed');
+      navigate('/customer/purchase-confirmed?method=cash');
     }
   };
 
@@ -138,10 +138,10 @@ function CustomerPaymentContent() {
           </div>
 
           <button
-            onClick={() => navigate('/customer/dashboard')}
-            className="w-full py-4 mt-2 bg-[#4B0082] hover:bg-[#380066] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
+            onClick={() => navigate('/customer/purchase-confirmed?method=gcash')}
+            className="w-full py-4 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
           >
-            Return to Dashboard
+            View Confirmed Receipt
           </button>
         </div>
       </div>
