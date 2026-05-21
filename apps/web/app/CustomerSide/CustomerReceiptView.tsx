@@ -33,6 +33,7 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [purchase, setPurchase] = useState<PurchaseDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [cashAmount, setCashAmount] = useState<string>('');
 
   useEffect(() => {
     setIsLoading(true);
@@ -136,6 +137,9 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
       setIsGeneratingPDF(false);
     }
   };
+
+  const parsedCash = parseFloat(cashAmount) || 0;
+  const changeAmount = parsedCash >= purchase.amount ? parsedCash - purchase.amount : -1;
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter'] py-12">
@@ -258,14 +262,49 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
             </div>
           </div>
 
-          {/* Total */}
-          <div className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl mt-4">
-            <span className="text-xl font-bold text-gray-800 border-none m-0">
-              {isDownpayment ? "Downpayment Paid" : "Total Paid"}
-            </span>
-            <span className="text-3xl font-extrabold text-[#bd00ff]">
-              ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
+          {/* Total and Cash/Change Container */}
+          <div className="flex flex-col gap-4 bg-gray-50 p-6 rounded-2xl mt-4">
+            <div className="flex justify-between items-center text-gray-500 font-medium">
+              <span className="text-base font-bold text-gray-700">Device Price</span>
+              <span className="font-extrabold text-black">
+                ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-gray-200/50">
+              <span className="text-base font-bold text-gray-700 shrink-0">Cash Tendered</span>
+              <div className="relative w-full sm:max-w-[200px] print:hidden">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-sm">₱</span>
+                <input 
+                  type="number" 
+                  value={cashAmount} 
+                  onChange={(e) => setCashAmount(e.target.value)} 
+                  placeholder="Enter amount..." 
+                  className="w-full pl-7 pr-3 py-2 bg-white border border-gray-200 rounded-xl font-semibold text-black outline-none focus:border-purple-400 transition-all text-right shadow-sm placeholder:text-gray-300"
+                />
+              </div>
+              <span className="hidden print:inline font-extrabold text-black">
+                {parsedCash > 0 ? `₱${parsedCash.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+              </span>
+            </div>
+
+            {parsedCash > 0 && (
+              <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 mt-0.5">
+                <span className="text-sm font-bold text-gray-500">Change</span>
+                <span className={`text-base font-black ${changeAmount >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  {changeAmount >= 0 ? `₱${changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Insufficient Cash'}
+                </span>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center pt-3 border-t border-gray-200/50 mt-1">
+              <span className="text-xl font-bold text-gray-800 border-none m-0">
+                {isDownpayment ? "Downpayment Paid" : "Total Paid"}
+              </span>
+              <span className="text-3xl font-black text-[#bd00ff]">
+                ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
 
         </div>
