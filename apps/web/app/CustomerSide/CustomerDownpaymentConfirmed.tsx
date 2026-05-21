@@ -134,6 +134,20 @@ function CustomerDownpaymentConfirmedContent() {
   const monthlyInstallment = remainingBalance / 12;
   const paymentMethodLabel = method.toLowerCase() === 'gcash' ? 'GCash' : 'Cash';
 
+  const formatVariations = (variationsStr: string | null) => {
+    if (!variationsStr) return '';
+    try {
+      const parsed = JSON.parse(variationsStr);
+      if (Array.isArray(parsed)) {
+        return parsed.map((v: any) => v.name).join(', ');
+      }
+      if (parsed && typeof parsed === 'object') {
+        return Object.values(parsed).map((v: any) => v.name).join(', ');
+      }
+    } catch (e) {}
+    return variationsStr;
+  };
+
   const formattedDate = new Date(purchase.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -273,7 +287,7 @@ function CustomerDownpaymentConfirmedContent() {
             <span>{downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
-            <span>Qty: {purchase.quantity}x {purchase.variations ? `(${purchase.variations})` : ''}</span>
+            <span>Qty: {purchase.quantity}x {purchase.variations ? `(${formatVariations(purchase.variations)})` : ''}</span>
             <span>{purchase.quantity} @ {purchase.device.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
 

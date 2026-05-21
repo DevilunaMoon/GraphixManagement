@@ -13,6 +13,7 @@ function CustomerPaymentContent() {
   const navigate = router.push;
   const [method, setMethod] = useState('cash');
   const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [selectedVariationsStr, setSelectedVariationsStr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGcashQr, setShowGcashQr] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -44,8 +45,10 @@ function CustomerPaymentContent() {
               const vars = device.variations.filter((v: any) => selectedVarIds.includes(v.id));
               const varTotal = vars.reduce((acc: number, v: any) => acc + (v.price || 0), 0);
               setTotalPrice(varTotal > 0 ? varTotal : device.price);
+              setSelectedVariationsStr(vars.length > 0 ? JSON.stringify(vars) : null);
             } else {
               setTotalPrice(device.price);
+              setSelectedVariationsStr(null);
             }
           }
         }
@@ -74,7 +77,8 @@ function CustomerPaymentContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           deviceId,
-          variationIds,
+          amount: totalPrice,
+          variations: selectedVariationsStr,
           cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined,
           phoneNumber,
           staffMessage

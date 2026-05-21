@@ -90,6 +90,20 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
   const remainingBalance = Math.max(0, devicePrice - purchase.amount);
   const monthlyInstallment = remainingBalance / 12;
 
+  const formatVariations = (variationsStr: string | null) => {
+    if (!variationsStr) return '';
+    try {
+      const parsed = JSON.parse(variationsStr);
+      if (Array.isArray(parsed)) {
+        return parsed.map((v: any) => v.name).join(', ');
+      }
+      if (parsed && typeof parsed === 'object') {
+        return Object.values(parsed).map((v: any) => v.name).join(', ');
+      }
+    } catch (e) {}
+    return variationsStr;
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -192,7 +206,7 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
                 </span>
                 {purchase.variations && (
                   <span className="text-xs text-purple-600 font-bold mt-1 bg-purple-50 px-2 py-0.5 rounded-full w-fit">
-                    {purchase.variations}
+                    {formatVariations(purchase.variations)}
                   </span>
                 )}
               </div>
