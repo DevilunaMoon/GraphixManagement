@@ -269,7 +269,7 @@ function CustomerDownpaymentConfirmedContent() {
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-            <span style={{ maxWidth: "70%", overflow: "hidden", textOverflow: "ellipsis" }}>{purchase.device.name.toUpperCase()}</span>
+            <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{purchase.device.name.toUpperCase()}</span>
             <span>{downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
