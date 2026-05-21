@@ -139,7 +139,7 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
   };
 
   const parsedCash = parseFloat(cashAmount) || 0;
-  const changeAmount = parsedCash >= purchase.amount ? parsedCash - purchase.amount : -1;
+  const changeAmount = parsedCash >= purchase.amount ? parsedCash - purchase.amount : 0;
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter'] py-12">
@@ -262,47 +262,49 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
             </div>
           </div>
 
-          {/* Total and Cash/Change Container */}
-          <div className="flex flex-col gap-4 bg-gray-50 p-6 rounded-2xl mt-4">
-            <div className="flex justify-between items-center text-gray-500 font-medium">
-              <span className="text-base font-bold text-gray-700">Device Price</span>
-              <span className="font-extrabold text-black">
-                ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          {/* Input Section */}
+          <div className="flex flex-col gap-2.5 mt-4 print:hidden">
+            <label className="text-xl font-bold text-gray-800 border-none m-0 tracking-tight">
+              Input the amount of money you have
+            </label>
+            <input 
+              type="text" 
+              inputMode="decimal"
+              pattern="[0-9]*"
+              value={cashAmount} 
+              onChange={(e) => {
+                // Instantly filter out all characters that are not digits or decimal point
+                const cleanVal = e.target.value.replace(/[^0-9.]/g, '');
+                // Allow at most one decimal point
+                const dotCount = (cleanVal.match(/\./g) || []).length;
+                if (dotCount > 1) return;
+                setCashAmount(cleanVal);
+              }} 
+              placeholder="Enter the amount of money you have" 
+              className="w-full px-5 py-4 bg-white border-2 border-[#bd00ff] rounded-2xl font-bold text-black outline-none focus:shadow-[0_0_12px_rgba(189,0,255,0.15)] transition-all placeholder:text-gray-400 text-base"
+            />
+          </div>
+
+          {/* Receipt Summary Container */}
+          <div className="flex flex-col gap-3.5 bg-gray-50 p-6 rounded-[2rem] mt-6 border border-gray-100/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)]">
+            <div className="flex justify-between items-center text-gray-900 font-bold">
+              <span className="text-lg font-extrabold text-gray-800">Total</span>
+              <span className="text-xl font-black text-black">
+                Php {purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-gray-200/50">
-              <span className="text-base font-bold text-gray-700 shrink-0">Cash Tendered</span>
-              <div className="relative w-full sm:max-w-[200px] print:hidden">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 font-extrabold text-sm">₱</span>
-                <input 
-                  type="number" 
-                  value={cashAmount} 
-                  onChange={(e) => setCashAmount(e.target.value)} 
-                  placeholder="Enter amount..." 
-                  className="w-full pl-7 pr-3 py-2 bg-white border border-gray-200 rounded-xl font-semibold text-black outline-none focus:border-purple-400 transition-all text-right shadow-sm placeholder:text-gray-300"
-                />
-              </div>
-              <span className="hidden print:inline font-extrabold text-black">
-                {parsedCash > 0 ? `₱${parsedCash.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—'}
+            <div className="flex justify-between items-center text-gray-500 font-bold">
+              <span className="text-lg font-extrabold text-gray-500">Cash</span>
+              <span className="text-xl font-bold text-gray-500">
+                {parsedCash > 0 ? parsedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
               </span>
             </div>
 
-            {parsedCash > 0 && (
-              <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 mt-0.5">
-                <span className="text-sm font-bold text-gray-500">Change</span>
-                <span className={`text-base font-black ${changeAmount >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                  {changeAmount >= 0 ? `₱${changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Insufficient Cash'}
-                </span>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center pt-3 border-t border-gray-200/50 mt-1">
-              <span className="text-xl font-bold text-gray-800 border-none m-0">
-                {isDownpayment ? "Downpayment Paid" : "Total Paid"}
-              </span>
-              <span className="text-3xl font-black text-[#bd00ff]">
-                ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            <div className="flex justify-between items-center text-gray-500 font-bold">
+              <span className="text-lg font-extrabold text-gray-500">Change</span>
+              <span className="text-xl font-bold text-gray-500">
+                {changeAmount > 0 ? changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
               </span>
             </div>
           </div>
