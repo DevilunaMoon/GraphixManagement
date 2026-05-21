@@ -31,11 +31,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
     }
 
-    let updateData: any = { isRead: true };
+    let updateData: any = {};
     if (action === 'PAID') {
-      updateData.title = 'Paid Checkout Alert';
+      updateData = { isRead: true, title: 'Paid Checkout Alert' };
     } else if (action === 'UNPAID') {
-      updateData.title = 'Unpaid Checkout Alert';
+      // Keep cashier notification unread so buttons remain active, just send customer notification
+      updateData = {};
+    } else {
+      updateData = { isRead: true };
     }
 
     const notification = await prisma.notification.update({

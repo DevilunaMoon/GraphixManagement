@@ -18,6 +18,7 @@ export default function CashierNotifications() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   const fetchNotifications = async (pageToFetch = page) => {
     try {
@@ -52,9 +53,15 @@ export default function CashierNotifications() {
       if (res.ok) {
         const updated = await res.json();
         setNotifications(prev => 
-          prev.map(n => n.id === id ? { ...n, isRead: true, title: updated.title } : n)
+          prev.map(n => n.id === id ? { ...n, isRead: updated.isRead, title: updated.title } : n)
         );
-        setUnreadCount(prev => Math.max(prev - 1, 0));
+        if (action === 'PAID') {
+          setUnreadCount(prev => Math.max(prev - 1, 0));
+          setFeedbackMessage('Transaction marked as PAID successfully!');
+        } else {
+          setFeedbackMessage('Unpaid pending notification sent to customer successfully!');
+        }
+        setTimeout(() => setFeedbackMessage(null), 3000);
       }
     } catch (error) {
       console.error(`Failed to mark notification as ${action}:`, error);
@@ -99,6 +106,13 @@ export default function CashierNotifications() {
 
   return (
     <div className="flex flex-col gap-6 w-full">
+      {feedbackMessage && (
+        <div className="bg-green-600 text-white font-bold px-6 py-4 rounded-xl shadow-lg flex items-center justify-between transition-all duration-300 animate-in fade-in slide-in-from-top-4 duration-300">
+          <span className="text-sm tracking-wide">{feedbackMessage}</span>
+          <button onClick={() => setFeedbackMessage(null)} className="text-white hover:text-gray-200 bg-transparent border-none outline-none font-black ml-4 cursor-pointer">✕</button>
+        </div>
+      )}
+
       <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex justify-between items-center flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-purple-100 text-purple-600">
