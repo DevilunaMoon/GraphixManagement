@@ -155,35 +155,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-            <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><Wrench size={20} className="text-[#bd00ff]" /> Technician Workload</h3>
-            {(() => {
-              // Use live data if available, otherwise fallback to mock data to present the UI
-              const pending = dashboardData?.workload?.pendingRepairs ?? 8;
-              const techs = dashboardData?.workload?.activeTechnicians ?? 2;
-              
-              const isBottleneck = (pending > techs * 3) || (pending > 0 && techs === 0);
-              const isModerate = !isBottleneck && (pending > techs * 2);
-              
-              const statusColor = isBottleneck ? 'bg-red-50 text-red-600 border-red-200' : isModerate ? 'bg-yellow-50 text-yellow-600 border-yellow-200' : 'bg-green-50 text-green-600 border-green-200';
-              const statusText = isBottleneck ? 'Bottleneck' : isModerate ? 'Moderate' : 'Manageable';
 
-              return (
-                <div className="flex justify-between items-end">
-                  <div>
-                    <p className="text-[#666] text-sm font-semibold">Repair Queue Status</p>
-                    <h4 className={`text-3xl font-black mt-2 ${isBottleneck ? 'text-red-600' : 'text-[#111]'}`}>
-                      {statusText}
-                    </h4>
-                  </div>
-                  <div className="text-right flex flex-col gap-1.5">
-                    <p className="text-xs font-bold bg-gray-50 text-gray-600 px-2.5 py-1 rounded-lg border border-gray-100">Pending: {pending}</p>
-                    <p className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${statusColor}`}>Active Techs: {techs}</p>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
         </div>
 
         {/* Right Column: User Growth */}
