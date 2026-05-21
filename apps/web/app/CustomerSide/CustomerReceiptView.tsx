@@ -44,6 +44,10 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
       })
       .then(data => {
         setPurchase(data);
+        if (data?.user?.phone) {
+          const numericPhone = data.user.phone.replace(/[^0-9.]/g, '');
+          setCashAmount(numericPhone);
+        }
       })
       .catch(err => {
         console.error(err);
@@ -263,7 +267,7 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
           </div>
 
           {/* Input Section */}
-          <div className="flex flex-col gap-2.5 mt-4 print:hidden">
+          <div className="flex flex-col gap-2.5 mt-4 print:hidden" data-html2canvas-ignore="true">
             <label className="text-xl font-bold text-gray-800 border-none m-0 tracking-tight">
               Input the amount of money you have
             </label>
