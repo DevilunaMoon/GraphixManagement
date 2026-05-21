@@ -134,6 +134,10 @@ function CustomerPurchaseConfirmedContent() {
   const vatAmount = totalAmount - vatableSales;
   const paymentMethodLabel = method.toLowerCase() === 'gcash' ? 'GCash' : 'Cash';
 
+  const parsedCash = parseFloat(purchase?.user?.phone || '') || 0;
+  const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
+  const cashPaid = method.toLowerCase() === 'gcash' ? totalAmount : (parsedCash > 0 ? parsedCash : totalAmount);
+
   const formatVariations = (variationsStr: string | null) => {
     if (!variationsStr) return '';
     try {
@@ -288,11 +292,11 @@ function CustomerPurchaseConfirmedContent() {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>{paymentMethodLabel}</span>
-            <span>{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>Change</span>
-            <span>0.00</span>
+            <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
 
           <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
