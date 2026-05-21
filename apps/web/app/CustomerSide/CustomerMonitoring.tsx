@@ -187,7 +187,7 @@ export default function CustomerMonitoring() {
         </div>
 
         {/* Pagination */}
-        {totalCount > ITEMS_PER_PAGE && (
+        {totalCount > 0 && (
           <div className="flex justify-center w-full mt-6">
             <div className="flex items-center justify-center gap-6 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 mx-auto">
               <button 
