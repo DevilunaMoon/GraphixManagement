@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from 'react';
-import { Pencil, Receipt, KeyRound, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Pencil, Receipt, KeyRound, ChevronDown, ChevronLeft, ChevronRight, UserCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ReceiptItem {
-  id: number;
-  orderNum: number;
+  id: string;
+  orderNum: string;
   date: string;
+  deviceName: string;
+  amount: number;
+  paymentType: string;
+  createdAt: string;
 }
 
 export default function CustomerDigitalReceipt({ user }: { user?: any }) {
@@ -17,19 +21,42 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [currentPage, setCurrentPage] = useState(1);
+  const [receipts, setReceipts] = useState<ReceiptItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const itemsPerPage = 4;
 
-  const [receipts] = useState<ReceiptItem[]>([
-    { id: 1, orderNum: 4, date: 'Bought a product in 1/1/2026' },
-    { id: 2, orderNum: 3, date: 'Bought a product in 1/1/2026' },
-    { id: 3, orderNum: 2, date: 'Bought a product in 1/1/2026' },
-    { id: 4, orderNum: 1, date: 'Bought a product in 1/1/2026' },
-    { id: 5, orderNum: 5, date: 'Bought a product in 2/1/2026' },
-  ]);
+  useEffect(() => {
+    setIsLoading(true);
+    fetch('/api/purchases')
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load");
+        return res.json();
+      })
+      .then(data => {
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          orderNum: item.id.slice(-6).toUpperCase(),
+          date: `Bought on ${new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}`,
+          deviceName: item.device?.name || "Custom Print Product",
+          amount: item.amount,
+          paymentType: item.paymentType,
+          createdAt: item.createdAt
+        }));
+        setReceipts(mapped);
+      })
+      .catch(err => {
+        console.error(err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   const sortedReceipts = [...receipts].sort((a, b) => {
-    return sortOrder === 'newest' ? b.orderNum - a.orderNum : a.orderNum - b.orderNum;
+    const timeA = new Date(a.createdAt).getTime();
+    const timeB = new Date(b.createdAt).getTime();
+    return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
   });
 
   const totalPages = Math.ceil(sortedReceipts.length / itemsPerPage);
@@ -116,14 +143,32 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
           </div>
 
           <div className="flex flex-col gap-3 sm:gap-4 flex-1">
-            {currentItems.map(item => (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <div className="w-10 h-10 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-semibold">Fetching your receipts...</p>
+              </div>
+            ) : currentItems.map(item => (
               <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white hover:border-[#bd00ff] hover:shadow-md transition-all gap-3 sm:gap-0">
-                <div className="flex flex-col gap-0.5 sm:gap-1">
-                  <span className="font-bold text-black text-lg border-none m-0 leading-tight">Order #{item.orderNum}</span>
-                  <span className="text-gray-500 font-medium text-xs sm:text-base">{item.date}</span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-black text-lg border-none m-0 leading-tight">Order #{item.orderNum}</span>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      item.paymentType === 'Downpayment' 
+                        ? 'bg-orange-50 text-orange-600 border border-orange-100' 
+                        : 'bg-green-50 text-green-600 border border-green-100'
+                    }`}>
+                      {item.paymentType === 'Downpayment' ? 'Downpayment' : 'Full Payment'}
+                    </span>
+                  </div>
+                  <span className="text-gray-900 font-bold text-base mt-1">{item.deviceName}</span>
+                  <span className="text-gray-500 font-medium text-sm">{item.date}</span>
+                  <span className="text-[#bd00ff] font-extrabold text-base mt-0.5">
+                    ₱{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <button 
-                  onClick={() => navigate(`/customer/receipt-view/${item.orderNum}`)}
+                  onClick={() => navigate(`/customer/receipt-view/${item.id}`)}
                   className="w-full sm:w-auto px-6 py-2.5 bg-gray-900 text-white font-bold rounded-lg hover:bg-[#bd00ff] transition-colors cursor-pointer border-none shadow-sm text-sm sm:text-base text-center"
                 >
                   View Receipt
@@ -131,13 +176,13 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
               </div>
             ))}
 
-            {currentItems.length === 0 && (
-              <div className="text-center text-gray-500 py-10 font-medium">No receipts found.</div>
+            {!isLoading && currentItems.length === 0 && (
+              <div className="text-center text-gray-400 py-20 font-semibold text-lg">No digital receipts found.</div>
             )}
           </div>
 
           {/* Pagination */}
-          {totalPages > 0 && (
+          {!isLoading && totalPages > 1 && (
             <div className="flex justify-center items-center mt-8 gap-4 pb-2">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

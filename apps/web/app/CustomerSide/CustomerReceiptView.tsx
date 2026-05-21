@@ -1,39 +1,94 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, Printer, Download, Receipt, CheckCircle2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-interface ReceiptItem {
-  name: string;
-  qty: number;
-  price: number;
+interface PurchaseDetails {
+  id: string;
+  amount: number;
+  quantity: number;
+  variations: string | null;
+  paymentType: string;
+  source: string;
+  status: string;
+  createdAt: string;
+  device: {
+    name: string;
+    price: number;
+    image: string | null;
+  };
+  user: {
+    name: string | null;
+    email: string;
+    phone: string | null;
+  };
 }
 
-export default function CustomerReceiptView({ user, orderId }: { user?: any; orderId: string }) {
+export default function CustomerReceiptView({ user: initialUser, orderId }: { user?: any; orderId: string }) {
   const router = useRouter();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [purchase, setPurchase] = useState<PurchaseDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock receipt data based on the ID passed
-  const orderDetails = {
-    orderNum: orderId,
-    date: 'February 1, 2026',
-    time: '02:45 PM',
-    status: 'Completed',
-    paymentMethod: 'G-Cash',
-    items: [
-      { name: 'Custom T-Shirt Print', qty: 2, price: 500 },
-      { name: 'Business Cards (100pcs)', qty: 1, price: 850 },
-      { name: 'Mug Design', qty: 3, price: 250 },
-    ] as ReceiptItem[],
-  };
+  useEffect(() => {
+    setIsLoading(true);
+    fetch(`/api/purchases/latest?id=${orderId}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load");
+        return res.json();
+      })
+      .then(data => {
+        setPurchase(data);
+      })
+      .catch(err => {
+        console.error(err);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [orderId]);
 
-  const subtotal = orderDetails.items.reduce((acc, item) => acc + (item.qty * item.price), 0);
-  const tax = subtotal * 0.12; // 12% mock tax
-  const total = subtotal + tax;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
+        <p className="text-[#666] font-semibold animate-pulse text-lg">Loading receipt...</p>
+      </div>
+    );
+  }
+
+  if (!purchase) {
+    return (
+      <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center justify-center gap-4">
+        <p className="text-red-500 font-bold text-lg">Receipt not found.</p>
+        <button 
+          onClick={() => router.back()} 
+          className="px-6 py-2.5 bg-[#bd00ff] text-white rounded-xl font-bold cursor-pointer border-none hover:bg-[#9c00d6] transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  const orderNum = purchase.id.slice(-6).toUpperCase();
+  const dateFormatted = new Date(purchase.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeFormatted = new Date(purchase.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  
+  const isDownpayment = purchase.paymentType === 'Downpayment';
+  
+  // Math formulas matching original receipts
+  const devicePrice = purchase.device?.price || purchase.amount;
+  const subtotal = purchase.amount;
+  const vatableSales = subtotal / 1.12;
+  const vatAmount = subtotal - vatableSales;
+
+  const remainingBalance = Math.max(0, devicePrice - purchase.amount);
+  const monthlyInstallment = remainingBalance / 12;
 
   const handlePrint = () => {
     window.print();
@@ -60,7 +115,7 @@ export default function CustomerReceiptView({ user, orderId }: { user?: any; ord
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      doc.save(`Receipt_Order_${orderDetails.orderNum}.pdf`);
+      doc.save(`Receipt_Order_${orderNum}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
     } finally {
@@ -111,11 +166,11 @@ export default function CustomerReceiptView({ user, orderId }: { user?: any; ord
               <Receipt size={32} className="text-white" />
             </div>
             <div>
-              <h2 className="text-3xl font-extrabold text-gray-900 m-0">Order #{orderDetails.orderNum}</h2>
-              <p className="text-gray-500 font-medium mt-1 mb-0">{orderDetails.date} • {orderDetails.time}</p>
+              <h2 className="text-3xl font-extrabold text-gray-900 m-0">Order #{orderNum}</h2>
+              <p className="text-gray-500 font-medium mt-1 mb-0">{dateFormatted} • {timeFormatted}</p>
             </div>
             <div className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-600 rounded-full font-bold text-sm">
-              <CheckCircle2 size={16} /> {orderDetails.status}
+              <CheckCircle2 size={16} /> {purchase.status === 'Active' ? 'Completed' : purchase.status}
             </div>
           </div>
 
@@ -128,39 +183,75 @@ export default function CustomerReceiptView({ user, orderId }: { user?: any; ord
               <span>Amount</span>
             </div>
             
-            {orderDetails.items.map((item, index) => (
-              <div key={index} className="flex justify-between items-center text-gray-800 font-semibold text-lg">
-                <div className="flex flex-col">
-                  <span>{item.name}</span>
-                  <span className="text-sm font-medium text-gray-400">{item.qty}x @ ₱{item.price.toFixed(2)}</span>
-                </div>
-                <span>₱{(item.qty * item.price).toFixed(2)}</span>
+            <div className="flex justify-between items-center text-gray-800 font-semibold text-lg">
+              <div className="flex flex-col">
+                <span className="font-bold text-black">{purchase.device?.name || "Product"}</span>
+                <span className="text-sm font-medium text-gray-400">
+                  {purchase.quantity || 1}x @ ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {isDownpayment && " (Downpayment)"}
+                </span>
+                {purchase.variations && (
+                  <span className="text-xs text-purple-600 font-bold mt-1 bg-purple-50 px-2 py-0.5 rounded-full w-fit">
+                    {purchase.variations}
+                  </span>
+                )}
               </div>
-            ))}
+              <span className="font-bold text-black">
+                ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
 
           <div className="w-full h-[2px] border-b-2 border-dashed border-gray-200 my-2"></div>
 
           {/* Summary */}
           <div className="flex flex-col gap-3">
+            {isDownpayment && (
+              <div className="flex justify-between items-center text-gray-500 font-medium">
+                <span>Original Device Price</span>
+                <span className="font-bold text-gray-700">₱{devicePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center text-gray-500 font-medium">
-              <span>Subtotal</span>
-              <span>₱{subtotal.toFixed(2)}</span>
+              <span>VATable Sales</span>
+              <span>₱{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between items-center text-gray-500 font-medium">
-              <span>Tax (12%)</span>
-              <span>₱{tax.toFixed(2)}</span>
+              <span>VAT (12%)</span>
+              <span>₱{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            </div>
+            {isDownpayment && (
+              <>
+                <div className="flex justify-between items-center text-[#ff8000] font-semibold bg-orange-50/50 p-2.5 rounded-xl border border-orange-100/50 mt-1">
+                  <span>Remaining Balance</span>
+                  <span>₱{remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center text-[#00b0ff] font-semibold bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
+                  <span>12-Month Installment</span>
+                  <span>₱{monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2 })} /mo</span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center text-gray-500 font-medium mt-1">
+              <span>Payment Type</span>
+              <span className="text-black font-semibold">
+                {isDownpayment ? "Downpayment Installment" : "Buy Now (Full Payment)"}
+              </span>
             </div>
             <div className="flex justify-between items-center text-gray-500 font-medium">
-              <span>Payment Method</span>
-              <span className="text-black font-semibold capitalize">{orderDetails.paymentMethod}</span>
+              <span>Source</span>
+              <span className="text-black font-semibold capitalize">{purchase.source || 'Online'}</span>
             </div>
           </div>
 
           {/* Total */}
           <div className="flex justify-between items-center bg-gray-50 p-6 rounded-2xl mt-4">
-            <span className="text-xl font-bold text-gray-800 border-none m-0">Total Paid</span>
-            <span className="text-3xl font-extrabold text-[#bd00ff]">₱{total.toFixed(2)}</span>
+            <span className="text-xl font-bold text-gray-800 border-none m-0">
+              {isDownpayment ? "Downpayment Paid" : "Total Paid"}
+            </span>
+            <span className="text-3xl font-extrabold text-[#bd00ff]">
+              ₱{purchase.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
           </div>
 
         </div>

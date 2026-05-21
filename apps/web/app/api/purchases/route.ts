@@ -107,3 +107,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to record purchase' }, { status: 500 });
   }
 }
+
+export async function GET(req: Request) {
+  try {
+    const session = await getSession();
+    if (!session || !session.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const purchases = await prisma.purchase.findMany({
+      where: { userId: session.userId },
+      include: {
+        device: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return NextResponse.json(purchases);
+  } catch (error: any) {
+    console.error('Error fetching customer purchases:', error);
+    return NextResponse.json({ error: error.message || 'Failed to fetch purchases' }, { status: 500 });
+  }
+}
