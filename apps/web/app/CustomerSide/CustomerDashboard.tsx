@@ -230,7 +230,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
               <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
             </div>
           ) : products.length > 0 ? (
-            products.slice(0, 30).map(product => (
+            products.slice(0, 15).map(product => (
               <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border-2 border-[#5c0099] group">
                 <div className="h-28 sm:h-36 w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                   {product.image ? (
