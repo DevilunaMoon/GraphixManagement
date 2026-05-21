@@ -72,7 +72,7 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   }
 ];
 
-export default function CashierSaleRecord() {
+export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "downpayment" }) {
   const router = useRouter();
   const navigate = router.push;
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -169,7 +169,7 @@ export default function CashierSaleRecord() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const res = await fetch(`/api/transactions?type=full`);
+        const res = await fetch(`/api/transactions?type=${type}`);
         if (res.ok) {
           const data = await res.json();
           if (data.length === 0) {
@@ -185,7 +185,7 @@ export default function CashierSaleRecord() {
       }
     };
     fetchTransactions();
-  }, []);
+  }, [type]);
 
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = t.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -227,7 +227,7 @@ export default function CashierSaleRecord() {
             <button onClick={() => navigate('/cashier/dashboard')} className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer">
               <ChevronLeft size={28} />
             </button>
-            <h2 className="text-2xl font-bold text-black border-none">Sale Record</h2>
+            <h2 className="text-2xl font-bold text-black border-none">{type === "downpayment" ? "Downpayments" : "Completed Purchases"}</h2>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -268,7 +268,8 @@ export default function CashierSaleRecord() {
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Transaction ID</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Amount</th>
+                  {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Source</th>}
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Payment Info</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Date</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm text-center">Action</th>
                 </tr>
@@ -317,13 +318,37 @@ export default function CashierSaleRecord() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4 min-w-[150px]">
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-[#bd00ff] text-sm">
-                          ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
+                    {type === "downpayment" && (
+                      <td className="px-5 py-4">
+                        <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm ${tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {tx.source || 'Online'}
                         </span>
-                        {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
-                      </div>
+                      </td>
+                    )}
+                    <td className="px-5 py-4 min-w-[150px]">
+                      {type === "downpayment" ? (
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-bold">Paid:</span>
+                            <span className="font-extrabold text-green-600">₱{(tx.amount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-1.5">
+                            <span className="text-gray-500 font-bold">Balance:</span>
+                            <span className="font-extrabold text-red-500">₱{Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] border-t border-gray-100 pt-1">
+                            <span className="text-gray-400 font-semibold">Monthly (12m):</span>
+                            <span className="font-extrabold text-blue-600">₱{(Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="font-extrabold text-[#bd00ff] text-sm">
+                            ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
+                          </span>
+                          {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <span className="text-sm font-bold text-gray-600">
@@ -354,7 +379,7 @@ export default function CashierSaleRecord() {
         {filteredTransactions.length > 0 && (
           <div className="flex flex-col sm:flex-row justify-between items-center p-6 bg-purple-50 rounded-2xl border border-purple-100 mt-2 mb-2">
             <span className="text-gray-600 font-bold text-lg mb-2 sm:mb-0">
-              Total Sales {filterDate ? `for ${new Date(filterDate).toLocaleDateString()}` : "Found"}
+              Total {type === "downpayment" ? "Downpayments" : "Sales"} {filterDate ? `for ${new Date(filterDate).toLocaleDateString()}` : "Found"}
             </span>
             <span className="text-3xl font-black text-[#bd00ff]">
               ₱{filteredTransactions.reduce((acc, tx) => acc + (tx.amount > 0 ? tx.amount : (tx.device?.price || 0)), 0).toLocaleString()}
@@ -463,24 +488,50 @@ export default function CashierSaleRecord() {
                 {/* Column 2: Financials & Actions */}
                 <div className="flex flex-col justify-between gap-6">
                   
-                  <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col gap-3">
-                    <h4 className="font-bold text-purple-900 m-0 text-base mb-1 border-b border-purple-200/40 pb-2">Payment Breakdown</h4>
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-purple-700 font-medium">Device Price</span>
-                      <span className="font-bold text-gray-900">₱{(selectedTransaction.device?.price || 0).toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-purple-700 font-medium">Quantity Purchased</span>
-                      <span className="font-bold text-gray-900">{selectedTransaction.quantity}x</span>
-                    </div>
+                  {type === "downpayment" ? (
+                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/70 flex flex-col gap-3">
+                      <h4 className="font-bold text-blue-900 m-0 text-base mb-1 border-b border-blue-200/50 pb-2">Payment Breakdown</h4>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700 font-medium">Total Device Price</span>
+                        <span className="font-bold text-blue-900">₱{((selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700 font-medium">Downpayment Paid</span>
+                        <span className="font-bold text-green-600">₱{(selectedTransaction.amount || 0).toLocaleString()}</span>
+                      </div>
 
-                    <div className="flex justify-between items-center text-sm border-t border-purple-200/40 pt-3 mt-1">
-                      <span className="text-purple-800 font-bold">Total Paid Amount</span>
-                      <span className="font-black text-xl text-[#bd00ff]">₱{(selectedTransaction.amount > 0 ? selectedTransaction.amount : (selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                      <div className="flex justify-between items-center text-sm border-t border-blue-200/60 pt-3 mt-1">
+                        <span className="text-blue-800 font-bold">Remaining Balance</span>
+                        <span className="font-bold text-red-500">₱{Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700 font-medium">Monthly Installment</span>
+                        <span className="font-bold text-blue-900">₱{(Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)) / 12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col gap-3">
+                      <h4 className="font-bold text-purple-900 m-0 text-base mb-1 border-b border-purple-200/40 pb-2">Payment Breakdown</h4>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-700 font-medium">Device Price</span>
+                        <span className="font-bold text-gray-900">₱{(selectedTransaction.device?.price || 0).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-700 font-medium">Quantity Purchased</span>
+                        <span className="font-bold text-gray-900">{selectedTransaction.quantity}x</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-sm border-t border-purple-200/40 pt-3 mt-1">
+                        <span className="text-purple-800 font-bold">Total Paid Amount</span>
+                        <span className="font-black text-xl text-[#bd00ff]">₱{(selectedTransaction.amount > 0 ? selectedTransaction.amount : (selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2 mt-auto">
