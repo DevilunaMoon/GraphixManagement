@@ -23,6 +23,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [policies, setPolicies] = useState<any[]>([]);
   const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
@@ -37,10 +38,32 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       .catch(console.error);
   };
 
+  const fetchUnreadCount = () => {
+    fetch('/api/notifications?page=1&limit=1')
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data.unreadCount === 'number') {
+          setUnreadCount(data.unreadCount);
+        }
+      })
+      .catch(console.error);
+  };
+
   useEffect(() => {
     fetchCartCount();
     window.addEventListener('cartUpdated', fetchCartCount);
     return () => window.removeEventListener('cartUpdated', fetchCartCount);
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    window.addEventListener('notificationsUpdated', fetchUnreadCount);
+    // Refresh every 15 seconds to keep sidebar count fresh and pseudo-realtime!
+    const interval = setInterval(fetchUnreadCount, 15000);
+    return () => {
+      window.removeEventListener('notificationsUpdated', fetchUnreadCount);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -163,7 +186,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                 href={item.href} 
                 onClick={() => setIsSidebarOpen(false)}
                 title={isCollapsed ? item.label : undefined}
-                className={`flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white no-underline ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                className={`flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white no-underline relative ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
                   isActive 
                     ? isCollapsed 
                       ? 'bg-white/20 text-white shadow-sm' 
@@ -173,8 +196,24 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                       : 'text-white/70 border-l-4 border-l-transparent'
                 }`}
               >
-                <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
-                {!isCollapsed && <span>{item.label}</span>}
+                <div className="relative flex items-center justify-center">
+                  <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                  {isCollapsed && item.label === 'Notifications' && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border border-purple-800 animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between flex-1">
+                    <span>{item.label}</span>
+                    {item.label === 'Notifications' && unreadCount > 0 && (
+                      <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-extrabold rounded-full shadow-sm animate-pulse mr-2">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             );
           })}

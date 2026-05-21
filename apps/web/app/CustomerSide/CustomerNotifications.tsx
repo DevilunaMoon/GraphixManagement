@@ -25,6 +25,7 @@ export default function CustomerNotifications() {
       if (data && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
         setTotalPages(data.totalPages || 1);
+        window.dispatchEvent(new Event('notificationsUpdated'));
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -46,6 +47,7 @@ export default function CustomerNotifications() {
       });
       if (res.ok) {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        window.dispatchEvent(new Event('notificationsUpdated'));
       }
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
