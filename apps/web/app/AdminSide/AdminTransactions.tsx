@@ -417,7 +417,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
       {/* Transaction Details Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTransaction(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
               <div className="flex items-center gap-2">
                 <ReceiptText className="text-purple-600" size={24} />
@@ -431,7 +431,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             <div className="p-6">
               
               {selectedTransaction.isExpired && selectedTransaction.status !== 'Cancelled' && (
-                <div className="mb-5 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm shadow-sm flex flex-col gap-2">
+                <div className="mb-6 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm shadow-sm flex flex-col gap-2">
                   <div className="flex items-center gap-2 font-bold text-red-900">
                     <span className="text-lg">⚠️</span> 3-Day Expiry Passed
                   </div>
@@ -458,93 +458,129 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
               )}
 
               {selectedTransaction.status === 'Cancelled' && (
-                <div className="mb-5 bg-gray-50 border border-gray-200 text-gray-600 p-4 rounded-xl text-sm shadow-sm">
+                <div className="mb-6 bg-gray-50 border border-gray-200 text-gray-600 p-4 rounded-xl text-sm shadow-sm">
                   <div className="font-bold text-gray-800 mb-1">Transaction Cancelled</div>
                   <p className="m-0">This transaction was cancelled and the reserved inventory has been officially restocked.</p>
                 </div>
               )}
 
-              <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <span className="text-gray-500 font-semibold text-sm">Transaction ID</span>
-                  <span className="font-bold text-gray-900">{selectedTransaction.id.toUpperCase()}</span>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <span className="text-gray-500 font-semibold text-sm">Customer</span>
-                  <div className="text-right">
-                    <div className="font-bold text-gray-900">{selectedTransaction.user?.name || 'Anonymous'}</div>
-                    <div className="text-xs text-gray-500">{selectedTransaction.user?.email}</div>
+                {/* Column 1: Details */}
+                <div className="flex flex-col gap-4">
+                  <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Order Information</h4>
+                  
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Transaction ID</span>
+                    <span className="font-bold text-gray-900">{selectedTransaction.id.toUpperCase()}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Customer</span>
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900">{selectedTransaction.user?.name || 'Anonymous'}</div>
+                      <div className="text-xs text-gray-500">{selectedTransaction.user?.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Device</span>
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900">{selectedTransaction.device?.name}</div>
+                      <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${selectedTransaction.variations}`}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
+                    <span className="font-bold text-gray-900">
+                      {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                  
+                  {/* Warranty */}
+                  <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-4 rounded-xl border border-purple-100 flex items-start gap-4 mt-2">
+                    <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
+                      <ShieldCheck size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-purple-900 m-0 text-sm">12 Months Warranty</h4>
+                      <p className="text-xs text-purple-700 mt-1 mb-0 leading-normal">
+                        Valid until <span className="font-bold text-purple-900">
+                          {new Date(new Date(selectedTransaction.createdAt).setMonth(new Date(selectedTransaction.createdAt).getMonth() + 12)).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <span className="text-gray-500 font-semibold text-sm">Device</span>
-                  <div className="text-right">
-                    <div className="font-bold text-gray-900">{selectedTransaction.device?.name}</div>
-                    <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${selectedTransaction.variations}`}</div>
-                  </div>
-                </div>
+                {/* Column 2: Financials & Actions */}
+                <div className="flex flex-col justify-between gap-6">
+                  
+                  {type === "downpayment" ? (
+                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/70 flex flex-col gap-3">
+                      <h4 className="font-bold text-blue-900 m-0 text-base mb-1 border-b border-blue-200/50 pb-2">Payment Breakdown</h4>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700 font-medium">Total Device Price</span>
+                        <span className="font-bold text-blue-900">₱{((selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700 font-medium">Downpayment Paid</span>
+                        <span className="font-bold text-green-600">₱{(selectedTransaction.amount || 0).toLocaleString()}</span>
+                      </div>
 
-                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
-                  <span className="font-bold text-gray-900">
-                    {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </span>
-                </div>
+                      <div className="flex justify-between items-center text-sm border-t border-blue-200/60 pt-3 mt-1">
+                        <span className="text-blue-800 font-bold">Remaining Balance</span>
+                        <span className="font-bold text-red-500">₱{Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-blue-700 font-medium">Monthly Installment</span>
+                        <span className="font-bold text-blue-900">₱{(Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)) / 12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col gap-3">
+                      <h4 className="font-bold text-purple-900 m-0 text-base mb-1 border-b border-purple-200/40 pb-2">Payment Breakdown</h4>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-700 font-medium">Device Price</span>
+                        <span className="font-bold text-gray-900">₱{(selectedTransaction.device?.price || 0).toLocaleString()}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-purple-700 font-medium">Quantity Purchased</span>
+                        <span className="font-bold text-gray-900">{selectedTransaction.quantity}x</span>
+                      </div>
 
-                {/* Downpayment Breakdown */}
-                {type === "downpayment" && (
-                  <div className="mt-2 p-4 rounded-xl border border-blue-100 bg-blue-50 flex flex-col gap-3">
-                    <h4 className="font-bold text-blue-900 m-0 text-base mb-1">Payment Breakdown</h4>
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700 font-medium">Total Device Price</span>
-                      <span className="font-bold text-blue-900">₱{((selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                      <div className="flex justify-between items-center text-sm border-t border-purple-200/40 pt-3 mt-1">
+                        <span className="text-purple-800 font-bold">Total Paid Amount</span>
+                        <span className="font-black text-xl text-[#bd00ff]">₱{(selectedTransaction.amount > 0 ? selectedTransaction.amount : (selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
+                      </div>
                     </div>
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700 font-medium">Downpayment Paid</span>
-                      <span className="font-bold text-green-600">₱{(selectedTransaction.amount || 0).toLocaleString()}</span>
-                    </div>
+                  )}
 
-                    <div className="flex justify-between items-center text-sm border-t border-blue-200 pt-3 mt-1">
-                      <span className="text-blue-800 font-bold">Remaining Balance</span>
-                      <span className="font-bold text-red-500">₱{Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)).toLocaleString()}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700 font-medium">Monthly Installment (12 mos)</span>
-                      <span className="font-bold text-blue-900">₱{(Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)) / 12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / month</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Warranty Section */}
-                <div className="mt-2 bg-gradient-to-r from-purple-50 to-fuchsia-50 p-4 rounded-xl border border-purple-100 flex items-start gap-4">
-                  <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
-                    <ShieldCheck size={24} />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-purple-900 m-0 text-base">12 Months Warranty</h4>
-                    <p className="text-sm text-purple-700 mt-1 mb-0">
-                      Valid until <span className="font-bold text-purple-900">
-                        {new Date(new Date(selectedTransaction.createdAt).setMonth(new Date(selectedTransaction.createdAt).getMonth() + 12)).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </span>
-                    </p>
+                  {/* Actions */}
+                  <div className="flex flex-col gap-2 mt-auto">
+                    <button
+                      onClick={() => handleDownloadPDF(selectedTransaction)}
+                      className="w-full px-4 py-3 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Download size={18} /> Download PDF Receipt
+                    </button>
+                    <button
+                      onClick={() => setSelectedTransaction(null)}
+                      className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-sm cursor-pointer border-none"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
 
               </div>
-              
-              <div className="mt-6 pt-4">
-                <button
-                  onClick={() => setSelectedTransaction(null)}
-                  className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-colors shadow-sm"
-                >
-                  Close
-                </button>
-              </div>
+
             </div>
           </div>
         </div>
