@@ -176,7 +176,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
       return;
     }
 
-    // Real data: render pixel-perfect identical HTML receipt and capture as PDF
+    // Real data: render pixel-perfect thermal POS receipt
     setDownloadingTxId(tx.id);
     setTimeout(async () => {
       if (!hiddenReceiptRef.current) {
@@ -184,20 +184,23 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
         return;
       }
       try {
-        const doc = new jsPDF({
-          orientation: 'portrait',
-          unit: 'px',
-          format: 'a4',
-        });
         const canvas = await html2canvas(hiddenReceiptRef.current, {
-          scale: 2,
+          scale: 3,
           useCORS: true,
+          backgroundColor: '#ffffff'
         });
         const imgData = canvas.toDataURL('image/png');
-        const pdfWidth = doc.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        doc.save(`Receipt_Order_${tx.id.slice(-6).toUpperCase()}.pdf`);
+        const imgWidth = 72; // 72mm thermal width
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: [imgWidth, imgHeight]
+        });
+
+        doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        doc.save(`Graphix_Receipt_${tx.id.substring(0, 8).toUpperCase()}.pdf`);
       } catch (err) {
         console.error('Error generating PDF:', err);
       } finally {
@@ -597,25 +600,23 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
         </div>
       )}
 
-      {/* Hidden Receipt for PDF Generation */}
+      {/* Hidden Thermal Receipt for PDF Generation */}
       {downloadingTxId && (
-        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        <div id="thermal-receipt-container" style={{ position: 'absolute', left: '-9999px', top: '0', display: 'block' }}>
           {(() => {
             const tx = transactions.find(t => t.id === downloadingTxId);
             if (!tx) return null;
 
-            const orderNum = tx.id.slice(-6).toUpperCase();
-            const dateFormatted = new Date(tx.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-            const timeFormatted = new Date(tx.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-            
-            const isDownpayment = tx.amount < (tx.device?.price || 0) * tx.quantity && tx.amount > 0;
-            const devicePrice = tx.device?.price || tx.amount;
-            const subtotal = tx.amount > 0 ? tx.amount : devicePrice * tx.quantity;
-            const vatableSales = subtotal / 1.12;
-            const vatAmount = subtotal - vatableSales;
+            const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0) * tx.quantity;
+            const vatRate = 0.12;
+            const vatableSales = totalAmount / (1 + vatRate);
+            const vatAmount = totalAmount - vatableSales;
+            const paymentMethodLabel = tx.amount < (tx.device?.price || 0) * tx.quantity && tx.amount > 0 ? 'Downpayment' : 'Cash';
 
-            const remainingBalance = Math.max(0, (devicePrice * tx.quantity) - tx.amount);
-            const monthlyInstallment = remainingBalance / 12;
+            const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
+            const parsedCash = parseFloat(rawCash) || totalAmount;
+            const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
+            const cashPaid = parsedCash > 0 ? parsedCash : totalAmount;
 
             const formatVariations = (variationsStr: string | null) => {
               if (!variationsStr) return '';
@@ -631,126 +632,94 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
               return variationsStr;
             };
 
-            const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
-            const parsedCash = parseFloat(rawCash) || subtotal;
-            const changeAmount = parsedCash >= subtotal ? parsedCash - subtotal : 0;
-
             return (
               <div 
                 ref={hiddenReceiptRef}
-                className="bg-white p-12 flex flex-col gap-8"
-                style={{ width: '600px', fontFamily: "'Inter', sans-serif" }}
+                style={{
+                  fontFamily: "'Courier New', Courier, monospace",
+                  width: "72mm",
+                  color: "black",
+                  background: "white",
+                  fontSize: "12px",
+                  lineHeight: "1.3",
+                  padding: "4mm",
+                  margin: "0 auto"
+                }}
               >
-                <div className="flex flex-col items-center justify-center gap-4 text-center">
-                  <div className="w-16 h-16 bg-[#bd00ff] rounded-full flex items-center justify-center">
-                    <Receipt size={32} className="text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-extrabold text-gray-900 m-0">Order #{orderNum}</h2>
-                    <p className="text-gray-500 font-medium mt-1 mb-0">{dateFormatted} • {timeFormatted}</p>
-                  </div>
-                  <div className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-600 rounded-full font-bold text-sm">
-                    <CheckCircle2 size={16} /> Completed
+                <div style={{ textAlign: "center", marginBottom: "12px" }}>
+                  <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
+                  <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
+                  <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                  <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
+                    SALES INVOICE<br />
+                    #{tx.id.substring(0, 12).toUpperCase()}
                   </div>
                 </div>
 
-                <div className="w-full h-[2px] border-b-2 border-dashed border-gray-200 my-2"></div>
-
-                {/* Itemized List */}
-                <div className="flex flex-col gap-4 text-left">
-                  <div className="flex justify-between font-bold text-gray-500 pb-2 border-b border-gray-100">
-                    <span>Item</span>
-                    <span>Amount</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-gray-800 font-semibold text-lg">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-black">{tx.device?.name || "Product"}</span>
-                      <span className="text-sm font-medium text-gray-400">
-                        {tx.quantity || 1}x @ ₱{devicePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                        {isDownpayment && " (Downpayment)"}
-                      </span>
-                      {tx.variations && (
-                        <span className="text-xs text-purple-600 font-bold mt-1 bg-purple-50 px-2 py-0.5 rounded-full w-fit">
-                          {formatVariations(tx.variations)}
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-bold text-black">
-                      ₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                  <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Product").toUpperCase()}</span>
+                  <span>{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
+                  <span>Item: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
+                  <span>{tx.quantity} @ {(tx.device?.price || tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
 
-                <div className="w-full h-[2px] border-b-2 border-dashed border-gray-200 my-2"></div>
+                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 
-                {/* Summary */}
-                <div className="flex flex-col gap-3 text-left">
-                  {isDownpayment && (
-                    <div className="flex justify-between items-center text-gray-500 font-medium">
-                      <span>Original Device Price</span>
-                      <span className="font-bold text-gray-700">₱{(devicePrice * tx.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center text-gray-500 font-medium">
-                    <span>VATable Sales</span>
-                    <span>₱{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-gray-500 font-medium">
-                    <span>VAT (12%)</span>
-                    <span>₱{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  {isDownpayment && (
-                    <>
-                      <div className="flex justify-between items-center text-[#ff8000] font-semibold bg-orange-50/50 p-2.5 rounded-xl border border-orange-100/50 mt-1">
-                        <span>Remaining Balance</span>
-                        <span>₱{remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-[#00b0ff] font-semibold bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
-                        <span>12-Month Installment</span>
-                        <span>₱{monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2 })} /mo</span>
-                      </div>
-                    </>
-                  )}
-                  <div className="flex justify-between items-center text-gray-500 font-medium mt-1">
-                    <span>Payment Type</span>
-                    <span className="text-black font-semibold">
-                      {isDownpayment ? "Downpayment Installment" : "Buy Now (Full Payment)"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-gray-500 font-medium">
-                    <span>Source</span>
-                    <span className="text-black font-semibold capitalize">{tx.source || 'Online'}</span>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                  <span>Total</span>
+                  <span>Php {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>{paymentMethodLabel}</span>
+                  <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Change</span>
+                  <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
 
-                {/* Receipt Summary Container */}
-                <div className="flex flex-col gap-3.5 bg-gray-50 p-6 rounded-[2rem] mt-6 border border-gray-100/60 text-left">
-                  <div className="flex justify-between items-center text-gray-900 font-bold">
-                    <span className="text-lg font-extrabold text-gray-800">Total</span>
-                    <span className="text-xl font-black text-black">
-                      Php {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center text-gray-500 font-bold">
-                    <span className="text-lg font-extrabold text-gray-500">Cash</span>
-                    <span className="text-xl font-bold text-gray-500">
-                      Php {parsedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-gray-500 font-bold">
-                    <span className="text-lg font-extrabold text-gray-500">Change</span>
-                    <span className="text-xl font-bold text-gray-500">
-                      Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
+                <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
+                  *** {tx.quantity} ITEM(S) ***
                 </div>
 
-                {/* Footer */}
-                <div className="text-center text-gray-400 text-xs mt-4">
-                  Thank you for choosing Graphix!
+                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                  <span>VATable Sales</span>
+                  <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                  <span>VAT Amount</span>
+                  <span>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                  <span>VAT Exempt Sales</span>
+                  <span>0.00</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                  <span>Zero Rated Sales</span>
+                  <span>0.00</span>
+                </div>
+
+                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+                <div style={{ fontSize: "11px", marginTop: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Sold To:</span>
+                    <span>{tx.user.name || 'Anonymous Customer'}</span>
+                  </div>
+                  <div>Email: {tx.user.email}</div>
+                  <div>Phone: {tx.user.phone || 'N/A'}</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+                    <span>Store Agent:</span>
+                    <span>ONLINE CHECKOUT</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
+                    <span>Global Trans No.</span>
+                    <span>#{tx.id.substring(0, 8).toUpperCase()}</span>
+                  </div>
                 </div>
               </div>
             );
