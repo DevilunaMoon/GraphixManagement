@@ -13,6 +13,7 @@ interface Transaction {
   amount: number;
   quantity: number;
   variations: string | null;
+  paymentType?: string;
   source?: string;
   status?: string;
   isExpired?: boolean;
@@ -606,18 +607,6 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
           {(() => {
             const tx = transactions.find(t => t.id === downloadingTxId);
             if (!tx) return null;
-
-            const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0) * tx.quantity;
-            const vatRate = 0.12;
-            const vatableSales = totalAmount / (1 + vatRate);
-            const vatAmount = totalAmount - vatableSales;
-            const paymentMethodLabel = tx.amount < (tx.device?.price || 0) * tx.quantity && tx.amount > 0 ? 'Downpayment' : 'Cash';
-
-            const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
-            const parsedCash = parseFloat(rawCash) || totalAmount;
-            const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
-            const cashPaid = parsedCash > 0 ? parsedCash : totalAmount;
-
             const formatVariations = (variationsStr: string | null) => {
               if (!variationsStr) return '';
               try {
@@ -632,97 +621,198 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
               return variationsStr;
             };
 
-            return (
-              <div 
-                ref={hiddenReceiptRef}
-                style={{
-                  fontFamily: "'Courier New', Courier, monospace",
-                  width: "72mm",
-                  color: "black",
-                  background: "white",
-                  fontSize: "12px",
-                  lineHeight: "1.3",
-                  padding: "4mm",
-                  margin: "0 auto"
-                }}
-              >
-                <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                  <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
-                  <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
-                  <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                  <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
-                    SALES INVOICE<br />
-                    #{tx.id.substring(0, 12).toUpperCase()}
+            const storeAgentLabel = tx.source === 'In-Store' ? 'CASHIER DESK' : 'ONLINE CHECKOUT';
+            const isDownpayment = tx.paymentType === 'Downpayment';
+
+            if (isDownpayment) {
+              const totalDevicePrice = (tx.device?.price || 0) * tx.quantity;
+              const downpaymentPaid = tx.amount > 0 ? tx.amount : 0;
+              const remainingBalance = Math.max(0, totalDevicePrice - downpaymentPaid);
+              const monthlyInstallment = remainingBalance / 12;
+
+              return (
+                <div 
+                  ref={hiddenReceiptRef}
+                  style={{
+                    fontFamily: "'Courier New', Courier, monospace",
+                    width: "72mm",
+                    color: "black",
+                    background: "white",
+                    fontSize: "12px",
+                    lineHeight: "1.3",
+                    padding: "4mm",
+                    margin: "0 auto"
+                  }}
+                >
+                  <div style={{ textAlign: "center", marginBottom: "12px" }}>
+                    <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
+                    <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
+                    <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
+                      DOWNPAYMENT INVOICE<br />
+                      #{tx.id.substring(0, 12).toUpperCase()}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                    <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Product").toUpperCase()}</span>
+                    <span>{downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
+                    <span>Qty: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
+                    <span>{tx.quantity} @ {(tx.device?.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+
+                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                    <span>Total Price</span>
+                    <span>Php {totalDevicePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                    <span>Downpayment Paid</span>
+                    <span>Php {downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                    <span>Remaining Balance</span>
+                    <span>Php {remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                    <span>Installment (12m)</span>
+                    <span>Php {monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                    <span>Payment Method</span>
+                    <span>Downpayment</span>
+                  </div>
+
+                  <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
+                    *** {tx.quantity} ITEM(S) ***
+                  </div>
+
+                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+                  <div style={{ fontSize: "11px", marginTop: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Sold To:</span>
+                      <span>{tx.user.name || 'Anonymous Customer'}</span>
+                    </div>
+                    <div>Email: {tx.user.email}</div>
+                    <div>Phone: {tx.user.phone || 'N/A'}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+                      <span>Store Agent:</span>
+                      <span>{storeAgentLabel}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
+                      <span>Global Trans No.</span>
+                      <span>#{tx.id.substring(0, 8).toUpperCase()}</span>
+                    </div>
                   </div>
                 </div>
+              );
+            } else {
+              const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0) * tx.quantity;
+              const vatRate = 0.12;
+              const vatableSales = totalAmount / (1 + vatRate);
+              const vatAmount = totalAmount - vatableSales;
 
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                  <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Product").toUpperCase()}</span>
-                  <span>{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
-                  <span>Item: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
-                  <span>{tx.quantity} @ {(tx.device?.price || tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
+              const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
+              const parsedCash = parseFloat(rawCash) || totalAmount;
+              const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
+              const cashPaid = parsedCash > 0 ? parsedCash : totalAmount;
 
-                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+              return (
+                <div 
+                  ref={hiddenReceiptRef}
+                  style={{
+                    fontFamily: "'Courier New', Courier, monospace",
+                    width: "72mm",
+                    color: "black",
+                    background: "white",
+                    fontSize: "12px",
+                    lineHeight: "1.3",
+                    padding: "4mm",
+                    margin: "0 auto"
+                  }}
+                >
+                  <div style={{ textAlign: "center", marginBottom: "12px" }}>
+                    <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
+                    <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
+                    <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                    <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
+                      SALES INVOICE<br />
+                      #{tx.id.substring(0, 12).toUpperCase()}
+                    </div>
+                  </div>
 
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                  <span>Total</span>
-                  <span>Php {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>{paymentMethodLabel}</span>
-                  <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>Change</span>
-                  <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                    <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Product").toUpperCase()}</span>
+                    <span>{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
+                    <span>Item: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
+                    <span>{tx.quantity} @ {(tx.device?.price || tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
 
-                <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
-                  *** {tx.quantity} ITEM(S) ***
-                </div>
+                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 
-                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                  <span>VATable Sales</span>
-                  <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                  <span>VAT Amount</span>
-                  <span>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                  <span>VAT Exempt Sales</span>
-                  <span>0.00</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                  <span>Zero Rated Sales</span>
-                  <span>0.00</span>
-                </div>
-
-                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                <div style={{ fontSize: "11px", marginTop: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                    <span>Total</span>
+                    <span>Php {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Sold To:</span>
-                    <span>{tx.user.name || 'Anonymous Customer'}</span>
+                    <span>Cash</span>
+                    <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
-                  <div>Email: {tx.user.email}</div>
-                  <div>Phone: {tx.user.phone || 'N/A'}</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-                    <span>Store Agent:</span>
-                    <span>ONLINE CHECKOUT</span>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Change</span>
+                    <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
-                    <span>Global Trans No.</span>
-                    <span>#{tx.id.substring(0, 8).toUpperCase()}</span>
+
+                  <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
+                    *** {tx.quantity} ITEM(S) ***
+                  </div>
+
+                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                    <span>VATable Sales</span>
+                    <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                    <span>VAT Amount</span>
+                    <span>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                    <span>VAT Exempt Sales</span>
+                    <span>0.00</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+                    <span>Zero Rated Sales</span>
+                    <span>0.00</span>
+                  </div>
+
+                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
+
+                  <div style={{ fontSize: "11px", marginTop: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Sold To:</span>
+                      <span>{tx.user.name || 'Anonymous Customer'}</span>
+                    </div>
+                    <div>Email: {tx.user.email}</div>
+                    <div>Phone: {tx.user.phone || 'N/A'}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+                      <span>Store Agent:</span>
+                      <span>{storeAgentLabel}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
+                      <span>Global Trans No.</span>
+                      <span>#{tx.id.substring(0, 8).toUpperCase()}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
+              );
+            }
           })()}
         </div>
       )}
