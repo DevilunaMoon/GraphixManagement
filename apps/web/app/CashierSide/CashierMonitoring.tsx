@@ -77,20 +77,37 @@ export default function CashierMonitoring() {
 
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
 
-  useEffect(() => {
+  const fetchMonitoring = () => {
     setIsLoading(true);
-    fetch(`/api/monitoring?t=${Date.now()}`)
+    fetch(`/api/monitoring?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(searchQuery)}`)
       .then(res => res.json())
-      .then(data => setDevices(Array.isArray(data) ? data : []))
+      .then(data => {
+        if (data && Array.isArray(data.requests)) {
+          setDevices(data.requests);
+          setTotalCount(data.totalCount || 0);
+          setTotalPages(data.totalPages || 1);
+        }
+      })
       .catch(console.error)
       .finally(() => setIsLoading(false));
-      
-      fetch('/api/admin/accounts')
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchMonitoring();
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, searchQuery]);
+
+  useEffect(() => {
+    fetch('/api/admin/accounts')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setUsers(data);
@@ -118,31 +135,7 @@ export default function CashierMonitoring() {
     ? users.filter(u => u.email.toLowerCase().includes(addCustomerEmail.toLowerCase()))
     : users;
 
-  const filteredDevices = devices.filter(d => 
-    d.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const sortedDevices = [...filteredDevices].sort((a, b) => {
-    // 1. Completed status goes to the absolute bottom of the list
-    const aComp = a.status === 'Completed';
-    const bComp = b.status === 'Completed';
-    if (aComp && !bComp) return 1;
-    if (!aComp && bComp) return -1;
-
-    // 2. Otherwise active devices at 100% progress go to the bottom of active ones
-    const a100 = a.progress === '100%';
-    const b100 = b.progress === '100%';
-    if (a100 && !b100) return 1;
-    if (!a100 && b100) return -1;
-
-    return 0;
-  });
-
-  const totalPages = Math.ceil(sortedDevices.length / ITEMS_PER_PAGE) || 1;
-  const paginatedDevices = sortedDevices.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedDevices = devices;
 
   const getProgressColor = (progress: string) => {
     switch (progress) {
@@ -451,7 +444,7 @@ export default function CashierMonitoring() {
         </div>
 
         {/* Pagination Controls */}
-        {filteredDevices.length > ITEMS_PER_PAGE && (
+        {totalPages > 1 && (
           <div className="flex justify-center w-full mt-6">
             <div className="flex items-center justify-center gap-6 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 mx-auto">
               <button 

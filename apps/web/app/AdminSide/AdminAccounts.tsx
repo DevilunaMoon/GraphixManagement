@@ -89,12 +89,16 @@ export default function AdminAccounts() {
     }
   };
 
-  useEffect(() => {
-    fetch('/api/admin/accounts')
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const fetchAccounts = () => {
+    setIsLoading(true);
+    fetch(`/api/admin/accounts?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setAccounts(data.map((user: any) => ({
+        if (data && Array.isArray(data.users)) {
+          setAccounts(data.users.map((user: any) => ({
             id: user.id,
             name: user.name || 'Anonymous',
             email: user.email,
@@ -104,20 +108,22 @@ export default function AdminAccounts() {
             status: user.status || 'Active',
             suspendedUntil: user.suspendedUntil
           })));
+          setTotalCount(data.total || 0);
+          setTotalPages(data.totalPages || 1);
         }
       })
       .catch(err => console.error("Failed to fetch accounts:", err))
       .finally(() => setIsLoading(false));
-  }, []);
+  };
 
-  const filteredAccounts = accounts.filter(acc => 
-    acc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    acc.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    acc.phone.includes(searchQuery)
-  );
-  
-  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / itemsPerPage));
-  const paginatedAccounts = filteredAccounts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchAccounts();
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, searchQuery]);
+
+  const paginatedAccounts = accounts;
 
   const prevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
   const nextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));

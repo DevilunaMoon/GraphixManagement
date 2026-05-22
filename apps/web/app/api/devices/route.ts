@@ -18,6 +18,8 @@ export async function GET(req: Request) {
       const limit = Math.max(1, parseInt(limitStr || '15', 10) || 15);
       const skip = (page - 1) * limit;
 
+      const categoryId = searchParams.get('categoryId') || '';
+
       const where: any = {};
       
       if (search) {
@@ -33,6 +35,10 @@ export async function GET(req: Request) {
           contains: brand,
           mode: 'insensitive'
         };
+      }
+
+      if (categoryId && categoryId !== 'All' && categoryId !== 'All Categories') {
+        where.categoryId = categoryId;
       }
 
       const [devices, total] = await Promise.all([

@@ -162,6 +162,7 @@ export default function AdminInventory() {
   const [editDeviceVariations, setEditDeviceVariations] = useState<VariationGroup[]>([]);
   
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 8;
   
   useEffect(() => {
@@ -170,11 +171,12 @@ export default function AdminInventory() {
 
   const fetchProducts = () => {
     setIsLoading(true);
-    fetch('/api/devices')
+    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&categoryId=${selectedCategory}`)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setInitialProducts(data.map(device => ({
+        if (data && Array.isArray(data.devices)) {
+          setTotalPages(data.totalPages || 1);
+          setInitialProducts(data.devices.map((device: any) => ({
             dbId: device.id,
             name: device.name || 'Unnamed',
             img: device.image || '/Images/Aula.jpg',
@@ -205,7 +207,13 @@ export default function AdminInventory() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    const delayDebounceFn = setTimeout(() => {
+      fetchProducts();
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, searchQuery, selectedCategory]);
+
+  useEffect(() => {
     fetchCategories();
   }, []);
 
@@ -398,16 +406,7 @@ export default function AdminInventory() {
     }
   };
 
-  const filteredProducts = initialProducts.filter(prod => {
-    const matchesSearch = (prod.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (prod.id || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (prod.type || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || prod.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-  const products = filteredProducts;
-  const totalPages = Math.max(1, Math.ceil(products.length / itemsPerPage));
-  const paginatedProducts = products.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedProducts = initialProducts;
 
   const prevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
   const nextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));

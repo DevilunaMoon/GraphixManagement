@@ -78,18 +78,21 @@ export default function CashierDevices() {
   const [isAddingDevice, setIsAddingDevice] = useState(false);
   const [addDeviceError, setAddDeviceError] = useState<string | null>(null);
 
+  const [totalPages, setTotalPages] = useState(1);
+
   const fetchDevices = () => {
     setIsLoading(true);
-    fetch(`/api/devices?t=${Date.now()}`)
+    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       })
       .then(data => {
-        if (Array.isArray(data)) {
-          setDevices(data);
+        if (data && Array.isArray(data.devices)) {
+          setDevices(data.devices);
+          setTotalPages(data.totalPages || 1);
         } else {
-          console.error('Expected array of devices, got:', data);
+          console.error('Expected devices array, got:', data);
         }
       })
       .catch(console.error)
@@ -417,8 +420,11 @@ export default function CashierDevices() {
   };
 
   useEffect(() => {
-    fetchDevices();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      fetchDevices();
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, searchQuery]);
 
   const openDeleteModal = (device: Device) => {
     setDeviceToDelete(device);
@@ -439,13 +445,7 @@ export default function CashierDevices() {
     }
   };
 
-  const filteredDevices = devices.filter(device =>
-    (device.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (device.id || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredDevices.length / itemsPerPage));
-  const paginatedDevices = filteredDevices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedDevices = devices;
 
   const prevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
   const nextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));

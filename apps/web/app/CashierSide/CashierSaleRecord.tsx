@@ -138,20 +138,39 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
     }, 150);
   };
 
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalSales, setTotalSales] = useState(0);
+
   useEffect(() => {
     const fetchTransactions = async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/transactions?type=${type}`);
+        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}`);
         if (res.ok) {
           const data = await res.json();
-          const mappedMock = MOCK_TRANSACTIONS.map(tx => ({
-            ...tx,
-            paymentType: type === 'downpayment' ? 'Downpayment' : 'Full'
-          }));
-          if (data.length === 0) {
-            setTransactions(mappedMock);
-          } else {
-            setTransactions([...data, ...mappedMock]);
+          if (data && Array.isArray(data.transactions)) {
+            const realTransactions = data.transactions;
+            const total = data.total || 0;
+            const pages = data.totalPages || 1;
+
+            const mappedMock = MOCK_TRANSACTIONS.map(tx => ({
+              ...tx,
+              paymentType: type === 'downpayment' ? 'Downpayment' : 'Full'
+            }));
+
+            if (realTransactions.length === 0 && !searchTerm && !filterDate && currentPage === 1) {
+              setTransactions(mappedMock);
+              setTotalItems(mappedMock.length);
+              setTotalPages(Math.ceil(mappedMock.length / itemsPerPage));
+              const mockSum = mappedMock.reduce((acc, tx) => acc + (tx.amount > 0 ? tx.amount : (tx.device?.price || 0)), 0);
+              setTotalSales(mockSum);
+            } else {
+              setTransactions(realTransactions);
+              setTotalItems(total);
+              setTotalPages(pages);
+              setTotalSales(data.totalSales || 0);
+            }
           }
         }
       } catch (error) {
@@ -160,30 +179,16 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
         setLoading(false);
       }
     };
-    fetchTransactions();
-  }, [type]);
 
-  const filteredTransactions = transactions.filter(t => {
-    const matchesSearch = t.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.device?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.id.toLowerCase().includes(searchTerm.toLowerCase());
-      
-    if (!matchesSearch) return false;
-    
-    if (filterDate) {
-      const txDate = new Date(t.createdAt).toISOString().split('T')[0];
-      return txDate === filterDate;
-    }
-    
-    return true;
-  });
+    const delayDebounceFn = setTimeout(() => {
+      fetchTransactions();
+    }, 300);
 
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, searchTerm, filterDate, type]);
+
+  const filteredTransactions = transactions;
+  const paginatedTransactions = transactions;
 
   if (loading) {
     return (
@@ -352,13 +357,13 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
         )}
 
         {/* Total Sales Summary */}
-        {filteredTransactions.length > 0 && (
+        {totalItems > 0 && (
           <div className="flex flex-col sm:flex-row justify-between items-center p-6 bg-purple-50 rounded-2xl border border-purple-100 mt-2 mb-2">
             <span className="text-gray-600 font-bold text-lg mb-2 sm:mb-0">
               Total {type === "downpayment" ? "Downpayments" : "Sales"} {filterDate ? `for ${new Date(filterDate).toLocaleDateString()}` : "Found"}
             </span>
             <span className="text-3xl font-black text-[#bd00ff]">
-              ₱{filteredTransactions.reduce((acc, tx) => acc + (tx.amount > 0 ? tx.amount : (tx.device?.price || 0)), 0).toLocaleString()}
+              ₱{totalSales.toLocaleString()}
             </span>
           </div>
         )}
@@ -367,7 +372,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
             <span className="text-sm font-semibold text-gray-500">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length}
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
             </span>
             <div className="flex items-center gap-2">
               <button 

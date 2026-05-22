@@ -25,8 +25,8 @@ export async function GET(req: Request) {
     }
 
     const orderBy: any = sort === 'Newest' 
-      ? { createdAt: 'desc' }
-      : { createdAt: 'asc' };
+      ? [ { status: 'asc' }, { createdAt: 'desc' } ]
+      : [ { status: 'asc' }, { createdAt: 'asc' } ];
 
     // Backward-compatibility: if page/limit parameters are omitted, return list array directly
     if (!pageParam && !limitParam) {

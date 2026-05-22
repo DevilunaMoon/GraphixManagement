@@ -115,13 +115,51 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const pageStr = searchParams.get('page');
+    const limitStr = searchParams.get('limit');
+
+    const sort = searchParams.get('sort') || 'desc';
+    const orderByDir: 'asc' | 'desc' = sort === 'asc' ? 'asc' : 'desc';
+
+    if (pageStr) {
+      const page = Math.max(1, parseInt(pageStr, 10) || 1);
+      const limit = Math.max(1, parseInt(limitStr || '8', 10) || 8);
+      const skip = (page - 1) * limit;
+
+      const [purchases, total] = await Promise.all([
+        prisma.purchase.findMany({
+          where: { userId: session.userId },
+          skip,
+          take: limit,
+          include: {
+            device: true
+          },
+          orderBy: {
+            createdAt: orderByDir
+          }
+        }),
+        prisma.purchase.count({
+          where: { userId: session.userId }
+        })
+      ]);
+
+      return NextResponse.json({
+        purchases,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      });
+    }
+
     const purchases = await prisma.purchase.findMany({
       where: { userId: session.userId },
       include: {
         device: true
       },
       orderBy: {
-        createdAt: 'desc'
+        createdAt: orderByDir
       }
     });
 

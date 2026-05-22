@@ -23,44 +23,50 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [receipts, setReceipts] = useState<ReceiptItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
   const itemsPerPage = 4;
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
-    fetch('/api/purchases')
+    const dbSortOrder = sortOrder === 'newest' ? 'desc' : 'asc';
+    fetch(`/api/purchases?page=${currentPage}&limit=${itemsPerPage}&sort=${dbSortOrder}`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load");
         return res.json();
       })
       .then(data => {
-        const mapped = data.map((item: any) => ({
-          id: item.id,
-          orderNum: item.id.slice(-6).toUpperCase(),
-          date: `Bought on ${new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}`,
-          deviceName: item.device?.name || "Custom Print Product",
-          amount: item.amount,
-          paymentType: item.paymentType,
-          createdAt: item.createdAt
-        }));
-        setReceipts(mapped);
+        if (data && Array.isArray(data.purchases)) {
+          const mapped = data.purchases.map((item: any) => ({
+            id: item.id,
+            orderNum: item.id.slice(-6).toUpperCase(),
+            date: `Bought on ${new Date(item.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}`,
+            deviceName: item.device?.name || "Custom Print Product",
+            amount: item.amount,
+            paymentType: item.paymentType,
+            createdAt: item.createdAt
+          }));
+          setReceipts(mapped);
+          setTotalCount(data.total || 0);
+          setTotalPages(data.totalPages || 1);
+        } else {
+          setReceipts([]);
+          setTotalCount(0);
+          setTotalPages(1);
+        }
       })
       .catch(err => {
         console.error(err);
+        setReceipts([]);
+        setTotalCount(0);
+        setTotalPages(1);
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [currentPage, sortOrder]);
 
-  const sortedReceipts = [...receipts].sort((a, b) => {
-    const timeA = new Date(a.createdAt).getTime();
-    const timeB = new Date(b.createdAt).getTime();
-    return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
-  });
-
-  const totalPages = Math.ceil(sortedReceipts.length / itemsPerPage);
-  const currentItems = sortedReceipts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentItems = receipts;
 
   return (
     <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">

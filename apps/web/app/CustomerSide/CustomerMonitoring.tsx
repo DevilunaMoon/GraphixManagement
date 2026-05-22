@@ -30,13 +30,22 @@ export default function CustomerMonitoring() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, searchQuery]);
+  }, [filter, debouncedSearchQuery]);
 
   useEffect(() => {
     setIsLoading(true);
-    fetch(`/api/monitoring?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(searchQuery)}&sort=${encodeURIComponent(filter)}`)
+    fetch(`/api/monitoring?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(debouncedSearchQuery)}&sort=${encodeURIComponent(filter)}`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to fetch paginated devices");
         return res.json();
@@ -59,7 +68,7 @@ export default function CustomerMonitoring() {
         setTotalPages(1);
       })
       .finally(() => setIsLoading(false));
-  }, [currentPage, searchQuery, filter]);
+  }, [currentPage, debouncedSearchQuery, filter]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
