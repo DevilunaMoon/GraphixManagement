@@ -88,92 +88,6 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const [downloadingTxId, setDownloadingTxId] = useState<string | null>(null);
 
   const handleDownloadPDF = async (tx: Transaction) => {
-    if (tx.id.startsWith('tx_')) {
-      // Mock data fallback: generate old-style PDF directly so it works
-      import('jspdf').then(({ jsPDF }) => {
-        const doc = new jsPDF();
-        
-        // Header
-        doc.setFontSize(22);
-        doc.setTextColor(189, 0, 255);
-        doc.text("GRAPHIX", 105, 20, { align: "center" });
-        
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Official Receipt", 105, 30, { align: "center" });
-        
-        // Divider
-        doc.setDrawColor(200, 200, 200);
-        doc.line(20, 35, 190, 35);
-        
-        // Transaction Info
-        doc.setFontSize(11);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Transaction ID:`, 20, 50);
-        doc.setTextColor(0, 0, 0);
-        doc.text(tx.id.toUpperCase(), 60, 50);
-        
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Date:`, 20, 60);
-        doc.setTextColor(0, 0, 0);
-        doc.text(new Date(tx.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }), 60, 60);
-        
-        // Customer Info
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Customer:`, 20, 75);
-        doc.setTextColor(0, 0, 0);
-        doc.text(tx.user?.name || 'Anonymous', 60, 75);
-        
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Email:`, 20, 85);
-        doc.setTextColor(0, 0, 0);
-        doc.text(tx.user?.email || 'N/A', 60, 85);
-        
-        // Divider
-        doc.setDrawColor(200, 200, 200);
-        doc.line(20, 95, 190, 95);
-        
-        // Item Details
-        doc.setFontSize(14);
-        doc.text("Purchase Details", 20, 110);
-        
-        doc.setFontSize(11);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Item:`, 20, 125);
-        doc.setTextColor(0, 0, 0);
-        doc.text(tx.device?.name || 'Unknown Item', 60, 125);
-        
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Quantity:`, 20, 135);
-        doc.setTextColor(0, 0, 0);
-        doc.text(tx.quantity.toString(), 60, 135);
-        
-        let currentY = 145;
-        if (tx.variations) {
-          doc.setTextColor(100, 100, 100);
-          doc.text(`Variations:`, 20, currentY);
-          doc.setTextColor(0, 0, 0);
-          doc.text(tx.variations, 60, currentY);
-          currentY += 10;
-        }
-        
-        // Total Amount
-        doc.setFontSize(16);
-        doc.setTextColor(189, 0, 255);
-        const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0);
-        doc.text(`Total Paid: Php ${totalAmount.toLocaleString()}`, 20, currentY + 15);
-        
-        // Footer
-        doc.setFontSize(10);
-        doc.setTextColor(150, 150, 150);
-        doc.text("Thank you for choosing Graphix!", 105, 280, { align: "center" });
-        
-        // Save
-        doc.save(`Graphix_Receipt_${tx.id.substring(0, 8)}.pdf`);
-      });
-      return;
-    }
-
     // Real data: render pixel-perfect thermal POS receipt
     setDownloadingTxId(tx.id);
     setTimeout(async () => {
@@ -213,12 +127,16 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
         const res = await fetch(`/api/transactions?type=${type}`);
         if (res.ok) {
           const data = await res.json();
+          const mappedMock = MOCK_TRANSACTIONS.map(tx => ({
+            ...tx,
+            paymentType: type === 'downpayment' ? 'Downpayment' : 'Full'
+          }));
           // If the database is empty, display the mock data so the user can see the UI
           if (data.length === 0) {
-            setTransactions(MOCK_TRANSACTIONS);
+            setTransactions(mappedMock);
           } else {
             // Append mock data for demonstration purposes if there's only a few real transactions
-            setTransactions([...data, ...MOCK_TRANSACTIONS]);
+            setTransactions([...data, ...mappedMock]);
           }
         }
       } catch (error) {
