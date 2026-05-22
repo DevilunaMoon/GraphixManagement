@@ -4,8 +4,57 @@ import { uploadToCloudinary } from '../../../lib/cloudinary';
 
 export const revalidate = 30;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const pageStr = searchParams.get('page');
+    const limitStr = searchParams.get('limit');
+    const search = searchParams.get('search') || '';
+    const brand = searchParams.get('brand') || '';
+
+    // If page parameter is supplied, perform paginated database fetch
+    if (pageStr) {
+      const page = Math.max(1, parseInt(pageStr, 10) || 1);
+      const limit = Math.max(1, parseInt(limitStr || '15', 10) || 15);
+      const skip = (page - 1) * limit;
+
+      const where: any = {};
+      
+      if (search) {
+        where.name = {
+          contains: search,
+          mode: 'insensitive'
+        };
+      }
+
+      if (brand && brand !== 'All Brands') {
+        where.name = {
+          ...(where.name || {}),
+          contains: brand,
+          mode: 'insensitive'
+        };
+      }
+
+      const [devices, total] = await Promise.all([
+        prisma.device.findMany({
+          where,
+          skip,
+          take: limit,
+          include: { category: true, variations: true },
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.device.count({ where })
+      ]);
+
+      return NextResponse.json({
+        devices,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      });
+    }
+
     const devices = await prisma.device.findMany({
       include: { category: true, variations: true },
       orderBy: { createdAt: 'desc' }

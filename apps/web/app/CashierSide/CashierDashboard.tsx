@@ -28,13 +28,35 @@ export default function CashierDashboard() {
   const [cart, setCart] = useState<{ [key: string]: CartItem }>({});
   const [isLoading, setIsLoading] = useState(true);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
   useEffect(() => {
-    fetch('/api/devices')
-      .then(res => res.json())
-      .then(data => setProducts(Array.isArray(data) ? data : []))
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, []);
+    setIsLoading(true);
+    const delayDebounceFn = setTimeout(() => {
+      fetch(`/api/devices?page=${currentPage}&limit=15&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && Array.isArray(data.devices)) {
+            setProducts(data.devices);
+            setTotalPages(data.totalPages || 1);
+            setTotalItems(data.total || 0);
+          } else {
+            setProducts([]);
+            setTotalPages(1);
+            setTotalItems(0);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setProducts([]);
+        })
+        .finally(() => setIsLoading(false));
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [currentPage, searchQuery, brandFilter]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -46,11 +68,16 @@ export default function CashierDashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesBrand = brandFilter === 'All Brands'; // Brand not in DB currently
-    return matchesSearch && matchesBrand;
-  });
+  const handleBrandSelect = (brand: string) => {
+    setBrandFilter(brand);
+    setCurrentPage(1);
+    setIsFilterOpen(false);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+  };
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -95,14 +122,14 @@ export default function CashierDashboard() {
                 <Filter size={18} />
                 <span className="font-medium">{brandFilter}</span>
               </button>
-
+ 
               {isFilterOpen && (
                 <div className="absolute top-[110%] left-0 bg-white border-2 border-[#bd00ff] rounded-lg shadow-lg min-w-[150px] flex flex-col py-2 z-10">
                   {['All Brands', 'Iphone', 'Oppo', 'Techno', 'Realme'].map(brand => (
                     <div 
                       key={brand}
-                      className="px-5 py-2 cursor-pointer hover:bg-gray-100 font-medium transition-colors"
-                      onClick={() => { setBrandFilter(brand); setIsFilterOpen(false); }}
+                      className="px-5 py-2 cursor-pointer hover:bg-gray-100 font-medium transition-colors text-black"
+                      onClick={() => handleBrandSelect(brand)}
                     >
                       {brand}
                     </div>
@@ -110,7 +137,7 @@ export default function CashierDashboard() {
                 </div>
               )}
             </div>
-
+ 
             {/* Search */}
             <div className="flex items-center border border-[#bd00ff] rounded-lg px-3 py-2 bg-white flex-1 sm:max-w-[250px]">
               <Search size={18} className="text-gray-500" />
@@ -119,12 +146,12 @@ export default function CashierDashboard() {
                 placeholder="Search By Device Name" 
                 className="border-none outline-none pl-2 text-sm w-full text-black placeholder-gray-400 bg-transparent"
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => handleSearchChange(e.target.value)}
               />
             </div>
           </div>
         </div>
-
+ 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
           {isLoading ? (
             <div className="col-span-full py-20 flex flex-col justify-center items-center gap-3">
@@ -132,10 +159,10 @@ export default function CashierDashboard() {
               <span className="text-gray-500 font-medium animate-pulse">Loading products...</span>
             </div>
           ) : (
-            filteredProducts.map(product => {
+            products.map(product => {
               const currentQty = cart[product.name]?.cartQty || 0;
               const isMaxedOut = currentQty >= product.stock;
-
+ 
               return (
                 <div 
                   key={product.id}
@@ -155,10 +182,64 @@ export default function CashierDashboard() {
               );
             })
           )}
-          {!isLoading && filteredProducts.length === 0 && (
+          {!isLoading && products.length === 0 && (
             <div className="col-span-full py-10 text-center text-gray-500">No products found.</div>
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {!isLoading && totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-purple-100 gap-4">
+            <span className="text-sm font-semibold text-gray-500">
+              Showing {(currentPage - 1) * 15 + 1} to {Math.min(currentPage * 15, totalItems)} of {totalItems} items
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3.5 py-2 rounded-lg bg-white border border-[#bd00ff] text-[#bd00ff] hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-xs cursor-pointer shadow-sm"
+              >
+                Previous
+              </button>
+              
+              {(() => {
+                const range = [];
+                const maxVisible = 5;
+                let start = Math.max(1, currentPage - 2);
+                let end = Math.min(totalPages, start + maxVisible - 1);
+                
+                if (end - start < maxVisible - 1) {
+                  start = Math.max(1, end - maxVisible + 1);
+                }
+                
+                for (let i = start; i <= end; i++) {
+                  range.push(i);
+                }
+                return range.map(pageNum => (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs transition-all border shadow-sm cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white border-transparent'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-[#bd00ff] hover:text-[#bd00ff]'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ));
+              })()}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3.5 py-2 rounded-lg bg-white border border-[#bd00ff] text-[#bd00ff] hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-xs cursor-pointer shadow-sm"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Cart Sidebar */}
