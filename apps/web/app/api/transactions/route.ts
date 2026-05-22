@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       where: whereClause,
       include: {
         user: {
-          select: { name: true, email: true, id: true }
+          select: { name: true, email: true, id: true, phone: true }
         },
         device: {
           select: { name: true, price: true, image: true, id: true }

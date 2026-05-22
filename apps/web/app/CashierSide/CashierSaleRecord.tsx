@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Download, UserCircle2, Search, ReceiptText, ShieldCheck } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, X, Download, UserCircle2, Search, ReceiptText, ShieldCheck, CheckCircle2, Receipt } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface Transaction {
   id: string;
@@ -18,6 +20,7 @@ interface Transaction {
     id: string;
     name: string | null;
     email: string;
+    phone?: string | null;
   };
   device: {
     id: string;
@@ -83,91 +86,124 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
 
-  const handleDownloadPDF = (tx: Transaction) => {
-    if (!tx.id.startsWith('tx_')) {
-      window.open(`/customer/receipt-view/${tx.id}`, '_blank');
+  const hiddenReceiptRef = useRef<HTMLDivElement>(null);
+  const [downloadingTxId, setDownloadingTxId] = useState<string | null>(null);
+
+  const handleDownloadPDF = async (tx: Transaction) => {
+    if (tx.id.startsWith('tx_')) {
+      // Mock data fallback: generate old-style PDF directly so it works
+      import('jspdf').then(({ jsPDF }) => {
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(22);
+        doc.setTextColor(189, 0, 255);
+        doc.text("GRAPHIX", 105, 20, { align: "center" });
+        
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text("Official Receipt", 105, 30, { align: "center" });
+        
+        // Divider
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, 35, 190, 35);
+        
+        // Transaction Info
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Transaction ID:`, 20, 50);
+        doc.setTextColor(0, 0, 0);
+        doc.text(tx.id.toUpperCase(), 60, 50);
+        
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Date:`, 20, 60);
+        doc.setTextColor(0, 0, 0);
+        doc.text(new Date(tx.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }), 60, 60);
+        
+        // Customer Info
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Customer:`, 20, 75);
+        doc.setTextColor(0, 0, 0);
+        doc.text(tx.user?.name || 'Anonymous', 60, 75);
+        
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Email:`, 20, 85);
+        doc.setTextColor(0, 0, 0);
+        doc.text(tx.user?.email || 'N/A', 60, 85);
+        
+        // Divider
+        doc.setDrawColor(200, 200, 200);
+        doc.line(20, 95, 190, 95);
+        
+        // Item Details
+        doc.setFontSize(14);
+        doc.text("Purchase Details", 20, 110);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Item:`, 20, 125);
+        doc.setTextColor(0, 0, 0);
+        doc.text(tx.device?.name || 'Unknown Item', 60, 125);
+        
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Quantity:`, 20, 135);
+        doc.setTextColor(0, 0, 0);
+        doc.text(tx.quantity.toString(), 60, 135);
+        
+        let currentY = 145;
+        if (tx.variations) {
+          doc.setTextColor(100, 100, 100);
+          doc.text(`Variations:`, 20, currentY);
+          doc.setTextColor(0, 0, 0);
+          doc.text(tx.variations, 60, currentY);
+          currentY += 10;
+        }
+        
+        // Total Amount
+        doc.setFontSize(16);
+        doc.setTextColor(189, 0, 255);
+        const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0);
+        doc.text(`Total Paid: Php ${totalAmount.toLocaleString()}`, 20, currentY + 15);
+        
+        // Footer
+        doc.setFontSize(10);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Thank you for choosing Graphix!", 105, 280, { align: "center" });
+        
+        // Save
+        doc.save(`Graphix_Receipt_${tx.id.substring(0, 8)}.pdf`);
+      });
       return;
     }
-    import('jspdf').then(({ jsPDF }) => {
-      const doc = new jsPDF();
-      
-      // Header
-      doc.setFontSize(22);
-      doc.setTextColor(189, 0, 255);
-      doc.text("GRAPHIX", 105, 20, { align: "center" });
-      
-      doc.setFontSize(14);
-      doc.setTextColor(0, 0, 0);
-      doc.text("Official Receipt", 105, 30, { align: "center" });
-      
-      // Divider
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, 35, 190, 35);
-      
-      // Transaction Info
-      doc.setFontSize(11);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Transaction ID:`, 20, 50);
-      doc.setTextColor(0, 0, 0);
-      doc.text(tx.id.toUpperCase(), 60, 50);
-      
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Date:`, 20, 60);
-      doc.text(new Date(tx.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }), 60, 60);
-      
-      // Customer Info
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Customer:`, 20, 75);
-      doc.setTextColor(0, 0, 0);
-      doc.text(tx.user?.name || 'Anonymous', 60, 75);
-      
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Email:`, 20, 85);
-      doc.setTextColor(0, 0, 0);
-      doc.text(tx.user?.email || 'N/A', 60, 85);
-      
-      // Divider
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, 95, 190, 95);
-      
-      // Item Details
-      doc.setFontSize(14);
-      doc.text("Purchase Details", 20, 110);
-      
-      doc.setFontSize(11);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Item:`, 20, 125);
-      doc.setTextColor(0, 0, 0);
-      doc.text(tx.device?.name || 'Unknown Item', 60, 125);
-      
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Quantity:`, 20, 135);
-      doc.setTextColor(0, 0, 0);
-      doc.text(tx.quantity.toString(), 60, 135);
-      
-      let currentY = 145;
-      if (tx.variations) {
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Variations:`, 20, currentY);
-        doc.setTextColor(0, 0, 0);
-        doc.text(tx.variations, 60, currentY);
-        currentY += 10;
+
+    // Real data: render pixel-perfect identical HTML receipt and capture as PDF
+    setDownloadingTxId(tx.id);
+    setTimeout(async () => {
+      if (!hiddenReceiptRef.current) {
+        setDownloadingTxId(null);
+        return;
       }
-      
-      // Total Amount
-      doc.setFontSize(16);
-      doc.setTextColor(189, 0, 255);
-      const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0);
-      doc.text(`Total Paid: Php ${totalAmount.toLocaleString()}`, 20, currentY + 15);
-      
-      // Footer
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text("Thank you for choosing Graphix!", 105, 280, { align: "center" });
-      
-      // Save
-      doc.save(`Graphix_Receipt_${tx.id.substring(0, 8)}.pdf`);
-    });
+      try {
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: 'a4',
+        });
+        const canvas = await html2canvas(hiddenReceiptRef.current, {
+          scale: 2,
+          useCORS: true,
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        doc.save(`Receipt_Order_${tx.id.slice(-6).toUpperCase()}.pdf`);
+      } catch (err) {
+        console.error('Error generating PDF:', err);
+      } finally {
+        setDownloadingTxId(null);
+      }
+    }, 150);
   };
 
   useEffect(() => {
@@ -558,6 +594,167 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
 
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Hidden Receipt for PDF Generation */}
+      {downloadingTxId && (
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          {(() => {
+            const tx = transactions.find(t => t.id === downloadingTxId);
+            if (!tx) return null;
+
+            const orderNum = tx.id.slice(-6).toUpperCase();
+            const dateFormatted = new Date(tx.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+            const timeFormatted = new Date(tx.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+            
+            const isDownpayment = tx.amount < (tx.device?.price || 0) * tx.quantity && tx.amount > 0;
+            const devicePrice = tx.device?.price || tx.amount;
+            const subtotal = tx.amount > 0 ? tx.amount : devicePrice * tx.quantity;
+            const vatableSales = subtotal / 1.12;
+            const vatAmount = subtotal - vatableSales;
+
+            const remainingBalance = Math.max(0, (devicePrice * tx.quantity) - tx.amount);
+            const monthlyInstallment = remainingBalance / 12;
+
+            const formatVariations = (variationsStr: string | null) => {
+              if (!variationsStr) return '';
+              try {
+                const parsed = JSON.parse(variationsStr);
+                if (Array.isArray(parsed)) {
+                  return parsed.map((v: any) => v.name).join(', ');
+                }
+                if (parsed && typeof parsed === 'object') {
+                  return Object.values(parsed).map((v: any) => v.name).join(', ');
+                }
+              } catch (e) {}
+              return variationsStr;
+            };
+
+            const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
+            const parsedCash = parseFloat(rawCash) || subtotal;
+            const changeAmount = parsedCash >= subtotal ? parsedCash - subtotal : 0;
+
+            return (
+              <div 
+                ref={hiddenReceiptRef}
+                className="bg-white p-12 flex flex-col gap-8"
+                style={{ width: '600px', fontFamily: "'Inter', sans-serif" }}
+              >
+                <div className="flex flex-col items-center justify-center gap-4 text-center">
+                  <div className="w-16 h-16 bg-[#bd00ff] rounded-full flex items-center justify-center">
+                    <Receipt size={32} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-extrabold text-gray-900 m-0">Order #{orderNum}</h2>
+                    <p className="text-gray-500 font-medium mt-1 mb-0">{dateFormatted} • {timeFormatted}</p>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-600 rounded-full font-bold text-sm">
+                    <CheckCircle2 size={16} /> Completed
+                  </div>
+                </div>
+
+                <div className="w-full h-[2px] border-b-2 border-dashed border-gray-200 my-2"></div>
+
+                {/* Itemized List */}
+                <div className="flex flex-col gap-4 text-left">
+                  <div className="flex justify-between font-bold text-gray-500 pb-2 border-b border-gray-100">
+                    <span>Item</span>
+                    <span>Amount</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-gray-800 font-semibold text-lg">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-black">{tx.device?.name || "Product"}</span>
+                      <span className="text-sm font-medium text-gray-400">
+                        {tx.quantity || 1}x @ ₱{devicePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {isDownpayment && " (Downpayment)"}
+                      </span>
+                      {tx.variations && (
+                        <span className="text-xs text-purple-600 font-bold mt-1 bg-purple-50 px-2 py-0.5 rounded-full w-fit">
+                          {formatVariations(tx.variations)}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-bold text-black">
+                      ₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-full h-[2px] border-b-2 border-dashed border-gray-200 my-2"></div>
+
+                {/* Summary */}
+                <div className="flex flex-col gap-3 text-left">
+                  {isDownpayment && (
+                    <div className="flex justify-between items-center text-gray-500 font-medium">
+                      <span>Original Device Price</span>
+                      <span className="font-bold text-gray-700">₱{(devicePrice * tx.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-gray-500 font-medium">
+                    <span>VATable Sales</span>
+                    <span>₱{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-gray-500 font-medium">
+                    <span>VAT (12%)</span>
+                    <span>₱{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  {isDownpayment && (
+                    <>
+                      <div className="flex justify-between items-center text-[#ff8000] font-semibold bg-orange-50/50 p-2.5 rounded-xl border border-orange-100/50 mt-1">
+                        <span>Remaining Balance</span>
+                        <span>₱{remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[#00b0ff] font-semibold bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
+                        <span>12-Month Installment</span>
+                        <span>₱{monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2 })} /mo</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between items-center text-gray-500 font-medium mt-1">
+                    <span>Payment Type</span>
+                    <span className="text-black font-semibold">
+                      {isDownpayment ? "Downpayment Installment" : "Buy Now (Full Payment)"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-gray-500 font-medium">
+                    <span>Source</span>
+                    <span className="text-black font-semibold capitalize">{tx.source || 'Online'}</span>
+                  </div>
+                </div>
+
+                {/* Receipt Summary Container */}
+                <div className="flex flex-col gap-3.5 bg-gray-50 p-6 rounded-[2rem] mt-6 border border-gray-100/60 text-left">
+                  <div className="flex justify-between items-center text-gray-900 font-bold">
+                    <span className="text-lg font-extrabold text-gray-800">Total</span>
+                    <span className="text-xl font-black text-black">
+                      Php {subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-gray-500 font-bold">
+                    <span className="text-lg font-extrabold text-gray-500">Cash</span>
+                    <span className="text-xl font-bold text-gray-500">
+                      Php {parsedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-gray-500 font-bold">
+                    <span className="text-lg font-extrabold text-gray-500">Change</span>
+                    <span className="text-xl font-bold text-gray-500">
+                      Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center text-gray-400 text-xs mt-4">
+                  Thank you for choosing Graphix!
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </main>
