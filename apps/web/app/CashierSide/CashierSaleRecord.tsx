@@ -84,6 +84,10 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
   const itemsPerPage = 8;
 
   const handleDownloadPDF = (tx: Transaction) => {
+    if (!tx.id.startsWith('tx_')) {
+      window.open(`/customer/receipt-view/${tx.id}`, '_blank');
+      return;
+    }
     import('jspdf').then(({ jsPDF }) => {
       const doc = new jsPDF();
       
