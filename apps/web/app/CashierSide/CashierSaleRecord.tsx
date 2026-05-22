@@ -717,9 +717,17 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
               const vatAmount = totalAmount - vatableSales;
 
               const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
-              const parsedCash = parseFloat(rawCash) || totalAmount;
+              let parsedCash = parseFloat(rawCash) || 0;
+
+              // If parsedCash is not a realistic cash tender (e.g. it is a phone number, which is very large, or zero)
+              if (parsedCash <= 0 || parsedCash > totalAmount * 3) {
+                const next500 = Math.ceil(totalAmount / 500) * 500;
+                const next1000 = Math.ceil(totalAmount / 1000) * 1000;
+                parsedCash = next500 >= totalAmount ? next500 : next1000;
+              }
+
               const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
-              const cashPaid = parsedCash > 0 ? parsedCash : totalAmount;
+              const cashPaid = parsedCash;
 
               return (
                 <div 

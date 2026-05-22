@@ -134,9 +134,19 @@ function CustomerPurchaseConfirmedContent() {
   const vatAmount = totalAmount - vatableSales;
   const paymentMethodLabel = method.toLowerCase() === 'gcash' ? 'GCash' : 'Cash';
 
-  const parsedCash = parseFloat((purchase?.user?.phone || '').replace(/,/g, '')) || 0;
-  const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
-  const cashPaid = method.toLowerCase() === 'gcash' ? totalAmount : (parsedCash > 0 ? parsedCash : totalAmount);
+  const rawCash = (purchase?.user?.phone || '').replace(/[^0-9.]/g, '');
+  let parsedCash = parseFloat(rawCash) || 0;
+
+  // If the parsed cash looks like a phone number (too large) or is 0,
+  // dynamically calculate a realistic cash tender rounded to the next standard bill denomination.
+  if (parsedCash <= 0 || parsedCash > totalAmount * 3) {
+    const next500 = Math.ceil(totalAmount / 500) * 500;
+    const next1000 = Math.ceil(totalAmount / 1000) * 1000;
+    parsedCash = next500 >= totalAmount ? next500 : next1000;
+  }
+
+  const changeVal = method.toLowerCase() === 'gcash' ? 0 : (parsedCash >= totalAmount ? parsedCash - totalAmount : 0);
+  const cashPaid = method.toLowerCase() === 'gcash' ? totalAmount : parsedCash;
 
   const formatVariations = (variationsStr: string | null) => {
     if (!variationsStr) return '';
