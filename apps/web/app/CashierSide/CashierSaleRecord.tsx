@@ -76,6 +76,20 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   }
 ];
 
+const formatVariations = (variationsStr: string | null): string => {
+  if (!variationsStr) return '';
+  try {
+    const parsed = JSON.parse(variationsStr);
+    if (Array.isArray(parsed)) {
+      return parsed.map((v: any) => v.name).join(', ');
+    }
+    if (parsed && typeof parsed === 'object') {
+      return Object.values(parsed).map((v: any) => v.name).join(', ');
+    }
+  } catch (e) {}
+  return variationsStr;
+};
+
 export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "downpayment" }) {
   const router = useRouter();
   const navigate = router.push;
@@ -275,7 +289,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                         <div className="flex flex-col max-w-[200px]">
                           <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name}</span>
                           <span className="text-xs text-gray-500 font-semibold truncate">
-                            Qty: {tx.quantity} {tx.variations && `• ${tx.variations}`}
+                            Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                           </span>
                         </div>
                       </div>
@@ -420,7 +434,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                     <span className="text-gray-500 font-semibold text-sm">Device</span>
                     <div className="text-right">
                       <div className="font-bold text-gray-900">{selectedTransaction.device?.name}</div>
-                      <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${selectedTransaction.variations}`}</div>
+                      <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${formatVariations(selectedTransaction.variations)}`}</div>
                     </div>
                   </div>
 
