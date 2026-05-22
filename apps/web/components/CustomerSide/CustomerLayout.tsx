@@ -119,14 +119,17 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
     <div className={`${bgClass} min-h-screen flex font-['Inter'] transition-colors duration-300`}>
       
       {/* Mobile Header */}
-      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-5 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
-        <div className="flex items-center gap-3">
-          <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover border-2 border-white" />
-          <span className="text-white text-lg font-bold">Graphix Shop</span>
-        </div>
-        <button onClick={toggleSidebar} className="text-white bg-transparent border-none">
+      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-5 flex items-center gap-4 fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
+        <button 
+          onClick={toggleSidebar} 
+          className="text-white bg-transparent border-none p-0 flex items-center justify-center cursor-pointer shrink-0 active:scale-90 transition-transform"
+        >
           <Menu size={28} />
         </button>
+        <div className="flex items-center gap-3">
+          <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover border-2 border-white shadow-sm" />
+          <span className="text-white text-lg font-bold">Graphix Shop</span>
+        </div>
       </div>
 
       {/* Sidebar Overlay */}
