@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import bcrypt from 'bcryptjs';
+import { getSession } from '../../../../lib/session';
+
 export async function GET(req: Request) {
   try {
+    const session = await getSession();
+    if (!session || session.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const pageStr = searchParams.get('page');
     const limitStr = searchParams.get('limit');
@@ -81,6 +88,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = await getSession();
+    if (!session || session.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { name, email, phone, password, role } = body;
 

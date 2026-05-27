@@ -7,7 +7,10 @@ import { sendNotificationEmail } from '../../../lib/email';
 export async function GET(req: Request) {
   try {
     const session = await getSession();
-    const isCustomer = session?.role === 'CUSTOMER';
+    if (!session || !session.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const isCustomer = session.role === 'CUSTOMER';
     
     const { searchParams } = new URL(req.url);
     const pageParam = searchParams.get('page');
@@ -68,6 +71,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = await getSession();
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'CASHIER')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     
     const deviceName = formData.get('deviceName') as string;
