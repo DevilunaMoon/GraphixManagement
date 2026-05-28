@@ -50,9 +50,15 @@ function LoginContent() {
       setIsLoading(false);
     } else if (result?.success) {
       const redirectUrl = searchParams?.get("redirect");
-      if (result.role === "admin" || result.role === "ADMIN") window.location.href = "/admin/dashboard";
-      else if (result.role === "cashier" || result.role === "CASHIER") window.location.href = "/cashier/dashboard";
-      else window.location.href = redirectUrl || "/customer/dashboard";
+      const isLoggingIntoMonitoring = redirectUrl && redirectUrl.includes("/monitoring");
+
+      if (result.role === "admin" || result.role === "ADMIN") {
+        window.location.href = isLoggingIntoMonitoring ? "/admin/monitoring" : "/admin/dashboard";
+      } else if (result.role === "cashier" || result.role === "CASHIER") {
+        window.location.href = isLoggingIntoMonitoring ? "/cashier/monitoring" : "/cashier/dashboard";
+      } else {
+        window.location.href = redirectUrl || "/customer/dashboard";
+      }
     }
   };
 
