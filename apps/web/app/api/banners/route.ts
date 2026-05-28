@@ -2,17 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  // Force hot module reload
   try {
     const banners = await prisma.banner.findMany({
       orderBy: { createdAt: 'desc' }
     });
     return NextResponse.json(banners, {
       headers: {
-        'Cache-Control': 's-maxage=60, stale-while-revalidate=300'
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
     });
   } catch (error) {
