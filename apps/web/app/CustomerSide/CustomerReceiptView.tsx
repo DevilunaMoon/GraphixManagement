@@ -33,7 +33,6 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [purchase, setPurchase] = useState<PurchaseDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [cashAmount, setCashAmount] = useState<string>('');
 
   useEffect(() => {
     setIsLoading(true);
@@ -44,10 +43,6 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
       })
       .then(data => {
         setPurchase(data);
-        if (data?.user?.phone) {
-          const numericPhone = data.user.phone.replace(/[^0-9.]/g, '');
-          setCashAmount(numericPhone);
-        }
       })
       .catch(err => {
         console.error(err);
@@ -142,8 +137,17 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
     }
   };
 
-  const parsedCash = parseFloat(cashAmount.replace(/,/g, '')) || 0;
-  const changeAmount = parsedCash >= purchase.amount ? parsedCash - purchase.amount : 0;
+  const totalAmount = purchase.amount;
+  const rawCash = purchase.user?.phone ? purchase.user.phone.replace(/[^0-9.]/g, '') : '';
+  let parsedCash = parseFloat(rawCash) || 0;
+
+  if (parsedCash <= 0 || parsedCash > totalAmount * 3) {
+    const next500 = Math.ceil(totalAmount / 500) * 500;
+    const next1000 = Math.ceil(totalAmount / 1000) * 1000;
+    parsedCash = next500 >= totalAmount ? next500 : next1000;
+  }
+
+  const changeAmount = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
 
   const invoiceNo = purchase.id.slice(0, 12).toUpperCase();
   const globalTransNo = purchase.id.slice(0, 8).toUpperCase();
@@ -179,27 +183,6 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
               <Download size={18} /> {isGeneratingPDF ? 'Saving...' : 'Save PDF'}
             </button>
           </div>
-        </div>
-
-        {/* Input Section */}
-        <div className="flex flex-col gap-2.5 mt-2 print:hidden">
-          <label className="text-base font-bold text-gray-700 m-0 tracking-tight">
-            Input the amount of money you have (Cash)
-          </label>
-          <input 
-            type="text" 
-            inputMode="decimal"
-            pattern="[0-9]*"
-            value={cashAmount} 
-            onChange={(e) => {
-              const cleanVal = e.target.value.replace(/[^0-9.]/g, '');
-              const dotCount = (cleanVal.match(/\./g) || []).length;
-              if (dotCount > 1) return;
-              setCashAmount(cleanVal);
-            }} 
-            placeholder="Enter the amount of money you have" 
-            className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 focus:border-[#bd00ff] focus:bg-white rounded-2xl font-bold text-black outline-none transition-all placeholder:text-gray-400 text-sm"
-          />
         </div>
 
         {/* Interactive Virtual POS Thermal Slip */}
