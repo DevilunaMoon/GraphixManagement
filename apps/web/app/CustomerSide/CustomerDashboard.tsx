@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const optimizeCloudinaryUrl = (url: string, width = 1200) => {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  // Insert f_auto,q_auto,w_[width] after '/upload/'
+  return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
+};
+
 export default function CustomerDashboard({ user }: { user?: { name: string; email: string } | null }) {
   const router = useRouter();
   const navigate = router.push;
@@ -124,14 +130,14 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                 {banners[currentBannerIndex].linkUrl ? (
                   <a href={banners[currentBannerIndex].linkUrl} target="_blank" rel="noopener noreferrer" className="w-full h-full block cursor-pointer">
                     <img 
-                      src={banners[currentBannerIndex].imageUrl} 
+                      src={optimizeCloudinaryUrl(banners[currentBannerIndex].imageUrl, 1200)} 
                       alt={banners[currentBannerIndex].name || `Promotional Banner`} 
                       className="w-full h-full object-contain hover:scale-[1.02] transition-transform duration-300"
                     />
                   </a>
                 ) : (
                   <img 
-                    src={banners[currentBannerIndex].imageUrl} 
+                    src={optimizeCloudinaryUrl(banners[currentBannerIndex].imageUrl, 1200)} 
                     alt={banners[currentBannerIndex].name || `Promotional Banner`} 
                     className="w-full h-full object-contain"
                   />
@@ -202,7 +208,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 flex items-center justify-center shadow-sm border border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md transition-all ease-out duration-300 p-4 shrink-0">
                 {category.logoUrl || category.logo ? (
                   <img 
-                    src={category.logoUrl || category.logo} 
+                    src={optimizeCloudinaryUrl(category.logoUrl || category.logo, 100)} 
                     alt={category.name} 
                     className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
                     style={category.name === 'Apple' ? { paddingBottom: '2px' } : {}}
@@ -234,7 +240,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
               <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border-2 border-[#5c0099] group">
                 <div className="h-28 sm:h-36 w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                   {product.image ? (
-                    <img src={product.image} alt={product.name} className="h-full w-auto object-contain mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
+                    <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="h-full w-auto object-contain mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                   ) : (
                     <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
                   )}

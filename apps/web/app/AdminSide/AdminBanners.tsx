@@ -1,7 +1,12 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from 'react';
 import { X, Link as LinkIcon, AlertCircle } from 'lucide-react';
+
+const optimizeCloudinaryUrl = (url: string, width = 600) => {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  return url.replace('/upload/', `/upload/f_auto,q_auto,w_${width}/`);
+};
 
 // Banner interface matching Prisma model
 interface Banner {
@@ -139,7 +144,7 @@ export default function AdminBanners() {
               {banners.map((banner) => (
                 <div key={banner.id} className="flex flex-col gap-3 group relative">
                   <div className="relative w-full h-[200px] border-2 border-gray-200 rounded-xl overflow-hidden bg-gray-50">
-                    <img src={banner.imageUrl} alt={banner.name || 'Banner'} className="w-full h-full object-contain" />
+                    <img src={optimizeCloudinaryUrl(banner.imageUrl, 600)} alt={banner.name || 'Banner'} className="w-full h-full object-contain" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                       <button 
                         onClick={() => setBannerToDelete(banner.id)}
