@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,6 +86,26 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
     return () => clearInterval(timer);
   }, [banners.length]);
 
+  // Load cached banners immediately upon mount (Stale-While-Revalidate)
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('cached_banners');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setBanners(parsed);
+          // Preload first banner image from cache
+          if (parsed[0] && parsed[0].imageUrl) {
+            const optimizedFirstBanner = optimizeCloudinaryUrl(parsed[0].imageUrl, 1200);
+            ReactDOM.preload(optimizedFirstBanner, { as: 'image' });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load cached banners:', e);
+    }
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
     
@@ -95,8 +116,22 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
     ])
     .then(([productsData, bannersData, catsData]) => {
       setProducts(Array.isArray(productsData) ? productsData : []);
-      setBanners(Array.isArray(bannersData) ? bannersData : []);
       setCategoriesData(Array.isArray(catsData) ? catsData : []);
+      
+      if (Array.isArray(bannersData)) {
+        setBanners(bannersData);
+        // Preload first banner image from fresh database data
+        if (bannersData[0] && bannersData[0].imageUrl) {
+          const optimizedFirstBanner = optimizeCloudinaryUrl(bannersData[0].imageUrl, 1200);
+          ReactDOM.preload(optimizedFirstBanner, { as: 'image' });
+        }
+        // Save fresh banners to cache
+        try {
+          localStorage.setItem('cached_banners', JSON.stringify(bannersData));
+        } catch (e) {
+          console.warn('Failed to save banners to cache:', e);
+        }
+      }
     })
     .catch(console.error)
     .finally(() => setIsLoading(false));
