@@ -47,7 +47,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   const navItems = [
     { href: '/cashier/dashboard', label: 'Dashboard', icon: Home },
     { href: '/cashier/monitoring', label: 'Gadget Repair', icon: Wrench },
-    { href: '/cashier/devices', label: 'Devices', icon: Smartphone },
+    { href: '/cashier/devices', label: 'Inventory Management', icon: Smartphone },
     { href: '/cashier/notifications', label: 'Notifications', icon: Bell },
     { 
       label: 'Order History', 
