@@ -46,9 +46,9 @@ export async function GET() {
       });
     }
 
-    // If we have fewer than 10 best-selling devices, fill the remaining slots with the newest devices
-    if (devices.length < 10) {
-      const remainingCount = 10 - devices.length;
+    // If we have fewer than 5 best-selling devices, fill the remaining slots with the newest devices
+    if (devices.length < 5) {
+      const remainingCount = 5 - devices.length;
       const additionalDevices = await prisma.device.findMany({
         where: {
           id: { notIn: deviceIds }
@@ -60,8 +60,8 @@ export async function GET() {
       devices = [...devices, ...additionalDevices];
     }
 
-    // Limit to 10 best-sellers
-    devices = devices.slice(0, 10);
+    // Limit to 5 best-sellers
+    devices = devices.slice(0, 5);
 
     return NextResponse.json(devices, {
       headers: {
