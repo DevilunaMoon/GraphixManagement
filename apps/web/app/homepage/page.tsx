@@ -130,18 +130,18 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo(0, 0)}>
             <div
-              className={`w-12 h-12 rounded-xl flex justify-center items-center overflow-hidden border-2 ${isScrolled ? 'border-[#8b00cc]' : 'border-gray-800'}`}
+              className={`w-12 h-12 rounded-xl flex justify-center items-center overflow-hidden border-2 ${isScrolled ? 'border-[#8b00cc]' : 'border-white/40'}`}
             >
               <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-full h-full object-cover bg-white" />
             </div>
-            <span className={`text-3xl font-extrabold tracking-tight ${isScrolled ? 'text-[#8b00cc]' : 'text-gray-900 group-hover:text-[#bd00ff]'} transition-colors`}>
+            <span className={`text-3xl font-extrabold tracking-tight ${isScrolled ? 'text-[#8b00cc]' : 'text-white group-hover:text-[#bd00ff]'} transition-colors`}>
               Graphix
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-10">
             {['Home', 'About', 'Features'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className={`font-bold relative ${isScrolled ? 'text-gray-600' : 'text-gray-900'} hover:text-[#bd00ff] transition-colors`}>
+              <a key={item} href={`#${item.toLowerCase()}`} className={`font-bold relative ${isScrolled ? 'text-gray-600' : 'text-white hover:text-[#bd00ff]'} hover:text-[#bd00ff] transition-colors`}>
                 {item}
               </a>
             ))}
@@ -176,7 +176,14 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section id="home" className="relative pt-40 pb-32 md:pt-56 md:pb-48 px-6 bg-white border-b border-gray-200 overflow-hidden">
+      <section 
+        id="home" 
+        className="relative pt-40 pb-32 md:pt-56 md:pb-48 px-6 border-b border-gray-200 overflow-hidden bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/Images/storefront-bg.jpg')" }}
+      >
+        {/* Sleek semi-transparent dark frosted overlay */}
+        <div className="absolute inset-0 bg-black/65 backdrop-blur-[1.5px] z-0"></div>
+
         {/* CSS Animation Loop Overlay */}
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -195,28 +202,27 @@ export default function HomePage() {
         `}} />
 
         {/* Ambient Animated Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply opacity-50 blur-3xl pointer-events-none z-0" style={{ animation: 'float1 8s ease-in-out infinite' }}></div>
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-400 rounded-full mix-blend-multiply opacity-40 blur-3xl pointer-events-none z-0" style={{ animation: 'float2 10s ease-in-out infinite' }}></div>
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-pink-400 rounded-[50%] mix-blend-multiply opacity-30 blur-3xl pointer-events-none z-0" style={{ animation: 'rotateOrb 15s linear infinite' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600 rounded-full mix-blend-screen opacity-20 blur-3xl pointer-events-none z-0" style={{ animation: 'float1 8s ease-in-out infinite' }}></div>
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-cyan-600 rounded-full mix-blend-screen opacity-15 blur-3xl pointer-events-none z-0" style={{ animation: 'float2 10s ease-in-out infinite' }}></div>
 
         <div className="max-w-7xl mx-auto flex flex-col items-center text-center gap-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-5 py-2 bg-purple-50 rounded-full font-bold text-sm border border-purple-200 text-[#8b00cc]">
+          <div className="inline-flex items-center gap-2 px-5 py-2 bg-purple-500/15 rounded-full font-bold text-sm border border-purple-400/30 text-[#e0b0ff]">
             <Sparkles size={16} />
             <span>Next-Gen Device Management</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight max-w-4xl">
+          <h1 className="text-5xl md:text-7xl font-black text-white leading-tight max-w-4xl drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
             Control your tech with clarity.
           </h1>
 
-          <p className="text-xl text-gray-600 max-w-2xl font-medium leading-relaxed mt-2">
+          <p className="text-xl text-gray-200 max-w-2xl font-medium leading-relaxed mt-2 drop-shadow-[0_1px_5px_rgba(0,0,0,0.5)]">
             Graphix provides a seamless, transparent, and breathtakingly fast way to track repairs, browse electronics, and manage tech investments.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full sm:w-auto">
             <button
               onClick={() => router.push('/login')}
-              className="bg-[#8b00cc] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#bd00ff] transition-all flex items-center justify-center gap-3 shadow-md"
+              className="bg-[#8b00cc] text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-[#bd00ff] transition-all flex items-center justify-center gap-3 shadow-lg shadow-purple-500/20"
             >
               {isLoggedIn ? "Go to Dashboard" : "Get Started Free"} <ArrowRight size={22} />
             </button>
