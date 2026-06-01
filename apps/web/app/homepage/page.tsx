@@ -6,8 +6,7 @@ import {
   Menu, X,
   MonitorSmartphone, ShoppingBag,
   ShieldCheck, Clock,
-  ChevronRight, ArrowRight,
-  ChevronLeft, Sparkles
+  ArrowRight, Sparkles
 } from "lucide-react";
 
 
@@ -47,8 +46,6 @@ export default function HomePage() {
 
   const [products, setProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -69,7 +66,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        const response = await fetch('/api/devices');
+        const response = await fetch('/api/devices/best-selling');
         if (response.ok) {
           const data = await response.json();
           if (data && data.length > 0) {
@@ -80,8 +77,8 @@ export default function HomePage() {
               price: device.price,
               originalPrice: null,
               image: device.image || '/Images/graphix-logo.jpg',
-              tag: device.stock > 0 ? 'In Stock' : 'Out of Stock',
-              tagColor: device.stock > 0 ? 'green' : 'gray'
+              tag: device.stock > 0 ? 'Best Seller' : 'Out of Stock',
+              tagColor: device.stock > 0 ? 'purple' : 'gray'
             }));
 
             setProducts(dbProducts);
@@ -90,17 +87,13 @@ export default function HomePage() {
           }
         }
       } catch (err) {
-        console.error('Error fetching devices', err);
+        console.error('Error fetching best-selling devices', err);
       } finally {
         setIsLoadingProducts(false);
       }
     };
     fetchDevices();
   }, []);
-
-  const totalPages = Math.ceil(products.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
 
   const features = [
     {
@@ -239,7 +232,7 @@ export default function HomePage() {
               <h2 className="text-[#8b00cc] font-black text-xl tracking-wide uppercase mb-2 flex items-center gap-2">
                 <ShoppingBag size={24} /> Storefront
               </h2>
-              <h3 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">Trending Weekly</h3>
+              <h3 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">Best Sellers</h3>
             </div>
           </div>
 
@@ -248,7 +241,7 @@ export default function HomePage() {
               <div className="col-span-1 sm:col-span-2 md:grid-cols-3 lg:col-span-5 flex justify-center items-center py-20">
                 <div className="w-12 h-12 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
               </div>
-            ) : currentProducts.length > 0 ? currentProducts.map((product) => (
+            ) : products.length > 0 ? products.map((product) => (
               <div
                 key={product.id}
                 className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
@@ -260,7 +253,7 @@ export default function HomePage() {
                     className="w-full h-full object-contain"
                   />
                   {product.tag && (
-                    <div className={`absolute top-3 right-3 bg-${product.tagColor}-100 text-${product.tagColor}-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm uppercase tracking-wide`}>
+                    <div className="absolute top-3 right-3 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm uppercase tracking-wide">
                       {product.tag}
                     </div>
                   )}
@@ -289,45 +282,6 @@ export default function HomePage() {
               </div>
             )}
           </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center mt-12 gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="w-12 h-12 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-900 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-              >
-                <ChevronLeft size={24} />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {[...Array(totalPages)].map((_, idx) => {
-                  const page = idx + 1;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-12 h-12 rounded-xl font-bold text-lg transition-colors ${currentPage === page
-                        ? "bg-[#8b00cc] text-white shadow-md"
-                        : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="w-12 h-12 rounded-xl flex items-center justify-center bg-white border border-gray-200 text-gray-900 disabled:opacity-50 hover:bg-gray-50 transition-colors"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </div>
-          )}
         </div>
       </section>
 
