@@ -227,12 +227,6 @@ export default function HomePage() {
             >
               {isLoggedIn ? "Go to Dashboard" : "Get Started Free"} <ArrowRight size={22} />
             </button>
-            <a
-              href="#about"
-              className="bg-white text-gray-900 px-10 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all flex items-center justify-center border-2 border-gray-200"
-            >
-              Discover Features
-            </a>
           </div>
         </div>
       </section>
