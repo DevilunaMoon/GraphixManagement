@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Ban, X, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
+const splitName = (fullName: string) => {
+  const nameToSplit = (fullName || '').trim();
+  if (!nameToSplit) return { first: 'Anonymous', last: '-' };
+  const parts = nameToSplit.split(/\s+/);
+  if (parts.length <= 1) return { first: nameToSplit, last: '-' };
+  const last = parts.pop() || '';
+  const first = parts.join(' ');
+  return { first, last };
+};
+
 export default function AdminAccounts() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState('All Accounts');
@@ -34,16 +44,36 @@ export default function AdminAccounts() {
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
 
+    const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+    const payload = {
+      name: fullName,
+      email: data.email,
+      password: data.password,
+      role: data.role
+    };
+
     try {
       const res = await fetch('/api/admin/accounts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
         const newUser = await res.json();
-        setAccounts(prev => [newUser, ...prev]);
+        const { first, last } = splitName(newUser.name);
+        const mappedUser = {
+          id: newUser.id,
+          firstName: first,
+          lastName: last,
+          email: newUser.email,
+          phone: newUser.phone || 'N/A',
+          dob: newUser.dateOfBirth || 'N/A',
+          password: '••••••••',
+          status: newUser.status || 'Active',
+          suspendedUntil: newUser.suspendedUntil
+        };
+        setAccounts(prev => [mappedUser, ...prev]);
         setCreateModal(false);
       } else {
         const err = await res.json();
@@ -98,16 +128,20 @@ export default function AdminAccounts() {
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.users)) {
-          setAccounts(data.users.map((user: any) => ({
-            id: user.id,
-            name: user.name || 'Anonymous',
-            email: user.email,
-            phone: user.phone || 'N/A',
-            dob: user.dateOfBirth || 'N/A',
-            password: '••••••••',
-            status: user.status || 'Active',
-            suspendedUntil: user.suspendedUntil
-          })));
+          setAccounts(data.users.map((user: any) => {
+            const { first, last } = splitName(user.name);
+            return {
+              id: user.id,
+              firstName: first,
+              lastName: last,
+              email: user.email,
+              phone: user.phone || 'N/A',
+              dob: user.dateOfBirth || 'N/A',
+              password: '••••••••',
+              status: user.status || 'Active',
+              suspendedUntil: user.suspendedUntil
+            };
+          }));
           setTotalCount(data.total || 0);
           setTotalPages(data.totalPages || 1);
         }
@@ -193,18 +227,19 @@ export default function AdminAccounts() {
           <table className="w-full border-collapse text-center">
             <thead>
               <tr>
-                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain}`}>Name</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain}`}>Email</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Contact #</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Birthdate</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Password</th>
+                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>First Name</th>
+                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Last Name</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center">
+                  <td colSpan={7} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-10 h-10 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
                       <span className="text-[#666] font-semibold animate-pulse">Loading accounts...</span>
@@ -218,19 +253,20 @@ export default function AdminAccounts() {
                     className={`last:border-b-2 last:${styles.borderMain} cursor-pointer hover:bg-black/5 transition-colors`}
                     onClick={() => setSelectedAccount(acc)}
                   >
-                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} max-w-[120px] sm:max-w-none truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>
+                    <td className={`py-4 px-5 text-[0.95rem] font-medium text-[#111] border-b ${styles.borderMain} max-w-[150px] sm:max-w-none truncate`}>
                       <div className="flex items-center justify-center gap-2">
-                        {acc.name}
+                        {acc.email}
                         {acc.status === 'Suspended' && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block">Suspended</span>}
                       </div>
                     </td>
-                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} max-w-[150px] sm:max-w-none truncate`}>{acc.email}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.phone}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.dob}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.password}</td>
+                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} hidden md:table-cell truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>{acc.firstName}</td>
+                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} hidden md:table-cell truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>{acc.lastName}</td>
                     <td className={`py-4 px-5 border-b ${styles.borderMain} hidden md:table-cell`}>
                       <button
-                        onClick={(e) => { e.stopPropagation(); openSuspendModal(acc.id, acc.name, acc.status, acc.suspendedUntil); }}
+                        onClick={(e) => { e.stopPropagation(); openSuspendModal(acc.id, `${acc.firstName} ${acc.lastName}`, acc.status, acc.suspendedUntil); }}
                         className="text-orange-500 hover:text-orange-700 transition-colors p-2 rounded-full hover:bg-orange-50 cursor-pointer flex items-center justify-center mx-auto"
                         title="Suspend Account"
                       >
@@ -241,7 +277,7 @@ export default function AdminAccounts() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-[#666] font-semibold">
+                  <td colSpan={7} className="py-10 text-center text-[#666] font-semibold">
                     No accounts found.
                   </td>
                 </tr>
@@ -369,9 +405,15 @@ export default function AdminAccounts() {
                 </div>
               )}
               
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-bold text-gray-700">Name</label>
-                <input required name="name" type="text" placeholder="Full Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-bold text-gray-700">First Name</label>
+                  <input required name="firstName" type="text" placeholder="First Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-bold text-gray-700">Last Name</label>
+                  <input required name="lastName" type="text" placeholder="Last Name" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium" />
+                </div>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -442,7 +484,7 @@ export default function AdminAccounts() {
                   className="text-orange-500 hover:text-orange-700 hover:bg-orange-50 p-1.5 rounded-full transition-colors flex items-center justify-center"
                   title="Suspend Account"
                   onClick={() => {
-                     openSuspendModal(selectedAccount.id, selectedAccount.name, selectedAccount.status, selectedAccount.suspendedUntil);
+                     openSuspendModal(selectedAccount.id, `${selectedAccount.firstName} ${selectedAccount.lastName}`, selectedAccount.status, selectedAccount.suspendedUntil);
                      setSelectedAccount(null);
                   }}
                 >
@@ -455,8 +497,12 @@ export default function AdminAccounts() {
             </div>
             <div className="p-6 flex flex-col gap-4 text-left">
               <div className="flex flex-col border-b border-gray-100 pb-3">
-                <span className="text-[#666] text-sm font-medium mb-1">Name</span>
-                <span className="font-bold text-[#111]">{selectedAccount.name}</span>
+                <span className="text-[#666] text-sm font-medium mb-1">First Name</span>
+                <span className="font-bold text-[#111]">{selectedAccount.firstName}</span>
+              </div>
+              <div className="flex flex-col border-b border-gray-100 pb-3">
+                <span className="text-[#666] text-sm font-medium mb-1">Last Name</span>
+                <span className="font-bold text-[#111]">{selectedAccount.lastName}</span>
               </div>
               <div className="flex flex-col border-b border-gray-100 pb-3">
                 <span className="text-[#666] text-sm font-medium mb-1">Email</span>
