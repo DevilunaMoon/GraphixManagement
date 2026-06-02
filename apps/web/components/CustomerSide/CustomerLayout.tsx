@@ -13,6 +13,7 @@ import {
 export default function CustomerLayout({ children, user }: { children: React.ReactNode, user?: any }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const router = useRouter();
   const navigate = router.push;
   const pathname = usePathname();
@@ -340,10 +341,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                   </button>
                   <div className="h-[1px] bg-gray-100 w-full my-1"></div>
                   <button 
-                    onClick={async (e) => { 
+                    onClick={(e) => { 
                       e.stopPropagation(); 
-                      await logoutUser(); 
-                      window.location.href = '/login'; 
+                      setIsProfileDropdownOpen(false);
+                      setIsLogoutModalOpen(true); 
                     }}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-500 cursor-pointer transition-colors border-none bg-transparent text-left font-semibold text-sm"
                   >
@@ -411,6 +412,41 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             {/* Content */}
             <div className="p-8 overflow-y-auto font-medium text-gray-700 leading-relaxed whitespace-pre-wrap">
               {selectedPolicyContent}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setIsLogoutModalOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm border border-gray-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">
+                <LogOut size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">Confirm Log Out</h3>
+              <p className="text-gray-500 font-semibold text-sm leading-relaxed mb-6">
+                Are you sure you want to log out? You will need to sign back in to purchase products or check repairs.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition-colors cursor-pointer border-none outline-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logoutUser();
+                    window.location.href = '/login';
+                  }}
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer border-none outline-none"
+                >
+                  Log Out
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -27,6 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { styles, bgClass } = useTheme();
@@ -200,11 +201,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <p className="text-sm text-white/90">Welcome Back {adminName}. Here's the daily summary</p>
           </div>
           <button 
-            onClick={async () => {
-              const { logoutUser } = await import('../../actions/auth');
-              await logoutUser();
-              window.location.href = '/login';
-            }}
+            onClick={() => setIsLogoutModalOpen(true)}
             title="Log Out"
             className="text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
           >
@@ -216,6 +213,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {children}
         </div>
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setIsLogoutModalOpen(false)}>
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm border border-gray-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">
+                <LogOut size={32} />
+              </div>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">Confirm Log Out</h3>
+              <p className="text-gray-500 font-semibold text-sm leading-relaxed mb-6">
+                Are you sure you want to log out? You will need to sign back in to access your admin dashboard.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition-colors cursor-pointer border-none outline-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const { logoutUser } = await import('../../actions/auth');
+                    await logoutUser();
+                    window.location.href = '/login';
+                  }}
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer border-none outline-none"
+                >
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
