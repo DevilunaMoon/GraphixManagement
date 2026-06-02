@@ -45,7 +45,7 @@ export default function AdminDashboard() {
     <>
       <div className="flex flex-col gap-8">
         {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard 
           icon={<span className="text-[22px] font-bold">₱</span>}
           label="Daily Sales" 
@@ -57,13 +57,6 @@ export default function AdminDashboard() {
           }
           iconBg="bg-green-100" 
           iconColor="text-green-600" 
-        />
-        <StatCard 
-          icon={<span className="text-[22px] font-bold">₱</span>}
-          label="Weekly Sales" 
-          value={`₱${dashboardData?.sales?.weekly?.toLocaleString() || 0}`} 
-          iconBg="bg-blue-100" 
-          iconColor="text-blue-600" 
         />
         <StatCard 
           icon={<span className="text-[22px] font-bold">₱</span>}
