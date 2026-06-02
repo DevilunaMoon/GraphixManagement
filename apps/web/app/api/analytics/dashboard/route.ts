@@ -155,11 +155,14 @@ export async function GET() {
       }
     });
 
-    // Calculate Top 5 Products for the CURRENT MONTH
-    const currentMonthPurchases = purchases.filter(p => new Date(p.createdAt) >= startOfMonth);
+    // Calculate Top 5 Products for the CURRENT MONTH (with fallback to current year)
+    let targetPurchases = purchases.filter(p => new Date(p.createdAt) >= startOfMonth);
+    if (targetPurchases.length === 0) {
+      targetPurchases = purchases; // Fallback to current year purchases
+    }
     const productSalesMap: Record<string, { name: string, sold: number }> = {};
 
-    currentMonthPurchases.forEach(p => {
+    targetPurchases.forEach(p => {
       const id = p.deviceId;
       if (!productSalesMap[id]) {
         productSalesMap[id] = { name: p.device?.name || 'Unknown Device', sold: 0 };

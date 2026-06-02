@@ -261,8 +261,12 @@ function ChartBar({ label, height, value }: { label: string, height: string, val
 }
 
 function BestSellersPieChart({ products }: { products: { name: string, sold: number }[] }) {
-  if (!products || products.length === 0) {
+  if (products === undefined || products === null) {
     return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">Loading data...</div>;
+  }
+
+  if (products.length === 0) {
+    return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">No sales yet</div>;
   }
 
   const colors = ['#bd00ff', '#01f0ff', '#5c0099', '#f000ff', '#8b00cc'];
