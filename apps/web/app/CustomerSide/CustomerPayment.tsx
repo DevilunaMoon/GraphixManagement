@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
-import { ChevronLeft, Wifi } from 'lucide-react';
+import { ChevronLeft, Wifi, Coins, Smartphone, MessageSquare, QrCode, Lock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function CustomerPaymentContent() {
@@ -105,57 +105,73 @@ function CustomerPaymentContent() {
 
   if (showGcashQr) {
     return (
-      <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-        <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col items-center gap-6 sm:gap-8">
+      <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col items-center gap-6">
+          
+          {/* Header */}
+          <div className="w-full flex items-center justify-between border-b border-gray-100 pb-4">
+            <button 
+              onClick={() => setShowGcashQr(false)} 
+              className="p-2 hover:bg-purple-50 rounded-full text-gray-500 hover:text-[#bd00ff] transition-all"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <span className="font-extrabold text-gray-800 text-sm uppercase tracking-wider">GCash Checkout</span>
+            <div className="w-9"></div>
+          </div>
 
-          {/* GCash QR Card */}
-          <div className="w-full bg-[#005ce6] rounded-xl p-1 relative overflow-hidden flex flex-col shadow-md">
-            {/* Outer thin border wrapper */}
-            <div className="w-full h-full border border-white/40 rounded-lg flex flex-col items-center pt-6 pb-4 px-4 relative z-10">
-
+          {/* GCash Blue Card Mockup */}
+          <div className="w-full bg-[#005ce6] rounded-2xl p-1 relative overflow-hidden flex flex-col shadow-lg">
+            <div className="w-full h-full border border-white/20 rounded-xl flex flex-col items-center pt-5 pb-4 px-4 relative z-10 bg-gradient-to-b from-[#005ce6] to-[#004dc9]">
               {/* GCash Logo area */}
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-                  <div className="text-[#005ce6] font-bold text-2xl tracking-tighter -ml-1">G<Wifi size={14} className="rotate-90 inline-block -ml-1" strokeWidth={4} /></div>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
+                  <span className="text-[#005ce6] font-extrabold text-lg">G</span>
                 </div>
-                <span className="text-white text-3xl font-bold tracking-tight">GCash</span>
+                <span className="text-white text-2xl font-bold tracking-tight">GCash</span>
               </div>
 
-              <span className="text-white text-xs font-medium tracking-wide mb-3 uppercase">Payment Accepted Here</span>
-
-              <div className="bg-[#0047b3] text-white text-sm font-semibold px-6 py-1.5 rounded-full mb-4 w-[85%] text-center shadow-inner">
-                Graphix Store
-              </div>
+              <span className="text-blue-100 text-[10px] font-semibold tracking-widest uppercase mb-4">Payment Accepted Here</span>
 
               {/* White QR Area */}
-              <div className="bg-white w-full rounded-2xl flex flex-col items-center pt-6 pb-4 px-4 shadow-lg mb-4 relative overflow-hidden">
+              <div className="bg-white w-full rounded-xl flex flex-col items-center p-5 shadow-inner mb-3">
                 {/* Mock QR Placeholder */}
-                <div className="w-40 h-40 bg-[#f0f4f8] rounded-xl border-2 border-dashed border-blue-300 flex flex-col items-center justify-center relative overflow-hidden mb-4">
-                  <div className="absolute bottom-0 w-full h-1/3 bg-[#85b022] opacity-80 rounded-b-xl"></div>
-                  <div className="absolute bottom-0 w-full h-1/4 bg-[#6c8f1c] rounded-b-xl" style={{ borderTopLeftRadius: '50%', borderTopRightRadius: '20%' }}></div>
-                  <div className="z-10 text-center flex flex-col font-black text-xl text-[#005ce6] tracking-tight leading-tight uppercase px-4 drop-shadow-md">
-                    <span>Insert</span>
-                    <span>QR Code</span>
-                    <span className="text-[#ffd700]">Here !!</span>
+                <div className="w-36 h-36 bg-gray-50 rounded-lg border border-dashed border-blue-200 flex flex-col items-center justify-center relative overflow-hidden mb-3">
+                  <div className="absolute inset-0 bg-blue-50/30 flex items-center justify-center">
+                    <QrCode size={48} className="text-[#005ce6] animate-pulse" />
                   </div>
                 </div>
 
-                <div className="text-[#005ce6] font-semibold text-sm mb-0.5">Graphix Management</div>
-                <div className="text-gray-500 font-medium text-sm">09** *** ****</div>
+                <div className="text-[#005ce6] font-extrabold text-sm">GRAPHIX MANAGEMENT</div>
+                <div className="text-gray-400 text-xs mt-0.5">Official GCash Merchant Account</div>
               </div>
 
-              {/* Bottom text */}
-              <div className="text-white font-bold tracking-widest text-lg mt-auto pb-1">
-                SCAN TO PAY
+              {/* Amount Box */}
+              <div className="w-full bg-blue-950/30 rounded-lg p-3 text-center mb-1">
+                <span className="text-blue-200 text-[10px] uppercase font-bold tracking-wider">Amount to Pay</span>
+                <div className="text-white font-extrabold text-2xl mt-0.5">
+                  ₱{totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Simple Clean Instructions */}
+          <div className="w-full flex flex-col gap-2.5 text-left bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Instructions:</h4>
+            <ol className="text-xs text-gray-600 flex flex-col gap-2 list-decimal list-inside">
+              <li>Open your GCash app and select <span className="font-bold text-gray-800">Scan QR</span>.</li>
+              <li>Scan the merchant QR code above.</li>
+              <li>Enter the exact amount of <span className="font-bold text-[#bd00ff]">₱{totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>.</li>
+              <li>After transferring, tap the confirmation button below.</li>
+            </ol>
+          </div>
+
           <button
             onClick={() => navigate(`/customer/purchase-confirmed?method=gcash${createdPurchaseId ? `&id=${createdPurchaseId}` : ''}`)}
-            className="w-full py-4 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
+            className="w-full py-3.5 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-base rounded-xl border-none cursor-pointer shadow-[0_4px_15px_rgba(189,0,255,0.3)] hover:shadow-[0_6px_20px_rgba(189,0,255,0.5)] hover:-translate-y-0.5 transition-all text-center"
           >
-            View Confirmed Receipt
+            I Have Transferred Successfully
           </button>
         </div>
       </div>
@@ -163,38 +179,43 @@ function CustomerPaymentContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-6 sm:gap-8">
+    <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col gap-6">
 
         {/* Header */}
-        <div className="flex items-center gap-4 border-b-2 border-gray-100 pb-4">
+        <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
           <button
             onClick={() => router.back()}
-            className="text-[#bd00ff] hover:text-[#9c00d6] hover:-translate-x-1 transition-all bg-transparent border-none cursor-pointer p-0"
+            className="p-2 hover:bg-purple-50 rounded-full text-gray-500 hover:text-[#bd00ff] transition-all"
           >
-            <ChevronLeft size={32} />
+            <ChevronLeft size={20} />
           </button>
-          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#4B0082] m-0 border-none">Secure Payment</h2>
+          <div>
+            <h2 className="text-xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#4B0082]">Secure Payment</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Complete your transaction safely</p>
+          </div>
         </div>
 
-        <form className="flex flex-col gap-8">
+        <form className="flex flex-col gap-6">
 
           <div className="flex flex-col gap-3">
-            <label className="font-bold text-gray-700 text-lg">Select Payment Method</label>
-            <div className="grid grid-cols-2 gap-4">
+            <label className="font-bold text-gray-700 text-sm tracking-wide">Select Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
 
-              <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'cash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+              <label className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${method === 'cash' ? 'border-[#bd00ff] bg-purple-50/40 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
                 <input type="radio" name="payment" value="cash" checked={method === 'cash'} onChange={() => setMethod('cash')} className="absolute opacity-0" />
-                <span className="text-4xl text-yellow-400 font-bold tracking-tighter">₱</span>
-                <span className="font-bold text-sm text-center text-black">On Cash Payment</span>
+                <div className={`p-2.5 rounded-full ${method === 'cash' ? 'bg-[#bd00ff]/10 text-[#bd00ff]' : 'bg-gray-50 text-gray-400'}`}>
+                  <Coins size={22} />
+                </div>
+                <span className="font-extrabold text-xs text-gray-800">Cash Payment</span>
               </label>
 
-              <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'gcash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+              <label className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${method === 'gcash' ? 'border-[#bd00ff] bg-purple-50/40 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
                 <input type="radio" name="payment" value="gcash" checked={method === 'gcash'} onChange={() => setMethod('gcash')} className="absolute opacity-0" />
-                <div className="text-blue-500 font-extrabold text-3xl flex items-center justify-center">
-                  G<Wifi size={20} className="rotate-90 ml-0.5" strokeWidth={4} />
+                <div className={`p-2.5 rounded-full ${method === 'gcash' ? 'bg-[#bd00ff]/10 text-[#bd00ff]' : 'bg-gray-50 text-gray-400'}`}>
+                  <Smartphone size={22} />
                 </div>
-                <span className="font-bold text-sm text-center text-black">G-Cash Payment</span>
+                <span className="font-extrabold text-xs text-gray-800">GCash Payment</span>
               </label>
 
             </div>
@@ -202,48 +223,66 @@ function CustomerPaymentContent() {
 
           {method === 'cash' && (
             <div className="flex flex-col gap-2">
-              <label className="font-bold text-gray-700 text-lg">Input the amount of money you have </label>
-              <input
-                type="text"
-                placeholder="Enter the amount of money you have"
-                value={phoneNumber}
-                onChange={(e) => {
-                  setPhoneNumber(e.target.value);
-                  if (e.target.value.trim()) setPhoneError(false);
-                }}
-                className={`w-full border-2 rounded-xl p-4 text-black outline-none font-['Inter'] transition-colors ${phoneError ? 'border-red-500 focus:border-red-500 bg-red-50/10' : 'border-gray-200 focus:border-[#bd00ff]'}`}
-              />
+              <label className="font-bold text-gray-700 text-sm">Tendered Cash (Amount you have)</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                  <span className="font-bold text-gray-700">₱</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Enter cash amount"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    if (e.target.value.trim()) setPhoneError(false);
+                  }}
+                  className={`w-full pl-8 pr-4 py-3 border rounded-xl outline-none font-semibold text-gray-800 transition-all ${phoneError ? 'border-red-500 bg-red-50/20' : 'border-gray-200 focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'}`}
+                />
+              </div>
               {phoneError && (
-                <span className="text-red-600 text-sm font-semibold mt-1">
-                  Amount of money is required to place your order.
+                <span className="text-red-500 text-xs font-bold mt-1">
+                  Cash amount is required to place your order.
                 </span>
               )}
             </div>
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-gray-700 text-lg">Message for Staff</label>
-            <textarea
-              placeholder="Enter your message here"
-              value={staffMessage}
-              onChange={(e) => setStaffMessage(e.target.value)}
-              rows={1}
-              className="w-full border-2 border-gray-200 rounded-xl p-2.5 px-3.5 text-black outline-none font-['Inter'] resize-none focus:border-[#bd00ff] transition-colors"
-            />
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-gray-700 text-sm">Message for Staff</label>
+              <span className="text-[10px] text-gray-400 font-medium">Optional</span>
+            </div>
+            <div className="relative">
+              <div className="absolute top-3 left-4 text-gray-400">
+                <MessageSquare size={18} />
+              </div>
+              <textarea
+                placeholder="E.g., Preferred delivery slot, instructions..."
+                value={staffMessage}
+                onChange={(e) => setStaffMessage(e.target.value)}
+                rows={2}
+                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] transition-all resize-none"
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col justify-center items-center w-full border-dashed border-2 border-[#bd00ff] rounded-2xl p-4 sm:p-6 bg-purple-50 shadow-[0_4px_15px_rgba(189,0,255,0.1)] mt-2">
-            <span className="font-bold text-black text-lg sm:text-xl uppercase tracking-widest mb-1 sm:mb-2 opacity-80 text-center">Total To Pay</span>
-            <div className="flex items-center justify-center flex-wrap text-red-600 font-extrabold text-4xl sm:text-5xl tracking-tight text-center px-2 w-full">
-              <span className="text-2xl sm:text-3xl mr-1 sm:mr-2">₱</span>
-              <span className="truncate max-w-full">{loading ? '...' : totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          {/* Premium Total Card */}
+          <div className="bg-purple-50/60 border border-purple-100 rounded-xl p-4 flex justify-between items-center">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Total To Pay</span>
+              <span className="text-[10px] text-gray-400 mt-0.5">All taxes included</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-black text-[#bd00ff] tracking-tight">
+                ₱{loading ? '...' : totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
             </div>
           </div>
 
           <button
             type="button"
             onClick={handlePlaceOrder}
-            className="w-full py-4 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-xl rounded-xl border-none cursor-pointer shadow-[0_8px_20px_rgba(189,0,255,0.4)] hover:shadow-[0_8px_25px_rgba(189,0,255,0.6)] hover:-translate-y-1 transition-all uppercase tracking-wider"
+            className="w-full py-3.5 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-base rounded-xl border-none cursor-pointer shadow-[0_4px_15px_rgba(189,0,255,0.3)] hover:shadow-[0_6px_20px_rgba(189,0,255,0.5)] hover:-translate-y-0.5 transition-all uppercase tracking-wider"
           >
             Place Order
           </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
-import { ChevronLeft, Wifi } from 'lucide-react';
+import { ChevronLeft, Wifi, Coins, Smartphone, MessageSquare, QrCode, Lock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Device {
@@ -101,53 +101,73 @@ function CustomerDownpaymentContent() {
 
   if (showGcashQr) {
     return (
-      <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-        <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col items-center gap-6 sm:gap-8">
+      <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col items-center gap-6">
           
           {/* Header */}
-          <div className="w-full flex items-center justify-between border-b-2 border-gray-100 pb-4">
+          <div className="w-full flex items-center justify-between border-b border-gray-100 pb-4">
             <button 
               onClick={() => setShowGcashQr(false)} 
-              className="text-gray-500 hover:text-[#bd00ff] transition-colors bg-transparent border-none cursor-pointer p-0"
+              className="p-2 hover:bg-purple-50 rounded-full text-gray-500 hover:text-[#bd00ff] transition-all"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={20} />
             </button>
-            <span className="font-extrabold text-gray-800 text-lg uppercase tracking-wider">GCash Checkout</span>
-            <div className="w-6"></div>
+            <span className="font-extrabold text-gray-800 text-sm uppercase tracking-wider">GCash Downpayment</span>
+            <div className="w-9"></div>
           </div>
 
-          {/* GCash Blue Card */}
-          <div className="w-full max-w-[280px] aspect-[3/4] bg-[#0052e6] rounded-[2rem] p-6 shadow-xl flex flex-col items-center gap-6 text-center select-none relative overflow-hidden">
-            {/* Top Logo */}
-            <div className="flex items-center justify-center gap-1.5 text-white font-extrabold text-2xl mt-2">
-              G<Wifi size={18} className="rotate-90 text-white" strokeWidth={3.5} />
-            </div>
-            
-            {/* Instruction */}
-            <div className="text-white/80 font-bold text-xs tracking-wider uppercase">Scan this QR to pay</div>
-            
-            {/* QR Wrapper */}
-            <div className="w-36 h-36 bg-white rounded-2xl p-2.5 shadow-inner flex items-center justify-center">
-              <img src="/gcash-qr.png" alt="GCash QR Code" className="w-full h-full object-contain" />
-            </div>
+          {/* GCash Blue Card Mockup */}
+          <div className="w-full bg-[#005ce6] rounded-2xl p-1 relative overflow-hidden flex flex-col shadow-lg">
+            <div className="w-full h-full border border-white/20 rounded-xl flex flex-col items-center pt-5 pb-4 px-4 relative z-10 bg-gradient-to-b from-[#005ce6] to-[#004dc9]">
+              {/* GCash Logo area */}
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md">
+                  <span className="text-[#005ce6] font-extrabold text-lg">G</span>
+                </div>
+                <span className="text-white text-2xl font-bold tracking-tight">GCash</span>
+              </div>
 
-            {/* Account Info */}
-            <div className="flex flex-col gap-0.5">
-              <div className="text-white font-extrabold text-sm tracking-wide">GRAPHIX MANAGEMENT</div>
-              <div className="text-white/60 font-medium text-xs">09** *** ****</div>
-            </div>
+              <span className="text-blue-100 text-[10px] font-semibold tracking-widest uppercase mb-4">Payment Accepted Here</span>
 
-            {/* Bottom Text */}
-            <div className="text-white font-bold tracking-widest text-lg mt-auto pb-1">
-              SCAN TO PAY
+              {/* White QR Area */}
+              <div className="bg-white w-full rounded-xl flex flex-col items-center p-5 shadow-inner mb-3">
+                {/* Mock QR Placeholder */}
+                <div className="w-36 h-36 bg-gray-50 rounded-lg border border-dashed border-blue-200 flex flex-col items-center justify-center relative overflow-hidden mb-3">
+                  <div className="absolute inset-0 bg-blue-50/30 flex items-center justify-center">
+                    <QrCode size={48} className="text-[#005ce6] animate-pulse" />
+                  </div>
+                </div>
+
+                <div className="text-[#005ce6] font-extrabold text-sm">GRAPHIX MANAGEMENT</div>
+                <div className="text-gray-400 text-xs mt-0.5">Official GCash Merchant Account</div>
+              </div>
+
+              {/* Amount Box */}
+              <div className="w-full bg-blue-955/30 rounded-lg p-3 text-center mb-1">
+                <span className="text-blue-200 text-[10px] uppercase font-bold tracking-wider">Downpayment Required</span>
+                <div className="text-white font-extrabold text-2xl mt-0.5">
+                  ₱{downpayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Simple Clean Instructions */}
+          <div className="w-full flex flex-col gap-2.5 text-left bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Instructions:</h4>
+            <ol className="text-xs text-gray-600 flex flex-col gap-2 list-decimal list-inside">
+              <li>Open your GCash app and select <span className="font-bold text-gray-800">Scan QR</span>.</li>
+              <li>Scan the merchant QR code above.</li>
+              <li>Enter the exact amount of <span className="font-bold text-[#bd00ff]">₱{downpayment.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>.</li>
+              <li>After transferring, tap the confirmation button below.</li>
+            </ol>
           </div>
 
           <button
             onClick={() => navigate(`/customer/downpayment-confirmed?method=gcash${createdPurchaseId ? `&id=${createdPurchaseId}` : ''}`)}
-            className="w-full py-4 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-lg rounded-xl border-none cursor-pointer shadow-lg hover:shadow-xl transition-all"
+            className="w-full py-3.5 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-base rounded-xl border-none cursor-pointer shadow-[0_4px_15px_rgba(189,0,255,0.3)] hover:shadow-[0_6px_20px_rgba(189,0,255,0.5)] hover:-translate-y-0.5 transition-all text-center"
           >
-            View Confirmed Receipt
+            I Have Transferred Successfully
           </button>
         </div>
       </div>
@@ -155,82 +175,93 @@ function CustomerDownpaymentContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-6 font-['Inter']">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-8 md:p-10 shadow-lg border border-gray-100 flex flex-col gap-8">
+    <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col gap-6">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b-2 border-gray-100 pb-4">
+        <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
           <button 
             onClick={() => router.back()} 
-            className="text-[#bd00ff] hover:text-[#9c00d6] hover:-translate-x-1 transition-all bg-transparent border-none cursor-pointer p-0"
+            className="p-2 hover:bg-purple-50 rounded-full text-gray-500 hover:text-[#bd00ff] transition-all"
           >
-            <ChevronLeft size={32} />
+            <ChevronLeft size={20} />
           </button>
-          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#4B0082] m-0 border-none">Secure Downpayment</h2>
+          <div>
+            <h2 className="text-xl font-extrabold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#4B0082]">Secure Downpayment</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Initialize your installment plan safely</p>
+          </div>
         </div>
 
-        <form className="flex flex-col gap-6">
+        <form className="flex flex-col gap-5">
           
           <div className="flex flex-col gap-3">
-            <label className="font-bold text-gray-700 text-lg">Select Payment Method</label>
-            <div className="grid grid-cols-2 gap-4">
+            <label className="font-bold text-gray-700 text-sm tracking-wide">Select Payment Method</label>
+            <div className="grid grid-cols-2 gap-3">
               
-              <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'cash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
+              <label className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${method === 'cash' ? 'border-[#bd00ff] bg-purple-50/40 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
                 <input type="radio" name="payment" value="cash" checked={method === 'cash'} onChange={() => setMethod('cash')} className="absolute opacity-0" />
-                <span className="text-4xl text-yellow-400 font-bold tracking-tighter">₱</span>
-                <span className="font-bold text-sm text-center text-black">On Cash Payment</span>
-              </label>
-
-              <label className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-colors ${method === 'gcash' ? 'border-[#bd00ff] bg-purple-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                <input type="radio" name="payment" value="gcash" checked={method === 'gcash'} onChange={() => setMethod('gcash')} className="absolute opacity-0" />
-                <div className="text-blue-500 font-extrabold text-3xl flex items-center justify-center">
-                  G<Wifi size={20} className="rotate-90 ml-0.5" strokeWidth={4} />
+                <div className={`p-2.5 rounded-full ${method === 'cash' ? 'bg-[#bd00ff]/10 text-[#bd00ff]' : 'bg-gray-50 text-gray-400'}`}>
+                  <Coins size={22} />
                 </div>
-                <span className="font-bold text-sm text-center text-black">G-Cash Payment</span>
+                <span className="font-extrabold text-xs text-gray-800">Cash Payment</span>
+              </label>
+
+              <label className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-xl border-2 cursor-pointer transition-all ${method === 'gcash' ? 'border-[#bd00ff] bg-purple-50/40 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-200'}`}>
+                <input type="radio" name="payment" value="gcash" checked={method === 'gcash'} onChange={() => setMethod('gcash')} className="absolute opacity-0" />
+                <div className={`p-2.5 rounded-full ${method === 'gcash' ? 'bg-[#bd00ff]/10 text-[#bd00ff]' : 'bg-gray-50 text-gray-400'}`}>
+                  <Smartphone size={22} />
+                </div>
+                <span className="font-extrabold text-xs text-gray-800">GCash Payment</span>
               </label>
 
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-gray-700 text-lg">Message for Staff</label>
-            <textarea 
-              value={staffMessage}
-              onChange={(e) => setStaffMessage(e.target.value)}
-              placeholder="Enter your message here" 
-              rows={2}
-              className="w-full border-2 border-gray-200 rounded-xl p-4 text-black outline-none font-['Inter'] resize-vertical focus:border-[#bd00ff] transition-colors"
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="font-bold text-gray-700 text-lg">As Low as for 12 Months</label>
-            <div className="flex items-center w-full px-5 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-black font-bold text-xl">
-              <span className="text-gray-500 mr-2">₱</span>
-              <span>{asLowAs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-gray-700 text-sm">Message for Staff</label>
+              <span className="text-[10px] text-gray-400 font-medium">Optional</span>
+            </div>
+            <div className="relative">
+              <div className="absolute top-3 left-4 text-gray-400">
+                <MessageSquare size={18} />
+              </div>
+              <textarea 
+                value={staffMessage}
+                onChange={(e) => setStaffMessage(e.target.value)}
+                placeholder="E.g., Preferred downpayment timing, other notes..." 
+                rows={2}
+                className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] transition-all resize-none"
+              />
             </div>
           </div>
 
-          <div className="flex justify-between items-center w-full border-2 border-gray-200 rounded-xl p-5 bg-white shadow-sm mt-2 flex-wrap gap-4">
-            <span className="font-bold text-gray-600 text-lg uppercase tracking-wide">Downpayment Needed:</span>
-            <div className="flex items-center text-[#bd00ff] font-extrabold text-3xl">
-              <span className="text-2xl mr-1">₱</span>
-              <span>{downpayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          {/* Premium Info Lists */}
+          <div className="flex flex-col gap-3 bg-gray-50/80 border border-gray-100 rounded-xl p-4">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-bold text-gray-500 uppercase tracking-wider">As Low As:</span>
+              <span className="font-extrabold text-gray-800">₱{asLowAs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
             </div>
-          </div>
+            
+            <div className="border-t border-dashed border-gray-200 my-0.5"></div>
 
-          <div className="flex justify-between items-center w-full border border-[#bd00ff] rounded-xl p-5 bg-purple-50 shadow-[0_4px_15px_rgba(189,0,255,0.1)] flex-wrap gap-4">
-            <span className="font-bold text-black text-lg uppercase tracking-wide">Total Device Price:</span>
-            <div className="flex items-center text-red-600 font-extrabold text-3xl">
-              <span className="text-2xl mr-1">₱</span>
-              <span>{totalDevicePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-bold text-gray-500 uppercase tracking-wider">Total Device Price:</span>
+              <span className="font-extrabold text-gray-800">₱{totalDevicePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+
+            <div className="border-t border-dashed border-gray-200 my-0.5"></div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Downpayment Needed:</span>
+              <span className="font-black text-xl text-[#bd00ff]">₱{downpayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
 
           <button 
             type="button"
             onClick={handlePlaceOrder}
-            className="w-full py-4 mt-4 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-xl rounded-xl border-none cursor-pointer shadow-[0_8px_20px_rgba(189,0,255,0.4)] hover:shadow-[0_8px_25px_rgba(189,0,255,0.6)] hover:-translate-y-1 transition-all"
+            className="w-full py-3.5 mt-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold text-base rounded-xl border-none cursor-pointer shadow-[0_4px_15px_rgba(189,0,255,0.3)] hover:shadow-[0_6px_20px_rgba(189,0,255,0.5)] hover:-translate-y-0.5 transition-all text-center uppercase tracking-wider"
           >
             Place Order
           </button>
