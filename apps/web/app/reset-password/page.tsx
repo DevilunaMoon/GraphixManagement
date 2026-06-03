@@ -18,7 +18,10 @@ function ResetPasswordContent() {
 
   if (!token) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#f4ebff] to-[#e4caff] flex items-center justify-center p-4 font-['Inter']">
+      <div 
+        className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
+      >
         <div className="bg-white rounded-[2rem] shadow-2xl p-8 max-w-md w-full text-center">
           <h2 className="text-2xl font-bold text-red-500 mb-4">Invalid Link</h2>
           <p className="text-gray-600 mb-6">This password reset link is invalid or missing the token.</p>
@@ -63,7 +66,10 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f4ebff] to-[#e4caff] flex items-center justify-center p-4 font-['Inter']">
+    <div 
+      className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
+    >
       <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md p-8 md:p-12 relative">
         <div className="flex justify-center mb-6">
           <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center shadow-inner">
