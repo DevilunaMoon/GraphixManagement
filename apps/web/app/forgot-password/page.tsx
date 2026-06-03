@@ -51,15 +51,15 @@ export default function ForgotPasswordPage() {
         <span className="inline sm:hidden">Login</span>
       </button>
 
-      <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md p-8 md:p-12 relative">
+      <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md p-8 md:p-12 relative border border-white/50">
         <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center shadow-inner">
-            <Mail className="text-[#8b00cc] w-10 h-10" />
+          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full flex items-center justify-center shadow-inner">
+            <Mail className="text-white w-10 h-10" />
           </div>
         </div>
 
         <h2 className="text-3xl font-extrabold text-[#111] mb-2 text-center tracking-tight">Forgot Password?</h2>
-        <p className="text-gray-500 text-center mb-8 font-medium">
+        <p className="text-gray-800 text-center mb-8 font-extrabold">
           Enter your email address and we'll send you a link to reset your password.
         </p>
 
@@ -71,13 +71,13 @@ export default function ForgotPasswordPage() {
 
         {success ? (
           <div className="animate-in fade-in flex flex-col items-center">
-            <div className="bg-green-50 text-green-600 p-4 rounded-xl mb-6 text-sm font-medium border border-green-100 text-center w-full flex flex-col items-center gap-2">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+            <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-6 text-sm font-bold border border-green-100 text-center w-full flex flex-col items-center gap-2">
+              <CheckCircle className="w-8 h-8 text-green-600" />
               <span>If an account exists with that email, we have sent a password reset link. Please check your inbox (and spam folder).</span>
             </div>
             <button
               onClick={() => router.push('/login')}
-              className="bg-gray-100 text-gray-700 w-full py-3 rounded-full font-bold text-lg hover:bg-gray-200 transition-all"
+              className="bg-white/80 text-gray-800 w-full py-3 rounded-full font-bold text-lg hover:bg-white transition-all shadow-md"
             >
               Return to Login
             </button>
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
                 <Mail size={22} />
               </div>
               <input 
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
                 placeholder="Email Address" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" 
+                className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
               />
             </div>
 

@@ -22,9 +22,9 @@ function ResetPasswordContent() {
         className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
       >
-        <div className="bg-white rounded-[2rem] shadow-2xl p-8 max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-red-500 mb-4">Invalid Link</h2>
-          <p className="text-gray-600 mb-6">This password reset link is invalid or missing the token.</p>
+        <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl p-8 max-w-md w-full text-center border border-white/50">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Link</h2>
+          <p className="text-gray-800 mb-6 font-extrabold">This password reset link is invalid or missing the token.</p>
           <button onClick={() => router.push('/login')} className="bg-[#8b00cc] text-white px-6 py-2 rounded-full font-bold">Go to Login</button>
         </div>
       </div>
@@ -70,15 +70,15 @@ function ResetPasswordContent() {
       className="min-h-screen w-full flex items-center justify-center p-4 sm:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
       style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
     >
-      <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md p-8 md:p-12 relative">
+      <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md p-8 md:p-12 relative border border-white/50">
         <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center shadow-inner">
-            <Lock className="text-[#8b00cc] w-10 h-10" />
+          <div className="w-20 h-20 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full flex items-center justify-center shadow-inner">
+            <Lock className="text-white w-10 h-10" />
           </div>
         </div>
 
         <h2 className="text-3xl font-extrabold text-[#111] mb-2 text-center tracking-tight">Reset Password</h2>
-        <p className="text-gray-500 text-center mb-8 font-medium">
+        <p className="text-gray-800 text-center mb-8 font-extrabold">
           Create a new, strong password for your account.
         </p>
 
@@ -90,13 +90,13 @@ function ResetPasswordContent() {
 
         {success ? (
           <div className="animate-in fade-in flex flex-col items-center">
-            <div className="bg-green-50 text-green-600 p-4 rounded-xl mb-6 text-sm font-medium border border-green-100 text-center w-full flex flex-col items-center gap-2">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+            <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-6 text-sm font-bold border border-green-100 text-center w-full flex flex-col items-center gap-2">
+              <CheckCircle className="w-8 h-8 text-green-600" />
               <span>Password successfully updated! You can now log in with your new password.</span>
             </div>
             <button
               onClick={() => router.push('/login')}
-              className="bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white w-full py-3 rounded-full font-bold text-lg hover:shadow-lg transition-all"
+              className="bg-white/80 text-gray-800 w-full py-3 rounded-full font-bold text-lg hover:bg-white transition-all shadow-md"
             >
               Continue to Login
             </button>
@@ -104,7 +104,7 @@ function ResetPasswordContent() {
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
                 <Lock size={22} />
               </div>
               <input 
@@ -113,7 +113,7 @@ function ResetPasswordContent() {
                 placeholder="New Password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" 
+                className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
               />
               <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
@@ -123,7 +123,7 @@ function ResetPasswordContent() {
             </div>
 
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
                 <Lock size={22} />
               </div>
               <input 
@@ -132,7 +132,7 @@ function ResetPasswordContent() {
                 placeholder="Confirm New Password" 
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 bg-gray-100 border border-gray-200 shadow-inner rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-gray-800 font-bold placeholder-gray-400" 
+                className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
               />
             </div>
 
