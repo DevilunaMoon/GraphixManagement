@@ -264,7 +264,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
       <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-6 w-full max-w-7xl mx-auto mb-10">
         <h2 className="text-2xl font-bold text-black m-0 border-none">Shop Our Products</h2>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-6">
           {isLoading ? (
             <div className="col-span-full py-16 flex flex-col items-center justify-center gap-4">
               <div className="w-12 h-12 border-4 border-purple-100 border-t-[#5c0099] rounded-full animate-spin"></div>
@@ -272,10 +272,10 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
             </div>
           ) : products.length > 0 ? (
             products.slice(0, 15).map(product => (
-              <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border-2 border-[#5c0099] group">
-                <div className="h-28 sm:h-36 w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+              <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group">
+                <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                   {product.image ? (
-                    <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="h-full w-auto object-contain mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
+                    <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                   ) : (
                     <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
                   )}
@@ -293,7 +293,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                     e.stopPropagation();
                     navigate(`/customer/product-info?id=${product.id}`);
                   }}
-                  className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm"
+                  className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
                 >
                   View Product
                 </button>
