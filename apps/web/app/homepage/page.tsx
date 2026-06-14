@@ -242,46 +242,50 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-6">
             {isLoadingProducts ? (
-              <div className="col-span-1 sm:col-span-2 md:grid-cols-3 lg:col-span-5 flex justify-center items-center py-20">
+              <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 flex justify-center items-center py-20">
                 <div className="w-12 h-12 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
               </div>
             ) : products.length > 0 ? products.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 flex flex-col hover:shadow-md transition-shadow"
+                onClick={() => router.push('/login')}
+                className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border md:border-gray-200 group"
               >
-                <div className="w-full aspect-square bg-[#f8f9fc] rounded-lg mb-3 overflow-hidden relative border border-gray-100 flex items-center justify-center p-3">
+                <div className="aspect-square w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain p-1 md:p-0 transition-transform duration-300 md:group-hover:scale-105"
                   />
                   {product.tag && (
-                    <div className="absolute top-3 right-3 bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm uppercase tracking-wide">
+                    <div className="absolute top-2 right-2 bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm uppercase tracking-wide">
                       {product.tag}
                     </div>
                   )}
                 </div>
-                <h4 className="font-bold text-gray-900 text-base mb-1 line-clamp-1">{product.name}</h4>
-                <p className="text-gray-500 font-medium text-xs mb-3 line-clamp-2 leading-relaxed">{product.description}</p>
-                <div className="mt-auto flex justify-between items-center">
+                <h4 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-2 h-8 sm:h-10 leading-snug">{product.name}</h4>
+                <div className="mt-auto flex justify-between items-center w-full">
                   <div className="flex flex-col">
                     {product.originalPrice && (
-                      <span className="text-xs text-gray-400 line-through font-bold">₱{product.originalPrice.toFixed(2)}</span>
+                      <span className="text-[10px] text-gray-400 line-through font-bold">₱{product.originalPrice.toFixed(2)}</span>
                     )}
-                    <span className="font-black text-xl text-[#8b00cc]">₱{product.price.toFixed(2)}</span>
+                    <span className="font-black text-sm sm:text-base text-[#8b00cc]">₱{product.price.toLocaleString()}</span>
                   </div>
                   <button
-                    className="w-10 h-10 rounded-lg bg-purple-50 text-[#8b00cc] flex justify-center items-center hover:bg-[#8b00cc] hover:text-white transition-all shadow-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push('/login');
+                    }}
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-50 text-[#8b00cc] flex justify-center items-center hover:bg-[#8b00cc] hover:text-white transition-all shadow-sm hidden md:flex"
                   >
                     <ShoppingBag size={18} className="stroke-[2.5]" />
                   </button>
                 </div>
               </div>
             )) : (
-              <div className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-5 flex flex-col items-center justify-center py-16 text-gray-500">
+              <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 flex flex-col items-center justify-center py-16 text-gray-500">
                 <ShoppingBag size={48} className="text-gray-300 mb-4" />
                 <h3 className="text-xl font-bold text-gray-700">No products available</h3>
                 <p>Check back later for new inventory.</p>
