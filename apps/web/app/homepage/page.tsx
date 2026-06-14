@@ -8,6 +8,7 @@ import {
   ShieldCheck, Clock,
   ArrowRight, Sparkles
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 export default function HomePage() {
@@ -153,26 +154,45 @@ export default function HomePage() {
             </button>
           </div>
 
-          <button className="md:hidden text-[#8b00cc] p-2 bg-white rounded-xl shadow-sm border border-gray-100" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+          <button 
+            className="md:hidden text-[#8b00cc] p-2 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center focus:outline-none" 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <motion.div
+              key={mobileMenuOpen ? "close" : "menu"}
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </motion.div>
           </button>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-gray-100 flex flex-col py-6 px-6 gap-2">
-            {['Home', 'About', 'Features'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} className="text-gray-800 font-bold text-xl py-3 border-b border-gray-100/50">
-                {item}
-              </a>
-            ))}
-            <button
-              onClick={() => { setMobileMenuOpen(false); router.push('/login'); }}
-              className="bg-[#8b00cc] text-white px-6 py-4 rounded-xl font-bold w-full mt-4 text-xl shadow-md"
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -10 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -10 }}
+              transition={{ duration: 0.25, ease: "easeInOut" }}
+              className="md:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-gray-100 flex flex-col py-6 px-6 gap-2 overflow-hidden"
             >
-              {isLoggedIn ? "Dashboard" : "Log in"}
-            </button>
-          </div>
-        )}
+              {['Home', 'About', 'Features'].map((item) => (
+                <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} className="text-gray-800 font-bold text-xl py-3 border-b border-gray-100/50">
+                  {item}
+                </a>
+              ))}
+              <button
+                onClick={() => { setMobileMenuOpen(false); router.push('/login'); }}
+                className="bg-[#8b00cc] text-white px-6 py-4 rounded-xl font-bold w-full mt-4 text-xl shadow-md"
+              >
+                {isLoggedIn ? "Dashboard" : "Log in"}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
