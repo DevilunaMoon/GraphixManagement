@@ -86,6 +86,7 @@ export async function POST(req: Request) {
     const repairCost = formData.get('repairCost') as string;
     const image = formData.get('image') as File | null;
     const userId = formData.get('userId') as string | null;
+    const repairHistory = formData.get('repairHistory') as string | null;
 
     if (!deviceName || !ownerName || !progress) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
         repairCost: repairCost || null,
         image: imageUrl,
         userId: userId || null,
+        repairHistory: repairHistory || null,
       } as any
     });
 

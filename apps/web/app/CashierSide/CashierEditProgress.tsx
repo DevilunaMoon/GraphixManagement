@@ -18,6 +18,7 @@ function CashierEditProgressContent() {
   const [cause, setCause] = useState('');
   const [technician, setTechnician] = useState('');
   const [repairCost, setRepairCost] = useState('');
+  const [repairHistory, setRepairHistory] = useState('');
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,6 +39,7 @@ function CashierEditProgressContent() {
             setCause(data.cause || '');
             setTechnician(data.technician || '');
             setRepairCost(data.repairCost || '');
+            setRepairHistory(data.repairHistory || '');
           }
         })
         .catch(console.error)
@@ -69,7 +71,8 @@ function CashierEditProgressContent() {
           progress,
           cause,
           technician,
-          repairCost
+          repairCost,
+          repairHistory
         })
       });
 
@@ -167,6 +170,17 @@ function CashierEditProgressContent() {
                 value={cause}
                 onChange={(e) => setCause(e.target.value)}
                 placeholder="e.g. Broken LCD" 
+                className="h-12 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="font-semibold text-lg text-black">Repair History</label>
+              <input 
+                type="text" 
+                value={repairHistory}
+                onChange={(e) => setRepairHistory(e.target.value)}
+                placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
                 className="h-12 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
               />
             </div>

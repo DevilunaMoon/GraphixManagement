@@ -102,8 +102,9 @@ model RepairRequest {
   technician String?
   repairCost String?
   image      String?
-  proofImage String?
-  status     String           @default("Active")
+  proofImage    String?
+  repairHistory String?
+  status        String           @default("Active")
   createdAt  DateTime         @default(now())
   updatedAt  DateTime         @updatedAt
   userId     String?

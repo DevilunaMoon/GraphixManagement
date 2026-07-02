@@ -153,6 +153,13 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Repair History</span>
+                      <div className="bg-white border border-gray-100 rounded-xl p-4 mt-1 shadow-sm">
+                        <span className="text-base text-gray-700 leading-relaxed">{device.repairHistory || 'No previous repair history recorded.'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned Technician</span>
                       <div className="flex items-center gap-3 mt-1">
                         <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">

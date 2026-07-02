@@ -16,6 +16,7 @@ interface DeviceProgress {
   cause: string | null;
   technician: string | null;
   repairCost: string | null;
+  repairHistory: string | null;
 }
 
 interface UserData {
@@ -50,6 +51,7 @@ export default function CashierMonitoring() {
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
   const [addRepairCost, setAddRepairCost] = useState('');
+  const [addRepairHistory, setAddRepairHistory] = useState('');
   const [addImage, setAddImage] = useState<File | null>(null);
   const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
@@ -68,6 +70,7 @@ export default function CashierMonitoring() {
   const [editCause, setEditCause] = useState('');
   const [editTechnician, setEditTechnician] = useState('');
   const [editRepairCost, setEditRepairCost] = useState('');
+  const [editRepairHistory, setEditRepairHistory] = useState('');
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -185,6 +188,7 @@ export default function CashierMonitoring() {
     setEditCause(device.cause || '');
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
+    setEditRepairHistory(device.repairHistory || '');
     setEditImage(null);
     setEditImagePreview(device.proofImage || null);
     setEditModalOpen(true);
@@ -224,6 +228,7 @@ export default function CashierMonitoring() {
     if (addCause) formData.append('cause', addCause);
     if (addTechnician) formData.append('technician', addTechnician);
     if (addRepairCost) formData.append('repairCost', addRepairCost);
+    if (addRepairHistory) formData.append('repairHistory', addRepairHistory);
     if (addImage) formData.append('image', addImage);
     if (addUserId) formData.append('userId', addUserId);
 
@@ -244,6 +249,7 @@ export default function CashierMonitoring() {
         setAddCause('');
         setAddTechnician('');
         setAddRepairCost('');
+        setAddRepairHistory('');
         setAddImage(null);
         setAddImagePreview(null);
         setAddCustomerEmail('');
@@ -286,9 +292,10 @@ export default function CashierMonitoring() {
 
     const formData = new FormData();
     formData.append('progress', editProgress);
-    if (editCause) formData.append('cause', editCause);
-    if (editTechnician) formData.append('technician', editTechnician);
-    if (editRepairCost) formData.append('repairCost', editRepairCost);
+    if (editCause !== null) formData.append('cause', editCause);
+    if (editTechnician !== null) formData.append('technician', editTechnician);
+    if (editRepairCost !== null) formData.append('repairCost', editRepairCost);
+    formData.append('repairHistory', editRepairHistory);
     if (editImage) formData.append('proofImage', editImage);
 
     try {
@@ -305,7 +312,8 @@ export default function CashierMonitoring() {
           cause: updatedDevice.cause,
           technician: updatedDevice.technician,
           repairCost: updatedDevice.repairCost,
-          proofImage: updatedDevice.proofImage
+          proofImage: updatedDevice.proofImage,
+          repairHistory: updatedDevice.repairHistory
         } : d));
         setEditModalOpen(false);
       } else {
@@ -624,6 +632,17 @@ export default function CashierMonitoring() {
                   />
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Repair History</label>
+                  <input 
+                    type="text" 
+                    value={editRepairHistory}
+                    onChange={(e) => setEditRepairHistory(e.target.value)}
+                    placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col gap-2">
                     <label className="font-semibold text-base text-black">Technician</label>
@@ -810,6 +829,17 @@ export default function CashierMonitoring() {
                     value={addCause}
                     onChange={(e) => setAddCause(e.target.value)}
                     placeholder="e.g. Broken LCD" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Repair History</label>
+                  <input 
+                    type="text" 
+                    value={addRepairHistory}
+                    onChange={(e) => setAddRepairHistory(e.target.value)}
+                    placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
                     className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
                   />
                 </div>
