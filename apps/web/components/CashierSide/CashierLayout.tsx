@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, Home, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp } from 'lucide-react';
+import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, Home, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function CashierLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +16,24 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [cashier, setCashier] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('/api/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && !data.error) {
+            setCashier(data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch cashier profile:', err);
+      }
+    };
+    fetchProfile();
+  }, [pathname]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -58,6 +76,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
         { href: '/cashier/records/downpayments', label: 'Downpayments' }
       ]
     },
+    { href: '/cashier/profile', label: 'My Profile', icon: User },
   ];
 
   return (
@@ -213,7 +232,22 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
             <h1 className="text-[20px] font-bold tracking-wide uppercase">Point of Sale System</h1>
             <p className="text-[13px] text-white/90 hidden sm:block mt-0.5">Welcome back. Here is your operational dashboard.</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            {/* Cashier Profile Quick Link */}
+            <button 
+              onClick={() => router.push('/cashier/profile')}
+              className="flex items-center gap-2 text-white hover:scale-105 transition-transform p-1.5 cursor-pointer bg-white/10 rounded-lg shadow-sm outline-none border border-white/20"
+              title="View Profile"
+            >
+              {cashier?.image ? (
+                <img src={cashier.image} alt="Avatar" className="w-[28px] h-[28px] rounded-full object-cover border border-white" />
+              ) : (
+                <div className="w-[28px] h-[28px] rounded-full bg-white/25 flex items-center justify-center text-xs font-bold text-white border border-white">
+                  {cashier?.name ? cashier.name.charAt(0).toUpperCase() : 'C'}
+                </div>
+              )}
+              <span className="text-sm font-semibold pr-1 hidden md:inline">{cashier?.name || 'Cashier'}</span>
+            </button>
              {/* Themes configuration button */}
             <button 
               onClick={() => router.push('/cashier/themes')}
