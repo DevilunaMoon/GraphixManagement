@@ -25,31 +25,34 @@ export default async function Page() {
     } as any);
   }
 
-  // Calculate System POS operational stats for display on cashier profile
+  // Calculate System POS operational stats for display on cashier profile in parallel
   let totalInStorePurchases = 0;
   let totalInStoreRevenue = 0;
   let activeRepairsCount = 0;
 
   try {
-    totalInStorePurchases = await prisma.purchase.count({
-      where: { source: 'In-Store' }
-    });
-
-    const revenueGroup = await prisma.purchase.aggregate({
-      where: { source: 'In-Store' },
-      _sum: {
-        amount: true
-      }
-    });
-    totalInStoreRevenue = revenueGroup._sum.amount || 0;
-
-    activeRepairsCount = await prisma.repairRequest.count({
-      where: {
-        progress: {
-          notIn: ['Completed', 'Cancelled', 'Picked Up', 'Ready for Pickup']
+    const [purchasesCount, revenueAgg, repairsCount] = await Promise.all([
+      prisma.purchase.count({
+        where: { source: 'In-Store' }
+      }),
+      prisma.purchase.aggregate({
+        where: { source: 'In-Store' },
+        _sum: {
+          amount: true
         }
-      }
-    });
+      }),
+      prisma.repairRequest.count({
+        where: {
+          progress: {
+            notIn: ['Completed', 'Cancelled', 'Picked Up', 'Ready for Pickup']
+          }
+        }
+      })
+    ]);
+
+    totalInStorePurchases = purchasesCount;
+    totalInStoreRevenue = revenueAgg._sum.amount || 0;
+    activeRepairsCount = repairsCount;
   } catch (error) {
     console.error("Error calculating cashier operational stats:", error);
   }
