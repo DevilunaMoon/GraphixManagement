@@ -119,6 +119,23 @@ export default function HomePage() {
     }
   ];
 
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f3f4f8] font-['Inter'] flex flex-col overflow-x-hidden selection:bg-[#bd00ff] selection:text-white">
       {/* Navbar */}
@@ -129,7 +146,7 @@ export default function HomePage() {
           }`}
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo(0, 0)}>
+          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div
               className={`w-12 h-12 rounded-xl flex justify-center items-center overflow-hidden border-2 ${isScrolled ? 'border-[#8b00cc]' : 'border-white/40'}`}
             >
@@ -142,7 +159,12 @@ export default function HomePage() {
 
           <div className="hidden md:flex items-center gap-10">
             {['Home', 'About', 'Features'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className={`font-bold relative ${isScrolled ? 'text-gray-600' : 'text-white hover:text-[#bd00ff]'} hover:text-[#bd00ff] transition-colors`}>
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                onClick={(e) => scrollToSection(e, item.toLowerCase())}
+                className={`font-bold relative ${isScrolled ? 'text-gray-600' : 'text-white hover:text-[#bd00ff]'} hover:text-[#bd00ff] transition-colors`}
+              >
                 {item}
               </a>
             ))}
@@ -180,7 +202,15 @@ export default function HomePage() {
               className="md:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-gray-100 flex flex-col py-6 px-6 gap-2 overflow-hidden"
             >
               {['Home', 'About', 'Features'].map((item) => (
-                <a key={item} href={`#${item.toLowerCase()}`} onClick={() => setMobileMenuOpen(false)} className="text-gray-800 font-bold text-xl py-3 border-b border-gray-100/50">
+                <a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  onClick={(e) => {
+                    setMobileMenuOpen(false);
+                    scrollToSection(e, item.toLowerCase());
+                  }}
+                  className="text-gray-800 font-bold text-xl py-3 border-b border-gray-100/50"
+                >
                   {item}
                 </a>
               ))}
@@ -412,9 +442,9 @@ export default function HomePage() {
           </div>
           <div className="flex flex-col gap-3 font-semibold">
             <h4 className="text-gray-900 font-bold text-lg mb-1">Platform</h4>
-            <a href="#home" className="hover:text-[#8b00cc] transition-colors">Home Selection</a>
-            <a href="#about" className="hover:text-[#8b00cc] transition-colors">Our Approach</a>
-            <a href="#features" className="hover:text-[#8b00cc] transition-colors">Feature Set</a>
+            <a href="#home" onClick={(e) => scrollToSection(e, 'home')} className="hover:text-[#8b00cc] transition-colors">Home Selection</a>
+            <a href="#about" onClick={(e) => scrollToSection(e, 'about')} className="hover:text-[#8b00cc] transition-colors">Our Approach</a>
+            <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="hover:text-[#8b00cc] transition-colors">Feature Set</a>
           </div>
           <div className="flex flex-col gap-3 font-semibold">
             <h4 className="text-gray-900 font-bold text-lg mb-1">General Terms & Conditions</h4>
