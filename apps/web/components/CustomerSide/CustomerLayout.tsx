@@ -421,7 +421,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setIsLogoutModalOpen(false)}>
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm border border-gray-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">
+              <div className="w-16 h-16 bg-purple-50 text-[#bd00ff] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">
                 <LogOut size={32} />
               </div>
               <h3 className="text-2xl font-black text-gray-900 mb-2">Confirm Log Out</h3>
@@ -442,7 +442,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                     await logoutUser();
                     window.location.href = '/login';
                   }}
-                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer border-none outline-none"
+                  className="flex-1 py-3 px-4 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer border-none outline-none"
                 >
                   Log Out
                 </button>
