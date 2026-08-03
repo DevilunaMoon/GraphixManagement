@@ -129,7 +129,6 @@ export default function AdminDashboard() {
               </div>
               <div className="text-right flex flex-col gap-1">
                 <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {dashboardData?.transactions?.online || 0}</p>
-                <p className="text-sm font-bold bg-orange-50 text-orange-600 px-3 py-1 rounded-lg">Physical: {dashboardData?.transactions?.physical || 0}</p>
               </div>
             </div>
           </div>
