@@ -17,6 +17,9 @@ interface Transaction {
   source?: string;
   status?: string;
   isExpired?: boolean;
+  downpaymentAmount?: number;
+  remainingBalance?: number;
+  isSettled?: boolean;
   user: {
     id: string;
     name: string | null;
@@ -138,6 +141,30 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
     }, 150);
   };
 
+  const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
+
+  const handleSettleBalance = async (txId: string) => {
+    try {
+      setSettlingTxId(txId);
+      const res = await fetch(`/api/purchases/${txId}/settle`, { method: 'PATCH' });
+      if (res.ok) {
+        setTransactions(prev => prev.map(t => t.id === txId ? { ...t, remainingBalance: 0, isSettled: true } : t));
+        if (selectedTransaction && selectedTransaction.id === txId) {
+          setSelectedTransaction({ ...selectedTransaction, remainingBalance: 0, isSettled: true });
+        }
+        alert('Remaining balance settled successfully!');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to settle balance');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to settle balance');
+    } finally {
+      setSettlingTxId(null);
+    }
+  };
+
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalSales, setTotalSales] = useState(0);
@@ -256,7 +283,11 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                 </tr>
               </thead>
               <tbody>
-                {paginatedTransactions.map((tx) => (
+                {paginatedTransactions.map((tx) => {
+                  const remBal = tx.remainingBalance !== undefined ? tx.remainingBalance : Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0));
+                  const isFullyPaid = tx.isSettled || remBal === 0;
+
+                  return (
                   <tr 
                     key={tx.id} 
                     onClick={() => setSelectedTransaction(tx)}
@@ -301,25 +332,29 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                     </td>
                     {type === "downpayment" && (
                       <td className="px-5 py-4">
-                        <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm ${tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {tx.source || 'Online'}
+                        <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm ${tx.source === 'POS' || tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {tx.source || 'POS'}
                         </span>
                       </td>
                     )}
-                    <td className="px-5 py-4 min-w-[150px]">
+                    <td className="px-5 py-4 min-w-[170px]">
                       {type === "downpayment" ? (
                         <div className="flex flex-col gap-1.5">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-bold">Paid:</span>
-                            <span className="font-extrabold text-green-600">₱{(tx.amount || 0).toLocaleString()}</span>
+                            <span className="text-gray-500 font-bold">Downpayment:</span>
+                            <span className="font-extrabold text-green-600">₱{(tx.downpaymentAmount || tx.amount || 0).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-1.5">
-                            <span className="text-gray-500 font-bold">Balance:</span>
-                            <span className="font-extrabold text-red-500">₱{Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)).toLocaleString()}</span>
+                            <span className="text-gray-500 font-bold">Rem. Balance:</span>
+                            <span className={`font-extrabold ${isFullyPaid ? 'text-green-600' : 'text-red-500'}`}>
+                              ₱{remBal.toLocaleString()}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center text-[11px] border-t border-gray-100 pt-1">
-                            <span className="text-gray-400 font-semibold">Monthly (12m):</span>
-                            <span className="font-extrabold text-blue-600">₱{(Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0)) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            <span className="text-gray-400 font-semibold">Status:</span>
+                            <span className={`font-extrabold px-2 py-0.5 rounded text-[10px] ${isFullyPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {isFullyPaid ? 'Fully Settled' : 'Active Downpayment'}
+                            </span>
                           </div>
                         </div>
                       ) : (
@@ -341,16 +376,29 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
-                        className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
-                        title="Download Receipt"
-                      >
-                        <Download size={18} />
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        {type === 'downpayment' && !isFullyPaid && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleSettleBalance(tx.id); }}
+                            disabled={settlingTxId === tx.id}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-lg transition-all border-none cursor-pointer shadow-sm"
+                            title="Settle Remaining Balance"
+                          >
+                            {settlingTxId === tx.id ? 'Settling...' : 'Settle'}
+                          </button>
+                        )}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
+                          className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
+                          title="Download Receipt"
+                        >
+                          <Download size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -516,6 +564,15 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2 mt-auto">
+                    {type === 'downpayment' && !selectedTransaction.isSettled && (selectedTransaction.remainingBalance ?? 1) > 0 && (
+                      <button
+                        onClick={() => handleSettleBalance(selectedTransaction.id)}
+                        disabled={settlingTxId === selectedTransaction.id}
+                        className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer border-none"
+                      >
+                        <CheckCircle2 size={18} /> {settlingTxId === selectedTransaction.id ? 'Settling Balance...' : 'Settle Remaining Balance'}
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDownloadPDF(selectedTransaction)}
                       className="w-full px-4 py-3 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"

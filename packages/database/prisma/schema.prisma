@@ -165,6 +165,10 @@ model Purchase {
   source      String  @default("Online")
   status      String  @default("Active")
 
+  downpaymentAmount Float?   @default(0)
+  remainingBalance  Float?   @default(0)
+  isSettled         Boolean  @default(true)
+
   referenceId     String? @unique
   paymentIntentId String? @unique
   paymentUrl      String?

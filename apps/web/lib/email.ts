@@ -122,3 +122,48 @@ export const sendPasswordResetEmail = async (to: string, token: string, baseUrl:
     return false;
   }
 };
+
+export const sendDownpaymentEmail = async (to: string, deviceName: string, downpaymentAmount: number, remainingBalance: number, isSettled: boolean) => {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.error("GMAIL_USER or GMAIL_APP_PASSWORD is not set");
+    return;
+  }
+
+  const subject = isSettled
+    ? `Graphix Management - Downpayment Balance Settled for ${deviceName}`
+    : `Graphix Management - Downpayment Received for ${deviceName}`;
+
+  const text = isSettled
+    ? `Hello,\n\nYour downpayment remaining balance of ₱${remainingBalance.toLocaleString()} for ${deviceName} has been fully settled in-store!\n\nThank you,\nGraphix Team`
+    : `Hello,\n\nWe have recorded your initial downpayment of ₱${downpaymentAmount.toLocaleString()} for ${deviceName}. Remaining balance: ₱${remainingBalance.toLocaleString()}.\n\nThank you,\nGraphix Team`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+      <h2 style="color: #bd00ff;">${isSettled ? 'Downpayment Fully Settled' : 'Downpayment Received'}</h2>
+      <p>Hello,</p>
+      <p>Device: <strong>${deviceName}</strong></p>
+      <p>Initial Downpayment: <strong>₱${downpaymentAmount.toLocaleString()}</strong></p>
+      <p>Remaining Balance: <strong>₱${remainingBalance.toLocaleString()}</strong></p>
+      <p>Status: <span style="color: ${isSettled ? '#10b981' : '#f59e0b'}; font-weight: bold;">${isSettled ? 'Fully Settled' : 'Active Downpayment'}</span></p>
+      <br/>
+      <p>Thank you,</p>
+      <p><strong>Graphix Management Team</strong></p>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: '"Graphix Management" <' + process.env.GMAIL_USER + '>',
+      to,
+      subject,
+      text,
+      html,
+    });
+    console.log("Downpayment email sent: %s", info.messageId);
+    return true;
+  } catch (error) {
+    console.error("Error sending downpayment email: ", error);
+    return false;
+  }
+};
+

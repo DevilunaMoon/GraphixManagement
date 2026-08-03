@@ -450,6 +450,12 @@ function CustomerProductInfoContent() {
             
             {/* Modal Body */}
             <div className="p-6 md:p-8 flex flex-col items-center bg-gray-50/50 gap-6 overflow-y-auto">
+              <div className="w-full bg-purple-50 border border-purple-100 p-3.5 rounded-2xl text-center">
+                <p className="text-[#bd00ff] font-extrabold text-xs m-0">
+                  📍 In-Store Notice: Downpayments are available when purchasing walk-in at our physical store POS terminal. Online checkouts process full payment.
+                </p>
+              </div>
+
               {(product?.asLowAs || product?.warranty || product?.downpayment) && (
                 <div className="w-full flex flex-col gap-3 p-5 bg-gradient-to-br from-cyan-50 to-teal-50/20 border border-cyan-100/80 rounded-2xl">
                   <h4 className="text-cyan-800 font-black m-0 text-xs uppercase tracking-wider text-center">Installment & Warranty Summary</h4>

@@ -9,17 +9,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { deviceId, amount, quantity, variations, cartItemIds, paymentType, phoneNumber, staffMessage } = await req.json();
+    const { 
+      deviceId, 
+      amount, 
+      quantity, 
+      variations, 
+      cartItemIds, 
+      paymentType, 
+      phoneNumber, 
+      staffMessage, 
+      source, 
+      downpaymentAmount, 
+      remainingBalance, 
+      isSettled, 
+      targetUserId 
+    } = await req.json();
 
-    if (phoneNumber) {
+    const actualUserId = targetUserId || session.userId;
+
+    if (phoneNumber && actualUserId) {
       await prisma.user.update({
-        where: { id: session.userId },
+        where: { id: actualUserId },
         data: { phone: phoneNumber }
       });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.userId },
+      where: { id: actualUserId },
       select: { name: true, email: true }
     });
     const userName = user?.name || user?.email || 'A customer';
@@ -99,7 +115,11 @@ export async function POST(req: Request) {
             amount: price * item.quantity,
             quantity: item.quantity,
             variations: item.variations,
-            paymentType: paymentType || 'Full'
+            paymentType: paymentType || 'Full',
+            source: source || 'Online',
+            downpaymentAmount: 0,
+            remainingBalance: 0,
+            isSettled: true
           };
         });
 
@@ -150,21 +170,43 @@ export async function POST(req: Request) {
         }
       });
 
+      const isDp = paymentType === 'Downpayment';
+      const dpAmt = isDp ? (downpaymentAmount || amount || 0) : (amount || device.price * reqQty);
+      const remBal = isDp ? (remainingBalance ?? Math.max(0, (device.price * reqQty) - dpAmt)) : 0;
+      const settled = isDp ? (isSettled ?? (remBal === 0)) : true;
+
       // Record the purchase
       return await tx.purchase.create({
         data: {
-          userId: session.userId,
+          userId: actualUserId,
           deviceId: deviceId,
-          amount: amount || 0,
+          amount: dpAmt,
           quantity: reqQty,
           variations: variations || null,
-          paymentType: paymentType || 'Full'
+          paymentType: paymentType || 'Full',
+          source: source || 'Online',
+          downpaymentAmount: isDp ? dpAmt : 0,
+          remainingBalance: remBal,
+          isSettled: settled
         }
       });
     });
 
     const singlePTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
     await notifyCashiers(singlePTypeLabel);
+
+    if (actualUserId !== session.userId) {
+      // If cashier created downpayment for a walk-in customer, create a notification for that customer
+      const deviceObj = await prisma.device.findUnique({ where: { id: deviceId } });
+      await prisma.notification.create({
+        data: {
+          userId: actualUserId,
+          title: 'In-Store POS Downpayment Created',
+          message: `Downpayment of ₱${(purchase.downpaymentAmount || 0).toLocaleString()} recorded for "${deviceObj?.name}". Remaining balance: ₱${(purchase.remainingBalance || 0).toLocaleString()}.`,
+          type: 'PAYMENT'
+        }
+      });
+    }
 
     return NextResponse.json(purchase, { status: 201 });
   } catch (error: any) {
