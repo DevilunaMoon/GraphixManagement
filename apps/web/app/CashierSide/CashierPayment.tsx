@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, CheckCircle2, AlertCircle, ShoppingBag, CreditCard, Receipt } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, AlertCircle, AlertTriangle, CreditCard, Receipt, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface CartItem {
@@ -24,6 +24,7 @@ export default function CashierPayment() {
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [terminateModalOpen, setTerminateModalOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -48,6 +49,11 @@ export default function CashierPayment() {
 
   const remainingBalance = paymentType === 'Downpayment' ? Math.max(0, totalAmount - (downpaymentAmount || 0)) : 0;
   const isSettled = paymentType === 'Full' || remainingBalance === 0;
+
+  const handleTerminate = () => {
+    sessionStorage.removeItem('pos_cart');
+    router.push('/cashier/dashboard');
+  };
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,14 +121,15 @@ export default function CashierPayment() {
 
   return (
     <main className="flex-1 flex justify-center items-start p-4 md:p-8 mt-4">
-      <div className="w-full max-w-[650px] border-2 border-[#bd00ff] rounded-2xl p-6 md:p-10 bg-white flex flex-col gap-6 shadow-lg">
+      <div className="w-full max-w-[650px] border-2 border-[#bd00ff] rounded-2xl p-6 md:p-10 bg-white flex flex-col gap-6 shadow-lg relative">
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-purple-100 pb-4">
           <button 
             type="button"
-            onClick={() => router.back()} 
+            onClick={() => setTerminateModalOpen(true)} 
             className="text-black hover:text-[#bd00ff] transition-colors bg-transparent border-none cursor-pointer p-1 rounded-lg hover:bg-purple-50"
+            title="Back / Cancel Transaction"
           >
             <ChevronLeft size={32} />
           </button>
@@ -287,6 +294,47 @@ export default function CashierPayment() {
         </form>
 
       </div>
+
+      {/* Terminate Transaction Reminder Modal */}
+      {terminateModalOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setTerminateModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 flex flex-col items-center text-center gap-5 border border-purple-100 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-inner">
+              <AlertTriangle size={36} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <h3 className="text-2xl font-black text-gray-900 m-0">Terminate Transaction?</h3>
+              <p className="text-sm text-gray-600 leading-relaxed m-0">
+                Are you sure you want to terminate this transaction? Any entered details will be discarded and the transaction will be cancelled completely.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full pt-2">
+              <button
+                type="button"
+                onClick={() => setTerminateModalOpen(false)}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-xl transition-all border-none cursor-pointer text-sm"
+              >
+                No, Continue
+              </button>
+              <button
+                type="button"
+                onClick={handleTerminate}
+                className="flex-1 py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl transition-all shadow-md border-none cursor-pointer text-sm"
+              >
+                Yes, Terminate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
