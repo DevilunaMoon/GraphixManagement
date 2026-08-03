@@ -279,8 +279,14 @@ export default function CashierDashboard() {
           </div>
           <div className="p-4">
             <button 
-              onClick={() => navigate('/cashier/payment')}
-              className="w-full py-3 bg-gradient-to-b from-[#BF00FF] to-[#4B0082] text-white rounded-lg text-lg font-semibold hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => {
+                sessionStorage.setItem('pos_cart', JSON.stringify({
+                  items: cartItemsArray,
+                  total: cartTotal
+                }));
+                navigate('/cashier/payment');
+              }}
+              className="w-full py-3 bg-gradient-to-b from-[#BF00FF] to-[#4B0082] text-white rounded-lg text-lg font-semibold hover:opacity-90 transition-opacity shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               disabled={cartItemsArray.length === 0}
             >
               Confirm

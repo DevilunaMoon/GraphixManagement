@@ -607,27 +607,20 @@ export default function CashierDevices() {
                       <span className="bg-gray-200 px-3 py-1.5 rounded border border-gray-300 font-extrabold tracking-wider shadow-sm text-[0.95rem]">#{device.id ? String(device.id).slice(-6).toUpperCase() : 'UNKNOWN'}</span>
                     </td>
                     <td className="p-4 align-middle">
-                      <div className="flex gap-2 justify-center items-center">
-                        <button
-                          onClick={() => openPosModal(device)}
-                          className="px-3 py-2 rounded-xl flex justify-center items-center gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-105 transition-all border-none cursor-pointer shadow-md font-extrabold text-xs"
-                          title="Record In-Store POS Sale / Downpayment"
-                        >
-                          <ShoppingCart size={16} /> POS Sale
-                        </button>
+                      <div className="flex gap-4 justify-center items-center">
                         <button
                           onClick={() => openEditModal(device)}
-                          className="w-10 h-10 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all border-none cursor-pointer shadow-md"
+                          className="w-11 h-11 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all border-none cursor-pointer shadow-md"
                           title="Edit Device"
                         >
-                          <Pencil size={16} />
+                          <Pencil size={18} />
                         </button>
                         <button
                           onClick={() => openDeleteModal(device)}
-                          className="w-10 h-10 rounded-full flex justify-center items-center bg-red-600 text-white hover:bg-red-700 hover:scale-110 transition-all border-none cursor-pointer shadow-md"
+                          className="w-11 h-11 rounded-full flex justify-center items-center bg-red-600 text-white hover:bg-red-700 hover:scale-110 transition-all border-none cursor-pointer shadow-md"
                           title="Delete Device"
                         >
-                          <Trash size={16} />
+                          <Trash size={18} />
                         </button>
                       </div>
                     </td>
@@ -1399,177 +1392,6 @@ export default function CashierDevices() {
         </div>
       )}
 
-      {/* POS In-Store Sale Checkout Modal */}
-      {posModalOpen && posDevice && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setPosModalOpen(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-6 bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="w-7 h-7 text-purple-200" />
-                <div>
-                  <h3 className="font-extrabold text-xl m-0 text-white">In-Store POS Checkout</h3>
-                  <p className="text-xs text-purple-200 m-0">Process physical store payment or initial downpayment</p>
-                </div>
-              </div>
-              <button className="text-white/80 hover:text-white transition-colors bg-white/10 hover:bg-white/20 p-2 rounded-full border-none cursor-pointer" onClick={() => setPosModalOpen(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 flex flex-col gap-6 max-h-[80vh] overflow-y-auto">
-              {/* Product summary card */}
-              <div className="flex items-center gap-4 bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
-                {posDevice.image ? (
-                  <img src={posDevice.image} alt={posDevice.name} className="w-16 h-16 rounded-xl object-cover bg-white border border-gray-200 shadow-sm" />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 font-bold">No Image</div>
-                )}
-                <div className="flex-1">
-                  <h4 className="font-extrabold text-gray-900 text-lg m-0">{posDevice.name}</h4>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-600 font-semibold">
-                    <span>Price: <strong className="text-[#bd00ff]">₱{posDevice.price.toLocaleString()}</strong></span>
-                    <span>Stock: <strong className={posDevice.stock === 0 ? 'text-red-500' : 'text-emerald-600'}>{posDevice.stock} units</strong></span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Type Selection */}
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-extrabold text-gray-700">Payment Option</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPosPaymentType('Full')}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${posPaymentType === 'Full' ? 'border-[#bd00ff] bg-purple-50/50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                  >
-                    <span className="font-extrabold text-sm text-gray-900">💳 Full Payment</span>
-                    <span className="text-xs text-gray-500">Pay total device cost at store register</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPosPaymentType('Downpayment')}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${posPaymentType === 'Downpayment' ? 'border-[#bd00ff] bg-purple-50/50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                  >
-                    <span className="font-extrabold text-sm text-gray-900">📝 Downpayment (In-Store)</span>
-                    <span className="text-xs text-gray-500">Initial deposit + balance tracking</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quantity */}
-              <div className="flex justify-between items-center border-t border-b border-gray-100 py-3">
-                <span className="font-extrabold text-gray-700 text-sm">Quantity</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPosQuantity(q => Math.max(1, q - 1))}
-                    className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-700 flex items-center justify-center border-none cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="font-extrabold text-base text-gray-900 w-6 text-center">{posQuantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => setPosQuantity(q => Math.min(posDevice.stock, q + 1))}
-                    className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 font-extrabold text-gray-700 flex items-center justify-center border-none cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Downpayment Specific Field */}
-              {posPaymentType === 'Downpayment' && (
-                <div className="flex flex-col gap-2 bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
-                  <label className="text-sm font-extrabold text-amber-900">Initial Downpayment Amount (₱)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={posDevice.price * posQuantity}
-                    value={posDownpaymentAmt}
-                    onChange={(e) => setPosDownpaymentAmt(Number(e.target.value))}
-                    className="w-full h-12 px-4 bg-white border-2 border-amber-300 rounded-xl font-bold text-gray-900 text-lg outline-none focus:border-[#bd00ff]"
-                    placeholder="Enter downpayment amount..."
-                  />
-                  <span className="text-xs text-amber-700 font-semibold">Minimum suggested store deposit: ₱{(posDevice.downpayment || Math.round(posDevice.price * 0.3)).toLocaleString()}</span>
-                </div>
-              )}
-
-              {/* Customer Contact Number / Phone */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-600">Customer Phone Number (Optional for SMS Alerts)</label>
-                <input
-                  type="text"
-                  value={posCustomerPhone}
-                  onChange={(e) => setPosCustomerPhone(e.target.value)}
-                  placeholder="e.g. 09171234567"
-                  className="w-full h-11 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-[#bd00ff]"
-                />
-              </div>
-
-              {/* Financial Calculation Summary */}
-              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col gap-2">
-                <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
-                  <span>Total Product Price:</span>
-                  <span className="font-bold text-gray-900">₱{(posDevice.price * posQuantity).toLocaleString()}</span>
-                </div>
-
-                {posPaymentType === 'Downpayment' && (
-                  <>
-                    <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
-                      <span>Initial Store Payment:</span>
-                      <span className="font-extrabold text-emerald-600">₱{(posDownpaymentAmt || 0).toLocaleString()}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm font-bold text-gray-900 border-t border-gray-200 pt-2">
-                      <span>Remaining Balance:</span>
-                      <span className="font-black text-red-500 text-base">₱{Math.max(0, (posDevice.price * posQuantity) - (posDownpaymentAmt || 0)).toLocaleString()}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-xs text-gray-500 pt-1">
-                      <span>Monthly Installment Estimate (12 mos):</span>
-                      <span className="font-extrabold text-blue-600">₱{(Math.max(0, (posDevice.price * posQuantity) - (posDownpaymentAmt || 0)) / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo</span>
-                    </div>
-                  </>
-                )}
-
-                {posPaymentType === 'Full' && (
-                  <div className="flex justify-between items-center text-base font-black text-gray-900 border-t border-gray-200 pt-2">
-                    <span>Total Tendered:</span>
-                    <span className="font-black text-[#bd00ff] text-xl">₱{(posDevice.price * posQuantity).toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPosModalOpen(false)}
-                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all border-none cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePosSubmit}
-                  disabled={posSubmitting || (posPaymentType === 'Downpayment' && (!posDownpaymentAmt || posDownpaymentAmt <= 0))}
-                  className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl transition-all shadow-md border-none cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {posSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <ReceiptText size={18} /> Complete POS Sale
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
