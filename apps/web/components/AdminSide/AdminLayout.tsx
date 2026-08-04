@@ -28,6 +28,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isLogoutModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isLogoutModalOpen]);
   const router = useRouter();
   const pathname = usePathname();
   const { styles, bgClass } = useTheme();

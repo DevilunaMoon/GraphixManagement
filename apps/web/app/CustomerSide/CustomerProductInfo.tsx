@@ -29,6 +29,17 @@ function CustomerProductInfoContent() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  useEffect(() => {
+    if (isDownpaymentModalOpen || showSuccessModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isDownpaymentModalOpen, showSuccessModal]);
+
   const handleAddToCart = async () => {
     if (!product || currentStock === 0 || !hasSelectedAllSections) return;
     setIsAddingToCart(true);

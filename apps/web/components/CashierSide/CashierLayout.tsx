@@ -16,6 +16,17 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (isLogoutModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isLogoutModalOpen]);
   const [cashier, setCashier] = useState<any>(null);
 
   useEffect(() => {

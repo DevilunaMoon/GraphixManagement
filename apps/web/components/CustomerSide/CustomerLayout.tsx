@@ -14,12 +14,9 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const router = useRouter();
-  const navigate = router.push;
-  const pathname = usePathname();
-  const { styles, bgClass } = useTheme();
-
-  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+  const [selectedPolicyTitle, setSelectedPolicyTitle] = useState('');
+  const [selectedPolicyContent, setSelectedPolicyContent] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -27,10 +24,24 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const [unreadCount, setUnreadCount] = useState(0);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [policies, setPolicies] = useState<any[]>([]);
-  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
-  const [selectedPolicyTitle, setSelectedPolicyTitle] = useState('');
-  const [selectedPolicyContent, setSelectedPolicyContent] = useState('');
+  const router = useRouter();
+  const navigate = router.push;
+  const pathname = usePathname();
+  const { styles, bgClass } = useTheme();
+
+  const searchContainerRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isLogoutModalOpen || isPolicyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isLogoutModalOpen, isPolicyModalOpen]);
 
   const fetchCartCount = () => {
     fetch('/api/cart')

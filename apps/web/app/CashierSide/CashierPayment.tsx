@@ -27,6 +27,17 @@ export default function CashierPayment() {
   const [terminateModalOpen, setTerminateModalOpen] = useState(false);
 
   useEffect(() => {
+    if (terminateModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [terminateModalOpen]);
+
+  useEffect(() => {
     try {
       const storedCart = sessionStorage.getItem('pos_cart');
       if (storedCart) {
