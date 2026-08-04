@@ -32,11 +32,28 @@ function CustomerProductInfoContent() {
   useEffect(() => {
     if (isDownpaymentModalOpen || showSuccessModal) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        if (!el.closest('.fixed.inset-0')) {
+          (el as HTMLElement).style.overflow = 'hidden';
+        }
+      });
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     };
   }, [isDownpaymentModalOpen, showSuccessModal]);
 
@@ -181,7 +198,7 @@ function CustomerProductInfoContent() {
   }
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto bg-[#f8fafc]">
+    <div className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center bg-[#f8fafc]">
       <div className="w-full max-w-5xl flex flex-col gap-8">
         
         {/* Header Options */}
@@ -440,8 +457,8 @@ function CustomerProductInfoContent() {
 
       {/* Downpayment QR Modal */}
       {isDownpaymentModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/45 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-md flex flex-col shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/45 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain" onWheel={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md flex flex-col shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-hidden overscroll-contain">
             
             {/* Modal Header */}
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-cyan-50/30 rounded-t-[2.5rem] shrink-0">
@@ -460,7 +477,7 @@ function CustomerProductInfoContent() {
             </div>
             
             {/* Modal Body */}
-            <div className="p-6 md:p-8 flex flex-col items-center bg-gray-50/50 gap-6 overflow-y-auto">
+            <div className="p-6 md:p-8 flex flex-col items-center bg-gray-50/50 gap-6 overflow-y-auto overscroll-contain">
               <div className="w-full bg-purple-50 border border-purple-100 p-3.5 rounded-2xl text-center">
                 <p className="text-[#bd00ff] font-extrabold text-xs m-0">
                   📍 In-Store Notice: Downpayments are available when purchasing walk-in at our physical store POS terminal. Online checkouts process full payment.
@@ -520,8 +537,8 @@ function CustomerProductInfoContent() {
 
       {/* Add to Cart Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 border border-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain" onWheel={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95 duration-200 border border-gray-100 overscroll-contain">
             <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-2 border border-emerald-100">
               <CheckCircle size={44} className="text-emerald-500" strokeWidth={2.5} />
             </div>
@@ -530,7 +547,7 @@ function CustomerProductInfoContent() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 

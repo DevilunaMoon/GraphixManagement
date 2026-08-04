@@ -35,11 +35,28 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   useEffect(() => {
     if (isLogoutModalOpen || isPolicyModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        if (!el.closest('.fixed.inset-0')) {
+          (el as HTMLElement).style.overflow = 'hidden';
+        }
+      });
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     };
   }, [isLogoutModalOpen, isPolicyModalOpen]);
 
@@ -408,8 +425,8 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
 
       {/* Policy Modal */}
       {isPolicyModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-3xl shadow-2xl flex flex-col relative overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overscroll-contain" onWheel={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-3xl max-h-[85vh] rounded-3xl shadow-2xl flex flex-col relative overflow-hidden animate-in fade-in zoom-in duration-300 overscroll-contain">
             {/* Header */}
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h2 className="text-2xl font-bold text-gray-900 m-0 border-none">{selectedPolicyTitle}</h2>
@@ -421,7 +438,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
               </button>
             </div>
             {/* Content */}
-            <div className="p-8 overflow-y-auto font-medium text-gray-700 leading-relaxed whitespace-pre-wrap">
+            <div className="p-8 overflow-y-auto overscroll-contain font-medium text-gray-700 leading-relaxed whitespace-pre-wrap">
               {selectedPolicyContent}
             </div>
           </div>
@@ -429,7 +446,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       )}
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setIsLogoutModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200 overscroll-contain" onWheel={(e) => e.stopPropagation()} onClick={() => setIsLogoutModalOpen(false)}>
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm border border-gray-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-purple-50 text-[#bd00ff] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">

@@ -32,11 +32,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (isLogoutModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        if (!el.closest('.fixed.inset-0')) {
+          (el as HTMLElement).style.overflow = 'hidden';
+        }
+      });
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     };
   }, [isLogoutModalOpen]);
   const router = useRouter();
@@ -227,7 +244,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setIsLogoutModalOpen(false)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200 overscroll-contain" onWheel={(e) => e.stopPropagation()} onClick={() => setIsLogoutModalOpen(false)}>
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm border border-gray-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-purple-50 text-[#bd00ff] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">

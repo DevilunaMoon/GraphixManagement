@@ -29,11 +29,28 @@ export default function CashierPayment() {
   useEffect(() => {
     if (terminateModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        if (!el.closest('.fixed.inset-0')) {
+          (el as HTMLElement).style.overflow = 'hidden';
+        }
+      });
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+      scrollables.forEach((el) => {
+        (el as HTMLElement).style.overflow = '';
+      });
     };
   }, [terminateModalOpen]);
 
@@ -309,7 +326,8 @@ export default function CashierPayment() {
       {/* Terminate Transaction Reminder Modal */}
       {terminateModalOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overscroll-contain"
+          onWheel={(e) => e.stopPropagation()}
           onClick={() => setTerminateModalOpen(false)}
         >
           <div 
