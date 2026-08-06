@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, Save, Info, ShoppingBag, Store, CreditCard, 
   Facebook, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle, RefreshCw,
-  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon
+  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon, Zap
 } from 'lucide-react';
 
 interface FacebookBranch {
@@ -28,6 +28,57 @@ const INITIAL_BRANCHES: FacebookBranch[] = [
     image: '/Images/storefront-bg.jpg'
   }
 ];
+
+/**
+ * Client-side image compression helper using HTML Canvas
+ * Resizes large images to max 1200px width and compresses JPEG quality to 75%
+ * drastically reducing upload size before sending to server/Cloudinary.
+ */
+const compressImageFile = (file: File, maxWidth = 1200, quality = 0.75): Promise<Blob> => {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith('image/')) {
+      return resolve(file);
+    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(file);
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              resolve(blob);
+            } else {
+              resolve(file); // fallback to original if compression didn't save size
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
 
 export default function AdminAboutEditor() {
   const [mainText, setMainText] = useState(DEFAULT_MAIN);
@@ -119,17 +170,22 @@ export default function AdminAboutEditor() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const file = files[0];
-    if (!file) return;
+    const originalFile = files[0];
+    if (!originalFile) return;
 
     setUploadingBranchId(branchId);
     setToastMessage(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'facebook-banners');
-
     try {
+      // Compress image client-side first
+      const compressedBlob = await compressImageFile(originalFile);
+      const originalSizeKB = Math.round(originalFile.size / 1024);
+      const compressedSizeKB = Math.round(compressedBlob.size / 1024);
+
+      const formData = new FormData();
+      formData.append('file', compressedBlob, originalFile.name);
+      formData.append('folder', 'facebook-banners');
+
       const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -139,7 +195,10 @@ export default function AdminAboutEditor() {
         const data = await res.json();
         if (data.url) {
           handleUpdateBranch(branchId, 'image', data.url);
-          setToastMessage({ type: 'success', text: 'Image uploaded successfully!' });
+          setToastMessage({ 
+            type: 'success', 
+            text: `Image uploaded & compressed! (Reduced from ${originalSizeKB} KB to ${compressedSizeKB} KB)` 
+          });
         }
       } else {
         const errData = await res.json();
@@ -201,7 +260,7 @@ export default function AdminAboutEditor() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 m-0 tracking-tight">About Page Editor</h1>
-              <p className="text-gray-500 text-sm font-medium m-0 mt-1">Customize website text, policies, and upload banner images for Facebook store branches.</p>
+              <p className="text-gray-500 text-sm font-medium m-0 mt-1">Customize website text, policies, and upload auto-compressed banner images for Facebook store branches.</p>
             </div>
           </div>
 
@@ -347,8 +406,10 @@ export default function AdminAboutEditor() {
                     {/* Banner Image Upload & Direct Input */}
                     <div className="flex flex-col gap-2">
                       <label className="text-[11px] font-bold text-gray-600 uppercase flex items-center justify-between">
-                        <span>Banner Image Upload</span>
-                        <span className="text-[10px] text-gray-400 font-normal">Click button to choose file</span>
+                        <span className="flex items-center gap-1">
+                          Banner Image Upload <Zap size={13} className="text-amber-500 fill-amber-500" />
+                        </span>
+                        <span className="text-[10px] text-emerald-600 font-bold">Auto-Compressed</span>
                       </label>
 
                       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -356,7 +417,7 @@ export default function AdminAboutEditor() {
                           {uploadingBranchId === branch.id ? (
                             <>
                               <Loader2 size={16} className="animate-spin" />
-                              <span>Uploading...</span>
+                              <span>Compressing & Uploading...</span>
                             </>
                           ) : (
                             <>

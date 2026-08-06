@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiOptions } from 'cloudinary';
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -6,12 +6,22 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const uploadToCloudinary = async (buffer: Buffer, folder: string): Promise<string> => {
+export const uploadToCloudinary = async (
+  buffer: Buffer, 
+  folder: string,
+  extraOptions?: UploadApiOptions
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
         resource_type: 'auto',
+        // Auto compress quality and format, limit max dimensions to save storage
+        transformation: [
+          { width: 1200, crop: 'limit' },
+          { quality: 'auto:eco', fetch_format: 'auto' }
+        ],
+        ...extraOptions,
       },
       (error, result) => {
         if (error) {
