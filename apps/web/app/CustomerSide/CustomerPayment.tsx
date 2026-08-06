@@ -105,8 +105,14 @@ function CustomerPaymentContent() {
 
   if (showGcashQr) {
     return (
-      <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col items-center gap-6">
+      <div 
+        className="min-h-screen relative flex justify-center items-center p-4 sm:p-6 font-['Inter'] bg-cover bg-center bg-no-repeat overflow-y-auto"
+        style={{ backgroundImage: "url('/Images/storefront-bg.jpg')" }}
+      >
+        {/* Sleek semi-transparent dark frosted overlay */}
+        <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-0"></div>
+
+        <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col items-center gap-6 relative z-10 my-auto">
           
           {/* Header */}
           <div className="w-full flex items-center justify-between border-b border-gray-100 pb-4">
@@ -179,8 +185,14 @@ function CustomerPaymentContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col gap-6">
+    <div 
+      className="min-h-screen relative flex justify-center items-center p-4 sm:p-6 font-['Inter'] bg-cover bg-center bg-no-repeat overflow-y-auto"
+      style={{ backgroundImage: "url('/Images/storefront-bg.jpg')" }}
+    >
+      {/* Sleek semi-transparent dark frosted overlay */}
+      <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-0"></div>
+
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col gap-6 relative z-10 my-auto">
 
         {/* Header */}
         <div className="flex items-center gap-3 pb-4 border-b border-gray-100">

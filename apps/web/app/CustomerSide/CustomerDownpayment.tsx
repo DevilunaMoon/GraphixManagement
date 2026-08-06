@@ -7,8 +7,14 @@ export default function CustomerDownpayment() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#f9fafb] to-[#f3f4f6] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
-      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col items-center text-center gap-6">
+    <div 
+      className="min-h-screen relative flex justify-center items-center p-4 sm:p-6 font-['Inter'] bg-cover bg-center bg-no-repeat overflow-y-auto"
+      style={{ backgroundImage: "url('/Images/storefront-bg.jpg')" }}
+    >
+      {/* Sleek semi-transparent dark frosted overlay */}
+      <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-0"></div>
+
+      <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-100 flex flex-col items-center text-center gap-6 relative z-10 my-auto">
         <div className="w-16 h-16 bg-purple-50 rounded-2xl flex items-center justify-center text-[#bd00ff]">
           <Store size={36} />
         </div>
