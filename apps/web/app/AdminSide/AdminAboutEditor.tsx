@@ -449,19 +449,6 @@ export default function AdminAboutEditor() {
                         )}
                       </div>
 
-                      {/* Optional direct URL input */}
-                      <div className="relative mt-1">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                          <LinkIcon size={14} />
-                        </div>
-                        <input
-                          type="text"
-                          value={branch.image}
-                          onChange={(e) => handleUpdateBranch(branch.id, 'image', e.target.value)}
-                          className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-[11px] font-mono text-gray-700"
-                          placeholder="Or paste image URL (e.g. /Images/storefront-bg.jpg)"
-                        />
-                      </div>
                     </div>
                   </div>
                 ))}
