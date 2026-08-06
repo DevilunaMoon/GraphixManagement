@@ -3,8 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, Save, Info, ShoppingBag, Store, CreditCard, 
-  Facebook, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle, RefreshCw 
+  Facebook, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle, RefreshCw,
+  Plus, Trash2, Building2
 } from 'lucide-react';
+
+interface FacebookBranch {
+  id: string;
+  title: string;
+  link: string;
+  image: string;
+}
 
 const DEFAULT_MAIN = `This website revolutionizes the traditional e-commerce model by seamlessly integrating online retail with a transparent, service-based repair platform. Unlike standard online stores that simply sell products, this site offers a unique device monitoring feature that empowers customers by providing real-time, visual updates on their phone's repair progress. This level of transparency bridges the trust gap often found in service industries, allowing users to see their device being worked on from anywhere. By combining the convenience of purchasing accessories or repair parts with the peace of mind that comes from complete visibility into the service process, this site creates a customer-centric ecosystem that prioritizes both convenience and trust in the tech repair space.`;
 
@@ -12,17 +20,20 @@ const DEFAULT_PURCHASE = `Customers can purchase items directly through this web
 
 const DEFAULT_DOWNPAYMENT = `Online downpayments are not accepted on this website. Downpayment features and QR details displayed on product pages are strictly provided to show downpayment information and requirements for customers planning to visit our physical store. Actual downpayment processing is available exclusively for in-store walk-in transactions at our physical store POS terminal.`;
 
-const DEFAULT_FB_LINK = `https://www.facebook.com`;
-const DEFAULT_FB_IMAGE = `/Images/storefront-bg.jpg`;
-const DEFAULT_FB_TITLE = `Follow Us on Facebook`;
+const INITIAL_BRANCHES: FacebookBranch[] = [
+  {
+    id: 'branch-1',
+    title: 'Graphix Main Store',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
+  }
+];
 
 export default function AdminAboutEditor() {
   const [mainText, setMainText] = useState(DEFAULT_MAIN);
   const [purchasePolicy, setPurchasePolicy] = useState(DEFAULT_PURCHASE);
   const [downpaymentPolicy, setDownpaymentPolicy] = useState(DEFAULT_DOWNPAYMENT);
-  const [facebookLink, setFacebookLink] = useState(DEFAULT_FB_LINK);
-  const [facebookImage, setFacebookImage] = useState(DEFAULT_FB_IMAGE);
-  const [facebookTitle, setFacebookTitle] = useState(DEFAULT_FB_TITLE);
+  const [branches, setBranches] = useState<FacebookBranch[]>(INITIAL_BRANCHES);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,16 +53,36 @@ export default function AdminAboutEditor() {
           const mainRec = data.find((p: any) => p.type === 'ABOUT_MAIN');
           const purchRec = data.find((p: any) => p.type === 'ABOUT_PURCHASE');
           const downRec = data.find((p: any) => p.type === 'ABOUT_DOWNPAYMENT');
-          const fbLinkRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_LINK');
-          const fbImgRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_IMAGE');
-          const fbTitleRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_TITLE');
+          const branchesRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_BRANCHES');
 
           if (mainRec?.content) setMainText(mainRec.content);
           if (purchRec?.content) setPurchasePolicy(purchRec.content);
           if (downRec?.content) setDownpaymentPolicy(downRec.content);
-          if (fbLinkRec?.content) setFacebookLink(fbLinkRec.content);
-          if (fbImgRec?.content) setFacebookImage(fbImgRec.content);
-          if (fbTitleRec?.content) setFacebookTitle(fbTitleRec.content);
+
+          if (branchesRec?.content) {
+            try {
+              const parsed = JSON.parse(branchesRec.content);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                setBranches(parsed);
+              }
+            } catch (e) {
+              console.error('Error parsing branches JSON:', e);
+            }
+          } else {
+            // Check legacy fields
+            const fbLinkRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_LINK');
+            const fbImgRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_IMAGE');
+            const fbTitleRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_TITLE');
+
+            if (fbLinkRec || fbImgRec || fbTitleRec) {
+              setBranches([{
+                id: 'branch-legacy',
+                title: fbTitleRec?.content || 'Graphix Main Store',
+                link: fbLinkRec?.content || 'https://www.facebook.com',
+                image: fbImgRec?.content || '/Images/storefront-bg.jpg'
+              }]);
+            }
+          }
         }
       }
     } catch (err) {
@@ -59,6 +90,28 @@ export default function AdminAboutEditor() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddBranch = () => {
+    const newBranch: FacebookBranch = {
+      id: `branch-${Date.now()}`,
+      title: `Graphix Branch ${branches.length + 1}`,
+      link: 'https://www.facebook.com',
+      image: '/Images/storefront-bg.jpg'
+    };
+    setBranches([...branches, newBranch]);
+  };
+
+  const handleUpdateBranch = (id: string, key: keyof FacebookBranch, value: string) => {
+    setBranches(branches.map(b => b.id === id ? { ...b, [key]: value } : b));
+  };
+
+  const handleRemoveBranch = (id: string) => {
+    if (branches.length === 1) {
+      setToastMessage({ type: 'error', text: 'At least one Facebook store branch must be maintained.' });
+      return;
+    }
+    setBranches(branches.filter(b => b.id !== id));
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -70,9 +123,7 @@ export default function AdminAboutEditor() {
       { type: 'ABOUT_MAIN', content: mainText },
       { type: 'ABOUT_PURCHASE', content: purchasePolicy },
       { type: 'ABOUT_DOWNPAYMENT', content: downpaymentPolicy },
-      { type: 'ABOUT_FACEBOOK_LINK', content: facebookLink },
-      { type: 'ABOUT_FACEBOOK_IMAGE', content: facebookImage },
-      { type: 'ABOUT_FACEBOOK_TITLE', content: facebookTitle },
+      { type: 'ABOUT_FACEBOOK_BRANCHES', content: JSON.stringify(branches) }
     ];
 
     try {
@@ -87,9 +138,9 @@ export default function AdminAboutEditor() {
       }
 
       if (allOk) {
-        setToastMessage({ type: 'success', text: 'About page contents & Facebook link updated successfully!' });
+        setToastMessage({ type: 'success', text: 'About page contents and all Facebook store branches updated successfully!' });
       } else {
-        setToastMessage({ type: 'error', text: 'Some policy fields failed to save. Please try again.' });
+        setToastMessage({ type: 'error', text: 'Some fields failed to save. Please try again.' });
       }
     } catch (err) {
       console.error('Failed to save policies:', err);
@@ -111,7 +162,7 @@ export default function AdminAboutEditor() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 m-0 tracking-tight">About Page Editor</h1>
-              <p className="text-gray-500 text-sm font-medium m-0 mt-1">Customize the customer-facing "About this website" text and store Facebook banner links.</p>
+              <p className="text-gray-500 text-sm font-medium m-0 mt-1">Customize website text, policies, and manage multiple Facebook store branch links.</p>
             </div>
           </div>
 
@@ -197,45 +248,84 @@ export default function AdminAboutEditor() {
               </div>
             </div>
 
-            {/* Section 3: Facebook Store Page & Banner Link */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-blue-600 font-bold text-lg border-b border-gray-100 pb-3">
-                <Facebook size={22} />
-                <span>Official Facebook Store Link & Banner</span>
+            {/* Section 3: Multiple Facebook Store Branches */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
+                  <Facebook size={22} />
+                  <span>Facebook Store Branches ({branches.length})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddBranch}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 border-none cursor-pointer"
+                >
+                  <Plus size={16} /> Add Branch
+                </button>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Facebook Card Title</label>
-                <input
-                  type="text"
-                  value={facebookTitle}
-                  onChange={(e) => setFacebookTitle(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] text-sm font-semibold text-gray-800 transition-all"
-                  placeholder="E.g., Visit Our Official Facebook Page"
-                />
+              <div className="flex flex-col gap-6">
+                {branches.map((branch, idx) => (
+                  <div key={branch.id} className="bg-blue-50/40 p-4 rounded-xl border border-blue-100 flex flex-col gap-3 relative">
+                    <div className="flex items-center justify-between border-b border-blue-100/80 pb-2">
+                      <span className="font-extrabold text-xs text-blue-800 uppercase tracking-wide flex items-center gap-1.5">
+                        <Building2 size={16} /> Branch #{idx + 1}
+                      </span>
+                      {branches.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBranch(branch.id)}
+                          className="p-1 hover:bg-red-100 text-red-500 rounded-md transition border-none cursor-pointer"
+                          title="Remove Branch"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[11px] font-bold text-gray-600 uppercase">Branch Name / Title</label>
+                      <input
+                        type="text"
+                        value={branch.title}
+                        onChange={(e) => handleUpdateBranch(branch.id, 'title', e.target.value)}
+                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-xs font-semibold text-gray-800"
+                        placeholder="E.g., Graphix - Main Branch / Cagayan de Oro"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[11px] font-bold text-gray-600 uppercase">Facebook Page Link</label>
+                      <input
+                        type="url"
+                        value={branch.link}
+                        onChange={(e) => handleUpdateBranch(branch.id, 'link', e.target.value)}
+                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-xs font-semibold text-gray-800"
+                        placeholder="https://facebook.com/your-branch-page"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[11px] font-bold text-gray-600 uppercase">Banner Image URL</label>
+                      <input
+                        type="text"
+                        value={branch.image}
+                        onChange={(e) => handleUpdateBranch(branch.id, 'image', e.target.value)}
+                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-xs font-semibold text-gray-800"
+                        placeholder="/Images/storefront-bg.jpg or image URL"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Facebook Page URL (Link when clicked)</label>
-                <input
-                  type="url"
-                  value={facebookLink}
-                  onChange={(e) => setFacebookLink(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] text-sm font-semibold text-gray-800 transition-all"
-                  placeholder="https://facebook.com/your-store-page"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Banner Image URL</label>
-                <input
-                  type="text"
-                  value={facebookImage}
-                  onChange={(e) => setFacebookImage(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] text-sm font-semibold text-gray-800 transition-all"
-                  placeholder="/Images/storefront-bg.jpg or https://..."
-                />
-              </div>
+              <button
+                type="button"
+                onClick={handleAddBranch}
+                className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl border border-dashed border-gray-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Plus size={16} /> Add Another Store Branch Field
+              </button>
             </div>
 
             <button
@@ -309,53 +399,47 @@ export default function AdminAboutEditor() {
                 </div>
               </div>
 
-              {/* Preview 3: Facebook Banner Card */}
+              {/* Preview 3: Multiple Facebook Store Branches */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border-t-8 border-blue-600">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-50 rounded-full flex justify-center items-center border border-blue-100 text-blue-600 shrink-0">
-                      <Facebook size={20} />
-                    </div>
-                    <h3 className="text-xl font-extrabold text-gray-900 m-0">{facebookTitle || 'Visit Our Official Facebook Page'}</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-50 rounded-full flex justify-center items-center border border-blue-100 text-blue-600 shrink-0">
+                    <Facebook size={20} />
                   </div>
-                  {facebookLink && (
-                    <a
-                      href={facebookLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-decoration-none"
-                    >
-                      Visit Page <ExternalLink size={14} />
-                    </a>
-                  )}
+                  <div>
+                    <h3 className="text-xl font-extrabold text-gray-900 m-0">Our Store Facebook Pages</h3>
+                    <p className="text-xs text-gray-400 font-medium m-0 mt-0.5">Visit official Facebook pages for each branch</p>
+                  </div>
                 </div>
 
-                <a
-                  href={facebookLink || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative w-full h-48 rounded-xl overflow-hidden block border border-gray-200 shadow-sm cursor-pointer"
-                >
-                  <img
-                    src={facebookImage || '/Images/storefront-bg.jpg'}
-                    alt="Facebook Store Banner"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      (e.target as HTMLElement).setAttribute('src', '/Images/storefront-bg.jpg');
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-5 text-white">
-                    <div className="flex items-center gap-2 bg-blue-600 text-white font-extrabold text-xs px-3 py-1 rounded-full w-max mb-1 shadow-sm">
-                      <Facebook size={14} /> Official Facebook Page
+                <div className="grid grid-cols-1 gap-4">
+                  {branches.map((b) => (
+                    <div key={b.id} className="border border-gray-200 rounded-xl overflow-hidden shadow-xs bg-white flex flex-col">
+                      <a
+                        href={b.link || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group relative w-full h-36 overflow-hidden block cursor-pointer"
+                      >
+                        <img
+                          src={b.image || '/Images/storefront-bg.jpg'}
+                          alt={b.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            (e.target as HTMLElement).setAttribute('src', '/Images/storefront-bg.jpg');
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4 text-white">
+                          <span className="text-sm font-black tracking-tight drop-shadow-md group-hover:underline flex items-center gap-1.5">
+                            {b.title} <ExternalLink size={14} />
+                          </span>
+                          <span className="text-[11px] text-gray-200 truncate mt-0.5 font-medium">
+                            {b.link}
+                          </span>
+                        </div>
+                      </a>
                     </div>
-                    <span className="text-base font-black tracking-tight text-white drop-shadow-md group-hover:underline flex items-center gap-2">
-                      Connect with Graphix on Facebook <ExternalLink size={16} />
-                    </span>
-                    <span className="text-xs text-gray-200 font-medium mt-0.5">
-                      {facebookLink}
-                    </span>
-                  </div>
-                </a>
+                  ))}
+                </div>
               </div>
 
             </div>
