@@ -19,7 +19,8 @@ import {
   ReceiptText,
   Wrench,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileText
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -142,6 +143,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             { href: '/admin/inventory', label: 'Inventory Management', icon: Box },
             { href: '/admin/monitoring', label: 'Gadget Repair', icon: Wrench },
             { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
+            { href: '/admin/about-editor', label: 'About Page', icon: FileText },
             { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
             { href: '/admin/settings', label: 'Settings', icon: Settings },
           ].map((item: any, idx) => {
