@@ -6,7 +6,7 @@ import {
   Menu, X,
   MonitorSmartphone, ShoppingBag,
   ShieldCheck, Clock,
-  ArrowRight, Sparkles,
+  ArrowRight, Sparkles, ArrowUp,
   Facebook, ExternalLink, Building2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,7 @@ interface FacebookBranch {
 export default function HomePage() {
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -58,7 +59,10 @@ export default function HomePage() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+      setShowScrollTop(window.scrollY > 300);
+    };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -622,6 +626,24 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* Floating Scroll-to-Top Button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.5, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.5, y: 20 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white rounded-2xl shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center cursor-pointer border border-white/20 group"
+            title="Scroll to top"
+            aria-label="Scroll to top"
+          >
+            <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform stroke-[2.5]" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
