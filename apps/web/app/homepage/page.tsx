@@ -6,10 +6,17 @@ import {
   Menu, X,
   MonitorSmartphone, ShoppingBag,
   ShieldCheck, Clock,
-  ArrowRight, Sparkles
+  ArrowRight, Sparkles,
+  Facebook, ExternalLink, Building2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface FacebookBranch {
+  id: string;
+  title: string;
+  link: string;
+  image: string;
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -21,6 +28,8 @@ export default function HomePage() {
   const [selectedPolicyType, setSelectedPolicyType] = useState('PURCHASE');
   const [policyContent, setPolicyContent] = useState('');
   const [loadingPolicy, setLoadingPolicy] = useState(false);
+
+  const [facebookBranches, setFacebookBranches] = useState<FacebookBranch[]>([]);
 
   const openPolicyModal = async (e: React.MouseEvent, type: string) => {
     e.preventDefault();
@@ -55,7 +64,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    // Check if the user is already logged in
+    // Check if the user is logged in
     fetch('/api/auth/status')
       .then(res => res.json())
       .then(data => {
@@ -94,6 +103,55 @@ export default function HomePage() {
       }
     };
     fetchDevices();
+  }, []);
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const res = await fetch('/api/policies');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const branchesRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_BRANCHES');
+            if (branchesRec?.content) {
+              try {
+                const parsed = JSON.parse(branchesRec.content);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  setFacebookBranches(parsed);
+                  return;
+                }
+              } catch (e) {
+                console.error("Error parsing branches JSON:", e);
+              }
+            }
+
+            // Legacy fallback
+            const fbLinkRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_LINK');
+            const fbImgRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_IMAGE');
+            const fbTitleRec = data.find((p: any) => p.type === 'ABOUT_FACEBOOK_TITLE');
+
+            if (fbLinkRec || fbImgRec || fbTitleRec) {
+              setFacebookBranches([{
+                id: 'branch-legacy',
+                title: fbTitleRec?.content || 'Graphix Main Store',
+                link: fbLinkRec?.content || 'https://www.facebook.com',
+                image: fbImgRec?.content || '/Images/storefront-bg.jpg'
+              }]);
+            } else {
+              setFacebookBranches([{
+                id: 'branch-1',
+                title: 'Graphix Main Store',
+                link: 'https://www.facebook.com',
+                image: '/Images/storefront-bg.jpg'
+              }]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load facebook branches:', err);
+      }
+    };
+    fetchBranches();
   }, []);
 
   const features = [
@@ -347,40 +405,107 @@ export default function HomePage() {
 
       {/* About Section */}
       <section id="about" className="py-24 bg-gray-900 text-white border-y border-gray-800">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div className="flex flex-col gap-6">
-            <div className="inline-flex w-max items-center gap-2 px-4 py-2 bg-white/10 rounded-lg font-bold text-sm text-[#e0b0ff]">
-              Why Choose Us
+        <div className="max-w-7xl mx-auto px-6 flex flex-col gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div className="flex flex-col gap-6">
+              <div className="inline-flex w-max items-center gap-2 px-4 py-2 bg-white/10 rounded-lg font-bold text-sm text-[#e0b0ff]">
+                Why Choose Us
+              </div>
+              <h3 className="text-4xl md:text-5xl font-black text-white leading-tight">
+                Bridging the gap between service & transparency.
+              </h3>
+              <p className="text-lg text-gray-400 leading-relaxed max-w-lg">
+                We eliminated the anxiety of device repairs. Our system provides real-time, step-by-step visibility into your electronics' status.
+              </p>
+              <div className="flex gap-8 mt-6">
+                <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
+                  <span className="text-4xl font-black">24<span className="text-[#e0b0ff]">/7</span></span>
+                  <span className="text-gray-400 font-bold uppercase text-xs mt-1">Visibility</span>
+                </div>
+                <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
+                  <span className="text-4xl font-black">100<span className="text-[#e0b0ff]">%</span></span>
+                  <span className="text-gray-400 font-bold uppercase text-xs mt-1">Guarantee</span>
+                </div>
+              </div>
             </div>
-            <h3 className="text-4xl md:text-5xl font-black text-white leading-tight">
-              Bridging the gap between service & transparency.
-            </h3>
-            <p className="text-lg text-gray-400 leading-relaxed max-w-lg">
-              We eliminated the anxiety of device repairs. Our system provides real-time, step-by-step visibility into your electronics' status.
-            </p>
-            <div className="flex gap-8 mt-6">
-              <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
-                <span className="text-4xl font-black">24<span className="text-[#e0b0ff]">/7</span></span>
-                <span className="text-gray-400 font-bold uppercase text-xs mt-1">Visibility</span>
-              </div>
-              <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
-                <span className="text-4xl font-black">100<span className="text-[#e0b0ff]">%</span></span>
-                <span className="text-gray-400 font-bold uppercase text-xs mt-1">Guarantee</span>
-              </div>
+            <div className="bg-[#111111] border border-gray-800 rounded-3xl p-4 shadow-xl flex flex-col w-full h-[400px] overflow-hidden relative">
+              <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3945.6080787723067!2d124.75142957478778!3d8.53737499150564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32ffef54dd5fc27f%3A0xa3526601c268e1b1!2sGraphix!5e0!3m2!1sen!2sph!4v1778072713852!5m2!1sen!2sph" 
+                width="100%" 
+                height="100%" 
+                style={{ border: 0, borderRadius: '1rem' }} 
+                allowFullScreen={true} 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Store Location"
+              ></iframe>
             </div>
           </div>
-          <div className="bg-[#111111] border border-gray-800 rounded-3xl p-4 shadow-xl flex flex-col w-full h-[400px] overflow-hidden relative">
-            <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3945.6080787723067!2d124.75142957478778!3d8.53737499150564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32ffef54dd5fc27f%3A0xa3526601c268e1b1!2sGraphix!5e0!3m2!1sen!2sph!4v1778072713852!5m2!1sen!2sph" 
-              width="100%" 
-              height="100%" 
-              style={{ border: 0, borderRadius: '1rem' }} 
-              allowFullScreen={true} 
-              loading="lazy" 
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Store Location"
-            ></iframe>
-          </div>
+
+          {/* Facebook Store Branches Showcase */}
+          {facebookBranches.length > 0 && (
+            <div className="pt-12 border-t border-gray-800/80 flex flex-col gap-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/15 text-blue-400 rounded-lg text-xs font-extrabold uppercase tracking-wider mb-2">
+                    <Facebook size={16} /> Facebook Store Locations
+                  </div>
+                  <h4 className="text-3xl md:text-4xl font-black text-white tracking-tight m-0">Our Official Facebook Pages</h4>
+                </div>
+                <p className="text-sm text-gray-400 max-w-md m-0 font-medium">
+                  Connect with our store branches directly on Facebook for inquiries, service updates, and physical store locations.
+                </p>
+              </div>
+
+              <div className={`grid grid-cols-1 ${facebookBranches.length > 1 ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-1 max-w-md'} gap-6`}>
+                {facebookBranches.map((branch) => (
+                  <div key={branch.id} className="bg-[#111111] border border-gray-800 rounded-2xl overflow-hidden shadow-xl hover:border-blue-500/50 transition-all group flex flex-col">
+                    <a
+                      href={branch.link || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative w-full h-48 overflow-hidden block cursor-pointer"
+                    >
+                      <img
+                        src={branch.image || '/Images/storefront-bg.jpg'}
+                        alt={branch.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLElement).setAttribute('src', '/Images/storefront-bg.jpg');
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-5 text-white">
+                        <div className="flex items-center gap-1.5 bg-blue-600 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full w-max mb-1.5 shadow-sm">
+                          <Building2 size={12} /> Branch Location
+                        </div>
+                        <h5 className="text-lg font-black text-white tracking-tight group-hover:text-blue-400 transition-colors flex items-center gap-2 m-0 border-none">
+                          {branch.title} <ExternalLink size={16} />
+                        </h5>
+                        <p className="text-xs text-gray-300 truncate mt-1 m-0 font-medium">
+                          {branch.link}
+                        </p>
+                      </div>
+                    </a>
+
+                    <div className="p-4 bg-gray-900/90 border-t border-gray-800 flex items-center justify-between">
+                      <span className="text-xs text-gray-400 font-bold flex items-center gap-1.5">
+                        <Facebook size={14} className="text-blue-400" /> Graphix Official Page
+                      </span>
+                      <a
+                        href={branch.link || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 text-decoration-none"
+                      >
+                        Visit Page <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       </section>
 
