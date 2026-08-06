@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileText, Save, Info, ShoppingBag, Store, CreditCard, 
   Facebook, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle, RefreshCw,
-  Plus, Trash2, Building2
+  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon
 } from 'lucide-react';
 
 interface FacebookBranch {
@@ -35,6 +35,7 @@ export default function AdminAboutEditor() {
   const [downpaymentPolicy, setDownpaymentPolicy] = useState(DEFAULT_DOWNPAYMENT);
   const [branches, setBranches] = useState<FacebookBranch[]>(INITIAL_BRANCHES);
 
+  const [uploadingBranchId, setUploadingBranchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -114,6 +115,44 @@ export default function AdminAboutEditor() {
     setBranches(branches.filter(b => b.id !== id));
   };
 
+  const handleImageUpload = async (branchId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (!file) return;
+
+    setUploadingBranchId(branchId);
+    setToastMessage(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'facebook-banners');
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          handleUpdateBranch(branchId, 'image', data.url);
+          setToastMessage({ type: 'success', text: 'Image uploaded successfully!' });
+        }
+      } else {
+        const errData = await res.json();
+        setToastMessage({ type: 'error', text: errData.error || 'Failed to upload image.' });
+      }
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setToastMessage({ type: 'error', text: 'An error occurred during image upload.' });
+    } finally {
+      setUploadingBranchId(null);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -162,7 +201,7 @@ export default function AdminAboutEditor() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 m-0 tracking-tight">About Page Editor</h1>
-              <p className="text-gray-500 text-sm font-medium m-0 mt-1">Customize website text, policies, and manage multiple Facebook store branch links.</p>
+              <p className="text-gray-500 text-sm font-medium m-0 mt-1">Customize website text, policies, and upload banner images for Facebook store branches.</p>
             </div>
           </div>
 
@@ -290,7 +329,7 @@ export default function AdminAboutEditor() {
                         value={branch.title}
                         onChange={(e) => handleUpdateBranch(branch.id, 'title', e.target.value)}
                         className="w-full p-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-xs font-semibold text-gray-800"
-                        placeholder="E.g., Graphix - Main Branch / Cagayan de Oro"
+                        placeholder="E.g., Graphix Tagoloan"
                       />
                     </div>
 
@@ -301,19 +340,67 @@ export default function AdminAboutEditor() {
                         value={branch.link}
                         onChange={(e) => handleUpdateBranch(branch.id, 'link', e.target.value)}
                         className="w-full p-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-xs font-semibold text-gray-800"
-                        placeholder="https://facebook.com/your-branch-page"
+                        placeholder="https://facebook.com/Graphixtagoloan"
                       />
                     </div>
 
+                    {/* Banner Image Upload & Direct Input */}
                     <div className="flex flex-col gap-2">
-                      <label className="text-[11px] font-bold text-gray-600 uppercase">Banner Image URL</label>
-                      <input
-                        type="text"
-                        value={branch.image}
-                        onChange={(e) => handleUpdateBranch(branch.id, 'image', e.target.value)}
-                        className="w-full p-2.5 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-xs font-semibold text-gray-800"
-                        placeholder="/Images/storefront-bg.jpg or image URL"
-                      />
+                      <label className="text-[11px] font-bold text-gray-600 uppercase flex items-center justify-between">
+                        <span>Banner Image Upload</span>
+                        <span className="text-[10px] text-gray-400 font-normal">Click button to choose file</span>
+                      </label>
+
+                      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                        <label className={`cursor-pointer px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border shadow-xs transition-all ${uploadingBranchId === branch.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'}`}>
+                          {uploadingBranchId === branch.id ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" />
+                              <span>Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={16} />
+                              <span>Upload New Image</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={uploadingBranchId === branch.id}
+                            onChange={(e) => handleImageUpload(branch.id, e)}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {/* Image Preview thumbnail if available */}
+                        {branch.image && (
+                          <div className="w-16 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shrink-0 relative group">
+                            <img
+                              src={branch.image}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                              onError={(evt) => {
+                                (evt.target as HTMLElement).setAttribute('src', '/Images/storefront-bg.jpg');
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Optional direct URL input */}
+                      <div className="relative mt-1">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                          <LinkIcon size={14} />
+                        </div>
+                        <input
+                          type="text"
+                          value={branch.image}
+                          onChange={(e) => handleUpdateBranch(branch.id, 'image', e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-lg outline-none focus:border-blue-500 text-[11px] font-mono text-gray-700"
+                          placeholder="Or paste image URL (e.g. /Images/storefront-bg.jpg)"
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}
