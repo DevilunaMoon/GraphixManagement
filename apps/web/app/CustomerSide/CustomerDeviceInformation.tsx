@@ -39,7 +39,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerName: device.ownerName, 
+          customerName: device.ownerName || 'Customer', 
           technicianName: device.technician || 'Unassigned', 
           feedbackText: feedback,
           sentiment: sentiment
@@ -135,14 +135,9 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
 
                   {/* Info Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8 pt-2">
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Device Name</span>
                       <span className="text-lg font-semibold text-gray-900">{device.deviceName}</span>
-                    </div>
-                    
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Owner</span>
-                      <span className="text-lg font-semibold text-gray-900">{device.ownerName}</span>
                     </div>
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">

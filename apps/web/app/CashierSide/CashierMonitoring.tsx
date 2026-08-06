@@ -8,7 +8,7 @@ import imageCompression from 'browser-image-compression';
 interface DeviceProgress {
   id: string;
   deviceName: string;
-  ownerName: string;
+  ownerName?: string;
   progress: string;
   image: string | null;
   proofImage: string | null;
@@ -46,7 +46,6 @@ export default function CashierMonitoring() {
   // Add Modal State
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addDeviceName, setAddDeviceName] = useState('');
-  const [addOwnerName, setAddOwnerName] = useState('');
   const [addProgress, setAddProgress] = useState('');
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
@@ -126,9 +125,6 @@ export default function CashierMonitoring() {
     const matchedUser = users.find(u => u.email.toLowerCase() === addCustomerEmail.toLowerCase());
     if (matchedUser) {
       setAddUserId(matchedUser.id);
-      if (matchedUser.name && !addOwnerName) {
-        setAddOwnerName(matchedUser.name);
-      }
     } else {
       setAddUserId(null);
     }
@@ -215,15 +211,14 @@ export default function CashierMonitoring() {
   };
 
   const handleAddSave = async () => {
-    if (!addDeviceName || !addOwnerName || !addProgress) {
-      alert("Device Name, Owner Name, and Progress are required.");
+    if (!addDeviceName || !addProgress) {
+      alert("Device Name and Progress are required.");
       return;
     }
 
     setIsSubmittingAdd(true);
     const formData = new FormData();
     formData.append('deviceName', addDeviceName);
-    formData.append('ownerName', addOwnerName);
     formData.append('progress', addProgress);
     if (addCause) formData.append('cause', addCause);
     if (addTechnician) formData.append('technician', addTechnician);
@@ -244,7 +239,6 @@ export default function CashierMonitoring() {
           .then(r => r.json())
           .then(data => setDevices(Array.isArray(data) ? data : []));
         setAddDeviceName('');
-        setAddOwnerName('');
         setAddProgress('');
         setAddCause('');
         setAddTechnician('');
@@ -374,7 +368,7 @@ export default function CashierMonitoring() {
               <Search size={20} className="text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Search by the Owner..." 
+                placeholder="Search by Device Name..." 
                 className="border-none outline-none pl-3 text-sm w-full text-black placeholder-gray-400 bg-transparent font-medium"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -404,7 +398,6 @@ export default function CashierMonitoring() {
                   <tr className="bg-gray-50 border-b border-[#bd00ff]/20 text-gray-700">
                     <th className="p-4 font-bold text-center w-28 text-[1.05rem]">Device</th>
                     <th className="p-4 font-bold text-[1.05rem]">Device Name</th>
-                    <th className="p-4 font-bold text-[1.05rem]">Owner Name</th>
                     <th className="p-4 font-bold text-center text-[1.05rem]">Progress</th>
                     <th className="p-4 font-bold text-center text-[1.05rem]">Actions</th>
                   </tr>
@@ -422,7 +415,6 @@ export default function CashierMonitoring() {
                         </div>
                       </td>
                       <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.deviceName}</td>
-                      <td className="p-4 text-gray-600 font-semibold text-base align-middle">{device.ownerName}</td>
                       <td className="p-4 align-middle text-center">
                         <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{device.progress}</span>
                       </td>
@@ -589,16 +581,9 @@ export default function CashierMonitoring() {
               {/* Dynamic Form Fields */}
               <div className="flex flex-col gap-4">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Device Name</label>
-                    <input type="text" value={deviceToEdit.deviceName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Name of the Owner</label>
-                    <input type="text" value={deviceToEdit.ownerName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Device Name</label>
+                  <input type="text" value={deviceToEdit.deviceName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -774,7 +759,6 @@ export default function CashierMonitoring() {
                             onClick={() => {
                               setAddCustomerEmail(user.email);
                               setAddUserId(user.id);
-                              if (user.name) setAddOwnerName(user.name);
                               setShowDropdown(false);
                             }}
                           >
@@ -789,16 +773,9 @@ export default function CashierMonitoring() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Device Name</label>
-                    <input type="text" value={addDeviceName} onChange={(e) => setAddDeviceName(e.target.value)} className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Name of the Owner</label>
-                    <input type="text" value={addOwnerName} onChange={(e) => setAddOwnerName(e.target.value)} className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Device Name</label>
+                  <input type="text" value={addDeviceName} onChange={(e) => setAddDeviceName(e.target.value)} className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
                 </div>
 
                 <div className="flex flex-col gap-2">

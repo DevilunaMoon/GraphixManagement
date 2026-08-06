@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 interface MonitoringDevice {
   id: string;
   deviceName: string;
-  ownerName: string;
+  ownerName?: string;
   progress: string;
   image: string | null;
   status: string;
@@ -121,7 +121,7 @@ export default function CustomerMonitoring() {
               <Search size={20} className="text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Search by the Owner..." 
+                placeholder="Search by Device Name..." 
                 className="border-none outline-none pl-3 text-sm w-full text-black placeholder-gray-400 bg-transparent font-medium"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -184,7 +184,6 @@ export default function CustomerMonitoring() {
                   <div className="flex flex-col gap-0.5 sm:gap-1 w-full text-black">
                     <p className="font-bold text-xs sm:text-sm leading-tight">Device Name: <span className="font-normal">{device.deviceName}</span></p>
                     <div className="h-[1px] bg-gray-200 w-full my-1"></div>
-                    <p className="font-bold text-xs sm:text-sm">Owner: <span className="font-normal">{device.ownerName}</span></p>
                     <p className="text-black font-semibold text-xs sm:text-sm">Progress: <span className={`ml-1 font-bold ${getStatusColor(semanticStatus)}`}>{semanticStatus}</span></p>
                   </div>
                 </div>

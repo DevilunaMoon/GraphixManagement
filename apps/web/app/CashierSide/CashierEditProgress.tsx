@@ -139,11 +139,6 @@ function CashierEditProgressContent() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-semibold text-lg text-black">Name of the Owner</label>
-              <input type="text" value={deviceData.ownerName} readOnly className="h-12 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
-            </div>
-
-            <div className="flex flex-col gap-2">
               <label className="font-semibold text-lg text-black">Progress</label>
               <div className="relative">
                 <select 

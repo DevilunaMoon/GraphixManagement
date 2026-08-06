@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     const whereClause: any = isCustomer && session?.userId ? { userId: session.userId } : {};
 
     if (search.trim()) {
-      whereClause.ownerName = {
+      whereClause.deviceName = {
         contains: search,
         mode: 'insensitive'
       };
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     
     const deviceName = formData.get('deviceName') as string;
-    const ownerName = formData.get('ownerName') as string;
+    const ownerName = (formData.get('ownerName') as string) || '';
     const progress = formData.get('progress') as string;
     const cause = formData.get('cause') as string;
     const technician = formData.get('technician') as string;
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     const userId = formData.get('userId') as string | null;
     const repairHistory = formData.get('repairHistory') as string | null;
 
-    if (!deviceName || !ownerName || !progress) {
+    if (!deviceName || !progress) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     const request = await prisma.repairRequest.create({
       data: {
         deviceName,
-        ownerName,
+        ownerName: ownerName || null,
         progress,
         cause: cause || null,
         technician: technician || null,
