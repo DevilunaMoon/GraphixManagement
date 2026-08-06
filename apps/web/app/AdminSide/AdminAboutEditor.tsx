@@ -462,14 +462,6 @@ export default function AdminAboutEditor() {
                 <Plus size={16} /> Add Another Store Branch Field
               </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={saving || loading}
-              className="w-full py-4 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-extrabold text-base rounded-2xl shadow-xl shadow-purple-500/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
-            >
-              <Save size={20} /> Save All Changes
-            </button>
           </form>
 
           {/* Right Column: Live Customer Page Preview */}
