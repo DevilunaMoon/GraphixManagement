@@ -39,8 +39,8 @@ function CustomerProductsContent() {
   useEffect(() => {
     setIsLoading(true);
     Promise.all([
-      fetch('/api/devices').then(res => res.json()),
-      fetch('/api/categories').then(res => res.json())
+      fetch('/api/devices?t=' + Date.now(), { cache: 'no-store' }).then(res => res.json()),
+      fetch('/api/categories?t=' + Date.now(), { cache: 'no-store' }).then(res => res.json())
     ])
       .then(([productsData, catsData]) => {
         setProducts(Array.isArray(productsData) ? productsData : []);

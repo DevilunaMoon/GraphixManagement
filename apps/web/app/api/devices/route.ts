@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 
-export const revalidate = 30;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
@@ -58,6 +59,10 @@ export async function GET(req: Request) {
         page,
         limit,
         totalPages: Math.ceil(total / limit)
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
+        }
       });
     }
 
@@ -67,7 +72,7 @@ export async function GET(req: Request) {
     });
     return NextResponse.json(devices, {
       headers: {
-        'Cache-Control': 's-maxage=60, stale-while-revalidate=300'
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
       }
     });
   } catch (error) {

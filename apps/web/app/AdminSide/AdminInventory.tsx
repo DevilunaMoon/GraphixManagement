@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle, Trash } from 'lucide-react';
+import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import imageCompression from 'browser-image-compression';
 
@@ -17,6 +17,8 @@ export default function AdminInventory() {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successModalContent, setSuccessModalContent] = useState({ title: '', message: '' });
   
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [viewMoreProduct, setViewMoreProduct] = useState<any | null>(null);
@@ -233,9 +235,11 @@ export default function AdminInventory() {
     try {
       const res = await fetch(`/api/devices/${productToDelete}`, { method: 'DELETE' });
       if (res.ok) {
-        fetchProducts(); // refresh
+        fetchProducts();
         setDeleteModalOpen(false);
         setProductToDelete(null);
+        setSuccessModalContent({ title: 'Deleted Successfully', message: 'The device has been removed from inventory.' });
+        setSuccessModalOpen(true);
       } else {
         const errorData = await res.json().catch(() => ({}));
         setDeleteError(errorData.error || 'Failed to delete product');
@@ -313,6 +317,8 @@ export default function AdminInventory() {
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
         setNewDeviceVariations([]);
+        setSuccessModalContent({ title: 'Success!', message: 'The device has been successfully added to inventory.' });
+        setSuccessModalOpen(true);
       } else {
         alert('Failed to add product');
       }
@@ -402,6 +408,8 @@ export default function AdminInventory() {
         fetchProducts();
         setIsEditModalOpen(false);
         setProductToEdit(null);
+        setSuccessModalContent({ title: 'Success!', message: 'The device has been successfully updated.' });
+        setSuccessModalOpen(true);
       } else {
         alert('Failed to edit product');
       }
@@ -1190,6 +1198,25 @@ export default function AdminInventory() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <CheckCircle2 className="text-green-500 w-16 h-16 mb-5" />
+            <h3 className="text-xl font-bold mb-3 text-black">{successModalContent.title}</h3>
+            <p className="text-gray-600 mb-8 font-medium">
+              {successModalContent.message}
+            </p>
+            <button
+              onClick={() => setSuccessModalOpen(false)}
+              className="px-8 py-2.5 bg-[#5c0099] text-white rounded-lg font-bold hover:bg-[#4a007a] transition-colors cursor-pointer border-none w-full max-w-[200px]"
+            >
+              Okay
+            </button>
           </div>
         </div>
       )}
