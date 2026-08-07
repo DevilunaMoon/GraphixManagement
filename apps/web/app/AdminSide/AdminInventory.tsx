@@ -134,6 +134,7 @@ export default function AdminInventory() {
   const [newDeviceWarranty, setNewDeviceWarranty] = useState('');
   const [newDeviceDownpayment, setNewDeviceDownpayment] = useState('');
   
+  const [newDeviceIsPreOwned, setNewDeviceIsPreOwned] = useState(false);
   const [newDeviceImages, setNewDeviceImages] = useState<File[]>([]);
   const [newDeviceImagePreviews, setNewDeviceImagePreviews] = useState<string[]>([]);
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
@@ -155,6 +156,7 @@ export default function AdminInventory() {
   const [editDeviceWarranty, setEditDeviceWarranty] = useState('');
   const [editDeviceDownpayment, setEditDeviceDownpayment] = useState('');
   
+  const [editDeviceIsPreOwned, setEditDeviceIsPreOwned] = useState(false);
   const [editDeviceImages, setEditDeviceImages] = useState<File[]>([]);
   const [editDeviceImagePreviews, setEditDeviceImagePreviews] = useState<string[]>([]);
   const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
@@ -192,6 +194,7 @@ export default function AdminInventory() {
             asLowAs: device.asLowAs || '',
             warranty: device.warranty || '',
             downpayment: device.downpayment || '',
+            isPreOwned: device.isPreOwned || false,
             images: device.images || [],
             downpaymentImage: device.downpaymentImage || null,
             variations: device.variations ? Object.values(device.variations.reduce((acc: any, v: any) => {
@@ -280,6 +283,7 @@ export default function AdminInventory() {
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
+    formData.append('isPreOwned', newDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', newDeviceSpecs);
     formData.append('deviceAsLowAs', newDeviceAsLowAs);
     formData.append('deviceWarranty', newDeviceWarranty);
@@ -304,6 +308,7 @@ export default function AdminInventory() {
         setIsAddModalOpen(false);
         setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice('');
         setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceSpecs('');
+        setNewDeviceIsPreOwned(false);
         setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
@@ -327,6 +332,7 @@ export default function AdminInventory() {
     setEditDevicePrice(prod.price);
     setEditDeviceStocks(prod.stock);
     setEditDeviceCategory(prod.categoryId);
+    setEditDeviceIsPreOwned(prod.isPreOwned || false);
     setEditDeviceSpecs(prod.type !== 'N/A' ? prod.type : '');
     setEditDeviceAsLowAs(prod.asLowAs);
     setEditDeviceWarranty(prod.warranty);
@@ -370,6 +376,7 @@ export default function AdminInventory() {
     formData.append('devicePrice', editDevicePrice);
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
+    formData.append('isPreOwned', editDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', editDeviceSpecs);
     formData.append('deviceAsLowAs', editDeviceAsLowAs);
     formData.append('deviceWarranty', editDeviceWarranty);
@@ -681,6 +688,18 @@ export default function AdminInventory() {
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400"><svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg></div>
                   </div>
                 </div>
+                <div className="flex items-center gap-3 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
+                  <input 
+                    type="checkbox" 
+                    id="newDeviceIsPreOwned" 
+                    checked={newDeviceIsPreOwned} 
+                    onChange={e => setNewDeviceIsPreOwned(e.target.checked)} 
+                    className="w-5 h-5 accent-[#5c0099] cursor-pointer rounded"
+                  />
+                  <label htmlFor="newDeviceIsPreOwned" className="text-sm font-bold text-[#111] cursor-pointer select-none">
+                    Pre-Owned Device <span className="text-xs text-gray-500 font-normal ml-1">(Mark if product is second-hand / refurbished)</span>
+                  </label>
+                </div>
                 <div className="flex flex-col gap-1">
                   <label className="block text-sm font-bold text-[#444]">Specs / Description</label>
                   <textarea value={newDeviceSpecs} onChange={e => setNewDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-medium resize-y min-h-[80px]" />
@@ -879,6 +898,18 @@ export default function AdminInventory() {
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400"><svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg></div>
                   </div>
+                </div>
+                <div className="flex items-center gap-3 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
+                  <input 
+                    type="checkbox" 
+                    id="editDeviceIsPreOwned" 
+                    checked={editDeviceIsPreOwned} 
+                    onChange={e => setEditDeviceIsPreOwned(e.target.checked)} 
+                    className="w-5 h-5 accent-[#5c0099] cursor-pointer rounded"
+                  />
+                  <label htmlFor="editDeviceIsPreOwned" className="text-sm font-bold text-[#111] cursor-pointer select-none">
+                    Pre-Owned Device <span className="text-xs text-gray-500 font-normal ml-1">(Mark if product is second-hand / refurbished)</span>
+                  </label>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="block text-sm font-bold text-[#444]">Specs / Description</label>

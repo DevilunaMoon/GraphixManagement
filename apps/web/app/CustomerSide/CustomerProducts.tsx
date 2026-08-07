@@ -57,6 +57,17 @@ function CustomerProductsContent() {
       let matchesCategory = true;
       let matchesSearch = true;
       let matchesBudget = true;
+      let matchesPreOwned = true;
+
+      if (sortOrder === 'pre-owned') {
+        const pName = (p.name || '').toLowerCase();
+        const pSpecs = (p.specs || '').toLowerCase();
+        const pCat = (p.category?.name || '').toLowerCase();
+        matchesPreOwned = p.isPreOwned === true || 
+                          pName.includes('pre-owned') || pName.includes('pre owned') || pName.includes('preowned') || pName.includes('second hand') ||
+                          pSpecs.includes('pre-owned') || pSpecs.includes('pre owned') || pSpecs.includes('second hand') ||
+                          pCat.includes('pre-owned') || pCat.includes('pre owned');
+      }
 
       if (categoryFilter) {
         const filterLower = categoryFilter.toLowerCase();
@@ -77,7 +88,7 @@ function CustomerProductsContent() {
         }
       }
 
-      return matchesCategory && matchesSearch && matchesBudget;
+      return matchesCategory && matchesSearch && matchesBudget && matchesPreOwned;
     })
     .sort((a, b) => {
       if (sortOrder === 'price-asc') return (a.price || 0) - (b.price || 0);
@@ -105,6 +116,7 @@ function CustomerProductsContent() {
                 className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors cursor-pointer"
               >
                 <option value="default">Featured</option>
+                <option value="pre-owned">Pre Owned</option>
                 <option value="price-desc">Price: Highest to Lowest</option>
                 <option value="price-asc">Price: Lowest to Highest</option>
               </select>
@@ -200,6 +212,11 @@ function CustomerProductsContent() {
                 className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group"
               >
                 <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                  {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                    <span className="absolute top-1 left-1 bg-[#5c0099] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300">
+                      Pre-Owned
+                    </span>
+                  )}
                   {product.image ? (
                     <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                   ) : (

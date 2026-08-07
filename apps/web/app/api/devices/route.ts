@@ -94,6 +94,8 @@ export async function POST(req: Request) {
     const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
     const variationsStr = formData.get('variations') as string;
 
+    const isPreOwned = formData.get('isPreOwned') === 'true';
+
     let variations = [];
     if (variationsStr) {
       try {
@@ -132,6 +134,7 @@ export async function POST(req: Request) {
         price: parseFloat(priceStr),
         cost: parseFloat(costStr),
         stock: parseInt(stockStr, 10),
+        isPreOwned,
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         specs: specs || null,
         image: primaryImage,

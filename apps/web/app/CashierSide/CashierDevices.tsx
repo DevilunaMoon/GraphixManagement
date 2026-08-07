@@ -19,6 +19,7 @@ interface Device {
   stock: number;
   categoryId: string | null;
   specs: string | null;
+  isPreOwned?: boolean;
   variations?: any[];
 }
 
@@ -58,6 +59,7 @@ export default function CashierDevices() {
   const [editDeviceStocks, setEditDeviceStocks] = useState('');
   const [editDeviceCategory, setEditDeviceCategory] = useState('');
   const [editDeviceSpecs, setEditDeviceSpecs] = useState('');
+  const [editDeviceIsPreOwned, setEditDeviceIsPreOwned] = useState(false);
   const [editDeviceImages, setEditDeviceImages] = useState<File[]>([]);
   const [editDeviceImagePreviews, setEditDeviceImagePreviews] = useState<string[]>([]);
   const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
@@ -77,6 +79,7 @@ export default function CashierDevices() {
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
   const [newDeviceSpecs, setNewDeviceSpecs] = useState('');
+  const [newDeviceIsPreOwned, setNewDeviceIsPreOwned] = useState(false);
   const [newDeviceImages, setNewDeviceImages] = useState<File[]>([]);
   const [newDeviceImagePreviews, setNewDeviceImagePreviews] = useState<string[]>([]);
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
@@ -153,6 +156,7 @@ export default function CashierDevices() {
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
+    formData.append('isPreOwned', newDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', newDeviceSpecs);
     if (newDeviceImages.length > 0) {
       newDeviceImages.forEach(file => {
@@ -196,6 +200,7 @@ export default function CashierDevices() {
       setNewDevicePrice('');
       setNewDeviceStocks('');
       setNewDeviceCategory('');
+      setNewDeviceIsPreOwned(false);
       setNewDeviceSpecs('');
       setNewDeviceImages([]);
       setNewDeviceImagePreviews([]);
@@ -305,6 +310,7 @@ export default function CashierDevices() {
     setEditDevicePrice(device.price.toString());
     setEditDeviceStocks(device.stock.toString());
     setEditDeviceCategory(device.categoryId || '');
+    setEditDeviceIsPreOwned(device.isPreOwned || false);
     setEditDeviceSpecs(device.specs || '');
     setEditDeviceImagePreviews(device.images && device.images.length > 0 ? device.images : (device.image ? [device.image] : []));
     setEditDeviceImages([]);
@@ -337,6 +343,7 @@ export default function CashierDevices() {
     formData.append('devicePrice', editDevicePrice);
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
+    formData.append('isPreOwned', editDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', editDeviceSpecs);
     if (editDeviceImages.length > 0) {
       editDeviceImages.forEach(file => {
@@ -809,6 +816,19 @@ export default function CashierDevices() {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-3 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
+                  <input 
+                    type="checkbox" 
+                    id="cashierNewDeviceIsPreOwned" 
+                    checked={newDeviceIsPreOwned} 
+                    onChange={e => setNewDeviceIsPreOwned(e.target.checked)} 
+                    className="w-5 h-5 accent-[#bd00ff] cursor-pointer rounded"
+                  />
+                  <label htmlFor="cashierNewDeviceIsPreOwned" className="text-sm font-bold text-black cursor-pointer select-none">
+                    Pre-Owned Device <span className="text-xs text-gray-500 font-normal ml-1">(Mark if product is second-hand / refurbished)</span>
+                  </label>
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <label className="block text-sm font-bold text-gray-700">Specs / Description</label>
                   <textarea value={newDeviceSpecs} onChange={e => setNewDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-medium resize-y min-h-[80px]" />
@@ -1084,6 +1104,19 @@ export default function CashierDevices() {
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
                     </div>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
+                  <input 
+                    type="checkbox" 
+                    id="cashierEditDeviceIsPreOwned" 
+                    checked={editDeviceIsPreOwned} 
+                    onChange={e => setEditDeviceIsPreOwned(e.target.checked)} 
+                    className="w-5 h-5 accent-[#bd00ff] cursor-pointer rounded"
+                  />
+                  <label htmlFor="cashierEditDeviceIsPreOwned" className="text-sm font-bold text-black cursor-pointer select-none">
+                    Pre-Owned Device <span className="text-xs text-gray-500 font-normal ml-1">(Mark if product is second-hand / refurbished)</span>
+                  </label>
                 </div>
 
                 <div className="flex flex-col gap-1">

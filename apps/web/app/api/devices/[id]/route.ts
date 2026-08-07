@@ -71,6 +71,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
     const variationsStr = formData.get('variations') as string;
 
+    const isPreOwnedVal = formData.get('isPreOwned');
+    const isPreOwned = isPreOwnedVal !== null ? isPreOwnedVal === 'true' : undefined;
+
     let variations = [];
     if (variationsStr) {
       try {
@@ -107,6 +110,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(priceStr && { price: parseFloat(priceStr) }),
         ...(costStr && { cost: parseFloat(costStr) }),
         ...(stockStr && { stock: parseInt(stockStr, 10) }),
+        ...(isPreOwned !== undefined && { isPreOwned }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),
         ...(specs !== null && { specs: specs || null }),
         ...(asLowAs !== null && { asLowAs: asLowAs || null }),
