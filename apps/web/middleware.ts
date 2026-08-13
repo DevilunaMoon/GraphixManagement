@@ -5,7 +5,7 @@ import { decrypt } from './lib/jwt'
 export async function middleware(request: NextRequest) {
   const currentPath = request.nextUrl.pathname;
   
-  // Public paths don't need authentication
+  // Public static assets and APIs that don't need authentication check
   if (
     currentPath.startsWith('/_next') || 
     currentPath.startsWith('/Images') || 
@@ -13,9 +13,7 @@ export async function middleware(request: NextRequest) {
     currentPath.startsWith('/api') || 
     currentPath.startsWith('/policy') ||
     currentPath.startsWith('/forgot-password') ||
-    currentPath.startsWith('/reset-password') ||
-    currentPath === '/' || 
-    currentPath === '/homepage'
+    currentPath.startsWith('/reset-password')
   ) {
     return NextResponse.next();
   }
@@ -26,18 +24,19 @@ export async function middleware(request: NextRequest) {
 
   const role = session?.role?.toLowerCase() || '';
 
-  // 1. Prevent logged-in users from seeing the Login page
-  if (currentPath === '/login') {
+  // 1. Auto-Redirect logged-in users from Landing Page, Homepage, or Login page to their Dashboard
+  if (currentPath === '/' || currentPath === '/homepage' || currentPath === '/login') {
     if (session) {
       if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       if (role === 'cashier') return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
       return NextResponse.redirect(new URL('/customer/dashboard', request.url));
     }
+    // If not logged in, allow them to view landing page or login page
     return NextResponse.next();
   }
 
-  // 2. Prevent logged-out users from seeing Dashboards
-  if (!session && !currentPath.startsWith('/login') && !currentPath.startsWith('/homepage')) {
+  // 2. Prevent logged-out users from seeing Protected Dashboards
+  if (!session) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', currentPath + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
