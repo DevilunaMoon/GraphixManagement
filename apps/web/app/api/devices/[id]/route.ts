@@ -9,7 +9,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
     const { id } = params;
     const device = await prisma.device.findUnique({
       where: { id },
-      include: { variations: true }
+      include: { variations: true, category: true }
     });
 
     if (!device) {

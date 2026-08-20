@@ -13,6 +13,20 @@ interface Comment {
 
 import { Suspense } from 'react';
 
+const formatCurrency = (val: any) => {
+  if (val === undefined || val === null || val === '') return '';
+  const numStr = String(val).replace(/[^0-9.]/g, '');
+  const num = parseFloat(numStr);
+  if (isNaN(num)) return String(val);
+  return `₱${num.toLocaleString()}`;
+};
+
+const formatMonthly = (val: any) => {
+  if (val === undefined || val === null || val === '') return '';
+  const formatted = formatCurrency(val);
+  return formatted.toLowerCase().includes('/mo') ? formatted : `${formatted}/Mo`;
+};
+
 function CustomerProductInfoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,6 +42,16 @@ function CustomerProductInfoContent() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const isDefaultFlyer = useMemo(() => {
+    if (!product?.downpaymentImage) return false;
+    const url = product.downpaymentImage.toLowerCase();
+    return url.includes('skyro') || url.includes('iphone') || url.includes('flyer') || url.includes('banner');
+  }, [product?.downpaymentImage]);
+
+  const brandName = useMemo(() => {
+    if (!product) return 'Graphix';
+    return product.category?.name || product.name.split(' ')[0] || 'Graphix';
+  }, [product]);
 
   useEffect(() => {
     if (isDownpaymentModalOpen || showSuccessModal) {
@@ -512,10 +536,97 @@ function CustomerProductInfoContent() {
 
               {product?.downpaymentImage ? (
                 <div className="flex flex-col gap-2.5 items-center w-full">
-                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Scan QR Code To Transact</span>
-                  <div className="p-3 bg-white border border-gray-200/80 rounded-3xl shadow-sm">
-                    <img src={product.downpaymentImage} alt="Downpayment QR" className="w-full max-w-[220px] h-auto object-contain rounded-xl" />
-                  </div>
+                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
+                    {isDefaultFlyer ? 'Installment Flyer Preview' : 'Scan QR Code To Transact'}
+                  </span>
+                  
+                  {isDefaultFlyer ? (
+                    /* Dynamic Premium Flyer Mockup */
+                    <div className="w-full max-w-[360px] bg-white border border-gray-200/80 rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex gap-4 items-stretch font-['Inter'] relative overflow-hidden select-none">
+                      {/* Subtle premium background glow */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
+                      
+                      {/* Left Column: Product Info Card */}
+                      <div className="w-[45%] flex flex-col items-center justify-between p-3 bg-gradient-to-b from-gray-50/80 to-gray-50/30 rounded-2xl border border-gray-100 text-center relative">
+                        {/* Brand header */}
+                        <div className="flex flex-col items-center gap-1">
+                          {product.category?.logoUrl ? (
+                            <img src={product.category.logoUrl} alt={brandName} className="h-5 max-w-[55px] object-contain opacity-90" />
+                          ) : (
+                            <span className="text-xs font-black text-purple-600 tracking-tight">{brandName}</span>
+                          )}
+                          <span className="text-[7px] font-black text-gray-400 tracking-widest uppercase">
+                            OFFICIAL STORE
+                          </span>
+                        </div>
+
+                        {/* Device image */}
+                        <div className="my-2.5 w-full aspect-square flex items-center justify-center">
+                          <img 
+                            src={product.image || '/Images/iphone.jpg'} 
+                            alt={product.name} 
+                            className="max-w-full max-h-[85px] object-contain drop-shadow-md transition-transform hover:scale-105 duration-300" 
+                          />
+                        </div>
+
+                        {/* Device name */}
+                        <span className="text-[9px] font-black text-gray-800 uppercase tracking-tight line-clamp-2 leading-snug">
+                          {product.name.replace(/official store/i, '').trim()}
+                        </span>
+                      </div>
+
+                      {/* Thin vertical separator line */}
+                      <div className="w-px bg-gray-100" />
+
+                      {/* Right Column: Skyro Installment Terms */}
+                      <div className="w-[52%] flex flex-col justify-between py-0.5 pl-1">
+                        {/* Skyro brand logo */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-[#0057E7]">
+                            <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.5 14.25l-3.75-3.75 1.4-1.4 2.35 2.35 6.35-6.35 1.4 1.4-7.75 7.75z" />
+                            </svg>
+                            <span className="text-base font-black tracking-tight" style={{ fontFamily: "'Outfit', 'Inter', sans-serif" }}>Skyro</span>
+                          </div>
+                          <span className="text-[7px] font-black text-[#0057E7] bg-blue-50 border border-blue-100/50 px-1.5 py-0.5 rounded">FINANCING</span>
+                        </div>
+
+                        {/* Financial metrics */}
+                        <div className="flex flex-col gap-2.5 mt-2">
+                          {product.asLowAs && (
+                            <div className="flex flex-col">
+                              <span className="text-[7px] text-gray-400 font-extrabold uppercase tracking-wider leading-none mb-0.5">As Low As</span>
+                              <span className="text-gray-900 font-black text-[15px] leading-tight">
+                                {formatMonthly(product.asLowAs)}
+                              </span>
+                              <span className="text-[7px] text-gray-400 font-bold uppercase tracking-wider leading-none mt-0.5">For 12 Months</span>
+                            </div>
+                          )}
+
+                          {product.downpayment && (
+                            <div className="flex flex-col">
+                              <span className="text-[7px] text-gray-400 font-extrabold uppercase tracking-wider leading-none mb-0.5">Downpayment</span>
+                              <span className="text-[#bd00ff] font-black text-sm leading-tight">
+                                {formatCurrency(product.downpayment)}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex flex-col">
+                            <span className="text-[7px] text-gray-400 font-extrabold uppercase tracking-wider leading-none mb-0.5">Cash Price</span>
+                            <span className="text-gray-950 font-black text-sm leading-tight">
+                              {formatCurrency(product.price)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Regular custom QR Code image */
+                    <div className="p-3 bg-white border border-gray-200/80 rounded-3xl shadow-sm">
+                      <img src={product.downpaymentImage} alt="Downpayment QR" className="w-full max-w-[220px] h-auto object-contain rounded-xl" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-gray-400 font-bold text-sm py-4">No GCash Merchant QR Uploaded</div>
