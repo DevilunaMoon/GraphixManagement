@@ -20,6 +20,7 @@ interface Transaction {
   downpaymentAmount?: number;
   remainingBalance?: number;
   isSettled?: boolean;
+  address?: string;
   user: {
     id: string;
     name: string | null;
@@ -71,7 +72,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         });
 
         doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        doc.save(`Graphix_Repair_Receipt_${tx.id.substring(3, 11).toUpperCase()}.pdf`);
+        doc.save(`Graphix_Repair_Receipt_${tx.id.substring(3).toUpperCase()}.pdf`);
       } catch (err) {
         console.error('Error generating PDF:', err);
       } finally {
@@ -142,6 +143,159 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
+
+  // Helper component to render paper duplicate receipt
+  const renderPaperReceipt = (tx: Transaction, isPdf = false) => {
+    const serialNo = tx.id.startsWith('rp_') ? tx.id.substring(3) : tx.id.substring(0, 8).toUpperCase();
+    const dateObj = new Date(tx.createdAt);
+    const dateFormatted = `${dateObj.getMonth() + 1}/${dateObj.getDate()}/${dateObj.getFullYear().toString().substring(2)}`;
+    const address = tx.address || "Walk-In / Store Front";
+    
+    // Exact physical receipt signatures overrides based on upload photos
+    let signatureText = "ag";
+    const lowerName = (tx.user?.name || "").toLowerCase();
+    if (lowerName.includes("vincent") || lowerName.includes("mumaril")) {
+      signatureText = "Vincent";
+    } else if (lowerName.includes("april") || lowerName.includes("ocero")) {
+      signatureText = "April";
+    } else if (lowerName.includes("juana") || lowerName.includes("mahusay")) {
+      signatureText = "Juana";
+    } else if (lowerName.includes("joram") || lowerName.includes("pacana")) {
+      signatureText = "Joram";
+    } else if (lowerName.includes("pixter") || lowerName.includes("gabatan")) {
+      signatureText = "ag";
+    } else if (tx.user?.name) {
+      signatureText = tx.user.name.split(' ')[0] || "ag";
+    }
+
+    return (
+      <div 
+        className="w-full border border-[#d2c1a5] rounded-2xl p-5 flex flex-col shadow-lg select-none relative"
+        style={{
+          backgroundColor: '#FCFAF2',
+          backgroundImage: 'linear-gradient(rgba(240, 230, 210, 0.1) 1px, transparent 1px)',
+          backgroundSize: '100% 24px',
+          color: '#2b261f',
+          fontFamily: "'Courier New', Courier, monospace",
+          maxWidth: isPdf ? '100%' : '350px',
+          margin: '0 auto',
+        }}
+      >
+        {/* Date & Serial Number */}
+        <div className="flex justify-between items-center mb-4 text-[13px] font-bold">
+          <div>
+            <span>Date: </span>
+            <span className="underline text-blue-900 px-1 ml-1 text-sm tracking-wide" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '16px' }}>
+              {dateFormatted}
+            </span>
+          </div>
+          <div className="text-[13px]">
+            <span>NO: </span>
+            <span className="text-[#d32f2f] font-mono font-black tracking-widest text-[15px]">{serialNo}</span>
+          </div>
+        </div>
+
+        {/* SOLD TO */}
+        <div className="flex items-end mb-3 text-[12px] font-bold">
+          <span className="whitespace-nowrap mr-2">SOLD TO:</span>
+          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 uppercase tracking-wide text-xs" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '15px', lineHeight: '1.1' }}>
+            {tx.user?.name || 'Walk-in Customer'}
+          </span>
+        </div>
+
+        {/* ADDRESS */}
+        <div className="flex items-end mb-5 text-[12px] font-bold">
+          <span className="whitespace-nowrap mr-2">ADDRESS:</span>
+          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 text-xs" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '14px', lineHeight: '1.1' }}>
+            {address}
+          </span>
+        </div>
+
+        {/* Grid Table */}
+        <div className="border border-[#c5b79e] rounded overflow-hidden mb-4 bg-transparent text-[11px] font-bold">
+          <div className="grid grid-cols-12 bg-[#f0e7d5] border-b border-[#c5b79e] text-center py-1 text-[10px]">
+            <div className="col-span-1 border-r border-[#c5b79e]">QTY</div>
+            <div className="col-span-1 border-r border-[#c5b79e]">UNIT</div>
+            <div className="col-span-6 border-r border-[#c5b79e]">ARTICLES</div>
+            <div className="col-span-2 border-r border-[#c5b79e]">PRICE</div>
+            <div className="col-span-2">AMOUNT</div>
+          </div>
+
+          {/* Row 1: Item details */}
+          <div className="grid grid-cols-12 border-b border-[#c5b79e]/60 text-center min-h-[30px] items-center">
+            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>1</div>
+            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>pc</div>
+            <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-blue-900 leading-tight" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '14px' }}>
+              {tx.variations || 'Repair Payment'}
+            </div>
+            <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>
+              {tx.device?.price.toLocaleString()}
+            </div>
+            <div className="col-span-2 text-right px-1 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>
+              {tx.amount.toLocaleString()}
+            </div>
+          </div>
+
+          {/* Downpayment remaining balance row */}
+          {tx.paymentType === 'Downpayment' && (
+            <div className="grid grid-cols-12 border-b border-[#c5b79e]/60 text-center min-h-[30px] items-center bg-[#ebf3ff]/20">
+              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>-</div>
+              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>-</div>
+              <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-red-600 leading-tight" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '13px' }}>
+                Remaining Balance (50%)
+              </div>
+              <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-red-600" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '13px' }}>
+                {(tx.device?.price / 2).toLocaleString()}
+              </div>
+              <div className="col-span-2 text-right px-1 text-red-600" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '13px' }}>
+                {(tx.device?.price / 2).toLocaleString()}
+              </div>
+            </div>
+          )}
+
+          {/* Empty rows padding */}
+          {[...Array(tx.paymentType === 'Downpayment' ? 4 : 5)].map((_, i) => (
+            <div key={i} className="grid grid-cols-12 border-b border-[#c5b79e]/30 text-center h-[24px]">
+              <div className="col-span-1 border-r border-[#c5b79e]/30"></div>
+              <div className="col-span-1 border-r border-[#c5b79e]/30"></div>
+              <div className="col-span-6 border-r border-[#c5b79e]/30"></div>
+              <div className="col-span-2 border-r border-[#c5b79e]/30"></div>
+              <div className="col-span-2"></div>
+            </div>
+          ))}
+
+          {/* Total Row */}
+          <div className="grid grid-cols-12 bg-[#f0e7d5]/50 items-center py-1">
+            <div className="col-span-8 text-right pr-4 font-bold text-xs flex justify-end items-center gap-1">
+              <span>TOTAL</span>
+              <span className="text-[14px]">👉</span>
+            </div>
+            <div className="col-span-4 text-right px-2 text-blue-900 font-extrabold text-base" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '18px' }}>
+              ₱{tx.amount.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        {/* Signature Box */}
+        <div className="flex justify-between items-end mt-4 text-[10px] font-bold">
+          <div className="flex items-baseline">
+            <span>NO. </span>
+            <span className="border-b border-[#a89c89] w-24 text-center text-gray-500 font-mono tracking-widest text-[9px] pb-0.5">
+              {tx.repairId.substring(0, 10).toUpperCase()}
+            </span>
+          </div>
+          <div className="flex flex-col items-center relative pr-4">
+            <span className="text-blue-800/80 absolute bottom-3 text-lg leading-none select-none pointer-events-none" style={{ fontFamily: "'Brush Script MT', 'Dancing Script', cursive, sans-serif", fontSize: '26px', transform: 'rotate(-8deg)' }}>
+              {signatureText}
+            </span>
+            <span className="border-t border-[#a89c89] pt-1 w-28 text-center text-gray-500 uppercase tracking-widest font-mono text-[9px]">
+              SIGNATURE
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -369,7 +523,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
       {/* Transaction Details Modal */}
       {selectedTransaction && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTransaction(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
               <div className="flex items-center gap-2">
                 <ReceiptText className="text-purple-600" size={24} />
@@ -381,9 +535,10 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
             </div>
             
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                
                 {/* Column 1: Details */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 md:col-span-7">
                   <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Repair Information</h4>
                   
                   <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
@@ -433,152 +588,47 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                       </p>
                     </div>
                   </div>
-                </div>
 
-                {/* Column 2: Financials & Actions */}
-                <div className="flex flex-col justify-between gap-6">
-                  {type === "downpayment" ? (
-                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/70 flex flex-col gap-3">
-                      <h4 className="font-bold text-blue-900 m-0 text-base mb-1 border-b border-blue-200/50 pb-2">Payment Breakdown</h4>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700 font-medium">Total Repair Cost</span>
-                        <span className="font-bold text-blue-900">₱{selectedTransaction.device?.price.toLocaleString()}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700 font-medium">Downpayment Paid (50%)</span>
-                        <span className="font-bold text-green-600">₱{selectedTransaction.amount.toLocaleString()}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-sm border-t border-blue-200/60 pt-3 mt-1">
-                        <span className="text-blue-800 font-bold">Remaining Balance (50%)</span>
-                        <span className="font-bold text-red-500">₱{selectedTransaction.remainingBalance?.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col gap-3">
-                      <h4 className="font-bold text-purple-900 m-0 text-base mb-1 border-b border-purple-200/40 pb-2">Payment Breakdown</h4>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-purple-700 font-medium">Repair Service Fee</span>
-                        <span className="font-bold text-gray-900">₱{selectedTransaction.device?.price.toLocaleString()}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm border-t border-purple-200/40 pt-3 mt-1">
-                        <span className="text-purple-800 font-bold">Total Paid Amount</span>
-                        <span className="font-black text-xl text-[#bd00ff]">₱{selectedTransaction.amount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2 mt-auto">
+                  {/* Modal Actions */}
+                  <div className="flex gap-3 mt-6">
                     <button
                       onClick={() => handleDownloadPDF(selectedTransaction)}
-                      className="w-full px-4 py-3 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                      className="flex-1 px-4 py-3 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <Download size={18} /> Download PDF Receipt
+                      <Download size={18} /> Download Receipt
                     </button>
                     <button
                       onClick={() => setSelectedTransaction(null)}
-                      className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-sm cursor-pointer border-none"
+                      className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-sm cursor-pointer border-none"
                     >
                       Close
                     </button>
                   </div>
                 </div>
+
+                {/* Column 2: Digital Duplicate Paper Receipt */}
+                <div className="md:col-span-5 flex justify-center">
+                  <div className="w-full flex flex-col gap-2">
+                    <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Paper Receipt Copy</h4>
+                    {renderPaperReceipt(selectedTransaction)}
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hidden Thermal Receipt for PDF Generation */}
+      {/* Hidden PDF Printable Component */}
       {downloadingTxId && (
         <div id="thermal-receipt-container" style={{ position: 'absolute', left: '-9999px', top: '0', display: 'block' }}>
           {(() => {
             const tx = transactions.find(t => t.id === downloadingTxId);
             if (!tx) return null;
-
-            const isDownpayment = tx.paymentType === 'Downpayment';
-            const totalCost = tx.device?.price || 0;
-            const downpaymentPaid = tx.downpaymentAmount || 0;
-            const remainingBalance = tx.remainingBalance || 0;
-
             return (
-              <div 
-                ref={hiddenReceiptRef}
-                style={{
-                  fontFamily: "'Courier New', Courier, monospace",
-                  width: "72mm",
-                  color: "black",
-                  background: "white",
-                  fontSize: "12px",
-                  lineHeight: "1.3",
-                  padding: "4mm",
-                  margin: "0 auto"
-                }}
-              >
-                <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                  <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX REPAIR</div>
-                  <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
-                  <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                  <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
-                    {isDownpayment ? 'REPAIR DOWNPAYMENT INVOICE' : 'REPAIR SALES INVOICE'}<br />
-                    #{tx.id.substring(3).toUpperCase()}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                  <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Repair Device").toUpperCase()}</span>
-                  <span>{tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
-                  <span>Issue: {tx.variations || 'General Issue'}</span>
-                  <span>Tech: {tx.device?.technician}</span>
-                </div>
-
-                <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                  <span>Total Cost</span>
-                  <span>Php {totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                
-                {isDownpayment ? (
-                  <>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                      <span>Downpayment Paid</span>
-                      <span>Php {downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                      <span>Remaining Balance</span>
-                      <span>Php {remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span>Amount Paid</span>
-                    <span>Php {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                )}
-
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginTop: "4px" }}>
-                  <span>Payment Method</span>
-                  <span>GCash/Cash</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                  <span>Service Outlet</span>
-                  <span>Graphix POS Desk</span>
-                </div>
-
-                <div style={{ borderTop: "1px dashed black", margin: "10px 0 6px 0" }}></div>
-                <div style={{ textAlign: "center", fontSize: "10px", fontStyle: "italic" }}>
-                  Thank you for trusting Graphix!<br />
-                  For inquiries, call 0999-XXX-XXXX<br />
-                  3 months service warranty applies.
-                </div>
+              <div ref={hiddenReceiptRef} style={{ width: "350px", background: "white", padding: "10px" }}>
+                {renderPaperReceipt(tx, true)}
               </div>
             );
           })()}
