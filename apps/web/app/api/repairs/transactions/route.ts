@@ -270,7 +270,7 @@ export async function GET(req: Request) {
           id: repair.id,
           name: repair.deviceName,
           price: totalCost,
-          image: repair.image || null,
+          image: repair.proofImage || repair.image || null,
           technician: repair.technician || 'N/A',
         },
       };

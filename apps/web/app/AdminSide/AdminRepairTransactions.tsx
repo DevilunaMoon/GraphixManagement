@@ -226,7 +226,9 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
             <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>1</div>
             <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>pc</div>
             <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-blue-900 leading-tight" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '14px' }}>
-              {tx.variations || 'Repair Payment'}
+              {(tx.variations && (tx.variations.toLowerCase().includes("repair payment") || tx.variations.toLowerCase().includes(tx.device?.name?.toLowerCase() || "")))
+                ? tx.variations
+                : `${tx.device?.name || 'Device Repair'} (${tx.variations || 'General Issue'})`}
             </div>
             <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>
               {tx.device?.price.toLocaleString()}
@@ -588,6 +590,20 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                       </p>
                     </div>
                   </div>
+
+                  {/* Repaired Device Image Preview */}
+                  {selectedTransaction.device?.image && (
+                    <div className="mt-4 flex flex-col gap-2">
+                      <span className="text-gray-500 font-semibold text-sm">Completed Repaired Device Photo</span>
+                      <div className="w-full h-44 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative group bg-gray-50">
+                        <img 
+                          src={selectedTransaction.device.image} 
+                          alt="Repaired Device Photo" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Modal Actions */}
                   <div className="flex gap-3 mt-6">
