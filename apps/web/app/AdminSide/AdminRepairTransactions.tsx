@@ -185,7 +185,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         <div className="flex justify-between items-center mb-4 text-[13px] font-bold">
           <div>
             <span>Date: </span>
-            <span className="underline text-blue-900 px-1 ml-1 text-sm tracking-wide" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '16px' }}>
+            <span className="underline text-blue-900 px-1 ml-1 text-sm tracking-wide" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '14px', fontWeight: 'bold' }}>
               {dateFormatted}
             </span>
           </div>
@@ -198,7 +198,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         {/* SOLD TO */}
         <div className="flex items-end mb-3 text-[12px] font-bold">
           <span className="whitespace-nowrap mr-2">SOLD TO:</span>
-          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 uppercase tracking-wide text-xs" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '15px', lineHeight: '1.1' }}>
+          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 uppercase tracking-wide text-xs" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '13px', fontWeight: 'bold', lineHeight: '1.1' }}>
             {tx.user?.name || 'Walk-in Customer'}
           </span>
         </div>
@@ -206,7 +206,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         {/* ADDRESS */}
         <div className="flex items-end mb-5 text-[12px] font-bold">
           <span className="whitespace-nowrap mr-2">ADDRESS:</span>
-          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 text-xs" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '14px', lineHeight: '1.1' }}>
+          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 text-xs" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold', lineHeight: '1.1' }}>
             {address}
           </span>
         </div>
@@ -223,17 +223,17 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
 
           {/* Row 1: Item details */}
           <div className="grid grid-cols-12 border-b border-[#c5b79e]/60 text-center min-h-[30px] items-center">
-            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>1</div>
-            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>pc</div>
-            <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-blue-900 leading-tight" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '14px' }}>
+            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>1</div>
+            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>pc</div>
+            <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-blue-900 leading-tight" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
               {(tx.variations && (tx.variations.toLowerCase().includes("repair payment") || tx.variations.toLowerCase().includes(tx.device?.name?.toLowerCase() || "")))
                 ? tx.variations
                 : `${tx.device?.name || 'Device Repair'} (${tx.variations || 'General Issue'})`}
             </div>
-            <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>
+            <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
               {tx.device?.price.toLocaleString()}
             </div>
-            <div className="col-span-2 text-right px-1 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>
+            <div className="col-span-2 text-right px-1 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
               {tx.amount.toLocaleString()}
             </div>
           </div>
@@ -241,15 +241,15 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
           {/* Downpayment remaining balance row */}
           {tx.paymentType === 'Downpayment' && (
             <div className="grid grid-cols-12 border-b border-[#c5b79e]/60 text-center min-h-[30px] items-center bg-[#ebf3ff]/20">
-              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>-</div>
-              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '14px' }}>-</div>
-              <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-red-600 leading-tight" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '13px' }}>
+              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>-</div>
+              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>-</div>
+              <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-red-600 leading-tight" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
                 Remaining Balance (50%)
               </div>
-              <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-red-600" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '13px' }}>
+              <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-red-600" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
                 {(tx.device?.price / 2).toLocaleString()}
               </div>
-              <div className="col-span-2 text-right px-1 text-red-600" style={{ fontFamily: "'Brush Script MT', cursive, sans-serif", fontSize: '13px' }}>
+              <div className="col-span-2 text-right px-1 text-red-600" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
                 {(tx.device?.price / 2).toLocaleString()}
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
               <span>TOTAL</span>
               <span className="text-[14px]">👉</span>
             </div>
-            <div className="col-span-4 text-right px-2 text-blue-900 font-extrabold text-base" style={{ fontFamily: "'Brush Script MT', 'Segoe Print', cursive, sans-serif", fontSize: '18px' }}>
+            <div className="col-span-4 text-right px-2 text-blue-900 font-extrabold text-base" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '14px', fontWeight: 'bold' }}>
               ₱{tx.amount.toLocaleString()}
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
             </span>
           </div>
           <div className="flex flex-col items-center relative pr-4">
-            <span className="text-blue-800/80 absolute bottom-3 text-lg leading-none select-none pointer-events-none" style={{ fontFamily: "'Brush Script MT', 'Dancing Script', cursive, sans-serif", fontSize: '26px', transform: 'rotate(-8deg)' }}>
+            <span className="text-blue-800/80 absolute bottom-3 text-lg leading-none select-none pointer-events-none" style={{ fontFamily: "'Segoe Script', 'Dancing Script', cursive, sans-serif", fontSize: '24px', transform: 'rotate(-8deg)', fontWeight: 'bold' }}>
               {signatureText}
             </span>
             <span className="border-t border-[#a89c89] pt-1 w-28 text-center text-gray-500 uppercase tracking-widest font-mono text-[9px]">
