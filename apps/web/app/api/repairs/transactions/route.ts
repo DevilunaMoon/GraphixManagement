@@ -279,7 +279,9 @@ export async function GET(req: Request) {
     // Handle Paper Receipts
     let matchedPaper: any[] = [];
     if (type !== 'downpayment') {
+      const dbIds = new Set(dbTransactions.map(tx => tx.repairId));
       matchedPaper = PAPER_RECEIPTS.filter((tx) => {
+        if (dbIds.has(tx.repairId)) return false;
         // Filter by date
         if (date) {
           const txDateStr = new Date(tx.createdAt).toDateString();
