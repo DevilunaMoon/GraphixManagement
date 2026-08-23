@@ -147,8 +147,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               icon: Wrench,
               subItems: [
                 { href: '/admin/monitoring', label: 'Devices Monitoring' },
-                { href: '/admin/repairs/transactions', label: 'Completed Repairs' },
-                { href: '/admin/repairs/transactions/downpayments', label: 'Downpayments' }
+                { href: '/admin/repairs/transactions', label: 'Completed Repairs' }
               ]
             },
             { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
