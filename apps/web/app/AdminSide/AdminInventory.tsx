@@ -11,6 +11,7 @@ export default function AdminInventory() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('all');
   const { styles } = useTheme();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -171,11 +172,11 @@ export default function AdminInventory() {
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, selectedDeviceType]);
 
   const fetchProducts = () => {
     setIsLoading(true);
-    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&categoryId=${selectedCategory}`)
+    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&categoryId=${selectedCategory}&type=${selectedDeviceType}`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.devices)) {
@@ -216,7 +217,7 @@ export default function AdminInventory() {
       fetchProducts();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery, selectedCategory]);
+  }, [currentPage, searchQuery, selectedCategory, selectedDeviceType]);
 
   useEffect(() => {
     fetchCategories();
@@ -438,29 +439,47 @@ export default function AdminInventory() {
             <input type="text" placeholder="Search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-[#999]" />
           </div>
 
-        {/* Filter Dropdown */}
-          <div className="relative font-['Inter'] flex-shrink-0 w-full sm:w-auto">
-            <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 cursor-pointer ${styles.textActive} text-[1.1rem] font-semibold hover:bg-black/5 transition-all w-full sm:w-auto sm:min-w-[140px] justify-between`}>
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5" />
-              </div>
-              <ChevronDown className={`w-5 h-5 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+            {/* Filter Dropdown */}
+            <div className="relative font-['Inter'] flex-shrink-0 w-full sm:w-auto">
+              <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 cursor-pointer ${styles.textActive} text-[1.1rem] font-semibold hover:bg-black/5 transition-all w-full sm:w-auto sm:min-w-[140px] justify-between`}>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                </div>
+                <ChevronDown className={`w-5 h-5 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isFilterOpen && (
+                <div className="absolute top-[115%] right-0 w-[150px] bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-black/10 overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto custom-scrollbar">
+                  <button onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${selectedCategory === 'All' ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>All Brands</button>
+                  {categories.map(cat => (
+                    <button key={cat.id} onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${selectedCategory === cat.id ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Device Type Dropdown Filter */}
+            <div className="relative font-['Inter'] flex-shrink-0 w-full sm:w-auto">
+              <select 
+                value={selectedDeviceType} 
+                onChange={(e) => setSelectedDeviceType(e.target.value)} 
+                className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2.5 cursor-pointer ${styles.textActive} text-[1rem] font-semibold hover:bg-black/5 transition-all w-full sm:w-auto outline-none appearance-none pr-8 relative`}
+                style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
+              >
+                <option value="all">All Types</option>
+                <option value="smartphone">Smartphones</option>
+                <option value="laptop">Laptops</option>
+                <option value="ipad">iPads/Tablets</option>
+                <option value="tv">TVs</option>
+                <option value="speaker">Speakers</option>
+                <option value="phone accessories">Phone Accessories</option>
+              </select>
+            </div>
+            
+            <button onClick={() => setCategoriesModalOpen(true)} className="flex items-center justify-center gap-2 bg-purple-100 text-[#5c0099] px-4 py-2.5 rounded-full font-bold hover:bg-purple-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
+              <span>Manage Brands</span>
             </button>
-            {isFilterOpen && (
-              <div className="absolute top-[115%] right-0 w-[150px] bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.1)] border border-black/10 overflow-hidden flex flex-col z-50 animate-in fade-in slide-in-from-top-2 max-h-60 overflow-y-auto custom-scrollbar">
-                <button onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${selectedCategory === 'All' ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>All Categories</button>
-                {categories.map(cat => (
-                  <button key={cat.id} onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} className={`px-5 py-3 text-left font-medium hover:bg-black/5 transition-colors ${selectedCategory === cat.id ? `${styles.textActive} font-bold` : 'text-[#111]'}`}>
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <button onClick={() => setCategoriesModalOpen(true)} className="flex items-center justify-center gap-2 bg-purple-100 text-[#5c0099] px-4 py-2.5 rounded-full font-bold hover:bg-purple-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
-            <span>Manage Categories</span>
-          </button>
           <button onClick={() => setIsAddModalOpen(true)} className="flex items-center justify-center gap-2 bg-[#5c0099] text-white px-4 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
             <Plus size={20} />
             <span>Add Device</span>
@@ -471,7 +490,7 @@ export default function AdminInventory() {
       {/* Categories Section */}
       <section className={`bg-white/95 rounded-xl p-5 md:p-8 shadow-sm border-2 ${styles.borderMain} flex flex-col gap-4 w-full mb-2 transition-colors duration-300`}>
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none">Categories</h2>
+          <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none">Brands</h2>
         </div>
         
         <div className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 scrollbar-hide">
@@ -483,7 +502,7 @@ export default function AdminInventory() {
               <span className={`text-xs font-bold ${selectedCategory === 'All' ? 'text-[#bd00ff]' : 'text-gray-400'}`}>All</span>
             </div>
             <span className={`text-xs sm:text-sm font-semibold text-center transition-colors leading-tight ${selectedCategory === 'All' ? 'text-[#bd00ff]' : 'text-gray-700 group-hover:text-[#bd00ff]'}`}>
-              All Categories
+              All Brands
             </span>
           </div>
 
@@ -687,10 +706,10 @@ export default function AdminInventory() {
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-[#444]">Category <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-[#444]">Brand <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select required value={newDeviceCategory} onChange={e => setNewDeviceCategory(e.target.value)} className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300">
-                      <option value="" disabled className="text-gray-400">Select a category...</option>
+                      <option value="" disabled className="text-gray-400">Select a brand...</option>
                       {categories.map((cat, idx) => (<option key={idx} value={cat.id} className="font-medium text-[#111]">{cat.name}</option>))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400"><svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg></div>
@@ -898,10 +917,10 @@ export default function AdminInventory() {
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-[#444]">Category <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-[#444]">Brand <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select required value={editDeviceCategory} onChange={e => setEditDeviceCategory(e.target.value)} className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300">
-                      <option value="" disabled className="text-gray-400">Select a category...</option>
+                      <option value="" disabled className="text-gray-400">Select a brand...</option>
                       {categories.map((cat, idx) => (<option key={idx} value={cat.id} className="font-medium text-[#111]">{cat.name}</option>))}
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400"><svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg></div>
@@ -1090,7 +1109,7 @@ export default function AdminInventory() {
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[90vh]">
 
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-xl font-bold text-black m-0">Manage Categories</h3>
+              <h3 className="text-xl font-bold text-black m-0">Manage Brands</h3>
               <button onClick={() => setCategoriesModalOpen(false)} className="text-gray-500 hover:text-black hover:bg-gray-200 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer">
                 <X size={24} />
               </button>
@@ -1132,7 +1151,7 @@ export default function AdminInventory() {
                     type="text"
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="Enter new category name..."
+                    placeholder="Enter new brand name..."
                     className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleAddCategory();
@@ -1153,7 +1172,7 @@ export default function AdminInventory() {
               {/* List Categories */}
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-gray-500 font-bold uppercase text-sm m-0">Existing Categories</h4>
+                  <h4 className="text-gray-500 font-bold uppercase text-sm m-0">Existing Brands</h4>
                   {categories.length > 0 && (
                     <button 
                       onClick={() => { setIsDeleteCatMode(!isDeleteCatMode); setSelectedCatsToDelete([]); }} 
@@ -1165,7 +1184,7 @@ export default function AdminInventory() {
                   )}
                 </div>
                 {categories.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">No categories found. Add one above!</div>
+                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">No brands found. Add one above!</div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {categories.map((cat, idx) => (

@@ -12,8 +12,9 @@ export async function GET(req: Request) {
     const limitStr = searchParams.get('limit');
     const search = searchParams.get('search') || '';
     const brand = searchParams.get('brand') || '';
+    const typeFilter = searchParams.get('type') || '';
 
-    // If page parameter is supplied, perform paginated database fetch
+    // If page parameter is supplied, perform paginated fetch
     if (pageStr) {
       const page = Math.max(1, parseInt(pageStr, 10) || 1);
       const limit = Math.max(1, parseInt(limitStr || '15', 10) || 15);
@@ -42,19 +43,78 @@ export async function GET(req: Request) {
         where.categoryId = categoryId;
       }
 
-      const [devices, total] = await Promise.all([
-        prisma.device.findMany({
-          where,
-          skip,
-          take: limit,
-          include: { category: true, variations: true },
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.device.count({ where })
-      ]);
+      const devices = await prisma.device.findMany({
+        where,
+        include: { category: true, variations: true },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      // Filter by type in JavaScript
+      let filteredDevices = devices;
+      if (typeFilter && typeFilter !== 'all') {
+        filteredDevices = devices.filter(p => {
+          const pName = (p.name || '').toLowerCase();
+          const pSpecs = (p.specs || '').toLowerCase();
+          const pCat = (p.category?.name || '').toLowerCase();
+
+          if (typeFilter === 'smartphone') {
+            const isPhoneWord = pName.includes('phone') || pName.includes('mobile') || pName.includes('smartphone') || 
+                                pSpecs.includes('phone') || pSpecs.includes('mobile') ||
+                                pCat.includes('phone') || pCat.includes('mobile') || pCat.includes('smartphone');
+            
+            const isPhoneBrand = ['apple', 'samsung', 'xiaomi', 'oppo', 'vivo', 'realme', 'infinix', 'itel', 'huawei', 'oneplus'].some(b => 
+              pName.includes(b) || pCat.includes(b)
+            );
+
+            const isAccessory = pName.includes('case') || pName.includes('charger') || pName.includes('cable') || 
+                                pName.includes('earphone') || pName.includes('headset') || pName.includes('buds') || 
+                                pName.includes('watch') || pName.includes('peripherals') || pName.includes('accessories') ||
+                                pName.includes('keyboard') || pName.includes('mouse') || pName.includes('tempered') ||
+                                pCat.includes('accessories') || pCat.includes('peripherals');
+                                
+            const isIpadOrLaptop = pName.includes('ipad') || pName.includes('tablet') || pName.includes('tab') || 
+                                   pName.includes('laptop') || pName.includes('macbook') || pName.includes('notebook') ||
+                                   pSpecs.includes('ipad') || pSpecs.includes('tablet') || pSpecs.includes('laptop');
+
+            return (isPhoneWord || isPhoneBrand) && !isAccessory && !isIpadOrLaptop;
+          } 
+          else if (typeFilter === 'laptop') {
+            return pName.includes('laptop') || pName.includes('macbook') || pName.includes('notebook') || 
+                   pName.includes('thinkpad') || pName.includes('zenbook') || pName.includes('chromebook') ||
+                   pSpecs.includes('laptop') || pSpecs.includes('macbook') || pSpecs.includes('notebook') ||
+                   pCat.includes('laptop') || pCat.includes('macbook');
+          } 
+          else if (typeFilter === 'ipad') {
+            return pName.includes('ipad') || pName.includes('tablet') || pName.includes('tab') || pName.includes('pad') ||
+                   pSpecs.includes('ipad') || pSpecs.includes('tablet') || pSpecs.includes('tab') ||
+                   pCat.includes('ipad') || pCat.includes('tablet') || pCat.includes('tab');
+          } 
+          else if (typeFilter === 'tv') {
+            return pName.includes('tv') || pName.includes('television') || pName.includes('smart tv') || pName.includes('led tv') ||
+                   pSpecs.includes('tv') || pSpecs.includes('television') ||
+                   pCat.includes('tv') || pCat.includes('television');
+          } 
+          else if (typeFilter === 'speaker') {
+            return pName.includes('speaker') || pName.includes('audio') || pName.includes('soundbar') || pName.includes('subwoofer') ||
+                   pSpecs.includes('speaker') || pSpecs.includes('audio') ||
+                   pCat.includes('speaker') || pCat.includes('audio');
+          } 
+          else if (typeFilter === 'phone accessories') {
+            return pName.includes('case') || pName.includes('charger') || pName.includes('cable') || 
+                   pName.includes('earphone') || pName.includes('headset') || pName.includes('buds') || 
+                   pName.includes('watch') || pName.includes('peripherals') || pName.includes('accessories') ||
+                   pName.includes('tempered') || pName.includes('powerbank') || pName.includes('hub') ||
+                   pCat.includes('accessories') || pCat.includes('peripherals');
+          }
+          return true;
+        });
+      }
+
+      const total = filteredDevices.length;
+      const paginated = filteredDevices.slice(skip, skip + limit);
 
       return NextResponse.json({
-        devices,
+        devices: paginated,
         total,
         page,
         limit,
