@@ -211,7 +211,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
 
       {/* Categories Section */}
       <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full max-w-7xl mx-auto relative group/cats">
-        <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Categories</h2>
+        <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Brands</h2>
         
         {/* Left Chevron */}
         <button 

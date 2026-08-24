@@ -14,6 +14,7 @@ function CustomerProductsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [sortOrder, setSortOrder] = useState('default');
   const [budgetFilter, setBudgetFilter] = useState('');
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState('all');
   const searchParams = useSearchParams();
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +59,7 @@ function CustomerProductsContent() {
       let matchesSearch = true;
       let matchesBudget = true;
       let matchesPreOwned = true;
+      let matchesDeviceType = true;
 
       if (sortOrder === 'pre-owned') {
         const pName = (p.name || '').toLowerCase();
@@ -88,7 +90,63 @@ function CustomerProductsContent() {
         }
       }
 
-      return matchesCategory && matchesSearch && matchesBudget && matchesPreOwned;
+      if (deviceTypeFilter !== 'all') {
+        const pName = (p.name || '').toLowerCase();
+        const pSpecs = (p.specs || '').toLowerCase();
+        const pCat = (p.category?.name || '').toLowerCase();
+
+        if (deviceTypeFilter === 'smartphone') {
+          const isPhoneWord = pName.includes('phone') || pName.includes('mobile') || pName.includes('smartphone') || 
+                              pSpecs.includes('phone') || pSpecs.includes('mobile') ||
+                              pCat.includes('phone') || pCat.includes('mobile') || pCat.includes('smartphone');
+          
+          const isPhoneBrand = ['apple', 'samsung', 'xiaomi', 'oppo', 'vivo', 'realme', 'infinix', 'itel', 'huawei', 'oneplus'].some(b => 
+            pName.includes(b) || pCat.includes(b)
+          );
+
+          const isAccessory = pName.includes('case') || pName.includes('charger') || pName.includes('cable') || 
+                              pName.includes('earphone') || pName.includes('headset') || pName.includes('buds') || 
+                              pName.includes('watch') || pName.includes('peripherals') || pName.includes('accessories') ||
+                              pName.includes('keyboard') || pName.includes('mouse') || pName.includes('tempered') ||
+                              pCat.includes('accessories') || pCat.includes('peripherals');
+                              
+          const isIpadOrLaptop = pName.includes('ipad') || pName.includes('tablet') || pName.includes('tab') || 
+                                 pName.includes('laptop') || pName.includes('macbook') || pName.includes('notebook') ||
+                                 pSpecs.includes('ipad') || pSpecs.includes('tablet') || pSpecs.includes('laptop');
+
+          matchesDeviceType = (isPhoneWord || isPhoneBrand) && !isAccessory && !isIpadOrLaptop;
+        } 
+        else if (deviceTypeFilter === 'laptop') {
+          matchesDeviceType = pName.includes('laptop') || pName.includes('macbook') || pName.includes('notebook') || 
+                              pName.includes('thinkpad') || pName.includes('zenbook') || pName.includes('chromebook') ||
+                              pSpecs.includes('laptop') || pSpecs.includes('macbook') || pSpecs.includes('notebook') ||
+                              pCat.includes('laptop') || pCat.includes('macbook');
+        } 
+        else if (deviceTypeFilter === 'ipad') {
+          matchesDeviceType = pName.includes('ipad') || pName.includes('tablet') || pName.includes('tab') || pName.includes('pad') ||
+                              pSpecs.includes('ipad') || pSpecs.includes('tablet') || pSpecs.includes('tab') ||
+                              pCat.includes('ipad') || pCat.includes('tablet') || pCat.includes('tab');
+        } 
+        else if (deviceTypeFilter === 'tv') {
+          matchesDeviceType = pName.includes('tv') || pName.includes('television') || pName.includes('smart tv') || pName.includes('led tv') ||
+                              pSpecs.includes('tv') || pSpecs.includes('television') ||
+                              pCat.includes('tv') || pCat.includes('television');
+        } 
+        else if (deviceTypeFilter === 'speaker') {
+          matchesDeviceType = pName.includes('speaker') || pName.includes('audio') || pName.includes('soundbar') || pName.includes('subwoofer') ||
+                              pSpecs.includes('speaker') || pSpecs.includes('audio') ||
+                              pCat.includes('speaker') || pCat.includes('audio');
+        } 
+        else if (deviceTypeFilter === 'phone accessories') {
+          matchesDeviceType = pName.includes('case') || pName.includes('charger') || pName.includes('cable') || 
+                              pName.includes('earphone') || pName.includes('headset') || pName.includes('buds') || 
+                              pName.includes('watch') || pName.includes('peripherals') || pName.includes('accessories') ||
+                              pName.includes('tempered') || pName.includes('powerbank') || pName.includes('hub') ||
+                              pCat.includes('accessories') || pCat.includes('peripherals');
+        }
+      }
+
+      return matchesCategory && matchesSearch && matchesBudget && matchesPreOwned && matchesDeviceType;
     })
     .sort((a, b) => {
       if (sortOrder === 'price-asc') return (a.price || 0) - (b.price || 0);
@@ -121,6 +179,23 @@ function CustomerProductsContent() {
                 <option value="price-asc">Price: Lowest to Highest</option>
               </select>
             </div>
+            {/* Device Type Filter */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Type:</span>
+              <select 
+                value={deviceTypeFilter}
+                onChange={(e) => setDeviceTypeFilter(e.target.value)}
+                className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors cursor-pointer"
+              >
+                <option value="all">All Devices</option>
+                <option value="smartphone">Smartphone</option>
+                <option value="laptop">Laptop</option>
+                <option value="ipad">iPad/Tablet</option>
+                <option value="tv">TV</option>
+                <option value="speaker">Speaker</option>
+                <option value="phone accessories">Phone Accessories</option>
+              </select>
+            </div>
             {/* Budget Filter */}
             <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
               <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Budget: ₱</span>
@@ -138,7 +213,7 @@ function CustomerProductsContent() {
 
         {/* Categories Section */}
         <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full relative group/cats">
-          <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Categories</h2>
+          <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Brands</h2>
           
           {/* Left Chevron */}
           <button 
