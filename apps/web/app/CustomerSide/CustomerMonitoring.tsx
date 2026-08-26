@@ -84,6 +84,7 @@ export default function CustomerMonitoring() {
 
   const getSemanticStatus = (device: MonitoringDevice) => {
     const prog = (device.progress || '').toLowerCase();
+    if (prog === 'cancelled' || device.status?.toLowerCase() === 'cancelled') return 'Cancelled';
     if (device.status === 'Completed' || device.progress === '100%' || prog === 'completed') return 'Completed';
     if (device.progress === '0%' || device.progress === '25%' || prog === 'diagnostic' || prog === 'diagnosis') return 'Diagnosis';
     if (device.progress === '50%' || device.progress === '75%' || prog === 'repairing') return 'Repairing';
@@ -95,6 +96,7 @@ export default function CustomerMonitoring() {
       case 'Repairing': return 'text-orange-500';
       case 'Diagnosis': return 'text-blue-500';
       case 'Completed': return 'text-green-500';
+      case 'Cancelled': return 'text-red-500';
       default: return 'text-black';
     }
   };

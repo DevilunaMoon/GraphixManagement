@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Trash2, Upload } from 'lucide-react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
 
@@ -37,9 +37,7 @@ export default function CashierMonitoring() {
   const [deviceToComplete, setDeviceToComplete] = useState<DeviceProgress | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
 
-  // Delete Modal State
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -149,7 +147,7 @@ export default function CashierMonitoring() {
       case 'diagnostic':
       case 'diagnosis':
       case '25%':
-      case '0%': 
+      case 'cancelled':
         return 'text-red-500';
       default: 
         return 'text-black';
@@ -161,6 +159,7 @@ export default function CashierMonitoring() {
     if (prog === 'completed' || prog === '100%') return 'Completed';
     if (prog === 'repairing' || prog === '50%' || prog === '75%') return 'Repairing';
     if (prog === 'diagnostic' || prog === 'diagnosis' || prog === '25%' || prog === '0%') return 'Diagnostic';
+    if (prog === 'cancelled') return 'Cancelled';
     return progress;
   };
 
@@ -344,32 +343,35 @@ export default function CashierMonitoring() {
     }
   };
 
-  const handleDelete = () => {
+  const handleCancelDevice = async () => {
     if (!deviceToEdit) return;
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!deviceToEdit) return;
-    setIsDeleting(true);
+    if (!window.confirm("Are you sure you want to cancel this repair request?")) return;
+    
+    setIsSavingEdit(true);
+    const formData = new FormData();
+    formData.append('progress', 'Cancelled');
     
     try {
       const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
-        method: 'DELETE',
+        method: 'PATCH',
+        body: formData
       });
 
       if (res.ok) {
-        setDevices(prev => prev.filter(d => d.id !== deviceToEdit.id));
-        setDeleteModalOpen(false);
+        const updatedDevice = await res.json();
+        setDevices(prev => prev.map(d => d.id === deviceToEdit.id ? { 
+          ...d, 
+          progress: 'Cancelled'
+        } : d));
         setEditModalOpen(false);
       } else {
-        alert('Failed to delete the request.');
+        alert('Failed to cancel the repair request.');
       }
     } catch (error) {
-      console.error('Error deleting request:', error);
-      alert('An external error occurred while deleting.');
+      console.error('Error cancelling repair request:', error);
+      alert('An error occurred while cancelling the request.');
     } finally {
-      setIsDeleting(false);
+      setIsSavingEdit(false);
     }
   };
 
@@ -532,33 +534,7 @@ export default function CashierMonitoring() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
-            <Trash2 className="text-red-500 w-16 h-16 mb-5" />
-            <h3 className="text-xl font-bold mb-3 text-black">Delete Request?</h3>
-            <p className="text-gray-600 mb-8">
-              Are you sure you want to delete the repair request for <strong className="text-black">{deviceToEdit?.deviceName}</strong>? This action cannot be undone.
-            </p>
-            <div className="flex gap-4 w-full justify-center">
-              <button 
-                onClick={() => setDeleteModalOpen(false)}
-                className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className="px-6 py-2.5 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors disabled:opacity-50 border-none"
-              >
-                {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Edit Progress Modal */}
       {editModalOpen && deviceToEdit && (
@@ -570,11 +546,11 @@ export default function CashierMonitoring() {
               <h2 className="text-xl font-bold text-black border-none">Edit Device Progress</h2>
               <div className="flex items-center gap-4">
                 <button 
-                  onClick={handleDelete} 
-                  className="text-red-500 hover:text-red-700 transition-colors cursor-pointer bg-transparent border-none p-1 flex items-center justify-center hover:bg-red-50 rounded-lg"
-                  title="Delete Request"
+                  onClick={handleCancelDevice} 
+                  className="px-4 py-1.5 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors cursor-pointer border-none text-sm shadow-sm"
+                  title="Cancel Request"
                 >
-                  <Trash2 size={24} />
+                  Cancelled
                 </button>
                 <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
                   ✕
