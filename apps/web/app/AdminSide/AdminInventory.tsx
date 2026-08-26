@@ -561,7 +561,6 @@ export default function AdminInventory() {
                   <tr key={index} className={`cursor-pointer md:cursor-default hover:bg-black/5 transition-colors border-b ${styles.borderMain}`} onClick={() => { if (window.innerWidth < 768) { setSelectedProduct(prod); } }}>
                     <td className={`py-4 px-5 border-b ${styles.borderMain}`}>
                       <div className="flex items-center gap-4 text-left">
-                        <img src={prod.img} alt={prod.name} className="w-[45px] h-[45px] object-cover rounded-md border border-black/10 shrink-0" />
                         <div className="flex flex-col justify-center">
                           <span className="text-[0.9rem] font-bold text-[#111] leading-snug break-words max-w-[150px] sm:max-w-none">{prod.name}</span>
                         </div>

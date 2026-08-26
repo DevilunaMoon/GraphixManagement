@@ -577,7 +577,6 @@ export default function CashierDevices() {
             <table className="w-full text-left border-collapse min-w-[500px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-[#bd00ff]/20 text-gray-700 whitespace-nowrap">
-                  <th className="p-4 font-bold text-center w-28 text-[1.05rem]">Image</th>
                   <th className="p-4 font-bold text-[1.05rem]">Device Name</th>
                   <th className="p-4 font-bold text-[1.05rem]">Cost</th>
                   <th className="p-4 font-bold text-[1.05rem]">Price</th>
@@ -589,15 +588,6 @@ export default function CashierDevices() {
               <tbody>
                 {paginatedDevices.map(device => (
                   <tr key={device.id} className="border-b border-gray-100/80 hover:bg-purple-50/50 transition-colors group">
-                    <td className="p-4 flex justify-center align-middle">
-                      <div className="h-16 w-16 shrink-0 rounded-full border border-gray-200 flex justify-center items-center overflow-hidden bg-white shadow-sm group-hover:border-[#bd00ff]/40 transition-colors">
-                        {device.image ? (
-                          <img src={device.image} alt={device.name} className="h-full w-full object-contain p-1" />
-                        ) : (
-                          <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">No Img</span>
-                        )}
-                      </div>
-                    </td>
                     <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.name || 'Unnamed'}</td>
                     <td className="p-4 font-bold text-[1.05rem] text-gray-600 align-middle">
                       ₱{device.cost ? Number(device.cost).toFixed(2) : '0.00'}
