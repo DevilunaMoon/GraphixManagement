@@ -169,11 +169,6 @@ export default function CashierDashboard() {
                   onClick={() => !isMaxedOut && addToCart(product)}
                   className={`border border-[#c084fc] rounded-lg p-4 flex flex-col items-center text-center gap-2 transition-all duration-200 bg-white relative overflow-hidden ${isMaxedOut ? 'opacity-60 cursor-not-allowed grayscale' : 'cursor-pointer hover:-translate-y-1 hover:shadow-[0_4px_10px_rgba(189,0,255,0.1)]'}`}
                 >
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className={`h-20 object-contain transition-transform ${isMaxedOut ? '' : 'hover:scale-105'}`} />
-                  ) : (
-                    <div className="h-20 w-20 bg-gray-100 rounded-lg" />
-                  )}
                   <span className="text-sm font-semibold leading-tight text-black mt-2">{product.name}</span>
                   <span className={`text-sm font-bold ${isMaxedOut ? 'text-red-500' : 'text-gray-500'}`}>
                     {isMaxedOut ? 'Max Out' : `${product.stock - currentQty}x left`}
