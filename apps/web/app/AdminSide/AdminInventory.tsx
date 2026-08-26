@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2 } from 'lucide-react';
+import { Search, Filter, ChevronDown, Trash2, ChevronLeft, ChevronRight, X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import imageCompression from 'browser-image-compression';
 
@@ -173,6 +173,123 @@ export default function AdminInventory() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedCategory, selectedDeviceType]);
+
+  const downloadPDF = async () => {
+    try {
+      const res = await fetch('/api/devices');
+      const allDevices: any[] = await res.json();
+      
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("GRAPHIX MANAGEMENT - INVENTORY REPORT", 14, 20);
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 27);
+      
+      // Headers
+      let y = 40;
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(92, 0, 153); // Brand color: #5c0099
+      doc.rect(14, y - 6, 182, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.text("ID", 16, y - 1);
+      doc.text("Device Name", 40, y - 1);
+      doc.text("Brand", 100, y - 1);
+      doc.text("Cost", 130, y - 1);
+      doc.text("Price", 155, y - 1);
+      doc.text("Qty", 180, y - 1);
+      
+      y += 8;
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "normal");
+      
+      allDevices.forEach((d, idx) => {
+        // Page break check
+        if (y > 275) {
+          doc.addPage();
+          y = 25;
+          // Re-draw headers on new page
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(92, 0, 153);
+          doc.rect(14, y - 6, 182, 8, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.text("ID", 16, y - 1);
+          doc.text("Device Name", 40, y - 1);
+          doc.text("Brand", 100, y - 1);
+          doc.text("Cost", 130, y - 1);
+          doc.text("Price", 155, y - 1);
+          doc.text("Qty", 180, y - 1);
+          y += 8;
+          doc.setTextColor(0, 0, 0);
+          doc.setFont("helvetica", "normal");
+        }
+        
+        const id = d.id ? `#${String(d.id).slice(-6).toUpperCase()}` : 'N/A';
+        const name = d.name ? (d.name.length > 30 ? d.name.substring(0, 27) + '...' : d.name) : 'Unnamed';
+        const brand = d.category?.name || 'N/A';
+        const cost = d.cost ? `PHP ${Number(d.cost).toLocaleString()}` : 'PHP 0.00';
+        const price = d.price ? `PHP ${Number(d.price).toLocaleString()}` : 'PHP 0.00';
+        const qty = String(d.stock || 0);
+        
+        // Draw line separator
+        doc.setDrawColor(230, 230, 230);
+        doc.line(14, y - 5, 196, y - 5);
+        
+        doc.text(id, 16, y);
+        doc.text(name, 40, y);
+        doc.text(brand, 100, y);
+        doc.text(cost, 130, y);
+        doc.text(price, 155, y);
+        doc.text(qty, 180, y);
+        
+        y += 8;
+      });
+      
+      doc.save("Inventory_Report.pdf");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to export PDF file");
+    }
+  };
+
+  const downloadExcel = async () => {
+    try {
+      const res = await fetch('/api/devices');
+      const allDevices: any[] = await res.json();
+      
+      // CSV headers
+      let csvContent = "Device ID,Device Name,Category/Brand,Cost,Price,Stocks,Specs\n";
+      
+      allDevices.forEach(d => {
+        const id = d.id ? `#${String(d.id).slice(-8).toUpperCase()}` : '';
+        const name = `"${(d.name || '').replace(/"/g, '""')}"`;
+        const brand = `"${(d.category?.name || '').replace(/"/g, '""')}"`;
+        const cost = d.cost || 0;
+        const price = d.price || 0;
+        const stock = d.stock || 0;
+        const specs = `"${(d.specs || '').replace(/"/g, '""')}"`;
+        csvContent += `${id},${name},${brand},${cost},${price},${stock},${specs}\n`;
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "Inventory_Report.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to export Excel file");
+    }
+  };
 
   const fetchProducts = () => {
     setIsLoading(true);
@@ -480,10 +597,22 @@ export default function AdminInventory() {
             <button onClick={() => setCategoriesModalOpen(true)} className="flex items-center justify-center gap-2 bg-purple-100 text-[#5c0099] px-4 py-2.5 rounded-full font-bold hover:bg-purple-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
               <span>Manage Brands</span>
             </button>
-          <button onClick={() => setIsAddModalOpen(true)} className="flex items-center justify-center gap-2 bg-[#5c0099] text-white px-4 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
-            <Plus size={20} />
-            <span>Add Device</span>
-          </button>
+            <button
+              onClick={downloadPDF}
+              className="flex items-center justify-center gap-2 bg-red-100 text-red-700 px-4 py-2.5 rounded-full font-bold hover:bg-red-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none text-sm"
+            >
+              <FileText size={16} /> PDF
+            </button>
+            <button
+              onClick={downloadExcel}
+              className="flex items-center justify-center gap-2 bg-green-100 text-green-700 px-4 py-2.5 rounded-full font-bold hover:bg-green-200 transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none text-sm"
+            >
+              <FileText size={16} /> Excel
+            </button>
+            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center justify-center gap-2 bg-[#5c0099] text-white px-4 py-2.5 rounded-full font-bold hover:bg-[#3d0066] transition-colors shadow-sm cursor-pointer border-none flex-shrink-0 whitespace-nowrap w-full sm:w-auto flex-1 sm:flex-none">
+              <Plus size={20} />
+              <span>Add Device</span>
+            </button>
         </div>
       </div>
 
