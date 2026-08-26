@@ -576,18 +576,9 @@ export default function CashierMonitoring() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-3">
               <h2 className="text-xl font-bold text-black border-none">Edit Device Progress</h2>
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={handleCancelDevice} 
-                  className="px-4 py-1.5 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-colors cursor-pointer border-none text-sm shadow-sm"
-                  title="Cancel Request"
-                >
-                  Cancelled
-                </button>
-                <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
-                  ✕
-                </button>
-              </div>
+              <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+                ✕
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
@@ -616,12 +607,20 @@ export default function CashierMonitoring() {
                   <div className="relative">
                     <select 
                       value={editProgress}
-                      onChange={(e) => setEditProgress(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'Cancelled') {
+                          handleCancelDevice();
+                        } else {
+                          setEditProgress(val);
+                        }
+                      }}
                       className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
                     >
                       <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-red-500 font-semibold">Diagnostic</option>
                       <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
                       <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
+                      <option value="Cancelled" className="text-red-500 font-semibold">Cancelled</option>
                     </select>
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                       <ChevronDown size={20} className="text-gray-500" />
