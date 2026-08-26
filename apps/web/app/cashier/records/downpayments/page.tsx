@@ -1,5 +1,5 @@
-import CashierSaleRecord from '../../../CashierSide/CashierSaleRecord';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <CashierSaleRecord type="downpayment" />;
+  redirect('/cashier/records');
 }

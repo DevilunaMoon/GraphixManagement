@@ -136,8 +136,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               label: 'Order History', 
               icon: ReceiptText,
               subItems: [
-                { href: '/admin/transactions', label: 'Completed Purchases' },
-                { href: '/admin/transactions/downpayments', label: 'Downpayments' }
+                { href: '/admin/transactions', label: 'Completed Purchases' }
               ]
             },
             { href: '/admin/accounts', label: 'User Management', icon: User },

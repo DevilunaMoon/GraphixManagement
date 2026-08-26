@@ -100,8 +100,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
       label: 'Order History', 
       icon: ReceiptText,
       subItems: [
-        { href: '/cashier/records', label: 'Completed Purchases' },
-        { href: '/cashier/records/downpayments', label: 'Downpayments' }
+        { href: '/cashier/records', label: 'Completed Purchases' }
       ]
     },
     { href: '/cashier/profile', label: 'My Profile', icon: User },

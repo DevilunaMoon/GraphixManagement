@@ -1,5 +1,5 @@
-import AdminTransactions from '../../../AdminSide/AdminTransactions';
+import { redirect } from 'next/navigation';
 
 export default function DownpaymentsPage() {
-  return <AdminTransactions type="downpayment" />;
+  redirect('/admin/transactions');
 }
