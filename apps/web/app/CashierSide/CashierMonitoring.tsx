@@ -36,6 +36,7 @@ export default function CashierMonitoring() {
   const [successCompleteOpen, setSuccessCompleteOpen] = useState(false);
   const [deviceToComplete, setDeviceToComplete] = useState<DeviceProgress | null>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
 
 
@@ -343,11 +344,14 @@ export default function CashierMonitoring() {
     }
   };
 
-  const handleCancelDevice = async () => {
+  const handleCancelDevice = () => {
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancelDevice = async () => {
     if (!deviceToEdit) return;
-    if (!window.confirm("Are you sure you want to cancel this repair request?")) return;
-    
     setIsSavingEdit(true);
+    
     const formData = new FormData();
     formData.append('progress', 'Cancelled');
     
@@ -358,11 +362,11 @@ export default function CashierMonitoring() {
       });
 
       if (res.ok) {
-        const updatedDevice = await res.json();
         setDevices(prev => prev.map(d => d.id === deviceToEdit.id ? { 
           ...d, 
           progress: 'Cancelled'
         } : d));
+        setCancelModalOpen(false);
         setEditModalOpen(false);
       } else {
         alert('Failed to cancel the repair request.');
@@ -509,6 +513,34 @@ export default function CashierMonitoring() {
                 className="px-6 py-2.5 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-colors disabled:opacity-50"
               >
                 {isCompleting ? 'Completing...' : 'Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+            <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
+            <h3 className="text-xl font-bold mb-3 text-black">Cancel Repair Request?</h3>
+            <p className="text-gray-600 mb-8">
+              Are you sure you want to cancel the repair request for <strong className="text-black">{deviceToEdit?.deviceName}</strong>? This progress update will be visible to the customer.
+            </p>
+            <div className="flex gap-4 w-full justify-center">
+              <button 
+                onClick={() => setCancelModalOpen(false)}
+                className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition-colors bg-transparent cursor-pointer"
+              >
+                Go Back
+              </button>
+              <button 
+                onClick={confirmCancelDevice}
+                disabled={isSavingEdit}
+                className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 border-none cursor-pointer"
+              >
+                {isSavingEdit ? 'Cancelling...' : 'Yes, Cancel'}
               </button>
             </div>
           </div>
