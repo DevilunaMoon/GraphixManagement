@@ -182,14 +182,38 @@ export default function AdminInventory() {
       const { jsPDF } = await import('jspdf');
       const doc = new jsPDF();
       
-      // Title
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(18);
-      doc.text("GRAPHIX MANAGEMENT - INVENTORY REPORT", 14, 20);
+      // Load logo image
+      let logoImg: HTMLImageElement | null = null;
+      try {
+        logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.src = '/icon.jpg';
+          img.onload = () => resolve(img);
+          img.onerror = (e) => reject(e);
+        });
+      } catch (e) {
+        console.error("Failed to load logo", e);
+      }
       
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 27);
+      // Title and Logo header
+      if (logoImg) {
+        doc.addImage(logoImg, 'JPEG', 14, 12, 13, 13);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("GRAPHIX MANAGEMENT - INVENTORY REPORT", 30, 19);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 30, 24);
+      } else {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("GRAPHIX MANAGEMENT - INVENTORY REPORT", 14, 20);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 26);
+      }
       
       // Headers
       let y = 40;
