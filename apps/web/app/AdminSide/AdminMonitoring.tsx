@@ -157,6 +157,14 @@ export default function AdminMonitoring() {
     }
   };
 
+  const formatProgress = (progress: string) => {
+    const prog = (progress || '').toLowerCase();
+    if (prog === 'completed' || prog === '100%') return 'Completed';
+    if (prog === 'repairing' || prog === '50%' || prog === '75%') return 'Repairing';
+    if (prog === 'diagnostic' || prog === 'diagnosis' || prog === '25%' || prog === '0%') return 'Diagnostic';
+    return progress;
+  };
+
   const openCompleteModal = (device: DeviceProgress) => {
     setDeviceToComplete(device);
     setCompleteModalOpen(true);
@@ -474,7 +482,7 @@ export default function AdminMonitoring() {
                       </td>
                       <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.deviceName}</td>
                       <td className="p-4 align-middle text-center">
-                        <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{device.progress}</span>
+                        <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{formatProgress(device.progress)}</span>
                       </td>
                       <td className="p-4 align-middle">
                         <div className="flex gap-4 justify-center items-center">
