@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, Home, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function CashierLayout({ children }: { children: React.ReactNode }) {
@@ -92,7 +92,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   const navItems = [
-    { href: '/cashier/dashboard', label: 'Dashboard', icon: Home },
+    { href: '/cashier/dashboard', label: 'POS', icon: ShoppingCart },
     { href: '/cashier/monitoring', label: 'Gadget Repair', icon: Wrench },
     { href: '/cashier/devices', label: 'Inventory Management', icon: Smartphone },
     { href: '/cashier/notifications', label: 'Notifications', icon: Bell },
