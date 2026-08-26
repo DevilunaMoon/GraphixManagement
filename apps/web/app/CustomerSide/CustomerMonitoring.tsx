@@ -83,9 +83,10 @@ export default function CustomerMonitoring() {
   const paginatedDevices = devices;
 
   const getSemanticStatus = (device: MonitoringDevice) => {
-    if (device.status === 'Completed' || device.progress === '100%') return 'Completed';
-    if (device.progress === '0%' || device.progress === '25%') return 'Diagnosis';
-    if (device.progress === '50%' || device.progress === '75%') return 'Repairing';
+    const prog = (device.progress || '').toLowerCase();
+    if (device.status === 'Completed' || device.progress === '100%' || prog === 'completed') return 'Completed';
+    if (device.progress === '0%' || device.progress === '25%' || prog === 'diagnostic' || prog === 'diagnosis') return 'Diagnosis';
+    if (device.progress === '50%' || device.progress === '75%' || prog === 'repairing') return 'Repairing';
     return 'Pending';
   };
 

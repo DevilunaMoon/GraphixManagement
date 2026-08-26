@@ -64,8 +64,8 @@ export default function CashierMonitoring() {
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
-  const [editProgress, setEditProgress] = useState('0%');
-  const [initialEditProgress, setInitialEditProgress] = useState('0%');
+  const [editProgress, setEditProgress] = useState('Diagnostic');
+  const [initialEditProgress, setInitialEditProgress] = useState('Diagnostic');
   const [editCause, setEditCause] = useState('');
   const [editTechnician, setEditTechnician] = useState('');
   const [editRepairCost, setEditRepairCost] = useState('');
@@ -74,7 +74,7 @@ export default function CashierMonitoring() {
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const progressLevels = ['0%', '25%', '50%', '75%', '100%'];
+  const progressLevels = ['Diagnostic', 'Repairing', 'Completed'];
   const initialProgressIndex = progressLevels.indexOf(initialEditProgress);
 
   const ITEMS_PER_PAGE = 8;
@@ -137,13 +137,22 @@ export default function CashierMonitoring() {
   const paginatedDevices = devices;
 
   const getProgressColor = (progress: string) => {
-    switch (progress) {
-      case '100%': return 'text-green-600';
+    const prog = (progress || '').toLowerCase();
+    switch (prog) {
+      case 'completed':
+      case '100%': 
+        return 'text-green-600';
+      case 'repairing':
       case '75%': 
-      case '50%': return 'text-yellow-500';
+      case '50%': 
+        return 'text-yellow-500';
+      case 'diagnostic':
+      case 'diagnosis':
       case '25%':
-      case '0%': return 'text-red-500';
-      default: return 'text-black';
+      case '0%': 
+        return 'text-red-500';
+      default: 
+        return 'text-black';
     }
   };
 
@@ -179,8 +188,8 @@ export default function CashierMonitoring() {
 
   const openEditModal = (device: DeviceProgress) => {
     setDeviceToEdit(device);
-    setEditProgress(device.progress || '0%');
-    setInitialEditProgress(device.progress || '0%');
+    setEditProgress(device.progress || 'Diagnostic');
+    setInitialEditProgress(device.progress || 'Diagnostic');
     setEditCause(device.cause || '');
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
@@ -594,11 +603,9 @@ export default function CashierMonitoring() {
                       onChange={(e) => setEditProgress(e.target.value)}
                       className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
                     >
-                      <option value="0%" disabled={progressLevels.indexOf('0%') < initialProgressIndex} className="text-red-500 font-semibold">0%</option>
-                      <option value="25%" disabled={progressLevels.indexOf('25%') < initialProgressIndex} className="text-red-500 font-semibold">25%</option>
-                      <option value="50%" disabled={progressLevels.indexOf('50%') < initialProgressIndex} className="text-yellow-500 font-semibold">50%</option>
-                      <option value="75%" disabled={progressLevels.indexOf('75%') < initialProgressIndex} className="text-yellow-500 font-semibold">75%</option>
-                      <option value="100%" disabled={progressLevels.indexOf('100%') < initialProgressIndex} className="text-green-600 font-semibold">100%</option>
+                      <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-red-500 font-semibold">Diagnostic</option>
+                      <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
+                      <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
                     </select>
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                       <ChevronDown size={20} className="text-gray-500" />
@@ -787,11 +794,9 @@ export default function CashierMonitoring() {
                       className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
                     >
                       <option value="" disabled className="text-gray-400">Select Progress</option>
-                      <option value="0%" className="text-red-500 font-semibold">0%</option>
-                      <option value="25%" className="text-red-500 font-semibold">25%</option>
-                      <option value="50%" className="text-yellow-500 font-semibold">50%</option>
-                      <option value="75%" className="text-yellow-500 font-semibold">75%</option>
-                      <option value="100%" className="text-green-600 font-semibold">100%</option>
+                      <option value="Diagnostic" className="text-red-500 font-semibold">Diagnostic</option>
+                      <option value="Repairing" className="text-yellow-500 font-semibold">Repairing</option>
+                      <option value="Completed" className="text-green-600 font-semibold">Completed</option>
                     </select>
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                       <ChevronDown size={20} className="text-gray-500" />

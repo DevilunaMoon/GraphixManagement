@@ -13,8 +13,8 @@ function CashierEditProgressContent() {
   const id = searchParams.get('id');
 
   const [deviceData, setDeviceData] = useState<any>(null);
-  const [progress, setProgress] = useState('0%');
-  const [initialProgress, setInitialProgress] = useState('0%');
+  const [progress, setProgress] = useState('Diagnostic');
+  const [initialProgress, setInitialProgress] = useState('Diagnostic');
   const [cause, setCause] = useState('');
   const [technician, setTechnician] = useState('');
   const [repairCost, setRepairCost] = useState('');
@@ -23,7 +23,7 @@ function CashierEditProgressContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const progressLevels = ['0%', '25%', '50%', '75%', '100%'];
+  const progressLevels = ['Diagnostic', 'Repairing', 'Completed'];
   const initialProgressIndex = progressLevels.indexOf(initialProgress);
 
   useEffect(() => {
@@ -34,8 +34,8 @@ function CashierEditProgressContent() {
         .then(data => {
           if (data && !data.error) {
             setDeviceData(data);
-            setProgress(data.progress || '0%');
-            setInitialProgress(data.progress || '0%');
+            setProgress(data.progress || 'Diagnostic');
+            setInitialProgress(data.progress || 'Diagnostic');
             setCause(data.cause || '');
             setTechnician(data.technician || '');
             setRepairCost(data.repairCost || '');
@@ -50,13 +50,22 @@ function CashierEditProgressContent() {
   }, [id]);
 
   const getProgressColor = () => {
-    switch (progress) {
-      case '100%': return 'text-green-600';
+    const prog = (progress || '').toLowerCase();
+    switch (prog) {
+      case 'completed':
+      case '100%': 
+        return 'text-green-600';
+      case 'repairing':
       case '75%': 
-      case '50%': return 'text-yellow-500';
+      case '50%': 
+        return 'text-yellow-500';
+      case 'diagnostic':
+      case 'diagnosis':
       case '25%':
-      case '0%': return 'text-red-500';
-      default: return 'text-black';
+      case '0%': 
+        return 'text-red-500';
+      default: 
+        return 'text-black';
     }
   };
 
@@ -146,11 +155,9 @@ function CashierEditProgressContent() {
                   onChange={(e) => setProgress(e.target.value)}
                   className={`w-full h-12 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor()}`}
                 >
-                  <option value="0%" disabled={progressLevels.indexOf('0%') < initialProgressIndex} className="text-red-500 font-semibold">0%</option>
-                  <option value="25%" disabled={progressLevels.indexOf('25%') < initialProgressIndex} className="text-red-500 font-semibold">25%</option>
-                  <option value="50%" disabled={progressLevels.indexOf('50%') < initialProgressIndex} className="text-yellow-500 font-semibold">50%</option>
-                  <option value="75%" disabled={progressLevels.indexOf('75%') < initialProgressIndex} className="text-yellow-500 font-semibold">75%</option>
-                  <option value="100%" disabled={progressLevels.indexOf('100%') < initialProgressIndex} className="text-green-600 font-semibold">100%</option>
+                  <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-red-500 font-semibold">Diagnostic</option>
+                  <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
+                  <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
                 </select>
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                   <ChevronDown size={20} className="text-gray-500" />
