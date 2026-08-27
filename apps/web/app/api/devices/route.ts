@@ -182,6 +182,7 @@ export async function POST(req: Request) {
     const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
     const variationsStr = formData.get('variations') as string;
 
+    const type = (formData.get('deviceType') as string) || (formData.get('type') as string) || 'Smartphone';
     const isPreOwned = formData.get('isPreOwned') === 'true';
 
     let variations = [];
@@ -223,6 +224,7 @@ export async function POST(req: Request) {
         cost: parseFloat(costStr),
         stock: parseInt(stockStr, 10),
         branch,
+        type,
         isPreOwned,
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         specs: specs || null,

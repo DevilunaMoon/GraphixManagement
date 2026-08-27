@@ -132,6 +132,7 @@ export default function AdminInventory() {
   const [newDevicePrice, setNewDevicePrice] = useState('');
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
+  const [newDeviceType, setNewDeviceType] = useState('Smartphone');
   const [newDeviceSpecs, setNewDeviceSpecs] = useState('');
   const [newDeviceAsLowAs, setNewDeviceAsLowAs] = useState('');
   const [newDeviceWarranty, setNewDeviceWarranty] = useState('');
@@ -154,6 +155,7 @@ export default function AdminInventory() {
   const [editDevicePrice, setEditDevicePrice] = useState('');
   const [editDeviceStocks, setEditDeviceStocks] = useState('');
   const [editDeviceCategory, setEditDeviceCategory] = useState('');
+  const [editDeviceType, setEditDeviceType] = useState('Smartphone');
   const [editDeviceSpecs, setEditDeviceSpecs] = useState('');
   const [editDeviceAsLowAs, setEditDeviceAsLowAs] = useState('');
   const [editDeviceWarranty, setEditDeviceWarranty] = useState('');
@@ -429,6 +431,7 @@ export default function AdminInventory() {
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
+    formData.append('deviceType', newDeviceType);
     formData.append('isPreOwned', newDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', newDeviceSpecs);
     formData.append('deviceAsLowAs', newDeviceAsLowAs);
@@ -453,7 +456,7 @@ export default function AdminInventory() {
         fetchProducts();
         setIsAddModalOpen(false);
         setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice('');
-        setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceSpecs('');
+        setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceType('Smartphone'); setNewDeviceSpecs('');
         setNewDeviceIsPreOwned(false);
         setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
@@ -480,6 +483,7 @@ export default function AdminInventory() {
     setEditDevicePrice(prod.price);
     setEditDeviceStocks(prod.stock);
     setEditDeviceCategory(prod.categoryId);
+    setEditDeviceType(prod.type || 'Smartphone');
     setEditDeviceIsPreOwned(prod.isPreOwned || false);
     setEditDeviceSpecs(prod.type !== 'N/A' ? prod.type : '');
     setEditDeviceAsLowAs(prod.asLowAs);
@@ -524,6 +528,7 @@ export default function AdminInventory() {
     formData.append('devicePrice', editDevicePrice);
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
+    formData.append('deviceType', editDeviceType);
     formData.append('isPreOwned', editDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', editDeviceSpecs);
     formData.append('deviceAsLowAs', editDeviceAsLowAs);
@@ -857,6 +862,29 @@ export default function AdminInventory() {
                 </div>
               </div>
               <div className="flex flex-col gap-4">
+                {/* Device Type */}
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-[#444]">Type <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={newDeviceType}
+                      onChange={e => setNewDeviceType(e.target.value)}
+                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
+                    >
+                      <option value="Smartphone" className="font-medium text-[#111]">Smartphone</option>
+                      <option value="Laptop" className="font-medium text-[#111]">Laptop</option>
+                      <option value="iPads/Tablets" className="font-medium text-[#111]">iPads/Tablets</option>
+                      <option value="TVs" className="font-medium text-[#111]">TVs</option>
+                      <option value="Speakers" className="font-medium text-[#111]">Speakers</option>
+                      <option value="Phone Accessories" className="font-medium text-[#111]">Phone Accessories</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <label className="block text-sm font-bold text-[#444]">Brand <span className="text-red-500">*</span></label>
                   <div className="relative">
@@ -1068,6 +1096,29 @@ export default function AdminInventory() {
                 </div>
               </div>
               <div className="flex flex-col gap-4">
+                {/* Device Type */}
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-[#444]">Type <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={editDeviceType}
+                      onChange={e => setEditDeviceType(e.target.value)}
+                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] focus:ring-4 focus:ring-[#5c0099]/10 outline-none transition-all text-[#111] font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
+                    >
+                      <option value="Smartphone" className="font-medium text-[#111]">Smartphone</option>
+                      <option value="Laptop" className="font-medium text-[#111]">Laptop</option>
+                      <option value="iPads/Tablets" className="font-medium text-[#111]">iPads/Tablets</option>
+                      <option value="TVs" className="font-medium text-[#111]">TVs</option>
+                      <option value="Speakers" className="font-medium text-[#111]">Speakers</option>
+                      <option value="Phone Accessories" className="font-medium text-[#111]">Phone Accessories</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <label className="block text-sm font-bold text-[#444]">Brand <span className="text-red-500">*</span></label>
                   <div className="relative">

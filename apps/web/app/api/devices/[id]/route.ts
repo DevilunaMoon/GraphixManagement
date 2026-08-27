@@ -73,6 +73,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
 
     const isPreOwnedVal = formData.get('isPreOwned');
     const isPreOwned = isPreOwnedVal !== null ? isPreOwnedVal === 'true' : undefined;
+    const typeStr = (formData.get('deviceType') as string) || (formData.get('type') as string);
 
     let variations = [];
     if (variationsStr) {
@@ -110,6 +111,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(priceStr && { price: parseFloat(priceStr) }),
         ...(costStr && { cost: parseFloat(costStr) }),
         ...(stockStr && { stock: parseInt(stockStr, 10) }),
+        ...(typeStr && { type: typeStr }),
         ...(isPreOwned !== undefined && { isPreOwned }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),
         ...(specs !== null && { specs: specs || null }),

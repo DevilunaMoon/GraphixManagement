@@ -55,6 +55,7 @@ model Device {
   asLowAs          String?
   warranty         String?
   downpayment      String?
+  type             String?
   branch           String            @default("Tagoloan")
   isPreOwned       Boolean           @default(false)
   createdAt        DateTime          @default(now())
@@ -68,6 +69,7 @@ model Device {
   category   Category? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
+  @@index([type])
   @@index([branch])
   @@index([branch, createdAt])
 }

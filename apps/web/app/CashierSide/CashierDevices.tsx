@@ -67,6 +67,7 @@ export default function CashierDevices() {
   const [editDeviceAsLowAs, setEditDeviceAsLowAs] = useState('');
   const [editDeviceWarranty, setEditDeviceWarranty] = useState('');
   const [editDeviceDownpayment, setEditDeviceDownpayment] = useState('');
+  const [editDeviceType, setEditDeviceType] = useState('Smartphone');
   const [isEditingDevice, setIsEditingDevice] = useState(false);
   const [editDeviceError, setEditDeviceError] = useState<string | null>(null);
   const [editVariationGroups, setEditVariationGroups] = useState<{ section: string, variations: { name: string, price: string, cost: string, stock: string }[] }[]>([]);
@@ -77,6 +78,7 @@ export default function CashierDevices() {
   const [newDeviceCost, setNewDeviceCost] = useState('');
   const [newDevicePrice, setNewDevicePrice] = useState('');
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
+  const [newDeviceType, setNewDeviceType] = useState('Smartphone');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
   const [newDeviceSpecs, setNewDeviceSpecs] = useState('');
   const [newDeviceIsPreOwned, setNewDeviceIsPreOwned] = useState(false);
@@ -297,6 +299,7 @@ export default function CashierDevices() {
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
+    formData.append('deviceType', newDeviceType);
     formData.append('isPreOwned', newDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', newDeviceSpecs);
     if (newDeviceImages.length > 0) {
@@ -340,6 +343,7 @@ export default function CashierDevices() {
       setNewDeviceCost('');
       setNewDevicePrice('');
       setNewDeviceStocks('');
+      setNewDeviceType('Smartphone');
       setNewDeviceCategory('');
       setNewDeviceIsPreOwned(false);
       setNewDeviceSpecs('');
@@ -450,6 +454,7 @@ export default function CashierDevices() {
     setEditDeviceCost(device.cost.toString());
     setEditDevicePrice(device.price.toString());
     setEditDeviceStocks(device.stock.toString());
+    setEditDeviceType((device as any).type || 'Smartphone');
     setEditDeviceCategory(device.categoryId || '');
     setEditDeviceIsPreOwned(device.isPreOwned || false);
     setEditDeviceSpecs(device.specs || '');
@@ -483,6 +488,7 @@ export default function CashierDevices() {
     formData.append('deviceCost', editDeviceCost);
     formData.append('devicePrice', editDevicePrice);
     formData.append('deviceStocks', editDeviceStocks);
+    formData.append('deviceType', editDeviceType);
     formData.append('deviceCategory', editDeviceCategory);
     formData.append('isPreOwned', editDeviceIsPreOwned ? 'true' : 'false');
     formData.append('deviceSpecs', editDeviceSpecs);
@@ -938,15 +944,37 @@ export default function CashierDevices() {
 
               {/* Specifications and Category */}
               <div className="flex flex-col gap-4">
+                {/* Device Type */}
                 <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Category <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-gray-700">Type <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <select
+                      value={newDeviceType}
+                      onChange={e => setNewDeviceType(e.target.value)}
+                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
+                    >
+                      <option value="Smartphone" className="font-medium text-black">Smartphone</option>
+                      <option value="Laptop" className="font-medium text-black">Laptop</option>
+                      <option value="iPads/Tablets" className="font-medium text-black">iPads/Tablets</option>
+                      <option value="TVs" className="font-medium text-black">TVs</option>
+                      <option value="Speakers" className="font-medium text-black">Speakers</option>
+                      <option value="Phone Accessories" className="font-medium text-black">Phone Accessories</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-gray-700">Brand <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select
                       value={newDeviceCategory}
                       onChange={e => setNewDeviceCategory(e.target.value)}
                       className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
                     >
-                      <option value="" disabled className="text-gray-400">Select a category...</option>
+                      <option value="" disabled className="text-gray-400">Select a brand...</option>
                       {categories.map((cat, idx) => (
                         <option key={idx} value={cat.id} className="font-medium text-black">
                           {cat.name}
@@ -1228,15 +1256,37 @@ export default function CashierDevices() {
 
               {/* Specifications and Category */}
               <div className="flex flex-col gap-4">
+                {/* Device Type */}
                 <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Category <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-gray-700">Type <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <select
+                      value={editDeviceType}
+                      onChange={e => setEditDeviceType(e.target.value)}
+                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
+                    >
+                      <option value="Smartphone" className="font-medium text-black">Smartphone</option>
+                      <option value="Laptop" className="font-medium text-black">Laptop</option>
+                      <option value="iPads/Tablets" className="font-medium text-black">iPads/Tablets</option>
+                      <option value="TVs" className="font-medium text-black">TVs</option>
+                      <option value="Speakers" className="font-medium text-black">Speakers</option>
+                      <option value="Phone Accessories" className="font-medium text-black">Phone Accessories</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-gray-700">Brand <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <select
                       value={editDeviceCategory}
                       onChange={e => setEditDeviceCategory(e.target.value)}
                       className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
                     >
-                      <option value="" disabled className="text-gray-400">Select a category...</option>
+                      <option value="" disabled className="text-gray-400">Select a brand...</option>
                       {categories.map((cat, idx) => (
                         <option key={idx} value={cat.id} className="font-medium text-black">
                           {cat.name}
