@@ -37,6 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const cause = formData.get('cause') as string | null;
       const technician = formData.get('technician') as string | null;
       const repairCost = formData.get('repairCost') as string | null;
+      const downpayment = formData.get('downpayment') as string | null;
       const proofImage = formData.get('proofImage') as File | null;
       const repairHistory = formData.get('repairHistory') as string | null;
 
@@ -45,6 +46,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (cause !== null) updateData.cause = cause;
       if (technician !== null) updateData.technician = technician;
       if (repairCost !== null) updateData.repairCost = repairCost;
+      if (downpayment !== null) updateData.downpayment = downpayment;
       if (repairHistory !== null) updateData.repairHistory = repairHistory;
 
       if (proofImage && proofImage.name && proofImage.size > 0) {
@@ -54,7 +56,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     } else {
       const body = await req.json();
-      const { status, cause, technician, repairCost, repairHistory } = body;
+      const { status, cause, technician, repairCost, downpayment, repairHistory } = body;
       progress = body.progress;
 
       if (status !== undefined) updateData.status = status;
@@ -62,6 +64,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (cause !== undefined) updateData.cause = cause;
       if (technician !== undefined) updateData.technician = technician;
       if (repairCost !== undefined) updateData.repairCost = repairCost;
+      if (downpayment !== undefined) updateData.downpayment = downpayment;
       if (repairHistory !== undefined) updateData.repairHistory = repairHistory;
     }
 

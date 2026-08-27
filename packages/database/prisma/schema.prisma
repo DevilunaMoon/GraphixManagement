@@ -102,6 +102,7 @@ model RepairRequest {
   cause      String?
   technician String?
   repairCost String?
+  downpayment String?
   image      String?
   proofImage    String?
   repairHistory String?

@@ -16,6 +16,7 @@ interface DeviceProgress {
   cause: string | null;
   technician: string | null;
   repairCost: string | null;
+  downpayment: string | null;
   repairHistory: string | null;
 }
 
@@ -48,6 +49,7 @@ export default function AdminMonitoring() {
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
   const [addRepairCost, setAddRepairCost] = useState('');
+  const [addDownpayment, setAddDownpayment] = useState('');
   const [addRepairHistory, setAddRepairHistory] = useState('');
   const [addImage, setAddImage] = useState<File | null>(null);
   const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
@@ -67,6 +69,7 @@ export default function AdminMonitoring() {
   const [editCause, setEditCause] = useState('');
   const [editTechnician, setEditTechnician] = useState('');
   const [editRepairCost, setEditRepairCost] = useState('');
+  const [editDownpayment, setEditDownpayment] = useState('');
   const [editRepairHistory, setEditRepairHistory] = useState('');
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
@@ -202,6 +205,7 @@ export default function AdminMonitoring() {
     setEditCause(device.cause || '');
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
+    setEditDownpayment(device.downpayment || '');
     setEditRepairHistory(device.repairHistory || '');
     setEditImage(null);
     setEditImagePreview(device.proofImage || null);
@@ -241,6 +245,7 @@ export default function AdminMonitoring() {
     if (addCause) formData.append('cause', addCause);
     if (addTechnician) formData.append('technician', addTechnician);
     if (addRepairCost) formData.append('repairCost', addRepairCost);
+    if (addDownpayment) formData.append('downpayment', addDownpayment);
     if (addRepairHistory) formData.append('repairHistory', addRepairHistory);
     if (addImage) formData.append('image', addImage);
     if (addUserId) formData.append('userId', addUserId);
@@ -262,6 +267,7 @@ export default function AdminMonitoring() {
         setAddTechnician('');
         setAddRepairCost('');
         setAddRepairHistory('');
+        setAddDownpayment('');
         setAddImage(null);
         setAddImagePreview(null);
         setAddCustomerEmail('');
@@ -307,6 +313,7 @@ export default function AdminMonitoring() {
     if (editCause !== null) formData.append('cause', editCause);
     if (editTechnician !== null) formData.append('technician', editTechnician);
     if (editRepairCost !== null) formData.append('repairCost', editRepairCost);
+    if (editDownpayment !== null) formData.append('downpayment', editDownpayment);
     formData.append('repairHistory', editRepairHistory);
     if (editImage) formData.append('proofImage', editImage);
 
@@ -324,6 +331,7 @@ export default function AdminMonitoring() {
           cause: updatedDevice.cause,
           technician: updatedDevice.technician,
           repairCost: updatedDevice.repairCost,
+          downpayment: updatedDevice.downpayment,
           proofImage: updatedDevice.proofImage,
           repairHistory: updatedDevice.repairHistory
         } : d));
@@ -724,6 +732,20 @@ export default function AdminMonitoring() {
                   </div>
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Downpayment</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
+                    <input 
+                      type="text" 
+                      value={editDownpayment}
+                      onChange={(e) => setEditDownpayment(e.target.value)}
+                      placeholder="e.g. 500" 
+                      className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                    />
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-2 mt-2">
                   <label className="font-semibold text-base text-black">Proof of Repair</label>
                   <div className="flex flex-col items-start gap-4">
@@ -912,6 +934,20 @@ export default function AdminMonitoring() {
                         className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Downpayment</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
+                    <input 
+                      type="text" 
+                      value={addDownpayment}
+                      onChange={(e) => setAddDownpayment(e.target.value)}
+                      placeholder="e.g. 500" 
+                      className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                    />
                   </div>
                 </div>
 

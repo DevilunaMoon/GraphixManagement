@@ -84,6 +84,7 @@ export async function POST(req: Request) {
     const cause = formData.get('cause') as string;
     const technician = formData.get('technician') as string;
     const repairCost = formData.get('repairCost') as string;
+    const downpayment = formData.get('downpayment') as string;
     const image = formData.get('image') as File | null;
     const userId = formData.get('userId') as string | null;
     const repairHistory = formData.get('repairHistory') as string | null;
@@ -106,6 +107,7 @@ export async function POST(req: Request) {
         cause: cause || null,
         technician: technician || null,
         repairCost: repairCost || null,
+        downpayment: downpayment || null,
         image: imageUrl,
         userId: userId || null,
         repairHistory: repairHistory || null,
