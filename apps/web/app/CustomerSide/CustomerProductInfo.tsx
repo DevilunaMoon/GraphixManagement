@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle, Star, ChevronDown, MapPin } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Comment {
@@ -35,6 +35,7 @@ function CustomerProductInfoContent() {
   const [qty, setQty] = useState(1);
   const [newComment, setNewComment] = useState('');
   const [product, setProduct] = useState<any>(null);
+  const [selectedBranch, setSelectedBranch] = useState<'Tagoloan' | 'Villanueva' | 'Jasaan'>('Tagoloan');
   const [loading, setLoading] = useState(true);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDownpaymentModalOpen, setIsDownpaymentModalOpen] = useState(false);
@@ -81,6 +82,53 @@ function CustomerProductInfoContent() {
     };
   }, [isDownpaymentModalOpen, showSuccessModal]);
 
+  const branchData = useMemo(() => {
+    if (!product) return null;
+    return product.branchAvailability?.[selectedBranch] || null;
+  }, [product, selectedBranch]);
+
+  const availableVariations = useMemo(() => {
+    if (branchData && branchData.variations && branchData.variations.length > 0) {
+      return branchData.variations;
+    }
+    if ((product?.branch || 'Tagoloan').toLowerCase() === selectedBranch.toLowerCase()) {
+      return product?.variations || [];
+    }
+    return [];
+  }, [branchData, product, selectedBranch]);
+
+  const variationGroups = useMemo(() => {
+    if (!availableVariations || availableVariations.length === 0) return null;
+    return availableVariations.reduce((acc: any, curr: any) => {
+      if (!acc[curr.type]) acc[curr.type] = [];
+      acc[curr.type].push(curr);
+      return acc;
+    }, {});
+  }, [availableVariations]);
+
+  const selectedVariationsArray = Object.values(selectedVariations);
+
+  const currentPrice = selectedVariationsArray.length > 0
+    ? selectedVariationsArray.reduce((acc, v) => acc + (v.price > 0 ? v.price : 0), 0) || (branchData?.price || product?.price)
+    : (branchData?.price || product?.price);
+
+  const currentStock = useMemo(() => {
+    if (!product) return 0;
+    if (selectedVariationsArray.length > 0) {
+      return Math.min(...selectedVariationsArray.map(v => v.stock));
+    }
+    if (branchData !== null && branchData !== undefined) {
+      return branchData.stock;
+    }
+    if ((product.branch || 'Tagoloan').toLowerCase() === selectedBranch.toLowerCase()) {
+      return product.stock;
+    }
+    return 0;
+  }, [product, branchData, selectedBranch, selectedVariationsArray]);
+
+  const targetDeviceId = branchData?.deviceId || product?.id;
+  const hasSelectedAllSections = variationGroups ? Object.keys(variationGroups).length === selectedVariationsArray.length : true;
+
   const handleAddToCart = async () => {
     if (!product || currentStock === 0 || !hasSelectedAllSections) return;
     setIsAddingToCart(true);
@@ -89,7 +137,7 @@ function CustomerProductInfoContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          deviceId: product.id,
+          deviceId: targetDeviceId,
           quantity: qty,
           variations: selectedVariationsArray.length > 0 ? JSON.stringify(selectedVariationsArray) : null
         })
@@ -108,15 +156,6 @@ function CustomerProductInfoContent() {
       setIsAddingToCart(false);
     }
   };
-
-  const variationGroups = useMemo(() => {
-    if (!product?.variations || product.variations.length === 0) return null;
-    return product.variations.reduce((acc: any, curr: any) => {
-      if (!acc[curr.type]) acc[curr.type] = [];
-      acc[curr.type].push(curr);
-      return acc;
-    }, {});
-  }, [product]);
   
   useEffect(() => {
     if (id) {
@@ -126,6 +165,9 @@ function CustomerProductInfoContent() {
       ])
         .then(([productData, reviewsData]) => {
           setProduct(productData);
+          if (productData.branch && (productData.branch === 'Tagoloan' || productData.branch === 'Villanueva' || productData.branch === 'Jasaan')) {
+            setSelectedBranch(productData.branch);
+          }
           if (Array.isArray(reviewsData)) {
             setComments(reviewsData);
           }
@@ -142,21 +184,9 @@ function CustomerProductInfoContent() {
 
   const [comments, setComments] = useState<Comment[]>([]);
 
-  const selectedVariationsArray = Object.values(selectedVariations);
-  
-  const currentPrice = selectedVariationsArray.length > 0
-    ? selectedVariationsArray.reduce((acc, v) => acc + (v.price > 0 ? v.price : 0), 0) || product?.price
-    : product?.price;
-
-  const currentStock = selectedVariationsArray.length > 0
-    ? Math.min(...selectedVariationsArray.map(v => v.stock))
-    : product?.stock;
-    
-  const hasSelectedAllSections = variationGroups ? Object.keys(variationGroups).length === selectedVariationsArray.length : true;
-
   const updateQty = (change: number) => {
     if (!product) return;
-    setQty(prev => Math.min(Math.max(1, prev + change), currentStock));
+    setQty(prev => Math.min(Math.max(1, prev + change), Math.max(1, currentStock)));
   };
 
   const handlePrevImage = () => {
@@ -287,13 +317,40 @@ function CustomerProductInfoContent() {
 
             {/* Product Meta Info Right */}
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 <h3 className="text-3xl md:text-4xl font-black text-gray-900 border-none m-0 tracking-tight leading-tight">{product.name}</h3>
                 
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${currentStock > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/40' : 'bg-rose-50 text-rose-600 border border-rose-200/40'}`}>
+                {/* Branch Availability Filter */}
+                <div className="flex flex-wrap items-center gap-3 mt-1">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="branchFilterSelect" className="text-xs font-black text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      <MapPin size={13} className="text-[#bd00ff]" />
+                      Branch:
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="branchFilterSelect"
+                        value={selectedBranch}
+                        onChange={(e) => {
+                          setSelectedBranch(e.target.value as any);
+                          setSelectedVariations({});
+                          setQty(1);
+                        }}
+                        className="bg-white border-2 border-purple-200 hover:border-[#bd00ff] text-[#bd00ff] font-extrabold text-sm rounded-xl px-3.5 py-1.5 pr-8 appearance-none outline-none transition-all cursor-pointer shadow-sm focus:ring-2 focus:ring-[#bd00ff]/20"
+                      >
+                        <option value="Tagoloan" className="text-black font-semibold">Tagoloan</option>
+                        <option value="Villanueva" className="text-black font-semibold">Villanueva</option>
+                        <option value="Jasaan" className="text-black font-semibold">Jasaan</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-[#bd00ff]">
+                        <ChevronDown size={15} strokeWidth={2.5} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all ${currentStock > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50 shadow-sm' : 'bg-rose-50 text-rose-600 border border-rose-200/50 shadow-sm'}`}>
                     <span className={`w-2 h-2 rounded-full ${currentStock > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                    {currentStock > 0 ? `${currentStock} in stock` : 'Out of stock'}
+                    {currentStock > 0 ? `Available (${currentStock} in stock)` : 'Out of Stock'}
                   </span>
                 </div>
               </div>
@@ -396,7 +453,7 @@ function CustomerProductInfoContent() {
                   {isAddingToCart ? 'Adding...' : 'Add to Cart'}
                 </button>
                 <button 
-                  onClick={() => navigate(`/customer/payment?deviceId=${product.id}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}`)}
+                  onClick={() => navigate(`/customer/payment?deviceId=${targetDeviceId}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}`)}
                   disabled={currentStock === 0 || !hasSelectedAllSections}
                   className="w-full lg:flex-1 py-4 border-none bg-gradient-to-r from-[#bd00ff] to-[#4B0082] rounded-2xl text-white font-extrabold text-base hover:opacity-95 shadow-lg shadow-purple-500/20 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
                 >

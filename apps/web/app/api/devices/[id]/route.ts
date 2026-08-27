@@ -30,7 +30,65 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       }
     }
 
-    return NextResponse.json({ ...device, hasPurchased });
+    // Find same product across all 3 branches: Tagoloan, Villanueva, Jasaan
+    const branchDevices = await prisma.device.findMany({
+      where: {
+        name: {
+          equals: device.name,
+          mode: 'insensitive'
+        }
+      },
+      include: {
+        variations: true,
+        category: true
+      }
+    });
+
+    const branches = ['Tagoloan', 'Villanueva', 'Jasaan'];
+    const branchAvailability: Record<string, {
+      deviceId: string;
+      stock: number;
+      isAvailable: boolean;
+      price: number;
+      variations: any[];
+    }> = {};
+
+    for (const b of branches) {
+      const bDev = branchDevices.find(d => (d.branch || '').toLowerCase() === b.toLowerCase());
+      if (bDev) {
+        branchAvailability[b] = {
+          deviceId: bDev.id,
+          stock: bDev.stock,
+          isAvailable: bDev.stock > 0,
+          price: bDev.price,
+          variations: bDev.variations || []
+        };
+      } else {
+        if ((device.branch || 'Tagoloan').toLowerCase() === b.toLowerCase()) {
+          branchAvailability[b] = {
+            deviceId: device.id,
+            stock: device.stock,
+            isAvailable: device.stock > 0,
+            price: device.price,
+            variations: device.variations || []
+          };
+        } else {
+          branchAvailability[b] = {
+            deviceId: device.id,
+            stock: 0,
+            isAvailable: false,
+            price: device.price,
+            variations: []
+          };
+        }
+      }
+    }
+
+    return NextResponse.json({
+      ...device,
+      hasPurchased,
+      branchAvailability
+    });
   } catch (error) {
     console.error('Error fetching device:', error);
     return NextResponse.json({ error: 'Failed to fetch device' }, { status: 500 });
