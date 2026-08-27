@@ -20,6 +20,7 @@ model User {
   password         String?
   authProvider     String          @default("LOCAL")
   role             String          @default("CUSTOMER")
+  branch           String?         @default("Tagoloan")
   image            String?
   gender           String?
   dateOfBirth      String?
@@ -36,6 +37,8 @@ model User {
   notifications    Notification[]
 
   @@index([name])
+  @@index([branch])
+  @@index([role, branch])
 }
 
 model Device {
@@ -52,6 +55,7 @@ model Device {
   asLowAs          String?
   warranty         String?
   downpayment      String?
+  branch           String            @default("Tagoloan")
   isPreOwned       Boolean           @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -64,6 +68,8 @@ model Device {
   category   Category? @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
+  @@index([branch])
+  @@index([branch, createdAt])
 }
 
 model Review {
@@ -95,26 +101,29 @@ model DeviceVariation {
 }
 
 model RepairRequest {
-  id         String           @id @default(cuid())
-  deviceName String
-  ownerName  String?          @default("")
-  progress   String
-  cause      String?
-  technician String?
-  repairCost String?
-  downpayment String?
-  image      String?
+  id            String           @id @default(cuid())
+  deviceName    String
+  ownerName     String?          @default("")
+  progress      String
+  cause         String?
+  technician    String?
+  repairCost    String?
+  downpayment   String?
+  branch        String           @default("Tagoloan")
+  image         String?
   proofImage    String?
   repairHistory String?
   status        String           @default("Active")
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  userId     String?
-  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  timeline   RepairTimeline[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  userId        String?
+  user          User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  timeline      RepairTimeline[]
 
   @@index([userId])
   @@index([createdAt])
+  @@index([branch])
+  @@index([branch, status])
 }
 
 model TechnicianFeedback {
@@ -123,8 +132,11 @@ model TechnicianFeedback {
   technicianName String?
   feedbackText   String
   sentiment      String   @default("Positive")
+  branch         String?  @default("Tagoloan")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([branch])
 }
 
 model Banner {
@@ -164,6 +176,7 @@ model Purchase {
   variations  String?
   paymentType String  @default("Full")
   source      String  @default("Online")
+  branch      String  @default("Tagoloan")
   status      String  @default("Active")
 
   downpaymentAmount Float?   @default(0)
@@ -181,6 +194,8 @@ model Purchase {
   @@index([deviceId])
   @@index([userId, createdAt])
   @@index([createdAt])
+  @@index([branch])
+  @@index([branch, createdAt])
 }
 
 model CartItem {
@@ -205,6 +220,7 @@ model Notification {
   title     String
   message   String
   type      String   @default("SYSTEM")
+  branch    String?  @default("Tagoloan")
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -212,6 +228,7 @@ model Notification {
   @@index([userId])
   @@index([userId, isRead])
   @@index([userId, createdAt])
+  @@index([branch])
 }
 
 model RepairTimeline {

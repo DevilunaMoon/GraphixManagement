@@ -29,6 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [isGadgetRepairOpen, setIsGadgetRepairOpen] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
+  const [branchName, setBranchName] = useState('Tagoloan');
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
@@ -66,8 +67,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fetch('/api/auth/status')
       .then(res => res.json())
       .then(data => {
-        if (data.loggedIn && data.name) {
-          setAdminName(data.name);
+        if (data.loggedIn) {
+          if (data.name) setAdminName(data.name);
+          if (data.branch) setBranchName(data.branch);
         }
       })
       .catch(err => console.error("Failed to fetch admin status", err));
@@ -84,9 +86,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover" />
           <span className="text-white text-lg font-bold">Graphix Admin</span>
         </div>
-        <button onClick={toggleSidebar} className="text-white">
-          <List size={28} />
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs px-2.5 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
+          <button onClick={toggleSidebar} className="text-white">
+            <List size={28} />
+          </button>
+        </div>
       </div>
 
       {/* Sidebar Overlay */}
@@ -240,13 +245,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h1 className="text-2xl font-bold mb-1">Dashboard Overview</h1>
             <p className="text-sm text-white/90">Welcome Back {adminName}. Here's the daily summary</p>
           </div>
-          <button 
-            onClick={() => setIsLogoutModalOpen(true)}
-            title="Log Out"
-            className="text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
-          >
-            <LogOut size={28} />
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/30 shadow-inner">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              {branchName} Branch
+            </div>
+            <button 
+              onClick={() => setIsLogoutModalOpen(true)}
+              title="Log Out"
+              className="text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+            >
+              <LogOut size={28} />
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 p-5 md:p-10 mx-auto w-full max-w-[1600px] overflow-hidden">

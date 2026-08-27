@@ -126,8 +126,7 @@ export async function login(formData: FormData) {
     // Success, reset attempts
     loginAttempts.delete(email);
 
-// ...
-    await setSession(user.id, user.role);
+    await setSession(user.id, user.role, user.branch);
     return { success: true, role: user.role };
   } catch (err: any) {
     console.error("Login Error:", err);

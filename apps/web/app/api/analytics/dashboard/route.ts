@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
+import { getSession } from '../../../../lib/session';
 
 export async function GET() {
   try {
+    const session = await getSession();
+    const branch = session?.branch || 'Tagoloan';
+
     const now = new Date();
     
     // Time period start boundaries
@@ -16,8 +20,9 @@ export async function GET() {
     
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // 1. Calculate Total Retail of All Time using SQL aggregate (0 row load in server memory!)
+    // 1. Calculate Total Retail of All Time using SQL aggregate
     const totalRetailAggregate = await prisma.purchase.aggregate({
+      where: { branch },
       _sum: {
         amount: true
       }
@@ -30,6 +35,7 @@ export async function GET() {
 
     const purchases = await prisma.purchase.findMany({
       where: {
+        branch,
         createdAt: { gte: startOfYear }
       },
       select: {
@@ -50,6 +56,7 @@ export async function GET() {
     // 3. Fetch completed repairs for the current year
     const repairs = await prisma.repairRequest.findMany({
       where: { 
+        branch,
         status: 'Completed',
         createdAt: { gte: startOfYear }
       },
@@ -61,7 +68,7 @@ export async function GET() {
 
     // 4. Fetch all-time completed repairs selecting ONLY the cost to sum all-time without loading heavy data
     const allTimeRepairs = await prisma.repairRequest.findMany({
-      where: { status: 'Completed' },
+      where: { branch, status: 'Completed' },
       select: {
         repairCost: true
       }
@@ -69,7 +76,7 @@ export async function GET() {
 
     // 5. Fetch active repairs (only technician is needed)
     const activeRepairs = await prisma.repairRequest.findMany({
-      where: { status: { not: 'Completed' } },
+      where: { branch, status: { not: 'Completed' } },
       select: {
         technician: true
       }

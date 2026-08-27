@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
+import { getSession } from '../../../../lib/session';
 
 export async function GET() {
   try {
+    const session = await getSession();
+    const branch = session?.branch || 'Tagoloan';
+
     const now = new Date();
     
     // Time period start boundaries
@@ -12,17 +16,18 @@ export async function GET() {
 
     // Fetch all purchases
     const purchases = await prisma.purchase.findMany({
+      where: { branch },
       include: { device: { select: { name: true, price: true } } }
     });
 
     // Fetch completed repairs
     const repairs = await prisma.repairRequest.findMany({
-      where: { status: 'Completed' }
+      where: { branch, status: 'Completed' }
     });
 
     // Fetch active repairs for workload
     const activeRepairs = await prisma.repairRequest.findMany({
-      where: { status: { not: 'Completed' } }
+      where: { branch, status: { not: 'Completed' } }
     });
 
     const pendingRepairs = activeRepairs.length;

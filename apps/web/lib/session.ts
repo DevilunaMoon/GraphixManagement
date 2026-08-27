@@ -3,9 +3,9 @@ import { encrypt, decrypt } from "./jwt";
 
 export { encrypt, decrypt };
 
-export async function setSession(userId: string, role: string) {
+export async function setSession(userId: string, role: string, branch?: string | null) {
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days expiration
-  const session = await encrypt({ userId, role, expires });
+  const session = await encrypt({ userId, role, branch: branch || "Tagoloan", expires });
 
   const cookieStore = await cookies();
   cookieStore.set("session", session, {

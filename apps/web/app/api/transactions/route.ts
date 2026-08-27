@@ -17,7 +17,9 @@ export async function GET(req: Request) {
     const date = searchParams.get('date') || '';
     
     // Build where clause
-    const whereClause: any = {};
+    const whereClause: any = {
+      branch: session.branch || 'Tagoloan'
+    };
     if (type === 'downpayment') {
       whereClause.paymentType = 'Downpayment';
     } else if (type === 'full') {

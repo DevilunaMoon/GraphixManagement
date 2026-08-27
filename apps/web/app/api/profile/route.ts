@@ -22,6 +22,7 @@ export async function GET() {
         gender: true,
         dateOfBirth: true,
         role: true,
+        branch: true,
         status: true,
         createdAt: true,
       },

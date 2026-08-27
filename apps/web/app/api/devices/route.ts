@@ -2,17 +2,25 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 
+import { getSession } from '../../../lib/session';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
+    const session = await getSession();
     const { searchParams } = new URL(req.url);
     const pageStr = searchParams.get('page');
     const limitStr = searchParams.get('limit');
     const search = searchParams.get('search') || '';
     const brand = searchParams.get('brand') || '';
     const typeFilter = searchParams.get('type') || '';
+    const branchParam = searchParams.get('branch');
+
+    const activeBranch = (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
+      ? (session.branch || 'Tagoloan')
+      : (branchParam || undefined);
 
     // If page parameter is supplied, perform paginated fetch
     if (pageStr) {
@@ -23,6 +31,10 @@ export async function GET(req: Request) {
       const categoryId = searchParams.get('categoryId') || '';
 
       const where: any = {};
+      
+      if (activeBranch) {
+        where.branch = activeBranch;
+      }
       
       if (search) {
         where.name = {
@@ -126,7 +138,13 @@ export async function GET(req: Request) {
       });
     }
 
+    const whereClause: any = {};
+    if (activeBranch) {
+      whereClause.branch = activeBranch;
+    }
+
     const devices = await prisma.device.findMany({
+      where: whereClause,
       include: { category: true, variations: true },
       orderBy: { createdAt: 'desc' }
     });
@@ -143,6 +161,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = await getSession();
+    const branch = (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
+      ? (session.branch || 'Tagoloan')
+      : 'Tagoloan';
+
     const formData = await req.formData();
 
     const name = formData.get('deviceName') as string;
@@ -199,6 +222,7 @@ export async function POST(req: Request) {
         price: parseFloat(priceStr),
         cost: parseFloat(costStr),
         stock: parseInt(stockStr, 10),
+        branch,
         isPreOwned,
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         specs: specs || null,

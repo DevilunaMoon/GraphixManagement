@@ -114,9 +114,12 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
           <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[30px] h-[30px] rounded-full object-cover" />
           <span className="text-white text-[17px] font-bold tracking-wide">Graphix POS</span>
         </div>
-        <button onClick={toggleSidebar} className="text-white outline-none bg-transparent border-none cursor-pointer">
-          <List size={26} />
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{cashier?.branch || 'Tagoloan'}</span>
+          <button onClick={toggleSidebar} className="text-white outline-none bg-transparent border-none cursor-pointer">
+            <List size={26} />
+          </button>
+        </div>
       </div>
 
       {/* Sidebar Overlay */}
@@ -260,6 +263,12 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
             <p className="text-[13px] text-white/90 hidden sm:block mt-0.5">Welcome back. Here is your operational dashboard.</p>
           </div>
           <div className="flex gap-3 items-center">
+            {/* Branch Badge */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              {cashier?.branch || 'Tagoloan'} Branch
+            </div>
+
             {/* Cashier Profile Quick Link */}
             <button 
               onClick={() => router.push('/cashier/profile')}

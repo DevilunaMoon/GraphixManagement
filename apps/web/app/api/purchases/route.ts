@@ -40,9 +40,13 @@ export async function POST(req: Request) {
     });
     const userName = user?.name || user?.email || 'A customer';
 
+    const operatingBranch = (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
+      ? (session.branch || 'Tagoloan')
+      : 'Tagoloan';
+
     async function notifyCashiers(paymentLabel: string) {
       const cashiers = await prisma.user.findMany({
-        where: { role: 'CASHIER' },
+        where: { role: 'CASHIER', branch: operatingBranch },
         select: { id: true }
       });
       if (cashiers.length > 0) {
@@ -58,6 +62,7 @@ export async function POST(req: Request) {
           userId: c.id,
           title: 'New Checkout Alert',
           message: msg,
+          branch: operatingBranch,
           type: 'PAYMENT'
         }));
         await prisma.notification.createMany({ data: notifications });
@@ -117,6 +122,7 @@ export async function POST(req: Request) {
             variations: item.variations,
             paymentType: paymentType || 'Full',
             source: source || 'Online',
+            branch: operatingBranch,
             downpaymentAmount: 0,
             remainingBalance: 0,
             isSettled: true
@@ -185,6 +191,7 @@ export async function POST(req: Request) {
           variations: variations || null,
           paymentType: paymentType || 'Full',
           source: source || 'Online',
+          branch: operatingBranch,
           downpaymentAmount: isDp ? dpAmt : 0,
           remainingBalance: remBal,
           isSettled: settled

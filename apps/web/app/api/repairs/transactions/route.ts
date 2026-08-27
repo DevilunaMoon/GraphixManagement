@@ -166,6 +166,7 @@ export async function GET(req: Request) {
 
     // Build where clause for Database
     const whereClause: any = {
+      branch: session.branch || 'Tagoloan',
       repairCost: {
         not: null,
       },
@@ -276,9 +277,9 @@ export async function GET(req: Request) {
       };
     });
 
-    // Handle Paper Receipts
+    // Handle Paper Receipts (only for Tagoloan where historical paper receipts belong)
     let matchedPaper: any[] = [];
-    if (type !== 'downpayment') {
+    if (type !== 'downpayment' && (session.branch || 'Tagoloan') === 'Tagoloan') {
       const dbIds = new Set(dbTransactions.map(tx => tx.repairId));
       matchedPaper = PAPER_RECEIPTS.filter((tx) => {
         if (dbIds.has(tx.repairId)) return false;

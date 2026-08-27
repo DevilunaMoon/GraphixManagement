@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Set the session using the same logic as your regular login
-    await setSession(user.id, user.role);
+    await setSession(user.id, user.role, user.branch);
 
     // Redirect strictly to the customer dashboard or state redirect URL if present and starts with /
     const state = url.searchParams.get("state") || "";

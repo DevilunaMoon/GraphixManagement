@@ -18,7 +18,9 @@ export async function GET(req: Request) {
     const search = searchParams.get('search') || '';
     const sort = searchParams.get('sort') || 'Newest';
 
-    const whereClause: any = isCustomer && session?.userId ? { userId: session.userId } : {};
+    const whereClause: any = isCustomer && session?.userId
+      ? { userId: session.userId }
+      : { branch: session.branch || 'Tagoloan' };
 
     if (search.trim()) {
       whereClause.deviceName = {
@@ -108,6 +110,7 @@ export async function POST(req: Request) {
         technician: technician || null,
         repairCost: repairCost || null,
         downpayment: downpayment || null,
+        branch: session.branch || 'Tagoloan',
         image: imageUrl,
         userId: userId || null,
         repairHistory: repairHistory || null,

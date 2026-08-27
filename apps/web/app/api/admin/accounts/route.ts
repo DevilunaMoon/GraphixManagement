@@ -47,6 +47,8 @@ export async function GET(req: Request) {
             email: true,
             phone: true,
             dateOfBirth: true,
+            role: true,
+            branch: true,
             status: true,
             suspendedUntil: true,
           },
@@ -74,6 +76,8 @@ export async function GET(req: Request) {
         email: true,
         phone: true,
         dateOfBirth: true,
+        role: true,
+        branch: true,
         status: true,
         suspendedUntil: true,
       },
@@ -94,7 +98,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, email, phone, password, role } = body;
+    const { name, email, phone, password, role, branch } = body;
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
@@ -114,6 +118,7 @@ export async function POST(req: Request) {
         phone: phone || null,
         password: hashedPassword,
         role: role || 'CASHIER',
+        branch: branch || session.branch || 'Tagoloan',
       },
       select: {
         id: true,
@@ -122,6 +127,7 @@ export async function POST(req: Request) {
         phone: true,
         dateOfBirth: true,
         role: true,
+        branch: true,
         status: true,
         suspendedUntil: true,
       }
