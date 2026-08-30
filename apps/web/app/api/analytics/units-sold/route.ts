@@ -4,23 +4,34 @@ import { getSession } from '../../../../lib/session';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
-    const branch = session?.branch || 'Tagoloan';
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+
+    const { searchParams } = new URL(req.url);
+    const branchQuery = searchParams.get('branch');
+
+    let targetBranch: string | null = null;
+    if (isSuperAdmin) {
+      if (branchQuery && branchQuery !== 'all') {
+        targetBranch = branchQuery;
+      }
+    } else {
+      targetBranch = session?.branch || 'Tagoloan';
+    }
+
+    const whereClause: any = {};
+    if (targetBranch) {
+      whereClause.branch = targetBranch;
+    }
 
     const now = new Date();
-    // Get the start date of the month 5 months ago (to calculate trends against previous month)
     const fiveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    whereClause.createdAt = { gte: fiveMonthsAgo };
 
-    // Fetch purchases for this branch from the last 5 months
     const purchases = await prisma.purchase.findMany({
-      where: {
-        branch,
-        createdAt: {
-          gte: fiveMonthsAgo
-        }
-      },
+      where: whereClause,
       select: {
         quantity: true,
         createdAt: true
@@ -29,7 +40,6 @@ export async function GET() {
 
     const monthlyUnits: Record<string, number> = {};
 
-    // Group units sold by month and year
     purchases.forEach(p => {
       const date = new Date(p.createdAt);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
@@ -38,7 +48,6 @@ export async function GET() {
 
     const lastMonths: { key: string; monthName: string; units: number }[] = [];
 
-    // Gather last 5 months data
     for (let i = 0; i < 5; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
@@ -51,12 +60,10 @@ export async function GET() {
       });
     }
 
-    // Calculate month-over-month trend for the top 4 months
     const result = lastMonths.slice(0, 4).map((m, i) => {
       let trendStr = "0%";
       let trendUp = true;
 
-      // Look at the previous chronological month (index i + 1)
       const prevMonthUnits = lastMonths[i + 1]?.units || 0;
       if (prevMonthUnits > 0) {
         const diff = m.units - prevMonthUnits;

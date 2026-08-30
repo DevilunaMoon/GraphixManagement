@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   // 1. Auto-Redirect logged-in users from Landing Page, Homepage, or Login page to their Dashboard
   if (currentPath === '/' || currentPath === '/homepage' || currentPath === '/login') {
     if (session) {
-      if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      if (role === 'admin' || role === 'super_admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       if (role === 'cashier') return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
       return NextResponse.redirect(new URL('/customer/dashboard', request.url));
     }
@@ -43,22 +43,22 @@ export async function middleware(request: NextRequest) {
   }
   
   // 3. Strict Role-based routing protection
-  if (session && currentPath.startsWith('/admin') && role !== 'admin') {
+  if (session && currentPath.startsWith('/admin') && role !== 'admin' && role !== 'super_admin') {
     if (role === 'cashier') return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
     return NextResponse.redirect(new URL('/customer/dashboard', request.url));
   }
   
   if (session && currentPath.startsWith('/cashier') && role !== 'cashier') {
-    if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    if (role === 'admin' || role === 'super_admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     return NextResponse.redirect(new URL('/customer/dashboard', request.url));
   }
 
   if (session && currentPath.startsWith('/customer') && role !== 'customer') {
     if (currentPath.startsWith('/customer/monitoring')) {
-      if (role === 'admin') return NextResponse.redirect(new URL('/admin/monitoring', request.url));
+      if (role === 'admin' || role === 'super_admin') return NextResponse.redirect(new URL('/admin/monitoring', request.url));
       if (role === 'cashier') return NextResponse.redirect(new URL('/cashier/monitoring', request.url));
     }
-    if (role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    if (role === 'admin' || role === 'super_admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     if (role === 'cashier') return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
   }
   

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
+import { BranchProvider, useBranch } from '../../context/BranchContext';
 import {
   List,
   X,
@@ -21,10 +22,13 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  Bell
+  Bell,
+  Building2,
+  ScrollText,
+  Crown
 } from 'lucide-react';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
@@ -33,6 +37,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [branchName, setBranchName] = useState('Tagoloan');
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const { selectedBranch, setSelectedBranch, branches, isSuperAdmin } = useBranch();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { styles, bgClass } = useTheme();
 
   useEffect(() => {
     if (isLogoutModalOpen) {
@@ -61,9 +70,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       });
     };
   }, [isLogoutModalOpen]);
-  const router = useRouter();
-  const pathname = usePathname();
-  const { styles, bgClass } = useTheme();
 
   useEffect(() => {
     fetch('/api/auth/status')
@@ -101,6 +107,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
+  // Dynamic Navigation Items
+  const navItems = [
+    { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
+    { href: '/admin/notifications', label: 'Notifications', icon: Bell },
+    { 
+      label: 'Order History', 
+      icon: ReceiptText,
+      subItems: [
+        { href: '/admin/transactions', label: 'Completed Purchases' }
+      ]
+    },
+    { href: '/admin/accounts', label: 'User Management', icon: User },
+    { href: '/admin/inventory', label: 'Inventory Management', icon: Box },
+    { 
+      label: 'Gadget Repair', 
+      icon: Wrench,
+      subItems: [
+        { href: '/admin/monitoring', label: 'Devices Monitoring' },
+        { href: '/admin/repairs/transactions', label: 'Completed Repairs' }
+      ]
+    },
+    ...(isSuperAdmin ? [
+      { href: '/admin/branches', label: 'Branch Management', icon: Building2 },
+      { href: '/admin/activity-logs', label: 'Activity Logs', icon: ScrollText }
+    ] : []),
+    { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
+    { href: '/admin/about-editor', label: 'About Page', icon: FileText },
+    { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
+  ];
+
   return (
     <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Inter'] transition-colors duration-300`}>
       {/* Mobile Header */}
@@ -110,7 +147,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-white text-base font-bold">Graphix Admin</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
+          {isSuperAdmin ? (
+            <select
+              value={selectedBranch}
+              onChange={(e) => setSelectedBranch(e.target.value)}
+              className="text-[11px] px-2 py-1 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white outline-none [&>option]:text-black"
+            >
+              <option value="all">🌐 All Branches</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.name}>📍 {b.name}</option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
+          )}
           <Link 
             href="/admin/notifications"
             className="relative text-white p-1.5 flex items-center justify-center"
@@ -157,7 +207,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-white object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="text-2xl font-extrabold tracking-wide leading-none">Graphix</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-2xl font-extrabold tracking-wide leading-none">Graphix</span>
+                  {isSuperAdmin && (
+                    <span className="px-1.5 py-0.5 bg-amber-400 text-slate-900 text-[10px] font-black rounded uppercase tracking-wider flex items-center gap-0.5">
+                      <Crown size={10} /> Super
+                    </span>
+                  )}
+                </div>
                 <span className="text-xs font-medium text-white/80 mt-1 truncate max-w-[130px]">{adminName}</span>
               </div>
             )}
@@ -169,32 +226,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           )}
         </div>
 
-        <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
-          {[
-            { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
-            { href: '/admin/notifications', label: 'Notifications', icon: Bell },
-            { 
-              label: 'Order History', 
-              icon: ReceiptText,
-              subItems: [
-                { href: '/admin/transactions', label: 'Completed Purchases' }
-              ]
-            },
-            { href: '/admin/accounts', label: 'User Management', icon: User },
-            { href: '/admin/inventory', label: 'Inventory Management', icon: Box },
-            { 
-              label: 'Gadget Repair', 
-              icon: Wrench,
-              subItems: [
-                { href: '/admin/monitoring', label: 'Devices Monitoring' },
-                { href: '/admin/repairs/transactions', label: 'Completed Repairs' }
-              ]
-            },
-            { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
-            { href: '/admin/about-editor', label: 'About Page', icon: FileText },
-            { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
-            { href: '/admin/settings', label: 'Settings', icon: Settings },
-          ].map((item: any, idx) => {
+        <nav className={`flex flex-col py-5 flex-1 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
+          {navItems.map((item: any, idx) => {
             const Icon = item.icon;
             if (item.subItems) {
               const isAnySubActive = item.subItems.some((s: any) => pathname === s.href);
@@ -294,14 +327,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }`}>
         <header className={`bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 flex justify-between items-center shadow-sm transition-all duration-300`}>
           <div>
-            <h1 className="text-2xl font-bold mb-1">Dashboard Overview</h1>
-            <p className="text-sm text-white/90">Welcome Back {adminName}. Here's the daily summary</p>
+            <h1 className="text-2xl font-bold mb-1">
+              {isSuperAdmin ? "Super Admin Portal" : "Dashboard Overview"}
+            </h1>
+            <p className="text-sm text-white/90">
+              Welcome Back {adminName}. {isSuperAdmin ? "System-wide multi-branch management" : "Here's the daily summary"}
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/30 shadow-inner">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              {branchName} Branch
-            </div>
+            {isSuperAdmin ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-xl text-xs md:text-sm font-bold text-white border border-white/30 shadow-inner">
+                <Building2 size={16} />
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer pr-1 [&>option]:text-black"
+                >
+                  <option value="all">🌐 All Branches (System-Wide)</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.name}>📍 {b.name} Branch</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/30 shadow-inner">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                {branchName} Branch
+              </div>
+            )}
             <Link
               href="/admin/notifications"
               title="Notifications"
@@ -319,52 +372,55 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               title="Log Out"
               className="text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
             >
-              <LogOut size={28} />
+              <LogOut size={22} />
             </button>
           </div>
         </header>
 
-        <div className="flex-1 p-5 md:p-10 mx-auto w-full max-w-[1600px] overflow-hidden">
+        <div className="p-4 md:p-8 flex-1">
           {children}
         </div>
       </main>
 
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200 overscroll-contain" onWheel={(e) => e.stopPropagation()} onClick={() => setIsLogoutModalOpen(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-sm border border-gray-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-purple-50 text-[#bd00ff] rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm animate-pulse">
-                <LogOut size={32} />
-              </div>
-              <h3 className="text-2xl font-black text-gray-900 mb-2">Confirm Log Out</h3>
-              <p className="text-gray-500 font-semibold text-sm leading-relaxed mb-6">
-                Are you sure you want to log out? You will need to sign back in to access your admin dashboard.
-              </p>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setIsLogoutModalOpen(false)}
-                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition-colors cursor-pointer border-none outline-none"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const { logoutUser } = await import('../../actions/auth');
-                    await logoutUser();
-                    window.location.href = '/login';
-                  }}
-                  className="flex-1 py-3 px-4 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer border-none outline-none"
-                >
-                  Log Out
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4 shadow-inner">
+              <LogOut size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
+            <p className="text-sm text-gray-500 mb-6">Are you sure you want to log out of the admin panel?</p>
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    await fetch('/api/auth/logout', { method: 'POST' });
+                  } catch (e) {}
+                  router.push('/login');
+                }}
+                className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md shadow-red-200 transition-colors cursor-pointer"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <BranchProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </BranchProvider>
   );
 }

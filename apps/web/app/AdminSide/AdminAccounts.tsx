@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Ban, X, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
+import { useBranch } from '../../context/BranchContext';
+
 const splitName = (fullName: string) => {
   const nameToSplit = (fullName || '').trim();
   if (!nameToSplit) return { first: 'Anonymous', last: '-' };
@@ -15,6 +17,7 @@ const splitName = (fullName: string) => {
 };
 
 export default function AdminAccounts() {
+  const { selectedBranch, branches, isSuperAdmin } = useBranch();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filter, setFilter] = useState('All Accounts');
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +30,8 @@ export default function AdminAccounts() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filter]);
+  }, [searchQuery, filter, selectedBranch]);
+
   const [suspendModal, setSuspendModal] = useState<{isOpen: boolean, id: string, name: string, error?: string, status?: string, suspendedUntil?: string}>({ isOpen: false, id: '', name: '' });
   const [isSuspending, setIsSuspending] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
@@ -49,7 +53,8 @@ export default function AdminAccounts() {
       name: fullName,
       email: data.email,
       password: data.password,
-      role: data.role
+      role: data.role,
+      branch: data.branch || (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan')
     };
 
     try {
@@ -69,6 +74,8 @@ export default function AdminAccounts() {
           email: newUser.email,
           phone: newUser.phone || 'N/A',
           dob: newUser.dateOfBirth || 'N/A',
+          role: newUser.role,
+          branch: newUser.branch,
           password: '••••••••',
           status: newUser.status || 'Active',
           suspendedUntil: newUser.suspendedUntil
@@ -124,7 +131,12 @@ export default function AdminAccounts() {
 
   const fetchAccounts = () => {
     setIsLoading(true);
-    fetch(`/api/admin/accounts?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`)
+    let roleParam = 'all';
+    if (filter === 'Admins') roleParam = 'ADMIN';
+    else if (filter === 'Cashiers') roleParam = 'CASHIER';
+    else if (filter === 'Customers') roleParam = 'CUSTOMER';
+
+    fetch(`/api/admin/accounts?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&branch=${selectedBranch}&role=${roleParam}`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.users)) {
@@ -137,6 +149,8 @@ export default function AdminAccounts() {
               email: user.email,
               phone: user.phone || 'N/A',
               dob: user.dateOfBirth || 'N/A',
+              role: user.role,
+              branch: user.branch,
               password: '••••••••',
               status: user.status || 'Active',
               suspendedUntil: user.suspendedUntil
@@ -155,7 +169,7 @@ export default function AdminAccounts() {
       fetchAccounts();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, filter, selectedBranch]);
 
   const paginatedAccounts = accounts;
 
@@ -228,18 +242,17 @@ export default function AdminAccounts() {
             <thead>
               <tr>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain}`}>Email</th>
+                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Role</th>
+                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Branch</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Contact #</th>
-                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Birthdate</th>
-                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Password</th>
-                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>First Name</th>
-                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Last Name</th>
+                <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Full Name</th>
                 <th className={`py-4 px-5 font-bold text-[1.1rem] text-[#111] border-b-2 ${styles.borderMain} hidden md:table-cell`}>Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center">
+                  <td colSpan={6} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-10 h-10 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
                       <span className="text-[#666] font-semibold animate-pulse">Loading accounts...</span>
@@ -259,11 +272,26 @@ export default function AdminAccounts() {
                         {acc.status === 'Suspended' && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline-block">Suspended</span>}
                       </div>
                     </td>
+                    <td className={`py-4 px-5 text-[0.85rem] border-b ${styles.borderMain} hidden md:table-cell`}>
+                      <span className={`px-2.5 py-1 rounded-full font-bold uppercase tracking-wider text-[10px] ${
+                        acc.role === 'SUPER_ADMIN' 
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200' 
+                          : acc.role === 'ADMIN' 
+                            ? 'bg-purple-100 text-purple-800' 
+                            : acc.role === 'CASHIER' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {acc.role || 'Customer'}
+                      </span>
+                    </td>
+                    <td className={`py-4 px-5 text-[0.85rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell font-semibold`}>
+                      📍 {acc.branch || 'Tagoloan'}
+                    </td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.phone}</td>
-                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.dob}</td>
-                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{acc.password}</td>
-                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} hidden md:table-cell truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>{acc.firstName}</td>
-                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} hidden md:table-cell truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>{acc.lastName}</td>
+                    <td className={`py-4 px-5 text-[0.95rem] font-bold border-b ${styles.borderMain} hidden md:table-cell truncate ${acc.status === 'Suspended' ? 'text-red-500' : 'text-[#111]'}`}>
+                      {acc.firstName} {acc.lastName !== '-' ? acc.lastName : ''}
+                    </td>
                     <td className={`py-4 px-5 border-b ${styles.borderMain} hidden md:table-cell`}>
                       <button
                         onClick={(e) => { e.stopPropagation(); openSuspendModal(acc.id, `${acc.firstName} ${acc.lastName}`, acc.status, acc.suspendedUntil); }}
@@ -277,7 +305,7 @@ export default function AdminAccounts() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-[#666] font-semibold">
+                  <td colSpan={6} className="py-10 text-center text-[#666] font-semibold">
                     No accounts found.
                   </td>
                 </tr>
@@ -306,77 +334,72 @@ export default function AdminAccounts() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
+      {/* Suspend Confirmation Modal */}
       {suspendModal.isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-full max-w-md animate-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSuspendModal({ isOpen: false, id: '', name: '' })}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
-              <div className="flex items-center gap-2">
-                <Ban className="text-orange-500" size={24} />
-                <h3 className="font-bold text-[#111] text-xl">Manage Suspension</h3>
-              </div>
+              <h3 className="font-bold text-[#111] text-lg">Manage Account Access</h3>
               <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setSuspendModal({ isOpen: false, id: '', name: '' })}>
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-6">
-              <p className="text-gray-600 mb-4 font-medium">
-                Choose a suspension duration for <span className="font-bold text-[#111]">{suspendModal.name}</span>.
+            <div className="p-6 flex flex-col gap-4 text-center">
+              <div className="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-1">
+                <Ban size={24} />
+              </div>
+              <p className="text-[#444] text-sm font-medium">
+                Set suspension duration or restore access for <br />
+                <span className="font-bold text-[#111] text-base">{suspendModal.name}</span>
               </p>
 
-              <div className="mb-5 bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-lg text-sm shadow-sm">
-                <span className="font-bold">⚠️ Important Policy:</span> Use the suspend feature <strong className="text-orange-900">only for problematic users</strong> causing trouble. Do not suspend users who are simply inactive.
-              </div>
-              {suspendModal.status === 'Suspended' && (
-                <div className="mb-4 text-sm font-bold text-red-600 bg-red-50 p-2 rounded text-center border border-red-100">
-                  Currently suspended until: {suspendModal.suspendedUntil ? new Date(suspendModal.suspendedUntil).toLocaleDateString() : 'Permanent'}
-                </div>
-              )}
-              
               {suspendModal.error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm font-bold border border-red-100 text-center">
+                <div className="bg-red-50 text-red-600 p-2.5 rounded-xl text-xs font-semibold border border-red-100">
                   {suspendModal.error}
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3 mt-6">
-                <button
-                  onClick={() => handleSuspend('1_week')}
-                  disabled={isSuspending}
-                  className="px-4 py-3 bg-white border-2 border-orange-200 hover:border-orange-500 hover:bg-orange-50 text-orange-700 rounded-xl font-bold transition-all disabled:opacity-50"
-                >
-                  1 Week
-                </button>
-                <button
-                  onClick={() => handleSuspend('1_month')}
-                  disabled={isSuspending}
-                  className="px-4 py-3 bg-white border-2 border-orange-200 hover:border-orange-500 hover:bg-orange-50 text-orange-700 rounded-xl font-bold transition-all disabled:opacity-50"
-                >
-                  1 Month
-                </button>
-                <button
-                  onClick={() => handleSuspend('1_year')}
-                  disabled={isSuspending}
-                  className="px-4 py-3 bg-white border-2 border-red-200 hover:border-red-500 hover:bg-orange-50 text-red-700 rounded-xl font-bold transition-all disabled:opacity-50"
-                >
-                  1 Year
-                </button>
-                <button
-                  onClick={() => handleSuspend('permanent')}
-                  disabled={isSuspending}
-                  className="px-4 py-3 bg-red-500 hover:bg-red-600 text-white border-2 border-transparent rounded-xl font-bold transition-all disabled:opacity-50 shadow-sm"
-                >
-                  Permanent
-                </button>
-              </div>
-
-              {suspendModal.status === 'Suspended' && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => handleSuspend('lift')}
+              {suspendModal.status !== 'Suspended' ? (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <button 
                     disabled={isSuspending}
-                    className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-colors disabled:opacity-50 shadow-sm"
+                    onClick={() => handleSuspend('1_week')}
+                    className="py-2.5 px-3 bg-gray-100 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 border border-transparent rounded-xl text-xs font-bold text-[#444] transition-all disabled:opacity-50"
+                  >
+                    1 Week
+                  </button>
+                  <button 
+                    disabled={isSuspending}
+                    onClick={() => handleSuspend('1_month')}
+                    className="py-2.5 px-3 bg-gray-100 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 border border-transparent rounded-xl text-xs font-bold text-[#444] transition-all disabled:opacity-50"
+                  >
+                    1 Month
+                  </button>
+                  <button 
+                    disabled={isSuspending}
+                    onClick={() => handleSuspend('1_year')}
+                    className="py-2.5 px-3 bg-gray-100 hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 border border-transparent rounded-xl text-xs font-bold text-[#444] transition-all disabled:opacity-50"
+                  >
+                    1 Year
+                  </button>
+                  <button 
+                    disabled={isSuspending}
+                    onClick={() => handleSuspend('permanent')}
+                    className="py-2.5 px-3 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl text-xs font-bold text-red-600 transition-all disabled:opacity-50"
+                  >
+                    Permanent
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 mt-2">
+                  <span className="text-xs text-red-500 font-semibold">
+                    Account is currently suspended
+                  </span>
+                  <button 
+                    disabled={isSuspending}
+                    onClick={() => handleSuspend('lift')}
+                    className="py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-emerald-200 disabled:opacity-50"
                   >
                     Lift Suspension
                   </button>
@@ -435,13 +458,29 @@ export default function AdminAccounts() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-bold text-gray-700">Role</label>
-                <select name="role" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium appearance-none">
-                  <option value="CASHIER">Cashier</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="CUSTOMER">Customer</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-bold text-gray-700">Role</label>
+                  <select name="role" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium appearance-none">
+                    <option value="CASHIER">Cashier</option>
+                    <option value="ADMIN">Admin</option>
+                    {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
+                    <option value="CUSTOMER">Customer</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm font-bold text-gray-700">Branch</label>
+                  <select 
+                    name="branch" 
+                    defaultValue={selectedBranch !== 'all' ? selectedBranch : 'Tagoloan'}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white transition-all text-[#111] font-medium appearance-none"
+                  >
+                    {branches.map(b => (
+                      <option key={b.id} value={b.name}>{b.name} Branch</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="mt-2 flex gap-3">

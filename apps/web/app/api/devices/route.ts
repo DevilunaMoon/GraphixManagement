@@ -4,12 +4,16 @@ import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { getSession } from '../../../lib/session';
 import { triggerStockAlert } from '../../../lib/stock-alerts';
 
+import { logActivity } from '../../../lib/logger';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET(req: Request) {
   try {
     const session = await getSession();
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+
     const { searchParams } = new URL(req.url);
     const pageStr = searchParams.get('page');
     const limitStr = searchParams.get('limit');
@@ -18,9 +22,11 @@ export async function GET(req: Request) {
     const typeFilter = searchParams.get('type') || '';
     const branchParam = searchParams.get('branch');
 
-    const activeBranch = (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
-      ? (session.branch || 'Tagoloan')
-      : (branchParam || undefined);
+    const activeBranch = isSuperAdmin
+      ? (branchParam === 'all' ? undefined : (branchParam || undefined))
+      : (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
+        ? (session.branch || 'Tagoloan')
+        : (branchParam || undefined);
 
     // If page parameter is supplied, perform paginated fetch
     if (pageStr) {
@@ -162,11 +168,15 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getSession();
-    const branch = (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
-      ? (session.branch || 'Tagoloan')
-      : 'Tagoloan';
-
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
     const formData = await req.formData();
+    const customBranch = formData.get('branch') as string;
+
+    const branch = isSuperAdmin
+      ? (customBranch || 'Tagoloan')
+      : (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
+        ? (session.branch || 'Tagoloan')
+        : 'Tagoloan';
 
     const name = formData.get('deviceName') as string;
     const priceStr = formData.get('devicePrice') as string;
@@ -255,6 +265,14 @@ export async function POST(req: Request) {
           }))
         } : undefined,
       }
+    });
+
+    await logActivity({
+      action: 'ADD_DEVICE',
+      description: `Added product '${name}' to ${branch} branch (Stock: ${stockStr}, Price: ₱${priceStr})`,
+      branch,
+      userId: session?.userId,
+      userRole: session?.role
     });
 
     await triggerStockAlert({ deviceId: device.id });

@@ -5,21 +5,29 @@ import { getSession } from '../../../lib/session';
 export async function GET(req: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'CASHIER')) {
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN' && session.role !== 'CASHIER')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
     const pageStr = searchParams.get('page');
     const limitStr = searchParams.get('limit');
     const search = searchParams.get('search') || '';
     const date = searchParams.get('date') || '';
+    const branchParam = searchParams.get('branch');
     
     // Build where clause
-    const whereClause: any = {
-      branch: session.branch || 'Tagoloan'
-    };
+    const whereClause: any = {};
+    if (isSuperAdmin) {
+      if (branchParam && branchParam !== 'all') {
+        whereClause.branch = branchParam;
+      }
+    } else {
+      whereClause.branch = session.branch || 'Tagoloan';
+    }
+
     if (type === 'downpayment') {
       whereClause.paymentType = 'Downpayment';
     } else if (type === 'full') {

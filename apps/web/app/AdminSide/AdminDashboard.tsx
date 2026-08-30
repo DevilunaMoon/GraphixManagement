@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Wrench } from 'lucide-react';
+import { useBranch } from '../../context/BranchContext';
+import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Wrench, Building2 } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
   const [userCount, setUserCount] = useState<string | number>("...");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, units: string, trend: string, trendUp: boolean } | null>(null);
@@ -23,8 +25,10 @@ export default function AdminDashboard() {
         }
       })
       .catch(err => console.error("Failed to fetch user count:", err));
+  }, []);
 
-    fetch('/api/analytics/units-sold')
+  useEffect(() => {
+    fetch(`/api/analytics/units-sold?branch=${selectedBranch}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -33,13 +37,13 @@ export default function AdminDashboard() {
       })
       .catch(err => console.error("Failed to fetch units sold data:", err));
 
-    fetch('/api/analytics/dashboard')
+    fetch(`/api/analytics/dashboard?branch=${selectedBranch}`)
       .then(res => res.json())
       .then(data => {
         setDashboardData(data);
       })
       .catch(err => console.error("Failed to fetch dashboard data:", err));
-  }, []);
+  }, [selectedBranch]);
 
   return (
     <>
@@ -186,6 +190,73 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Multi-Branch Performance Comparison (Super Admin System-Wide View) */}
+      {isSuperAdmin && (!selectedBranch || selectedBranch === 'all') && dashboardData?.branchComparison && dashboardData.branchComparison.length > 0 && (
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
+          <div className="mb-6 pb-4 border-b border-black/5 flex justify-between items-center">
+            <div>
+              <h3 className="text-xl font-bold text-[#111] flex items-center gap-2">
+                <Building2 className="text-[#bd00ff]" size={22} /> Multi-Branch Performance Comparison
+              </h3>
+              <p className="text-sm text-[#666] mt-0.5">Live revenue, product units sold, and volume comparison across branches</p>
+            </div>
+            <Link 
+              href="/admin/branches"
+              className="text-xs font-bold text-[#bd00ff] hover:underline hidden sm:inline"
+            >
+              Manage Branches →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {dashboardData.branchComparison.map((comp: any) => {
+              const maxRev = Math.max(...dashboardData.branchComparison.map((c: any) => c.revenue), 1);
+              const percent = Math.round((comp.revenue / maxRev) * 100);
+
+              return (
+                <div 
+                  key={comp.branch} 
+                  className="bg-gray-50/70 border border-gray-100 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-purple-200 transition-all"
+                >
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-bold text-base text-gray-900 flex items-center gap-1.5">
+                        📍 {comp.branch}
+                      </span>
+                      <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                        {comp.transactions} Orders
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 mb-3">
+                      <span className="text-xs font-semibold text-gray-500">Completed Sales</span>
+                      <span className="text-2xl font-black text-gray-900">₱{comp.revenue.toLocaleString()}</span>
+                    </div>
+
+                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
+                      <div 
+                        className="bg-gradient-to-r from-purple-500 to-[#bd00ff] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(percent, 4)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-200/60 flex justify-between items-center text-xs font-semibold text-gray-600">
+                    <span>Units Sold: <strong className="text-gray-900">{comp.unitsSold} units</strong></span>
+                    <button
+                      onClick={() => setSelectedBranch(comp.branch)}
+                      className="text-[#bd00ff] hover:underline text-xs font-bold cursor-pointer"
+                    >
+                      Filter Branch →
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
       
       {selectedMonthData && (
