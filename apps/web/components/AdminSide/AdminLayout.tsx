@@ -384,30 +384,42 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Logout Confirmation Modal */}
       {isLogoutModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mb-4 shadow-inner">
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setIsLogoutModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 md:p-8 max-w-sm w-full shadow-2xl border border-gray-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 bg-purple-50 text-[#bd00ff] rounded-2xl flex items-center justify-center mb-4 shadow-sm animate-pulse">
               <LogOut size={32} />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Logout</h3>
-            <p className="text-sm text-gray-500 mb-6">Are you sure you want to log out of the admin panel?</p>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Confirm Log Out</h3>
+            <p className="text-sm text-gray-500 font-medium mb-6">Are you sure you want to log out of the admin panel?</p>
             <div className="flex gap-3 w-full">
               <button 
+                type="button"
                 onClick={() => setIsLogoutModalOpen(false)}
-                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl border border-gray-200 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button 
+                type="button"
                 onClick={async () => {
                   try {
                     await fetch('/api/auth/logout', { method: 'POST' });
                   } catch (e) {}
-                  router.push('/login');
+                  try {
+                    const { logoutUser } = await import('../../actions/auth');
+                    await logoutUser();
+                  } catch (e) {}
+                  window.location.href = '/login';
                 }}
-                className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md shadow-red-200 transition-colors cursor-pointer"
+                className="flex-1 py-3 px-4 rounded-xl bg-[#bd00ff] hover:bg-purple-700 text-white font-bold shadow-lg shadow-purple-200 transition-all cursor-pointer"
               >
-                Logout
+                Log Out
               </button>
             </div>
           </div>
