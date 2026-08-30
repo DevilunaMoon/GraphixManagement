@@ -24,7 +24,7 @@ export default function CustomerNotifications() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const fetchNotifications = async (pageToFetch = currentPage) => {
     try {
@@ -63,10 +63,10 @@ export default function CustomerNotifications() {
   };
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">
-      <div className="w-full max-w-5xl flex flex-col gap-4 sm:gap-6">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center overflow-y-auto w-full">
+      <div className="w-full max-w-7xl flex flex-col gap-6">
         
-        <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-gray-100 flex flex-col min-h-[600px]">
+        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-200/70 flex flex-col min-h-[650px] w-full">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 border-b border-gray-200 pb-4 mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
