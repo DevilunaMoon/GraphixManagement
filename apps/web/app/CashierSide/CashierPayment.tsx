@@ -8,6 +8,7 @@ interface CartItem {
   id: string;
   name: string;
   price: number;
+  discount?: number;
   image: string | null;
   stock: number;
   cartQty: number;
@@ -61,7 +62,11 @@ export default function CashierPayment() {
         const parsed = JSON.parse(storedCart);
         if (parsed.items && Array.isArray(parsed.items)) {
           setCartItems(parsed.items);
-          const sum = parsed.total || parsed.items.reduce((acc: number, item: CartItem) => acc + (item.price * item.cartQty), 0);
+          const sum = parsed.total || parsed.items.reduce((acc: number, item: CartItem) => {
+            const discount = item.discount || 0;
+            const effectivePrice = discount > 0 ? (item.price * (1 - discount / 100)) : item.price;
+            return acc + (effectivePrice * item.cartQty);
+          }, 0);
           setTotalAmount(sum);
 
           // Default initial downpayment estimate (30% or suggested dp)
@@ -179,19 +184,37 @@ export default function CashierPayment() {
           <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-100 flex flex-col gap-2">
             <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700">Selected Items ({cartItems.length})</span>
             <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
-              {cartItems.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-sm">
-                  <div className="flex items-center gap-2">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-8 h-8 rounded object-cover bg-white border" />
-                    ) : (
-                      <div className="w-8 h-8 bg-purple-200 rounded flex items-center justify-center text-purple-700 font-bold text-xs">P</div>
-                    )}
-                    <span className="font-semibold text-gray-800">{item.name} <strong className="text-purple-600">x{item.cartQty}</strong></span>
+              {cartItems.map((item, idx) => {
+                const discount = item.discount || 0;
+                const effectivePrice = discount > 0 ? (item.price * (1 - discount / 100)) : item.price;
+                const itemTotal = effectivePrice * item.cartQty;
+
+                return (
+                  <div key={idx} className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-8 h-8 rounded object-cover bg-white border" />
+                      ) : (
+                        <div className="w-8 h-8 bg-purple-200 rounded flex items-center justify-center text-purple-700 font-bold text-xs">P</div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-gray-800">{item.name} <strong className="text-purple-600">x{item.cartQty}</strong></span>
+                        {discount > 0 && (
+                          <span className="text-[10px] text-rose-600 font-bold">
+                            {discount}% OFF (₱{Number(item.price).toLocaleString()} orig)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="font-bold text-gray-900">₱{itemTotal.toLocaleString()}</span>
+                      {discount > 0 && (
+                        <span className="text-[10px] text-gray-400 line-through">₱{(item.price * item.cartQty).toLocaleString()}</span>
+                      )}
+                    </div>
                   </div>
-                  <span className="font-bold text-gray-900">₱{(item.price * item.cartQty).toLocaleString()}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

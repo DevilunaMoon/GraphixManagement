@@ -217,6 +217,9 @@ export async function POST(req: Request) {
       downpaymentImageUrl = await uploadToCloudinary(buffer, 'devices/downpayments');
     }
 
+    const discountStr = (formData.get('deviceDiscount') as string) || (formData.get('discount') as string) || '0';
+    const discount = Math.max(0, Math.min(100, parseFloat(discountStr) || 0));
+
     const device = await prisma.device.create({
       data: {
         name,
@@ -225,6 +228,7 @@ export async function POST(req: Request) {
         stock: parseInt(stockStr, 10),
         branch,
         type,
+        discount,
         isPreOwned,
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         specs: specs || null,

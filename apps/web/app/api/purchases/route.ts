@@ -113,12 +113,15 @@ export async function POST(req: Request) {
 
         // Create purchases
         const purchaseData = cartItems.map(item => {
+          const device = deviceMap.get(item.deviceId);
           const vars = item.variations ? JSON.parse(item.variations) : [];
-          const price = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : 0;
+          const basePrice = (vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : device?.price) || 0;
+          const discountedPrice = (device && device.discount > 0) ? (basePrice * (1 - device.discount / 100)) : basePrice;
+
           return {
             userId: session.userId,
             deviceId: item.deviceId,
-            amount: price * item.quantity,
+            amount: discountedPrice * item.quantity,
             quantity: item.quantity,
             variations: item.variations,
             paymentType: paymentType || 'Full',
@@ -186,9 +189,12 @@ export async function POST(req: Request) {
         }
       });
 
+      const effectivePrice = (device.discount && device.discount > 0) ? (device.price * (1 - device.discount / 100)) : device.price;
+      const totalFullPrice = effectivePrice * reqQty;
+
       const isDp = paymentType === 'Downpayment';
-      const dpAmt = isDp ? (downpaymentAmount || amount || 0) : (amount || device.price * reqQty);
-      const remBal = isDp ? (remainingBalance ?? Math.max(0, (device.price * reqQty) - dpAmt)) : 0;
+      const dpAmt = isDp ? (downpaymentAmount || amount || 0) : (amount || totalFullPrice);
+      const remBal = isDp ? (remainingBalance ?? Math.max(0, totalFullPrice - dpAmt)) : 0;
       const settled = isDp ? (isSettled ?? (remBal === 0)) : true;
 
       // Record the purchase

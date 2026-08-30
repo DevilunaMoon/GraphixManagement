@@ -51,6 +51,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       stock: number;
       isAvailable: boolean;
       price: number;
+      discount: number;
       variations: any[];
     }> = {};
 
@@ -62,6 +63,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
           stock: bDev.stock,
           isAvailable: bDev.stock > 0,
           price: bDev.price,
+          discount: bDev.discount || 0,
           variations: bDev.variations || []
         };
       } else {
@@ -71,6 +73,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
             stock: device.stock,
             isAvailable: device.stock > 0,
             price: device.price,
+            discount: device.discount || 0,
             variations: device.variations || []
           };
         } else {
@@ -79,6 +82,7 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
             stock: 0,
             isAvailable: false,
             price: device.price,
+            discount: device.discount || 0,
             variations: []
           };
         }
@@ -130,6 +134,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const downpaymentFormImage = formData.get('deviceDownpaymentImage') as File | null;
     const variationsStr = formData.get('variations') as string;
 
+    const discountStr = formData.get('deviceDiscount') ?? formData.get('discount');
+
     const isPreOwnedVal = formData.get('isPreOwned');
     const isPreOwned = isPreOwnedVal !== null ? isPreOwnedVal === 'true' : undefined;
     const typeStr = (formData.get('deviceType') as string) || (formData.get('type') as string);
@@ -171,6 +177,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(costStr && { cost: parseFloat(costStr) }),
         ...(stockStr && { stock: parseInt(stockStr, 10) }),
         ...(typeStr && { type: typeStr }),
+        ...(discountStr !== null && discountStr !== undefined && { 
+          discount: Math.max(0, Math.min(100, parseFloat(discountStr as string) || 0)) 
+        }),
         ...(isPreOwned !== undefined && { isPreOwned }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),
         ...(specs !== null && { specs: specs || null }),

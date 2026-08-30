@@ -70,11 +70,22 @@ export default function CartPage() {
   };
 
   const selectedItems = cartItems.filter(item => selectedItemIds.includes(item.id));
-  const totalPrice = selectedItems.reduce((acc, item) => {
+  
+  const subtotalOriginal = selectedItems.reduce((acc, item) => {
     const vars = item.variations ? JSON.parse(item.variations) : [];
     const price = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
     return acc + (price * item.quantity);
   }, 0);
+
+  const totalDiscountSaved = selectedItems.reduce((acc, item) => {
+    const vars = item.variations ? JSON.parse(item.variations) : [];
+    const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
+    const discount = item.device.discount || 0;
+    const saved = discount > 0 ? (basePrice * (discount / 100)) * item.quantity : 0;
+    return acc + saved;
+  }, 0);
+
+  const totalPrice = Math.max(0, subtotalOriginal - totalDiscountSaved);
 
   const handleCheckout = () => {
     if (selectedItemIds.length === 0) return;
@@ -109,14 +120,21 @@ export default function CartPage() {
             <div className="flex flex-col gap-6">
               {cartItems.map(item => {
                 const vars = item.variations ? JSON.parse(item.variations) : [];
-                const itemPrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
+                const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
+                const discountPercent = item.device.discount || 0;
+                const effectiveUnitPrice = discountPercent > 0 ? (basePrice * (1 - discountPercent / 100)) : basePrice;
                 const img = item.device.images?.[0] || item.device.image;
 
                 return (
                   <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-gray-100 rounded-2xl bg-gray-50/50 hover:border-purple-200 transition-colors">
                     <input type="checkbox" checked={selectedItemIds.includes(item.id)} onChange={() => toggleSelect(item.id)} className="w-5 h-5 accent-[#bd00ff] cursor-pointer shrink-0 mt-2 sm:mt-0" />
                     
-                    <div className="w-24 h-24 bg-white rounded-xl overflow-hidden shrink-0 border border-gray-100 p-2 flex items-center justify-center">
+                    <div className="w-24 h-24 bg-white rounded-xl overflow-hidden shrink-0 border border-gray-100 p-2 flex items-center justify-center relative">
+                      {discountPercent > 0 && (
+                        <span className="absolute top-1 left-1 bg-rose-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                          {discountPercent}% OFF
+                        </span>
+                      )}
                       {img ? <img src={img} alt={item.device.name} className="w-full h-full object-contain mix-blend-multiply" /> : <span className="text-xs text-gray-400">No Image</span>}
                     </div>
 
@@ -127,7 +145,12 @@ export default function CartPage() {
                           {vars.map((v: any) => v.name).join(', ')}
                         </span>
                       )}
-                      <span className="text-[#bd00ff] font-bold text-xl mt-1">₱ {(itemPrice * item.quantity).toLocaleString()}</span>
+                      <div className="flex items-baseline gap-2 flex-wrap mt-1">
+                        <span className="text-[#bd00ff] font-bold text-xl">₱ {(effectiveUnitPrice * item.quantity).toLocaleString()}</span>
+                        {discountPercent > 0 && (
+                          <span className="text-sm text-gray-400 line-through font-medium">₱ {(basePrice * item.quantity).toLocaleString()}</span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-6 mt-4 sm:mt-0 w-full sm:w-auto justify-between sm:justify-end">
@@ -152,6 +175,18 @@ export default function CartPage() {
               <span>Selected Items</span>
               <span>{selectedItems.length}</span>
             </div>
+            {totalDiscountSaved > 0 && (
+              <>
+                <div className="flex justify-between items-center text-gray-500 font-medium text-sm">
+                  <span>Subtotal</span>
+                  <span>₱ {subtotalOriginal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center text-rose-600 font-bold text-sm">
+                  <span>Discount Savings</span>
+                  <span>- ₱ {totalDiscountSaved.toLocaleString()}</span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between items-center text-gray-900 font-bold text-xl pt-4 border-t border-gray-100">
               <span>Total</span>
               <span className="text-[#bd00ff]">₱ {totalPrice.toLocaleString()}</span>

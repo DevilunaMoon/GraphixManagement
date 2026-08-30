@@ -356,13 +356,40 @@ function CustomerProductInfoContent() {
               </div>
 
               {/* Dynamic Price Box */}
-              <div className="flex flex-col gap-1 p-5 rounded-3xl bg-gradient-to-br from-purple-50/70 to-indigo-50/20 border border-purple-100/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)] w-full">
-                <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Special Portal Price</span>
-                <div className="flex items-baseline text-[#bd00ff]">
-                  <span className="text-2xl font-black mr-0.5">₱</span>
-                  <span className="text-4xl font-black tracking-tight">{currentPrice?.toLocaleString()}</span>
-                </div>
-              </div>
+              {(() => {
+                const discountPercent = branchData?.discount !== undefined ? branchData.discount : (product?.discount || 0);
+                const rawPrice = currentPrice || 0;
+                const discountedPrice = discountPercent > 0 ? (rawPrice * (1 - discountPercent / 100)) : rawPrice;
+
+                return (
+                  <div className="flex flex-col gap-1.5 p-5 rounded-3xl bg-gradient-to-br from-purple-50/70 to-indigo-50/20 border border-purple-100/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)] w-full">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Special Portal Price</span>
+                      {discountPercent > 0 && (
+                        <span className="bg-rose-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                          {discountPercent}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <div className="flex items-baseline text-[#bd00ff]">
+                        <span className="text-2xl font-black mr-0.5">₱</span>
+                        <span className="text-4xl font-black tracking-tight">{discountedPrice?.toLocaleString()}</span>
+                      </div>
+                      {discountPercent > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-base text-gray-400 line-through font-semibold">
+                            ₱ {rawPrice?.toLocaleString()}
+                          </span>
+                          <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            Save ₱ {((rawPrice * discountPercent) / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="flex flex-col gap-5 mt-1">
                 {/* Variation Controls */}

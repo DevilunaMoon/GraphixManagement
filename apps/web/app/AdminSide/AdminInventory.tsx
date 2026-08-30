@@ -130,6 +130,7 @@ export default function AdminInventory() {
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceCost, setNewDeviceCost] = useState('');
   const [newDevicePrice, setNewDevicePrice] = useState('');
+  const [newDeviceDiscount, setNewDeviceDiscount] = useState('');
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
   const [newDeviceType, setNewDeviceType] = useState('Smartphone');
@@ -153,6 +154,7 @@ export default function AdminInventory() {
   const [editDeviceName, setEditDeviceName] = useState('');
   const [editDeviceCost, setEditDeviceCost] = useState('');
   const [editDevicePrice, setEditDevicePrice] = useState('');
+  const [editDeviceDiscount, setEditDeviceDiscount] = useState('');
   const [editDeviceStocks, setEditDeviceStocks] = useState('');
   const [editDeviceCategory, setEditDeviceCategory] = useState('');
   const [editDeviceType, setEditDeviceType] = useState('Smartphone');
@@ -332,6 +334,7 @@ export default function AdminInventory() {
             displayPrice: `₱ ${Number(device.price || 0).toLocaleString()}`,
             displayStock: `${device.stock || 0} pcs`,
             type: device.specs || 'N/A',
+            discount: device.discount || 0,
             // Raw values for editing
             price: device.price?.toString() || '',
             cost: device.cost?.toString() || '',
@@ -429,6 +432,7 @@ export default function AdminInventory() {
     formData.append('deviceName', newDeviceName);
     formData.append('deviceCost', newDeviceCost);
     formData.append('devicePrice', newDevicePrice);
+    formData.append('deviceDiscount', newDeviceDiscount || '0');
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
     formData.append('deviceType', newDeviceType);
@@ -455,7 +459,7 @@ export default function AdminInventory() {
       if (res.ok) {
         fetchProducts();
         setIsAddModalOpen(false);
-        setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice('');
+        setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice(''); setNewDeviceDiscount('');
         setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceType('Smartphone'); setNewDeviceSpecs('');
         setNewDeviceIsPreOwned(false);
         setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
@@ -481,6 +485,7 @@ export default function AdminInventory() {
     setEditDeviceName(prod.name);
     setEditDeviceCost(prod.cost);
     setEditDevicePrice(prod.price);
+    setEditDeviceDiscount(prod.discount !== undefined && prod.discount !== null ? String(prod.discount) : '0');
     setEditDeviceStocks(prod.stock);
     setEditDeviceCategory(prod.categoryId);
     setEditDeviceType(prod.type || 'Smartphone');
@@ -526,6 +531,7 @@ export default function AdminInventory() {
     formData.append('deviceName', editDeviceName);
     formData.append('deviceCost', editDeviceCost);
     formData.append('devicePrice', editDevicePrice);
+    formData.append('deviceDiscount', editDeviceDiscount || '0');
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
     formData.append('deviceType', editDeviceType);
@@ -725,7 +731,19 @@ export default function AdminInventory() {
                       </div>
                     </td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} truncate max-w-[100px] sm:max-w-none`}>{prod.id}</td>
-                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{prod.displayPrice}</td>
+                    <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>
+                      {prod.discount > 0 ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <span className="font-bold text-[#5c0099]">₱ {(parseFloat(prod.price || 0) * (1 - prod.discount / 100)).toLocaleString()}</span>
+                            <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">{prod.discount}% OFF</span>
+                          </div>
+                          <span className="text-xs text-gray-400 line-through">₱ {parseFloat(prod.price || 0).toLocaleString()}</span>
+                        </div>
+                      ) : (
+                        prod.displayPrice
+                      )}
+                    </td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{prod.displayStock}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell max-w-[200px]`}>
                       {prod.type && prod.type.length > 80 ? (
@@ -845,20 +863,36 @@ export default function AdminInventory() {
                     <label className="block text-sm font-bold text-[#444] mb-1">Device Name <span className="text-red-500">*</span></label>
                     <input required type="text" value={newDeviceName} onChange={e => setNewDeviceName(e.target.value)} placeholder="e.g. iPhone 15 Pro" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                   </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
                       <label className="block text-sm font-bold text-[#444] mb-1">Cost <span className="text-red-500">*</span></label>
-                      <input required type="number" step="0.01" value={newDeviceCost} onChange={e => setNewDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                      <input required type="number" step="0.01" value={newDeviceCost} onChange={e => setNewDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                     </div>
-                    <div className="flex-1">
+                    <div>
                       <label className="block text-sm font-bold text-[#444] mb-1">Selling Price <span className="text-red-500">*</span></label>
-                      <input required type="number" step="0.01" value={newDevicePrice} onChange={e => setNewDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                      <input required type="number" step="0.01" value={newDevicePrice} onChange={e => setNewDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                     </div>
-                    <div className="flex-1">
+                    <div>
+                      <label className="block text-sm font-bold text-[#444] mb-1">Discount %</label>
+                      <input type="number" min="0" max="100" step="1" value={newDeviceDiscount} onChange={e => setNewDeviceDiscount(e.target.value)} placeholder="e.g. 20" className="w-full h-11 border-2 border-purple-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#5c0099] font-bold" />
+                    </div>
+                    <div>
                       <label className="block text-sm font-bold text-[#444] mb-1">Stocks <span className="text-red-500">*</span></label>
-                      <input required type="number" value={newDeviceStocks} onChange={e => setNewDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                      <input required type="number" value={newDeviceStocks} onChange={e => setNewDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                     </div>
                   </div>
+                  {parseFloat(newDeviceDiscount) > 0 && parseFloat(newDevicePrice) > 0 && (
+                    <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#5c0099] text-white font-black text-xs px-2 py-0.5 rounded-md">{newDeviceDiscount}% OFF</span>
+                        <span className="text-gray-600 font-medium">Save: <strong className="text-rose-600">₱ {((parseFloat(newDevicePrice) * parseFloat(newDeviceDiscount)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 font-medium mr-1">Final Price:</span>
+                        <strong className="text-[#5c0099] text-sm font-black">₱ {(parseFloat(newDevicePrice) * (1 - parseFloat(newDeviceDiscount) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-4">
@@ -1079,20 +1113,36 @@ export default function AdminInventory() {
                     <label className="block text-sm font-bold text-[#444] mb-1">Device Name <span className="text-red-500">*</span></label>
                     <input required type="text" value={editDeviceName} onChange={e => setEditDeviceName(e.target.value)} placeholder="e.g. iPhone 15 Pro" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                   </div>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
                       <label className="block text-sm font-bold text-[#444] mb-1">Cost <span className="text-red-500">*</span></label>
-                      <input required type="number" step="0.01" value={editDeviceCost} onChange={e => setEditDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                      <input required type="number" step="0.01" value={editDeviceCost} onChange={e => setEditDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                     </div>
-                    <div className="flex-1">
+                    <div>
                       <label className="block text-sm font-bold text-[#444] mb-1">Selling Price <span className="text-red-500">*</span></label>
-                      <input required type="number" step="0.01" value={editDevicePrice} onChange={e => setEditDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                      <input required type="number" step="0.01" value={editDevicePrice} onChange={e => setEditDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                     </div>
-                    <div className="flex-1">
+                    <div>
+                      <label className="block text-sm font-bold text-[#444] mb-1">Discount %</label>
+                      <input type="number" min="0" max="100" step="1" value={editDeviceDiscount} onChange={e => setEditDeviceDiscount(e.target.value)} placeholder="e.g. 20" className="w-full h-11 border-2 border-purple-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#5c0099] font-bold" />
+                    </div>
+                    <div>
                       <label className="block text-sm font-bold text-[#444] mb-1">Stocks <span className="text-red-500">*</span></label>
-                      <input required type="number" value={editDeviceStocks} onChange={e => setEditDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
+                      <input required type="number" value={editDeviceStocks} onChange={e => setEditDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-3 focus:border-[#5c0099] outline-none transition-colors text-[#111]" />
                     </div>
                   </div>
+                  {parseFloat(editDeviceDiscount) > 0 && parseFloat(editDevicePrice) > 0 && (
+                    <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-[#5c0099] text-white font-black text-xs px-2 py-0.5 rounded-md">{editDeviceDiscount}% OFF</span>
+                        <span className="text-gray-600 font-medium">Save: <strong className="text-rose-600">₱ {((parseFloat(editDevicePrice) * parseFloat(editDeviceDiscount)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 font-medium mr-1">Final Price:</span>
+                        <strong className="text-[#5c0099] text-sm font-black">₱ {(parseFloat(editDevicePrice) * (1 - parseFloat(editDeviceDiscount) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-4">

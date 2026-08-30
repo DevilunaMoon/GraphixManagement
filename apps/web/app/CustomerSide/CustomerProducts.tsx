@@ -60,6 +60,18 @@ function CustomerProductsContent() {
       let matchesBudget = true;
       let matchesPreOwned = true;
       let matchesDeviceType = true;
+      let matchesDiscount = true;
+      let matchesUnder2k = true;
+
+      const effectivePrice = (p.discount && p.discount > 0) 
+        ? (p.price * (1 - p.discount / 100)) 
+        : (p.price || 0);
+
+      if (sortOrder === 'discounted') {
+        matchesDiscount = (p.discount || 0) > 0;
+      } else if (sortOrder === 'under-2k') {
+        matchesUnder2k = effectivePrice < 2000;
+      }
 
       if (sortOrder === 'pre-owned') {
         const pName = (p.name || '').toLowerCase();
@@ -86,7 +98,7 @@ function CustomerProductsContent() {
       if (budgetFilter) {
         const budget = parseFloat(budgetFilter);
         if (!isNaN(budget)) {
-          matchesBudget = (p.price || 0) <= budget;
+          matchesBudget = effectivePrice <= budget;
         }
       }
 
@@ -146,11 +158,13 @@ function CustomerProductsContent() {
         }
       }
 
-      return matchesCategory && matchesSearch && matchesBudget && matchesPreOwned && matchesDeviceType;
+      return matchesCategory && matchesSearch && matchesBudget && matchesPreOwned && matchesDeviceType && matchesDiscount && matchesUnder2k;
     })
     .sort((a, b) => {
-      if (sortOrder === 'price-asc') return (a.price || 0) - (b.price || 0);
-      if (sortOrder === 'price-desc') return (b.price || 0) - (a.price || 0);
+      const priceA = (a.discount && a.discount > 0) ? (a.price * (1 - a.discount / 100)) : (a.price || 0);
+      const priceB = (b.discount && b.discount > 0) ? (b.price * (1 - b.discount / 100)) : (b.price || 0);
+      if (sortOrder === 'price-asc') return priceA - priceB;
+      if (sortOrder === 'price-desc') return priceB - priceA;
       return 0;
     });
 
@@ -161,19 +175,21 @@ function CustomerProductsContent() {
         {/* Header & Filters */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 pb-4 border-b border-gray-100 w-full mb-2">
           <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase tracking-wide border-none">
-            {searchFilter ? `Search: "${searchFilter}"` : categoryFilter ? `Shop: ${categoryFilter}` : 'Shop Our Products'}
+            {searchFilter ? `Search: "${searchFilter}"` : categoryFilter ? `Shop: ${categoryFilter}` : sortOrder === 'discounted' ? 'Discounted Items' : sortOrder === 'under-2k' ? 'Items Under ₱2,000' : 'Shop Our Products'}
           </h2>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             {/* Price Sort Filter */}
             <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Sort:</span>
+              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Filter:</span>
               <select 
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
                 className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors cursor-pointer"
               >
                 <option value="default">Featured</option>
+                <option value="discounted">Discounted (Sale)</option>
+                <option value="under-2k">Less Than ₱2,000</option>
                 <option value="pre-owned">Pre Owned</option>
                 <option value="price-desc">Price: Highest to Lowest</option>
                 <option value="price-asc">Price: Lowest to Highest</option>
@@ -292,6 +308,11 @@ function CustomerProductsContent() {
                       Pre-Owned
                     </span>
                   )}
+                  {product.discount > 0 && (
+                    <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
+                      {product.discount}% OFF
+                    </span>
+                  )}
                   {product.image ? (
                     <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                   ) : (
@@ -300,7 +321,18 @@ function CustomerProductsContent() {
                 </div>
                 <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
                 <div className="flex justify-between items-end w-full">
-                  <p className="text-[#bd00ff] font-black text-sm sm:text-base">₱ {product.price?.toLocaleString() || '0'}</p>
+                  <div className="flex flex-col">
+                    {product.discount > 0 ? (
+                      <>
+                        <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+                        <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
+                          ₱ {(product.price * (1 - product.discount / 100)).toLocaleString()}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                    )}
+                  </div>
                   <div className="flex flex-col items-end">
                     <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
                     <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>

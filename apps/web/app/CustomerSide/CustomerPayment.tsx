@@ -31,8 +31,10 @@ function CustomerPaymentContent() {
             const selectedItems = cartItems.filter((item: any) => ids.includes(item.id));
             const total = selectedItems.reduce((acc: number, item: any) => {
               const vars = item.variations ? JSON.parse(item.variations) : [];
-              const price = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
-              return acc + (price * item.quantity);
+              const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
+              const discount = item.device.discount || 0;
+              const effectivePrice = discount > 0 ? (basePrice * (1 - discount / 100)) : basePrice;
+              return acc + (effectivePrice * item.quantity);
             }, 0);
             setTotalPrice(total);
           }
@@ -40,14 +42,19 @@ function CustomerPaymentContent() {
           const res = await fetch(`/api/devices/${deviceId}`);
           if (res.ok) {
             const device = await res.json();
+            const discount = device.discount || 0;
             if (variationIds && device.variations) {
               const selectedVarIds = variationIds.split(',');
               const vars = device.variations.filter((v: any) => selectedVarIds.includes(v.id));
               const varTotal = vars.reduce((acc: number, v: any) => acc + (v.price || 0), 0);
-              setTotalPrice(varTotal > 0 ? varTotal : device.price);
+              const baseAmt = varTotal > 0 ? varTotal : device.price;
+              const finalAmt = discount > 0 ? (baseAmt * (1 - discount / 100)) : baseAmt;
+              setTotalPrice(finalAmt);
               setSelectedVariationsStr(vars.length > 0 ? JSON.stringify(vars) : null);
             } else {
-              setTotalPrice(device.price);
+              const baseAmt = device.price || 0;
+              const finalAmt = discount > 0 ? (baseAmt * (1 - discount / 100)) : baseAmt;
+              setTotalPrice(finalAmt);
               setSelectedVariationsStr(null);
             }
           }
