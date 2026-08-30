@@ -7,8 +7,8 @@ import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Wrench } fro
 export default function AdminDashboard() {
   const [userCount, setUserCount] = useState<string | number>("...");
   const [dashboardData, setDashboardData] = useState<any>(null);
-  const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean } | null>(null);
-  const [userGrowthData, setUserGrowthData] = useState<{ month: string, users: string, trend: string, trendUp: boolean }[]>([]);
+  const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, units: string, trend: string, trendUp: boolean } | null>(null);
+  const [unitsSoldData, setUnitsSoldData] = useState<{ month: string, units: string, trend: string, trendUp: boolean }[]>([]);
 
   useEffect(() => {
     fetch('/api/analytics/users/count')
@@ -24,14 +24,14 @@ export default function AdminDashboard() {
       })
       .catch(err => console.error("Failed to fetch user count:", err));
 
-    fetch('/api/analytics/users/growth')
+    fetch('/api/analytics/units-sold')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setUserGrowthData(data);
+          setUnitsSoldData(data);
         }
       })
-      .catch(err => console.error("Failed to fetch user growth data:", err));
+      .catch(err => console.error("Failed to fetch units sold data:", err));
 
     fetch('/api/analytics/dashboard')
       .then(res => res.json())
@@ -147,33 +147,32 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-
         </div>
 
-        {/* Right Column: User Growth */}
+        {/* Right Column: Units Sold per Month */}
         <div className="lg:col-span-2">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col h-full">
             <div className="mb-5 pb-4 border-b border-black/5">
-              <h3 className="text-lg text-[#111] font-bold">User Growth</h3>
+              <h3 className="text-lg text-[#111] font-bold">Units Sold per Month</h3>
             </div>
             <div className="w-full">
               <table className="w-full border-collapse text-left">
                 <thead>
                   <tr>
                     <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Month</th>
-                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">New Users</th>
+                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Units Sold</th>
                     <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5 hidden md:table-cell">Trend</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {userGrowthData.map((data, idx) => (
+                  {unitsSoldData.map((data, idx) => (
                     <tr 
                       key={idx} 
                       className="border-b border-black/5 cursor-pointer hover:bg-black/5 transition-colors"
                       onClick={() => setSelectedMonthData(data)}
                     >
                       <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.month}</td>
-                      <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.users}</td>
+                      <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.units}</td>
                       <td className="py-3 px-4 hidden md:table-cell">
                         <div className={`font-bold text-sm flex items-center gap-1 ${data.trendUp ? 'text-green-600' : 'text-red-600'}`}>
                           {data.trendUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />} {data.trend}
@@ -200,8 +199,8 @@ export default function AdminDashboard() {
             </div>
             <div className="p-6 flex flex-col gap-5">
               <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-                <span className="text-[#666] font-medium">New Users</span>
-                <span className="font-bold text-xl text-[#111]">{selectedMonthData.users}</span>
+                <span className="text-[#666] font-medium">Total Units Sold</span>
+                <span className="font-bold text-xl text-[#111]">{selectedMonthData.units} units</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#666] font-medium">Monthly Trend</span>
