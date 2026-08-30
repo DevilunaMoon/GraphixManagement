@@ -260,6 +260,75 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
         </div>
       </section>
 
+      {/* Exclusive Deals & Discounts Section (Visible if any product has a discount) */}
+      {products.some(p => (p.discount || 0) > 0) && (
+        <section className="bg-gradient-to-br from-purple-900 via-indigo-950 to-black rounded-2xl p-5 md:p-8 shadow-xl border-2 border-[#bd00ff] flex flex-col gap-6 w-full max-w-7xl mx-auto text-white relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-purple-800/50 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔥</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#01f0ff] via-pink-400 to-[#bd00ff] uppercase tracking-wide m-0">
+                  Exclusive Deals & Discounts
+                </h2>
+                <p className="text-xs sm:text-sm text-purple-200 m-0 font-medium">Limited-time discounted prices on selected devices</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => navigate('/customer/products')}
+              className="text-xs font-bold text-[#01f0ff] hover:underline bg-transparent border-none cursor-pointer self-end sm:self-auto"
+            >
+              See All Deals →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-6">
+            {products.filter(p => (p.discount || 0) > 0).slice(0, 5).map(product => {
+              const discountedPrice = product.price * (1 - product.discount / 100);
+              return (
+                <div 
+                  key={product.id} 
+                  onClick={() => navigate(`/customer/product-info?id=${product.id}`)} 
+                  className="bg-white rounded-xl p-2 sm:p-4 shadow-lg hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col gap-2 border-2 border-purple-400/30 hover:border-[#01f0ff] group relative"
+                >
+                  <div className="aspect-square w-full md:h-36 bg-gray-50 rounded-lg flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                    <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 animate-pulse">
+                      {product.discount}% OFF
+                    </span>
+                    {product.image ? (
+                      <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
+                    ) : (
+                      <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
+                    )}
+                  </div>
+                  <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
+                  <div className="flex justify-between items-end w-full">
+                    <div className="flex flex-col">
+                      <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+                      <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
+                        ₱ {discountedPrice.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/customer/product-info?id=${product.id}`);
+                    }}
+                    className="w-full mt-2 py-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-lg group-hover:brightness-110 transition-all text-xs sm:text-sm shadow-sm hidden md:block border-none cursor-pointer"
+                  >
+                    View Deal
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* Shop Our Products Section */}
       <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-6 w-full max-w-7xl mx-auto mb-10">
         <h2 className="text-2xl font-bold text-black m-0 border-none">Shop Our Products</h2>
@@ -271,34 +340,55 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
               <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
             </div>
           ) : products.length > 0 ? (
-            products.slice(0, 15).map(product => (
-              <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group">
-                <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
-                  {product.image ? (
-                    <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
-                  ) : (
-                    <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
-                  )}
-                </div>
-                <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                <div className="flex justify-between items-end w-full">
-                  <p className="text-[#bd00ff] font-black text-sm sm:text-base">₱ {product.price?.toLocaleString() || '0'}</p>
-                  <div className="flex flex-col items-end">
-                    <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+            products.slice(0, 15).map(product => {
+              const hasDiscount = (product.discount || 0) > 0;
+              const discountedPrice = hasDiscount ? product.price * (1 - product.discount / 100) : product.price;
+
+              return (
+                <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group">
+                  <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                    {hasDiscount && (
+                      <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
+                        {product.discount}% OFF
+                      </span>
+                    )}
+                    {product.image ? (
+                      <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
+                    ) : (
+                      <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
+                    )}
                   </div>
+                  <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
+                  <div className="flex justify-between items-end w-full">
+                    <div className="flex flex-col">
+                      {hasDiscount ? (
+                        <>
+                          <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+                          <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
+                            ₱ {discountedPrice.toLocaleString()}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/customer/product-info?id=${product.id}`);
+                    }}
+                    className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
+                  >
+                    View Product
+                  </button>
                 </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/customer/product-info?id=${product.id}`);
-                  }}
-                  className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
-                >
-                  View Product
-                </button>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="col-span-full py-10 text-center text-gray-500 font-bold">No products available.</div>
           )}

@@ -165,6 +165,13 @@ function CustomerProductsContent() {
       const priceB = (b.discount && b.discount > 0) ? (b.price * (1 - b.discount / 100)) : (b.price || 0);
       if (sortOrder === 'price-asc') return priceA - priceB;
       if (sortOrder === 'price-desc') return priceB - priceA;
+      if (sortOrder === 'default') {
+        const discountA = a.discount || 0;
+        const discountB = b.discount || 0;
+        if (discountA > 0 && discountB <= 0) return -1;
+        if (discountB > 0 && discountA <= 0) return 1;
+        return discountB - discountA;
+      }
       return 0;
     });
 
@@ -174,9 +181,23 @@ function CustomerProductsContent() {
 
         {/* Header & Filters */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 pb-4 border-b border-gray-100 w-full mb-2">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase tracking-wide border-none">
-            {searchFilter ? `Search: "${searchFilter}"` : categoryFilter ? `Shop: ${categoryFilter}` : sortOrder === 'discounted' ? 'Discounted Items' : sortOrder === 'under-2k' ? 'Items Under ₱2,000' : 'Shop Our Products'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase tracking-wide border-none">
+              {searchFilter ? `Search: "${searchFilter}"` : categoryFilter ? `Shop: ${categoryFilter}` : sortOrder === 'discounted' ? 'Discounted Items' : sortOrder === 'under-2k' ? 'Items Under ₱2,000' : 'Shop Our Products'}
+            </h2>
+            {products.some(p => (p.discount || 0) > 0) && (
+              <button
+                onClick={() => setSortOrder(prev => prev === 'discounted' ? 'default' : 'discounted')}
+                className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border flex items-center gap-1 shadow-sm ${
+                  sortOrder === 'discounted'
+                    ? 'bg-rose-600 text-white border-rose-600 ring-2 ring-rose-300'
+                    : 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
+                }`}
+              >
+                🔥 {sortOrder === 'discounted' ? 'Showing Sale Items' : 'Sale Deals Available'}
+              </button>
+            )}
+          </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             {/* Price Sort Filter */}
