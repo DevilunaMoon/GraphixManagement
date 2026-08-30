@@ -77,10 +77,18 @@ export default function CartPage() {
     return acc + (price * item.quantity);
   }, 0);
 
+  const now = new Date();
+
   const totalDiscountSaved = selectedItems.reduce((acc, item) => {
     const vars = item.variations ? JSON.parse(item.variations) : [];
     const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
-    const discount = item.device.discount || 0;
+    const isDiscountActive = Boolean(
+      item.device.discount && 
+      item.device.discount > 0 &&
+      (!item.device.discountStartDate || new Date(item.device.discountStartDate) <= now) &&
+      (!item.device.discountEndDate || new Date(item.device.discountEndDate) >= now)
+    );
+    const discount = isDiscountActive ? item.device.discount : 0;
     const saved = discount > 0 ? (basePrice * (discount / 100)) * item.quantity : 0;
     return acc + saved;
   }, 0);
@@ -121,7 +129,13 @@ export default function CartPage() {
               {cartItems.map(item => {
                 const vars = item.variations ? JSON.parse(item.variations) : [];
                 const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
-                const discountPercent = item.device.discount || 0;
+                const isDiscountActive = Boolean(
+                  item.device.discount && 
+                  item.device.discount > 0 &&
+                  (!item.device.discountStartDate || new Date(item.device.discountStartDate) <= now) &&
+                  (!item.device.discountEndDate || new Date(item.device.discountEndDate) >= now)
+                );
+                const discountPercent = isDiscountActive ? item.device.discount : 0;
                 const effectiveUnitPrice = discountPercent > 0 ? (basePrice * (1 - discountPercent / 100)) : basePrice;
                 const img = item.device.images?.[0] || item.device.image;
 

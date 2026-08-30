@@ -112,11 +112,20 @@ export async function POST(req: Request) {
         }
 
         // Create purchases
+        const now = new Date();
         const purchaseData = cartItems.map(item => {
           const device = deviceMap.get(item.deviceId);
           const vars = item.variations ? JSON.parse(item.variations) : [];
           const basePrice = (vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : device?.price) || 0;
-          const discountedPrice = (device && device.discount > 0) ? (basePrice * (1 - device.discount / 100)) : basePrice;
+          
+          const isDiscountActive = Boolean(
+            device && 
+            device.discount > 0 &&
+            (!device.discountStartDate || new Date(device.discountStartDate) <= now) &&
+            (!device.discountEndDate || new Date(device.discountEndDate) >= now)
+          );
+
+          const discountedPrice = isDiscountActive ? (basePrice * (1 - (device?.discount || 0) / 100)) : basePrice;
 
           return {
             userId: session.userId,
@@ -189,7 +198,15 @@ export async function POST(req: Request) {
         }
       });
 
-      const effectivePrice = (device.discount && device.discount > 0) ? (device.price * (1 - device.discount / 100)) : device.price;
+      const now = new Date();
+      const isDiscountActive = Boolean(
+        device.discount && 
+        device.discount > 0 &&
+        (!device.discountStartDate || new Date(device.discountStartDate) <= now) &&
+        (!device.discountEndDate || new Date(device.discountEndDate) >= now)
+      );
+
+      const effectivePrice = isDiscountActive ? (device.price * (1 - device.discount / 100)) : device.price;
       const totalFullPrice = effectivePrice * reqQty;
 
       const isDp = paymentType === 'Downpayment';

@@ -29,10 +29,17 @@ function CustomerPaymentContent() {
           if (res.ok) {
             const cartItems = await res.json();
             const selectedItems = cartItems.filter((item: any) => ids.includes(item.id));
+            const now = new Date();
             const total = selectedItems.reduce((acc: number, item: any) => {
               const vars = item.variations ? JSON.parse(item.variations) : [];
               const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
-              const discount = item.device.discount || 0;
+              const isDiscountActive = Boolean(
+                item.device.discount && 
+                item.device.discount > 0 &&
+                (!item.device.discountStartDate || new Date(item.device.discountStartDate) <= now) &&
+                (!item.device.discountEndDate || new Date(item.device.discountEndDate) >= now)
+              );
+              const discount = isDiscountActive ? item.device.discount : 0;
               const effectivePrice = discount > 0 ? (basePrice * (1 - discount / 100)) : basePrice;
               return acc + (effectivePrice * item.quantity);
             }, 0);
@@ -42,7 +49,15 @@ function CustomerPaymentContent() {
           const res = await fetch(`/api/devices/${deviceId}`);
           if (res.ok) {
             const device = await res.json();
-            const discount = device.discount || 0;
+            const now = new Date();
+            const isDiscountActive = Boolean(
+              device.discount && 
+              device.discount > 0 &&
+              (!device.discountStartDate || new Date(device.discountStartDate) <= now) &&
+              (!device.discountEndDate || new Date(device.discountEndDate) >= now)
+            );
+            const discount = isDiscountActive ? device.discount : 0;
+
             if (variationIds && device.variations) {
               const selectedVarIds = variationIds.split(',');
               const vars = device.variations.filter((v: any) => selectedVarIds.includes(v.id));

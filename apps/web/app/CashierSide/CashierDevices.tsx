@@ -15,6 +15,8 @@ interface Device {
   warranty?: string | null;
   downpayment?: string | null;
   discount?: number;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
   cost: number;
   price: number;
   stock: number;
@@ -753,17 +755,41 @@ export default function CashierDevices() {
                       ₱{device.cost ? Number(device.cost).toFixed(2) : '0.00'}
                     </td>
                     <td className="p-4 font-bold text-[1.05rem] text-[#bd00ff] align-middle">
-                      {(device.discount || 0) > 0 ? (
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <span>₱{(device.price * (1 - (device.discount || 0) / 100)).toFixed(2)}</span>
-                            <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">{device.discount}% OFF</span>
-                          </div>
-                          <span className="text-xs text-gray-400 line-through">₱{Number(device.price).toFixed(2)}</span>
-                        </div>
-                      ) : (
-                        `₱${device.price ? Number(device.price).toFixed(2) : '0.00'}`
-                      )}
+                      {(() => {
+                        const now = new Date();
+                        const hasDiscount = (device.discount || 0) > 0;
+                        const isScheduled = hasDiscount && device.discountStartDate && new Date(device.discountStartDate) > now;
+                        const isExpired = hasDiscount && device.discountEndDate && new Date(device.discountEndDate) < now;
+                        const isActive = hasDiscount && !isScheduled && !isExpired;
+
+                        if (isActive) {
+                          return (
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-1.5">
+                                <span>₱{(device.price * (1 - (device.discount || 0) / 100)).toFixed(2)}</span>
+                                <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">{device.discount}% OFF</span>
+                              </div>
+                              <span className="text-xs text-gray-400 line-through">₱{Number(device.price).toFixed(2)}</span>
+                              {device.discountEndDate && (
+                                <span className="text-[10px] text-amber-700 font-bold">
+                                  Ends {new Date(device.discountEndDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (isScheduled) {
+                          return (
+                            <div className="flex flex-col">
+                              <span>₱{Number(device.price).toFixed(2)}</span>
+                              <span className="text-[10px] text-amber-700 font-bold">Scheduled ({device.discount}% OFF)</span>
+                            </div>
+                          );
+                        }
+
+                        return `₱${device.price ? Number(device.price).toFixed(2) : '0.00'}`;
+                      })()}
                     </td>
                     <td className="p-4 text-center align-middle">
                       <span className={`font-bold text-[1.1rem] ${(device.stock || 0) === 0 ? 'text-red-600' : 'text-gray-800'}`}>

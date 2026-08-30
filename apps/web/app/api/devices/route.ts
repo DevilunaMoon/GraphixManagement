@@ -220,6 +220,11 @@ export async function POST(req: Request) {
     const discountStr = (formData.get('deviceDiscount') as string) || (formData.get('discount') as string) || '0';
     const discount = Math.max(0, Math.min(100, parseFloat(discountStr) || 0));
 
+    const discountStartDateStr = (formData.get('discountStartDate') as string) || null;
+    const discountEndDateStr = (formData.get('discountEndDate') as string) || null;
+    const discountStartDate = discountStartDateStr ? new Date(discountStartDateStr) : null;
+    const discountEndDate = discountEndDateStr ? new Date(discountEndDateStr) : null;
+
     const device = await prisma.device.create({
       data: {
         name,
@@ -229,6 +234,8 @@ export async function POST(req: Request) {
         branch,
         type,
         discount,
+        discountStartDate,
+        discountEndDate,
         isPreOwned,
         ...(categoryId ? { category: { connect: { id: categoryId } } } : {}),
         specs: specs || null,

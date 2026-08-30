@@ -357,15 +357,25 @@ function CustomerProductInfoContent() {
 
               {/* Dynamic Price Box */}
               {(() => {
+                const now = new Date();
                 const discountPercent = branchData?.discount !== undefined ? branchData.discount : (product?.discount || 0);
+                const discountStartDate = branchData?.discountStartDate !== undefined ? branchData.discountStartDate : product?.discountStartDate;
+                const discountEndDate = branchData?.discountEndDate !== undefined ? branchData.discountEndDate : product?.discountEndDate;
+
+                const isDiscountActive = Boolean(
+                  discountPercent > 0 &&
+                  (!discountStartDate || new Date(discountStartDate) <= now) &&
+                  (!discountEndDate || new Date(discountEndDate) >= now)
+                );
+
                 const rawPrice = currentPrice || 0;
-                const discountedPrice = discountPercent > 0 ? (rawPrice * (1 - discountPercent / 100)) : rawPrice;
+                const discountedPrice = isDiscountActive ? (rawPrice * (1 - discountPercent / 100)) : rawPrice;
 
                 return (
                   <div className="flex flex-col gap-1.5 p-5 rounded-3xl bg-gradient-to-br from-purple-50/70 to-indigo-50/20 border border-purple-100/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)] w-full">
                     <div className="flex justify-between items-center">
                       <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Special Portal Price</span>
-                      {discountPercent > 0 && (
+                      {isDiscountActive && (
                         <span className="bg-rose-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm animate-pulse">
                           {discountPercent}% OFF
                         </span>
@@ -376,8 +386,8 @@ function CustomerProductInfoContent() {
                         <span className="text-2xl font-black mr-0.5">₱</span>
                         <span className="text-4xl font-black tracking-tight">{discountedPrice?.toLocaleString()}</span>
                       </div>
-                      {discountPercent > 0 && (
-                        <div className="flex items-center gap-2">
+                      {isDiscountActive && (
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-base text-gray-400 line-through font-semibold">
                             ₱ {rawPrice?.toLocaleString()}
                           </span>
@@ -387,6 +397,14 @@ function CustomerProductInfoContent() {
                         </div>
                       )}
                     </div>
+                    {isDiscountActive && discountEndDate && (
+                      <div className="mt-1 pt-1.5 border-t border-purple-100/80 flex items-center gap-1.5 text-xs text-amber-800 font-bold">
+                        <span>⏰ Sale duration:</span>
+                        <span className="bg-amber-100/80 px-2 py-0.5 rounded text-[11px]">
+                          Ends {new Date(discountEndDate).toLocaleDateString()} at {new Date(discountEndDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })()}

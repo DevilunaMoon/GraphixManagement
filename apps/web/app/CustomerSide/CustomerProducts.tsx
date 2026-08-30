@@ -63,12 +63,20 @@ function CustomerProductsContent() {
       let matchesDiscount = true;
       let matchesUnder2k = true;
 
-      const effectivePrice = (p.discount && p.discount > 0) 
+      const now = new Date();
+      const isDiscountActive = Boolean(
+        p.discount && 
+        p.discount > 0 &&
+        (!p.discountStartDate || new Date(p.discountStartDate) <= now) &&
+        (!p.discountEndDate || new Date(p.discountEndDate) >= now)
+      );
+
+      const effectivePrice = isDiscountActive 
         ? (p.price * (1 - p.discount / 100)) 
         : (p.price || 0);
 
       if (sortOrder === 'discounted') {
-        matchesDiscount = (p.discount || 0) > 0;
+        matchesDiscount = isDiscountActive;
       } else if (sortOrder === 'under-2k') {
         matchesUnder2k = effectivePrice < 2000;
       }
@@ -161,19 +169,29 @@ function CustomerProductsContent() {
       return matchesCategory && matchesSearch && matchesBudget && matchesPreOwned && matchesDeviceType && matchesDiscount && matchesUnder2k;
     })
     .sort((a, b) => {
-      const priceA = (a.discount && a.discount > 0) ? (a.price * (1 - a.discount / 100)) : (a.price || 0);
-      const priceB = (b.discount && b.discount > 0) ? (b.price * (1 - b.discount / 100)) : (b.price || 0);
+      const now = new Date();
+      const isDiscountA = Boolean(a.discount && a.discount > 0 && (!a.discountStartDate || new Date(a.discountStartDate) <= now) && (!a.discountEndDate || new Date(a.discountEndDate) >= now));
+      const isDiscountB = Boolean(b.discount && b.discount > 0 && (!b.discountStartDate || new Date(b.discountStartDate) <= now) && (!b.discountEndDate || new Date(b.discountEndDate) >= now));
+
+      const priceA = isDiscountA ? (a.price * (1 - a.discount / 100)) : (a.price || 0);
+      const priceB = isDiscountB ? (b.price * (1 - b.discount / 100)) : (b.price || 0);
       if (sortOrder === 'price-asc') return priceA - priceB;
       if (sortOrder === 'price-desc') return priceB - priceA;
       if (sortOrder === 'default') {
-        const discountA = a.discount || 0;
-        const discountB = b.discount || 0;
-        if (discountA > 0 && discountB <= 0) return -1;
-        if (discountB > 0 && discountA <= 0) return 1;
-        return discountB - discountA;
+        if (isDiscountA && !isDiscountB) return -1;
+        if (isDiscountB && !isDiscountA) return 1;
+        return (b.discount || 0) - (a.discount || 0);
       }
       return 0;
     });
+
+  const now = new Date();
+  const hasAnyActiveDiscounts = products.some(p => 
+    p.discount && 
+    p.discount > 0 && 
+    (!p.discountStartDate || new Date(p.discountStartDate) <= now) && 
+    (!p.discountEndDate || new Date(p.discountEndDate) >= now)
+  );
 
   return (
     <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center">
@@ -181,11 +199,11 @@ function CustomerProductsContent() {
 
         {/* Header & Filters */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 pb-4 border-b border-gray-100 w-full mb-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase tracking-wide border-none">
               {searchFilter ? `Search: "${searchFilter}"` : categoryFilter ? `Shop: ${categoryFilter}` : sortOrder === 'discounted' ? 'Discounted Items' : sortOrder === 'under-2k' ? 'Items Under ₱2,000' : 'Shop Our Products'}
             </h2>
-            {products.some(p => (p.discount || 0) > 0) && (
+            {hasAnyActiveDiscounts && (
               <button
                 onClick={() => setSortOrder(prev => prev === 'discounted' ? 'default' : 'discounted')}
                 className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer border flex items-center gap-1 shadow-sm ${
@@ -317,48 +335,62 @@ function CustomerProductsContent() {
               <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
             </div>
           ) : sortedProducts.length > 0 ? (
-            sortedProducts.map(product => (
-              <div 
-                key={product.id} 
-                onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
-                className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group"
-              >
-                <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
-                  {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                    <span className="absolute top-1 left-1 bg-[#5c0099] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300">
-                      Pre-Owned
-                    </span>
-                  )}
-                  {product.discount > 0 && (
-                    <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
-                      {product.discount}% OFF
-                    </span>
-                  )}
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
-                  ) : (
-                    <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
-                  )}
-                </div>
-                <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                <div className="flex justify-between items-end w-full">
-                  <div className="flex flex-col">
-                    {product.discount > 0 ? (
-                      <>
-                        <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
-                        <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
-                          ₱ {(product.price * (1 - product.discount / 100)).toLocaleString()}
-                        </p>
-                      </>
+            sortedProducts.map(product => {
+              const now = new Date();
+              const isDiscountActive = Boolean(
+                product.discount && 
+                product.discount > 0 &&
+                (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
+                (!product.discountEndDate || new Date(product.discountEndDate) >= now)
+              );
+
+              return (
+                <div 
+                  key={product.id} 
+                  onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
+                  className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group"
+                >
+                  <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                    {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                      <span className="absolute top-1 left-1 bg-[#5c0099] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300">
+                        Pre-Owned
+                      </span>
+                    )}
+                    {isDiscountActive && (
+                      <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
+                        {product.discount}% OFF
+                      </span>
+                    )}
+                    {isDiscountActive && product.discountEndDate && (
+                      <span className="absolute bottom-1 left-1 bg-black/80 backdrop-blur-xs text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow z-10">
+                        Ends {new Date(product.discountEndDate).toLocaleDateString()}
+                      </span>
+                    )}
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                     ) : (
-                      <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                      <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
                     )}
                   </div>
-                  <div className="flex flex-col items-end">
-                    <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+                  <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
+                  <div className="flex justify-between items-end w-full">
+                    <div className="flex flex-col">
+                      {isDiscountActive ? (
+                        <>
+                          <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+                          <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
+                            ₱ {(product.price * (1 - product.discount / 100)).toLocaleString()}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
+                      <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+                    </div>
                   </div>
-                </div>
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -369,8 +401,9 @@ function CustomerProductsContent() {
                   View Product
                 </button>
               </div>
-            ))
-          ) : (
+            );
+          })
+        ) : (
             <div className="col-span-full py-10 text-center text-gray-500 font-bold">No products available.</div>
           )}
         </div>

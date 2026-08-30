@@ -9,6 +9,8 @@ interface CartItem {
   name: string;
   price: number;
   discount?: number;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
   image: string | null;
   stock: number;
   cartQty: number;
@@ -62,8 +64,15 @@ export default function CashierPayment() {
         const parsed = JSON.parse(storedCart);
         if (parsed.items && Array.isArray(parsed.items)) {
           setCartItems(parsed.items);
+          const now = new Date();
           const sum = parsed.total || parsed.items.reduce((acc: number, item: CartItem) => {
-            const discount = item.discount || 0;
+            const isDiscountActive = Boolean(
+              item.discount && 
+              item.discount > 0 &&
+              (!item.discountStartDate || new Date(item.discountStartDate) <= now) &&
+              (!item.discountEndDate || new Date(item.discountEndDate) >= now)
+            );
+            const discount = (isDiscountActive ? item.discount : 0) || 0;
             const effectivePrice = discount > 0 ? (item.price * (1 - discount / 100)) : item.price;
             return acc + (effectivePrice * item.cartQty);
           }, 0);
@@ -185,7 +194,14 @@ export default function CashierPayment() {
             <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700">Selected Items ({cartItems.length})</span>
             <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
               {cartItems.map((item, idx) => {
-                const discount = item.discount || 0;
+                const now = new Date();
+                const isDiscountActive = Boolean(
+                  item.discount && 
+                  item.discount > 0 &&
+                  (!item.discountStartDate || new Date(item.discountStartDate) <= now) &&
+                  (!item.discountEndDate || new Date(item.discountEndDate) >= now)
+                );
+                const discount = (isDiscountActive ? item.discount : 0) || 0;
                 const effectivePrice = discount > 0 ? (item.price * (1 - discount / 100)) : item.price;
                 const itemTotal = effectivePrice * item.cartQty;
 

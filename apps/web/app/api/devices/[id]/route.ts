@@ -52,6 +52,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
       isAvailable: boolean;
       price: number;
       discount: number;
+      discountStartDate?: Date | string | null;
+      discountEndDate?: Date | string | null;
       variations: any[];
     }> = {};
 
@@ -64,6 +66,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
           isAvailable: bDev.stock > 0,
           price: bDev.price,
           discount: bDev.discount || 0,
+          discountStartDate: bDev.discountStartDate || null,
+          discountEndDate: bDev.discountEndDate || null,
           variations: bDev.variations || []
         };
       } else {
@@ -74,6 +78,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
             isAvailable: device.stock > 0,
             price: device.price,
             discount: device.discount || 0,
+            discountStartDate: device.discountStartDate || null,
+            discountEndDate: device.discountEndDate || null,
             variations: device.variations || []
           };
         } else {
@@ -83,6 +89,8 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
             isAvailable: false,
             price: device.price,
             discount: device.discount || 0,
+            discountStartDate: device.discountStartDate || null,
+            discountEndDate: device.discountEndDate || null,
             variations: []
           };
         }
@@ -135,6 +143,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const variationsStr = formData.get('variations') as string;
 
     const discountStr = formData.get('deviceDiscount') ?? formData.get('discount');
+    const discountStartDateStr = formData.get('discountStartDate');
+    const discountEndDateStr = formData.get('discountEndDate');
 
     const isPreOwnedVal = formData.get('isPreOwned');
     const isPreOwned = isPreOwnedVal !== null ? isPreOwnedVal === 'true' : undefined;
@@ -179,6 +189,12 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         ...(typeStr && { type: typeStr }),
         ...(discountStr !== null && discountStr !== undefined && { 
           discount: Math.max(0, Math.min(100, parseFloat(discountStr as string) || 0)) 
+        }),
+        ...(discountStartDateStr !== null && {
+          discountStartDate: discountStartDateStr ? new Date(discountStartDateStr as string) : null
+        }),
+        ...(discountEndDateStr !== null && {
+          discountEndDate: discountEndDateStr ? new Date(discountEndDateStr as string) : null
         }),
         ...(isPreOwned !== undefined && { isPreOwned }),
         ...(categoryId && { category: { connect: { id: categoryId } } }),

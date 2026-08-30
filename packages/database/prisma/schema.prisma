@@ -57,6 +57,8 @@ model Device {
   downpayment      String?
   type             String?
   discount         Float             @default(0)
+  discountStartDate DateTime?
+  discountEndDate   DateTime?
   branch           String            @default("Tagoloan")
   isPreOwned       Boolean           @default(false)
   createdAt        DateTime          @default(now())

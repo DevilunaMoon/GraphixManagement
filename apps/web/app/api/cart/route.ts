@@ -18,6 +18,8 @@ export async function GET(req: Request) {
             name: true,
             price: true,
             discount: true,
+            discountStartDate: true,
+            discountEndDate: true,
             stock: true,
             image: true,
             images: true

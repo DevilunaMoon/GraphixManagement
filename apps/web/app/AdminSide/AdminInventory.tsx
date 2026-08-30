@@ -131,6 +131,8 @@ export default function AdminInventory() {
   const [newDeviceCost, setNewDeviceCost] = useState('');
   const [newDevicePrice, setNewDevicePrice] = useState('');
   const [newDeviceDiscount, setNewDeviceDiscount] = useState('');
+  const [newDeviceDiscountStartDate, setNewDeviceDiscountStartDate] = useState('');
+  const [newDeviceDiscountEndDate, setNewDeviceDiscountEndDate] = useState('');
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
   const [newDeviceType, setNewDeviceType] = useState('Smartphone');
@@ -155,6 +157,8 @@ export default function AdminInventory() {
   const [editDeviceCost, setEditDeviceCost] = useState('');
   const [editDevicePrice, setEditDevicePrice] = useState('');
   const [editDeviceDiscount, setEditDeviceDiscount] = useState('');
+  const [editDeviceDiscountStartDate, setEditDeviceDiscountStartDate] = useState('');
+  const [editDeviceDiscountEndDate, setEditDeviceDiscountEndDate] = useState('');
   const [editDeviceStocks, setEditDeviceStocks] = useState('');
   const [editDeviceCategory, setEditDeviceCategory] = useState('');
   const [editDeviceType, setEditDeviceType] = useState('Smartphone');
@@ -335,6 +339,8 @@ export default function AdminInventory() {
             displayStock: `${device.stock || 0} pcs`,
             type: device.specs || 'N/A',
             discount: device.discount || 0,
+            discountStartDate: device.discountStartDate || null,
+            discountEndDate: device.discountEndDate || null,
             // Raw values for editing
             price: device.price?.toString() || '',
             cost: device.cost?.toString() || '',
@@ -433,6 +439,8 @@ export default function AdminInventory() {
     formData.append('deviceCost', newDeviceCost);
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceDiscount', newDeviceDiscount || '0');
+    formData.append('discountStartDate', newDeviceDiscountStartDate || '');
+    formData.append('discountEndDate', newDeviceDiscountEndDate || '');
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
     formData.append('deviceType', newDeviceType);
@@ -460,6 +468,7 @@ export default function AdminInventory() {
         fetchProducts();
         setIsAddModalOpen(false);
         setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice(''); setNewDeviceDiscount('');
+        setNewDeviceDiscountStartDate(''); setNewDeviceDiscountEndDate('');
         setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceType('Smartphone'); setNewDeviceSpecs('');
         setNewDeviceIsPreOwned(false);
         setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
@@ -480,12 +489,27 @@ export default function AdminInventory() {
   };
 
   // Edit Product Handlers
+  const formatDateTimeLocal = (dateStr?: string | null) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const handleEditClick = (prod: any) => {
     setProductToEdit(prod);
     setEditDeviceName(prod.name);
     setEditDeviceCost(prod.cost);
     setEditDevicePrice(prod.price);
     setEditDeviceDiscount(prod.discount !== undefined && prod.discount !== null ? String(prod.discount) : '0');
+    setEditDeviceDiscountStartDate(formatDateTimeLocal(prod.discountStartDate));
+    setEditDeviceDiscountEndDate(formatDateTimeLocal(prod.discountEndDate));
     setEditDeviceStocks(prod.stock);
     setEditDeviceCategory(prod.categoryId);
     setEditDeviceType(prod.type || 'Smartphone');
@@ -532,6 +556,8 @@ export default function AdminInventory() {
     formData.append('deviceCost', editDeviceCost);
     formData.append('devicePrice', editDevicePrice);
     formData.append('deviceDiscount', editDeviceDiscount || '0');
+    formData.append('discountStartDate', editDeviceDiscountStartDate || '');
+    formData.append('discountEndDate', editDeviceDiscountEndDate || '');
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
     formData.append('deviceType', editDeviceType);
@@ -732,17 +758,54 @@ export default function AdminInventory() {
                     </td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} truncate max-w-[100px] sm:max-w-none`}>{prod.id}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>
-                      {prod.discount > 0 ? (
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="flex items-center gap-1.5 justify-center">
-                            <span className="font-bold text-[#5c0099]">₱ {(parseFloat(prod.price || 0) * (1 - prod.discount / 100)).toLocaleString()}</span>
-                            <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">{prod.discount}% OFF</span>
-                          </div>
-                          <span className="text-xs text-gray-400 line-through">₱ {parseFloat(prod.price || 0).toLocaleString()}</span>
-                        </div>
-                      ) : (
-                        prod.displayPrice
-                      )}
+                      {(() => {
+                        const now = new Date();
+                        const hasDiscount = (prod.discount || 0) > 0;
+                        const isScheduled = hasDiscount && prod.discountStartDate && new Date(prod.discountStartDate) > now;
+                        const isExpired = hasDiscount && prod.discountEndDate && new Date(prod.discountEndDate) < now;
+                        const isActive = hasDiscount && !isScheduled && !isExpired;
+
+                        if (isActive) {
+                          return (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <div className="flex items-center gap-1.5 justify-center">
+                                <span className="font-bold text-[#5c0099]">₱ {(parseFloat(prod.price || 0) * (1 - prod.discount / 100)).toLocaleString()}</span>
+                                <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">{prod.discount}% OFF</span>
+                              </div>
+                              <span className="text-xs text-gray-400 line-through">₱ {parseFloat(prod.price || 0).toLocaleString()}</span>
+                              {prod.discountEndDate && (
+                                <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 rounded">
+                                  Ends {new Date(prod.discountEndDate).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (isScheduled) {
+                          return (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="font-bold text-gray-800">₱ {parseFloat(prod.price || 0).toLocaleString()}</span>
+                              <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 rounded">
+                                Scheduled ({prod.discount}% OFF)
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        if (isExpired) {
+                          return (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="font-bold text-gray-800">₱ {parseFloat(prod.price || 0).toLocaleString()}</span>
+                              <span className="bg-gray-100 text-gray-500 text-[10px] font-medium px-1.5 rounded">
+                                Expired Discount
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        return prod.displayPrice;
+                      })()}
                     </td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell`}>{prod.displayStock}</td>
                     <td className={`py-4 px-5 text-[0.95rem] text-[#666] border-b ${styles.borderMain} hidden md:table-cell max-w-[200px]`}>
@@ -882,14 +945,40 @@ export default function AdminInventory() {
                     </div>
                   </div>
                   {parseFloat(newDeviceDiscount) > 0 && parseFloat(newDevicePrice) > 0 && (
-                    <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#5c0099] text-white font-black text-xs px-2 py-0.5 rounded-md">{newDeviceDiscount}% OFF</span>
-                        <span className="text-gray-600 font-medium">Save: <strong className="text-rose-600">₱ {((parseFloat(newDevicePrice) * parseFloat(newDeviceDiscount)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                    <div className="flex flex-col gap-2.5">
+                      <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#5c0099] text-white font-black text-xs px-2 py-0.5 rounded-md">{newDeviceDiscount}% OFF</span>
+                          <span className="text-gray-600 font-medium">Save: <strong className="text-rose-600">₱ {((parseFloat(newDevicePrice) * parseFloat(newDeviceDiscount)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 font-medium mr-1">Final Price:</span>
+                          <strong className="text-[#5c0099] text-sm font-black">₱ {(parseFloat(newDevicePrice) * (1 - parseFloat(newDeviceDiscount) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-500 font-medium mr-1">Final Price:</span>
-                        <strong className="text-[#5c0099] text-sm font-black">₱ {(parseFloat(newDevicePrice) * (1 - parseFloat(newDeviceDiscount) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+
+                      <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100 flex flex-col gap-2">
+                        <span className="text-[11px] font-extrabold text-[#5c0099] uppercase tracking-wider">Discount Duration (Optional)</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">Start Date & Time</label>
+                            <input 
+                              type="datetime-local" 
+                              value={newDeviceDiscountStartDate} 
+                              onChange={e => setNewDeviceDiscountStartDate(e.target.value)} 
+                              className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">End Date / Expiration</label>
+                            <input 
+                              type="datetime-local" 
+                              value={newDeviceDiscountEndDate} 
+                              onChange={e => setNewDeviceDiscountEndDate(e.target.value)} 
+                              className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1132,14 +1221,40 @@ export default function AdminInventory() {
                     </div>
                   </div>
                   {parseFloat(editDeviceDiscount) > 0 && parseFloat(editDevicePrice) > 0 && (
-                    <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#5c0099] text-white font-black text-xs px-2 py-0.5 rounded-md">{editDeviceDiscount}% OFF</span>
-                        <span className="text-gray-600 font-medium">Save: <strong className="text-rose-600">₱ {((parseFloat(editDevicePrice) * parseFloat(editDeviceDiscount)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                    <div className="flex flex-col gap-2.5">
+                      <div className="bg-purple-50/90 border border-purple-200 rounded-xl p-3 flex flex-wrap items-center justify-between text-xs gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#5c0099] text-white font-black text-xs px-2 py-0.5 rounded-md">{editDeviceDiscount}% OFF</span>
+                          <span className="text-gray-600 font-medium">Save: <strong className="text-rose-600">₱ {((parseFloat(editDevicePrice) * parseFloat(editDeviceDiscount)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 font-medium mr-1">Final Price:</span>
+                          <strong className="text-[#5c0099] text-sm font-black">₱ {(parseFloat(editDevicePrice) * (1 - parseFloat(editDeviceDiscount) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-gray-500 font-medium mr-1">Final Price:</span>
-                        <strong className="text-[#5c0099] text-sm font-black">₱ {(parseFloat(editDevicePrice) * (1 - parseFloat(editDeviceDiscount) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+
+                      <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100 flex flex-col gap-2">
+                        <span className="text-[11px] font-extrabold text-[#5c0099] uppercase tracking-wider">Discount Duration (Optional)</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">Start Date & Time</label>
+                            <input 
+                              type="datetime-local" 
+                              value={editDeviceDiscountStartDate} 
+                              onChange={e => setEditDeviceDiscountStartDate(e.target.value)} 
+                              className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">End Date / Expiration</label>
+                            <input 
+                              type="datetime-local" 
+                              value={editDeviceDiscountEndDate} 
+                              onChange={e => setEditDeviceDiscountEndDate(e.target.value)} 
+                              className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
