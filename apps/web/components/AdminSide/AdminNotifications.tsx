@@ -14,6 +14,14 @@ interface Notification {
   createdAt: string;
 }
 
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${datePart} • ${timePart}`;
+};
+
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -216,11 +224,9 @@ export default function AdminNotifications() {
                     <p className={`text-sm leading-relaxed ${!notification.isRead ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
                       {notification.message}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400 font-medium">
-                      <Clock size={12} />
-                      {new Date(notification.createdAt).toLocaleString(undefined, { 
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                      })}
+                    <div className="flex items-center gap-1.5 mt-2.5 text-xs text-gray-500 font-semibold bg-gray-50 w-max px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
+                      <Clock size={12} className="text-[#5c0099]" />
+                      <span>{formatDateTime(notification.createdAt)}</span>
                     </div>
                   </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bell, CheckCheck } from 'lucide-react';
 
 interface Notification {
   id: string;
@@ -10,6 +10,14 @@ interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const datePart = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timePart = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${datePart} • ${timePart}`;
+};
 
 export default function CustomerNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -61,12 +69,17 @@ export default function CustomerNotifications() {
         <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-gray-100 flex flex-col min-h-[600px]">
           
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 border-b border-gray-200 pb-4 mb-4 sm:mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#bd00ff] m-0 border-none">Notification</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-100 text-[#bd00ff]">
+                <Bell size={22} />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#bd00ff] m-0 border-none">Notifications</h2>
+            </div>
             <button 
               onClick={handleMarkAllRead}
-              className="px-4 py-2 border-2 text-sm sm:text-base border-[#bd00ff] text-[#bd00ff] font-bold rounded-xl bg-purple-50 hover:bg-[#bd00ff] hover:text-white transition-colors cursor-pointer w-full sm:w-auto"
+              className="px-4 py-2 border-2 text-sm sm:text-base border-[#bd00ff] text-[#bd00ff] font-bold rounded-xl bg-purple-50 hover:bg-[#bd00ff] hover:text-white transition-colors cursor-pointer w-full sm:w-auto flex items-center justify-center gap-1.5"
             >
-              Mark as Read
+              <CheckCheck size={18} /> Mark All as Read
             </button>
           </div>
 
@@ -78,6 +91,7 @@ export default function CustomerNotifications() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="p-12 text-center flex flex-col items-center justify-center gap-4 text-gray-400 my-auto">
+                <Bell size={44} strokeWidth={1.5} />
                 <p className="text-lg font-medium">No notifications yet. You're all caught up!</p>
               </div>
             ) : (
@@ -86,14 +100,25 @@ export default function CustomerNotifications() {
                   key={notif.id} 
                   className={`p-4 sm:p-6 rounded-2xl border transition-all md:hover:translate-x-1 ${
                     !notif.isRead 
-                      ? 'bg-gradient-to-r from-purple-50 to-white border-l-4 border-[#bd00ff] border-y-gray-200 border-r-gray-200 shadow-sm' 
-                      : 'bg-white border-gray-200 hover:border-[#bd00ff]'
+                      ? 'bg-gradient-to-r from-purple-50/70 to-white border-l-4 border-[#bd00ff] border-y-purple-100 border-r-purple-100 shadow-sm' 
+                      : 'bg-white border-gray-200 hover:border-purple-200'
                   }`}
                 >
-                  <h4 className={`text-lg m-0 mb-2 border-none ${!notif.isRead ? 'font-extrabold text-black' : 'font-bold text-gray-800'}`}>
-                    {notif.title}
-                  </h4>
-                  <p className={`m-0 leading-relaxed ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap justify-between">
+                    <div className="flex items-center gap-2">
+                      <h4 className={`text-base sm:text-lg m-0 border-none ${!notif.isRead ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>
+                        {notif.title}
+                      </h4>
+                      {!notif.isRead && (
+                        <span className="bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm animate-pulse"></span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
+                      <Clock size={12} className="text-[#bd00ff]" />
+                      <span>{formatDateTime(notif.createdAt)}</span>
+                    </div>
+                  </div>
+                  <p className={`m-0 leading-relaxed text-sm sm:text-base ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
                     {notif.message}
                   </p>
                 </div>
