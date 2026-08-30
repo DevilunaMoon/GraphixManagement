@@ -33,51 +33,6 @@ interface Transaction {
   };
 }
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx_1029384756',
-    createdAt: new Date().toISOString(),
-    amount: 1599,
-    quantity: 1,
-    variations: 'Blue Switch',
-    user: { id: 'u1', name: 'John Doe', email: 'john@example.com' },
-    device: { id: 'd1', name: 'Aula Mechanical Keyboard', price: 1599, image: 'https://picsum.photos/seed/keyboard/150/150' },
-    status: 'Active'
-  },
-  {
-    id: 'tx_5647382910',
-    createdAt: new Date(Date.now() - 4 * 86400000).toISOString(), // 4 days old
-    amount: 45000,
-    quantity: 1,
-    variations: '256GB, Space Gray',
-    user: { id: 'u2', name: 'Jane Smith', email: 'jane.smith@email.com' },
-    device: { id: 'd2', name: 'iPhone 13 Pro', price: 45000, image: 'https://picsum.photos/seed/phone/150/150' },
-    isExpired: true,
-    status: 'Active'
-  },
-  {
-    id: 'tx_9988776655',
-    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(), // 5 days old
-    amount: 1250,
-    quantity: 2,
-    variations: null,
-    user: { id: 'u3', name: 'Michael Johnson', email: 'mjohnson@mail.com' },
-    device: { id: 'd3', name: 'Logitech G102 Mouse', price: 625, image: 'https://picsum.photos/seed/mouse/150/150' },
-    isExpired: true,
-    status: 'Active'
-  },
-  {
-    id: 'tx_1122334455',
-    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    amount: 8500,
-    quantity: 1,
-    variations: '24-inch, 1080p',
-    user: { id: 'u4', name: 'Sarah Williams', email: 'swilliams@test.com' },
-    device: { id: 'd4', name: 'Samsung IPS Monitor', price: 8500, image: 'https://picsum.photos/seed/monitor/150/150' },
-    status: 'Active'
-  }
-];
-
 const formatVariations = (variationsStr: string | null): string => {
   if (!variationsStr) return '';
   try {
@@ -174,27 +129,10 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.transactions)) {
-            const realTransactions = data.transactions;
-            const total = data.total || 0;
-            const pages = data.totalPages || 1;
-
-            const mappedMock = MOCK_TRANSACTIONS.map(tx => ({
-              ...tx,
-              paymentType: type === 'downpayment' ? 'Downpayment' : 'Full'
-            }));
-
-            if (realTransactions.length === 0 && !searchTerm && !filterDate && currentPage === 1) {
-              setTransactions(mappedMock);
-              setTotalItems(mappedMock.length);
-              setTotalPages(Math.ceil(mappedMock.length / itemsPerPage));
-              const mockSum = mappedMock.reduce((acc, tx) => acc + (tx.amount > 0 ? tx.amount : (tx.device?.price || 0)), 0);
-              setTotalSales(mockSum);
-            } else {
-              setTransactions(realTransactions);
-              setTotalItems(total);
-              setTotalPages(pages);
-              setTotalSales(data.totalSales || 0);
-            }
+            setTransactions(data.transactions);
+            setTotalItems(data.total || 0);
+            setTotalPages(data.totalPages || 1);
+            setTotalSales(data.totalSales || 0);
           }
         }
       } catch (error) {
