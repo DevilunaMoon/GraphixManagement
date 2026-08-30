@@ -81,8 +81,8 @@ export default function CustomerAbout() {
   }, []);
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center items-start overflow-y-auto bg-[#f4f5f7]">
-      <div className="w-full max-w-4xl my-4 sm:my-8 flex flex-col gap-6">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center items-start overflow-y-auto w-full">
+      <div className="w-full max-w-7xl flex flex-col gap-6">
         
         {/* About Main Section */}
         <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-10 shadow-md border-t-8 border-[#bd00ff]">
@@ -156,7 +156,7 @@ export default function CustomerAbout() {
             </div>
           </div>
 
-          <div className={`grid grid-cols-1 ${branches.length > 1 ? 'md:grid-cols-2' : ''} gap-6`}>
+          <div className={`grid grid-cols-1 ${branches.length > 2 ? 'md:grid-cols-2 lg:grid-cols-3' : branches.length > 1 ? 'md:grid-cols-2' : ''} gap-6`}>
             {branches.map((branch) => (
               <div key={branch.id} className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all bg-white flex flex-col">
                 <a
