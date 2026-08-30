@@ -87,7 +87,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="p-6 md:p-10 font-['Inter'] max-w-5xl mx-auto flex flex-col gap-8 h-full">
+    <div className="p-4 sm:p-6 md:p-8 font-['Inter'] max-w-7xl mx-auto flex flex-col gap-8 w-full">
       <div className="flex items-center gap-4">
         <button onClick={() => router.back()} className="bg-transparent border-none cursor-pointer text-gray-700 hover:text-[#bd00ff]"><ChevronLeft size={36} /></button>
         <h2 className="text-3xl md:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase m-0">My Cart</h2>
