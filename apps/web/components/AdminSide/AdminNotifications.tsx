@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
@@ -14,13 +14,14 @@ interface Notification {
   createdAt: string;
 }
 
-export default function CashierNotifications() {
+export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchNotifications = async (pageToFetch = page) => {
     try {
@@ -32,9 +33,10 @@ export default function CashierNotifications() {
         setUnreadCount(data.unreadCount || 0);
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.error('Failed to fetch admin notifications:', error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -44,7 +46,7 @@ export default function CashierNotifications() {
     return () => clearInterval(interval);
   }, [page]);
 
-  const handleAction = async (id: string, action: 'PAID' | 'UNPAID' | 'READ') => {
+  const handleAction = async (id: string, action: 'READ' | 'PAID' | 'UNPAID') => {
     try {
       const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
@@ -57,17 +59,11 @@ export default function CashierNotifications() {
           prev.map(n => n.id === id ? { ...n, isRead: true, title: updated.title || n.title } : n)
         );
         setUnreadCount(prev => Math.max(prev - 1, 0));
-        if (action === 'PAID') {
-          setFeedbackMessage('Transaction marked as PAID successfully!');
-        } else if (action === 'UNPAID') {
-          setFeedbackMessage('Unpaid pending notification sent to customer successfully!');
-        } else {
-          setFeedbackMessage('Notification marked as read.');
-        }
+        setFeedbackMessage('Notification marked as read.');
         setTimeout(() => setFeedbackMessage(null), 3000);
       }
     } catch (error) {
-      console.error(`Failed to mark notification:`, error);
+      console.error('Failed to mark notification:', error);
     }
   };
 
@@ -107,46 +103,63 @@ export default function CashierNotifications() {
   if (loading) {
     return (
       <div className="flex flex-col gap-6 w-full h-[60vh] justify-center items-center">
-        <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium tracking-wide">Loading Alerts...</p>
+        <div className="w-12 h-12 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium tracking-wide">Loading Notifications...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex flex-col gap-6 w-full font-['Inter']">
       {feedbackMessage && (
-        <div className="bg-green-600 text-white font-bold px-6 py-4 rounded-xl shadow-lg flex items-center justify-between transition-all duration-300 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="bg-emerald-600 text-white font-bold px-6 py-4 rounded-xl shadow-lg flex items-center justify-between transition-all duration-300 animate-in fade-in slide-in-from-top-4">
           <span className="text-sm tracking-wide">{feedbackMessage}</span>
           <button onClick={() => setFeedbackMessage(null)} className="text-white hover:text-gray-200 bg-transparent border-none outline-none font-black ml-4 cursor-pointer">✕</button>
         </div>
       )}
 
+      {/* Header Banner */}
       <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex justify-between items-center flex-wrap gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-purple-100 text-purple-600">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-purple-100 text-[#5c0099]">
             <Bell size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-[#111] uppercase tracking-wide">Notifications</h2>
-            <p className="text-sm font-semibold text-gray-500">You have {unreadCount} unread alert{unreadCount !== 1 ? 's' : ''}</p>
+            <h2 className="text-2xl font-black text-[#111] uppercase tracking-wide">System Notifications</h2>
+            <p className="text-sm font-semibold text-gray-500">
+              {unreadCount > 0 ? `You have ${unreadCount} unread alert${unreadCount !== 1 ? 's' : ''}` : "You're all caught up with your alerts"}
+            </p>
           </div>
         </div>
-        {unreadCount > 0 && (
+
+        <div className="flex items-center gap-3">
           <button
-            onClick={markAllAsRead}
-            className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            onClick={() => {
+              setIsRefreshing(true);
+              fetchNotifications(page);
+            }}
+            title="Refresh"
+            className="p-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl border border-gray-200 transition-all cursor-pointer shadow-sm"
           >
-            <CheckCheck size={16} /> Mark All as Read
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
           </button>
-        )}
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-[#5c0099] font-bold text-xs rounded-xl border border-purple-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              <CheckCheck size={16} /> Mark All as Read
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Notification List */}
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-hidden">
         {notifications.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center gap-4 text-gray-400">
             <Bell size={48} strokeWidth={1} />
-            <p className="text-lg font-medium">No notifications yet. You're all caught up!</p>
+            <p className="text-lg font-medium">No notifications yet. Everything is in good order!</p>
           </div>
         ) : (
           <div className="flex flex-col divide-y divide-gray-100">
@@ -155,7 +168,7 @@ export default function CashierNotifications() {
               const isStockLow = notification.type === 'STOCK_LOW';
               const isStockAlert = isStockOut || isStockLow;
 
-              let iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-300';
+              let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
               if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
               if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
 
@@ -191,18 +204,13 @@ export default function CashierNotifications() {
                           LOW STOCK
                         </span>
                       )}
-                      {notification.title.toLowerCase().includes('paid') && !notification.title.toLowerCase().includes('unpaid') && (
-                        <span className="shrink-0 bg-green-100 text-green-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
-                          PAID
-                        </span>
-                      )}
-                      {notification.title.toLowerCase().includes('unpaid') && (
-                        <span className="shrink-0 bg-red-100 text-red-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
-                          UNPAID
+                      {notification.branch && (
+                        <span className="shrink-0 bg-purple-100 text-[#5c0099] text-xs font-bold px-2 py-0.5 rounded-md border border-purple-200">
+                          {notification.branch}
                         </span>
                       )}
                       {!notification.isRead && (
-                        <span className="shrink-0 bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm animate-pulse"></span>
+                        <span className="shrink-0 bg-rose-500 w-2.5 h-2.5 rounded-full shadow-sm animate-pulse"></span>
                       )}
                     </div>
                     <p className={`text-sm leading-relaxed ${!notification.isRead ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
@@ -217,41 +225,24 @@ export default function CashierNotifications() {
                   </div>
 
                   {/* Actions */}
-                  {isStockAlert ? (
-                    <div className="flex items-center gap-2 sm:self-center">
+                  <div className="flex items-center gap-2 sm:self-center">
+                    {isStockAlert && (
                       <Link 
-                        href="/cashier/devices"
-                        className="shrink-0 px-3.5 py-2 bg-purple-100 text-purple-800 hover:bg-purple-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
+                        href="/admin/inventory"
+                        className="shrink-0 px-3.5 py-2 bg-purple-100 text-[#5c0099] hover:bg-purple-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
                       >
-                        <Package size={14} /> Restock
+                        <Package size={14} /> Restock Device
                       </Link>
-                      {!notification.isRead && (
-                        <button 
-                          onClick={() => handleAction(notification.id, 'READ')}
-                          className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer border-none"
-                        >
-                          <Check size={14} /> Read
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    !(notification.title.toLowerCase().includes('paid') || notification.title.toLowerCase().includes('unpaid')) && (
-                      <div className="flex items-center gap-2 sm:self-center">
-                        <button 
-                          onClick={() => handleAction(notification.id, 'PAID')}
-                          className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                        >
-                          <Check size={16} strokeWidth={3} /> Paid
-                        </button>
-                        <button 
-                          onClick={() => handleAction(notification.id, 'UNPAID')}
-                          className="shrink-0 px-4 py-2 bg-red-50 border border-red-200 text-red-700 font-bold text-sm rounded-lg hover:bg-red-100 hover:border-red-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                        >
-                          <X size={16} strokeWidth={3} /> Unpaid
-                        </button>
-                      </div>
-                    )
-                  )}
+                    )}
+                    {!notification.isRead && (
+                      <button 
+                        onClick={() => handleAction(notification.id, 'READ')}
+                        className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer border-none"
+                      >
+                        <Check size={14} /> Mark Read
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -265,26 +256,23 @@ export default function CashierNotifications() {
           <button
             onClick={() => setPage(prev => Math.max(prev - 1, 1))}
             disabled={page === 1}
-            className="px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl border border-purple-100 transition-all cursor-pointer select-none"
+            className="px-4 py-2 bg-purple-50 text-[#5c0099] hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl border border-purple-100 transition-all cursor-pointer select-none"
           >
             Previous
           </button>
           
           <div className="flex items-center gap-1.5 px-3">
             <span className="text-sm font-semibold text-gray-500">Page</span>
-            <span className="px-3 py-1 bg-purple-100 text-purple-700 font-extrabold text-sm rounded-lg shadow-sm">
+            <span className="px-3 py-1 bg-purple-100 text-[#5c0099] font-extrabold text-sm rounded-lg shadow-sm">
               {page}
             </span>
-            <span className="text-sm font-semibold text-gray-500">of</span>
-            <span className="text-sm font-bold text-gray-700">
-              {totalPages}
-            </span>
+            <span className="text-sm font-semibold text-gray-500">of {totalPages}</span>
           </div>
 
           <button
             onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
             disabled={page === totalPages}
-            className="px-4 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl border border-purple-100 transition-all cursor-pointer select-none"
+            className="px-4 py-2 bg-purple-50 text-[#5c0099] hover:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm rounded-xl border border-purple-100 transition-all cursor-pointer select-none"
           >
             Next
           </button>

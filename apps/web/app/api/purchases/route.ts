@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../lib/session';
+import { triggerStockAlert } from '../../../lib/stock-alerts';
 
 export async function POST(req: Request) {
   try {
@@ -144,6 +145,15 @@ export async function POST(req: Request) {
       if (result.success) {
         const pTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
         await notifyCashiers(pTypeLabel);
+
+        // Check and trigger stock alerts for all purchased cart items
+        for (const cId of cartItemIds) {
+          const cItem = await prisma.cartItem.findUnique({ where: { id: cId } }).catch(() => null);
+          if (cItem?.deviceId) {
+            await triggerStockAlert({ deviceId: cItem.deviceId });
+          }
+        }
+
         return NextResponse.json({ success: true, message: 'Cart items purchased' }, { status: 201 });
       }
     }
@@ -201,6 +211,9 @@ export async function POST(req: Request) {
 
     const singlePTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
     await notifyCashiers(singlePTypeLabel);
+
+    // Trigger stock alert check for single purchase
+    await triggerStockAlert({ deviceId });
 
     if (actualUserId !== session.userId) {
       // If cashier created downpayment for a walk-in customer, create a notification for that customer

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../../lib/cloudinary';
 import { getSession } from '../../../../lib/session';
+import { triggerStockAlert } from '../../../../lib/stock-alerts';
 
 export async function GET(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -193,6 +194,9 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
         }),
       }
     });
+
+    await triggerStockAlert({ deviceId: id });
+
     return NextResponse.json(device);
   } catch (error) {
     console.error('Error updating device:', error);

@@ -20,7 +20,8 @@ import {
   Wrench,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  Bell
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isGadgetRepairOpen, setIsGadgetRepairOpen] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
   const [branchName, setBranchName] = useState('Tagoloan');
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
@@ -75,21 +77,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(err => console.error("Failed to fetch admin status", err));
   }, []);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications');
+        const data = await res.json();
+        if (data && typeof data.unreadCount === 'number') {
+          setUnreadCount(data.unreadCount);
+        } else if (Array.isArray(data)) {
+          const unread = data.filter((n: any) => !n.isRead).length;
+          setUnreadCount(unread);
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin unread notifications:', err);
+      }
+    };
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   return (
     <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Inter'] transition-colors duration-300`}>
       {/* Mobile Header */}
-      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-5 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
+      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-4 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
         <div className="flex items-center gap-3">
-          <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover" />
-          <span className="text-white text-lg font-bold">Graphix Admin</span>
+          <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[32px] h-[32px] rounded-full object-cover" />
+          <span className="text-white text-base font-bold">Graphix Admin</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs px-2.5 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
-          <button onClick={toggleSidebar} className="text-white">
-            <List size={28} />
+          <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
+          <Link 
+            href="/admin/notifications"
+            className="relative text-white p-1.5 flex items-center justify-center"
+            title="Notifications"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-md animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
+          <button onClick={toggleSidebar} className="text-white outline-none bg-transparent border-none cursor-pointer">
+            <List size={26} />
           </button>
         </div>
       </div>
@@ -137,6 +172,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav className={`flex flex-col py-5 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2' : ''}`}>
           {[
             { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
+            { href: '/admin/notifications', label: 'Notifications', icon: Bell },
             { 
               label: 'Order History', 
               icon: ReceiptText,
@@ -218,7 +254,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href} 
                 onClick={() => setIsSidebarOpen(false)}
                 title={isCollapsed ? item.label : undefined}
-                className={`flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                className={`relative flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
                   isActive 
                     ? isCollapsed 
                       ? 'bg-white/20 text-white shadow-sm' 
@@ -228,8 +264,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       : 'text-white/70 border-l-4 border-l-transparent'
                 }`}
               >
-                <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
-                {!isCollapsed && <span>{item.label}</span>}
+                <div className="relative flex items-center justify-center">
+                  <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                  {item.label === 'Notifications' && unreadCount > 0 && isCollapsed && (
+                    <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between flex-1">
+                    <span>{item.label}</span>
+                    {item.label === 'Notifications' && unreadCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full shadow-sm">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             );
           })}
@@ -250,6 +302,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               {branchName} Branch
             </div>
+            <Link
+              href="/admin/notifications"
+              title="Notifications"
+              className="relative text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-white/10 hover:bg-white/20 rounded-full border border-white/20 flex items-center justify-center"
+            >
+              <Bell size={22} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
             <button 
               onClick={() => setIsLogoutModalOpen(true)}
               title="Log Out"

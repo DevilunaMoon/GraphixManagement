@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
-
 import { getSession } from '../../../lib/session';
+import { triggerStockAlert } from '../../../lib/stock-alerts';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -245,6 +245,8 @@ export async function POST(req: Request) {
         } : undefined,
       }
     });
+
+    await triggerStockAlert({ deviceId: device.id });
 
     return NextResponse.json(device, { status: 201 });
   } catch (error) {
