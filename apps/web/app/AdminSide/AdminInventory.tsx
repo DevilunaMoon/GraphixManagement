@@ -127,11 +127,17 @@ export default function AdminInventory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   
+  const getTodayDateString = () => {
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceCost, setNewDeviceCost] = useState('');
   const [newDevicePrice, setNewDevicePrice] = useState('');
   const [newDeviceDiscount, setNewDeviceDiscount] = useState('');
-  const [newDeviceDiscountStartDate, setNewDeviceDiscountStartDate] = useState('');
+  const [newDeviceDiscountStartDate, setNewDeviceDiscountStartDate] = useState(getTodayDateString());
   const [newDeviceDiscountEndDate, setNewDeviceDiscountEndDate] = useState('');
   const [newDeviceStocks, setNewDeviceStocks] = useState('');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
@@ -439,8 +445,8 @@ export default function AdminInventory() {
     formData.append('deviceCost', newDeviceCost);
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceDiscount', newDeviceDiscount || '0');
-    formData.append('discountStartDate', newDeviceDiscountStartDate || '');
-    formData.append('discountEndDate', newDeviceDiscountEndDate || '');
+    formData.append('discountStartDate', newDeviceDiscountStartDate ? new Date(`${newDeviceDiscountStartDate}T00:00:00`).toISOString() : '');
+    formData.append('discountEndDate', newDeviceDiscountEndDate ? new Date(`${newDeviceDiscountEndDate}T23:59:59`).toISOString() : '');
     formData.append('deviceStocks', newDeviceStocks);
     formData.append('deviceCategory', newDeviceCategory);
     formData.append('deviceType', newDeviceType);
@@ -468,7 +474,7 @@ export default function AdminInventory() {
         fetchProducts();
         setIsAddModalOpen(false);
         setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice(''); setNewDeviceDiscount('');
-        setNewDeviceDiscountStartDate(''); setNewDeviceDiscountEndDate('');
+        setNewDeviceDiscountStartDate(getTodayDateString()); setNewDeviceDiscountEndDate('');
         setNewDeviceStocks(''); setNewDeviceCategory(''); setNewDeviceType('Smartphone'); setNewDeviceSpecs('');
         setNewDeviceIsPreOwned(false);
         setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
@@ -489,17 +495,12 @@ export default function AdminInventory() {
   };
 
   // Edit Product Handlers
-  const formatDateTimeLocal = (dateStr?: string | null) => {
+  const formatDateForInput = (dateStr?: string | null) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return '';
     const pad = (n: number) => n.toString().padStart(2, '0');
-    const year = d.getFullYear();
-    const month = pad(d.getMonth() + 1);
-    const day = pad(d.getDate());
-    const hours = pad(d.getHours());
-    const minutes = pad(d.getMinutes());
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   };
 
   const handleEditClick = (prod: any) => {
@@ -508,8 +509,8 @@ export default function AdminInventory() {
     setEditDeviceCost(prod.cost);
     setEditDevicePrice(prod.price);
     setEditDeviceDiscount(prod.discount !== undefined && prod.discount !== null ? String(prod.discount) : '0');
-    setEditDeviceDiscountStartDate(formatDateTimeLocal(prod.discountStartDate));
-    setEditDeviceDiscountEndDate(formatDateTimeLocal(prod.discountEndDate));
+    setEditDeviceDiscountStartDate(formatDateForInput(prod.discountStartDate) || getTodayDateString());
+    setEditDeviceDiscountEndDate(formatDateForInput(prod.discountEndDate));
     setEditDeviceStocks(prod.stock);
     setEditDeviceCategory(prod.categoryId);
     setEditDeviceType(prod.type || 'Smartphone');
@@ -556,8 +557,8 @@ export default function AdminInventory() {
     formData.append('deviceCost', editDeviceCost);
     formData.append('devicePrice', editDevicePrice);
     formData.append('deviceDiscount', editDeviceDiscount || '0');
-    formData.append('discountStartDate', editDeviceDiscountStartDate || '');
-    formData.append('discountEndDate', editDeviceDiscountEndDate || '');
+    formData.append('discountStartDate', editDeviceDiscountStartDate ? new Date(`${editDeviceDiscountStartDate}T00:00:00`).toISOString() : '');
+    formData.append('discountEndDate', editDeviceDiscountEndDate ? new Date(`${editDeviceDiscountEndDate}T23:59:59`).toISOString() : '');
     formData.append('deviceStocks', editDeviceStocks);
     formData.append('deviceCategory', editDeviceCategory);
     formData.append('deviceType', editDeviceType);
@@ -958,21 +959,32 @@ export default function AdminInventory() {
                       </div>
 
                       <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100 flex flex-col gap-2">
-                        <span className="text-[11px] font-extrabold text-[#5c0099] uppercase tracking-wider">Discount Duration (Optional)</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-extrabold text-[#5c0099] uppercase tracking-wider">Discount Duration (Optional)</span>
+                          {(newDeviceDiscountStartDate || newDeviceDiscountEndDate) && (
+                            <button 
+                              type="button" 
+                              onClick={() => { setNewDeviceDiscountStartDate(''); setNewDeviceDiscountEndDate(''); }}
+                              className="text-[10px] font-bold text-rose-500 hover:underline bg-transparent border-none cursor-pointer"
+                            >
+                              Clear Dates
+                            </button>
+                          )}
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">Start Date & Time</label>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">Start Date (Default: Immediate)</label>
                             <input 
-                              type="datetime-local" 
+                              type="date" 
                               value={newDeviceDiscountStartDate} 
                               onChange={e => setNewDeviceDiscountStartDate(e.target.value)} 
                               className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">End Date / Expiration</label>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">End Date (Default: No End)</label>
                             <input 
-                              type="datetime-local" 
+                              type="date" 
                               value={newDeviceDiscountEndDate} 
                               onChange={e => setNewDeviceDiscountEndDate(e.target.value)} 
                               className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
@@ -1234,21 +1246,32 @@ export default function AdminInventory() {
                       </div>
 
                       <div className="p-3 bg-purple-50/40 rounded-xl border border-purple-100 flex flex-col gap-2">
-                        <span className="text-[11px] font-extrabold text-[#5c0099] uppercase tracking-wider">Discount Duration (Optional)</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-extrabold text-[#5c0099] uppercase tracking-wider">Discount Duration (Optional)</span>
+                          {(editDeviceDiscountStartDate || editDeviceDiscountEndDate) && (
+                            <button 
+                              type="button" 
+                              onClick={() => { setEditDeviceDiscountStartDate(''); setEditDeviceDiscountEndDate(''); }}
+                              className="text-[10px] font-bold text-rose-500 hover:underline bg-transparent border-none cursor-pointer"
+                            >
+                              Clear Dates
+                            </button>
+                          )}
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">Start Date & Time</label>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">Start Date (Default: Immediate)</label>
                             <input 
-                              type="datetime-local" 
+                              type="date" 
                               value={editDeviceDiscountStartDate} 
                               onChange={e => setEditDeviceDiscountStartDate(e.target.value)} 
                               className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">End Date / Expiration</label>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">End Date (Default: No End)</label>
                             <input 
-                              type="datetime-local" 
+                              type="date" 
                               value={editDeviceDiscountEndDate} 
                               onChange={e => setEditDeviceDiscountEndDate(e.target.value)} 
                               className="w-full h-9 border border-gray-300 rounded-lg px-2 text-xs outline-none focus:border-[#5c0099] text-black bg-white" 
