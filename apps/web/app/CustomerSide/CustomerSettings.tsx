@@ -8,10 +8,10 @@ export default function CustomerSettings() {
   const navigate = router.push;
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center">
-      <div className="w-full max-w-4xl flex flex-col gap-4 sm:gap-6">
+    <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center w-full overflow-y-auto">
+      <div className="w-full max-w-7xl flex flex-col gap-6">
         
-        <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-gray-100 flex flex-col">
+        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-200/70 flex flex-col min-h-[500px]">
           
           <div className="border-b border-gray-200 pb-5 mb-8">
             <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#bd00ff] m-0 border-none">Settings</h2>
