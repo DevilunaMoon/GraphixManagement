@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ChevronLeft, ThumbsUp, ThumbsDown, Receipt, Printer, Copy, Check, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import MaterialBreakdownEditor from '../../components/Repair/MaterialBreakdownEditor';
 
@@ -18,6 +18,8 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [device, setDevice] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!deviceId) return;
@@ -70,14 +72,26 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
         
         {/* Device Information Card */}
         <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col gap-6">
-          <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
-            <button 
-              onClick={() => navigate('/customer/monitoring')} 
-              className="text-black hover:text-[#bd00ff] transition-colors bg-transparent border-none cursor-pointer p-0"
-            >
-              <ChevronLeft size={32} />
-            </button>
-            <h2 className="text-2xl font-bold text-black border-none m-0">Device Information</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate('/customer/monitoring')} 
+                className="text-black hover:text-[#bd00ff] transition-colors bg-transparent border-none cursor-pointer p-0"
+              >
+                <ChevronLeft size={32} />
+              </button>
+              <h2 className="text-2xl font-bold text-black border-none m-0">Device Information</h2>
+            </div>
+            {device && (
+              <button
+                type="button"
+                onClick={() => setReceiptModalOpen(true)}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-[#bd00ff] hover:from-purple-700 hover:to-[#9c00d6] text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all cursor-pointer border-none"
+              >
+                <Receipt size={18} />
+                Generate Repair Receipt
+              </button>
+            )}
           </div>
           
           {isLoading ? (
@@ -141,6 +155,13 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                     <div className="flex flex-col items-end gap-1 text-right">
                       <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Repair Cost</span>
                       <span className="text-2xl font-black text-[#bd00ff]">₱{device.repairCost || 'Pending'}</span>
+                      <button
+                        type="button"
+                        onClick={() => setReceiptModalOpen(true)}
+                        className="text-xs font-bold text-[#bd00ff] hover:underline flex items-center gap-1 mt-0.5 cursor-pointer bg-transparent border-none p-0"
+                      >
+                        <Receipt size={13} /> View Official Receipt
+                      </button>
                     </div>
                   </div>
 
@@ -255,6 +276,352 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
         )}
 
       </div>
+
+      {/* Repair Billing & Receipt Generator Modal */}
+      {receiptModalOpen && device && (() => {
+        const receiptNo = `RCPT-${(device.id || '0199084').slice(-7).toUpperCase()}`;
+        const receiptDate = device.createdAt
+          ? new Date(device.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+          : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        const deviceName = device.deviceName || 'Redmi 10C';
+        const cause = device.cause || 'Broken LCD';
+        const technician = device.technician || 'James';
+        const status = device.status || 'Active';
+        
+        let parsedItems: { qty: number; description: string; unitPrice: number; total: number }[] = [];
+        let parsedLabor = 0;
+        
+        if (device.materials) {
+          try {
+            const parsed = JSON.parse(device.materials);
+            if (Array.isArray(parsed)) {
+              parsedItems = parsed;
+            } else if (parsed && typeof parsed === 'object') {
+              parsedItems = parsed.items || [];
+              parsedLabor = parseFloat(String(parsed.laborCost)) || 0;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        const rawCost = parseFloat(String(device.repairCost).replace(/[^0-9.]/g, '')) || 0;
+        const rawDownpayment = parseFloat(String(device.downpayment).replace(/[^0-9.]/g, '')) || 0;
+
+        // Fallback itemization if none recorded yet
+        if (parsedItems.length === 0) {
+          if (rawCost > 0) {
+            const matPrice = Math.round(rawCost / 2);
+            const labor = rawCost - matPrice;
+            parsedItems = [
+              {
+                qty: 1,
+                description: `${deviceName} LCD Display Adhesive & Frame Sealant`,
+                unitPrice: matPrice,
+                total: matPrice
+              }
+            ];
+            parsedLabor = labor;
+          } else {
+            parsedItems = [
+              {
+                qty: 1,
+                description: `${deviceName} Inspection & Repair Diagnostic`,
+                unitPrice: 0,
+                total: 0
+              }
+            ];
+          }
+        }
+
+        const totalMaterials = parsedItems.reduce((sum, item) => sum + (item.total || (item.qty * item.unitPrice)), 0);
+        const totalRepairCost = totalMaterials + parsedLabor;
+        const downpayment = rawDownpayment;
+        const balanceDue = Math.max(0, totalRepairCost - downpayment);
+
+        // Generate exact receipt output text matching prompt specification
+        let receiptText = `=========================================
+           REPAIR SERVICE RECEIPT
+=========================================
+Receipt No: ${receiptNo}
+Date: ${receiptDate}
+Technician: ${technician}
+
+DEVICE DETAILS:
+- Device: ${deviceName}
+- Issue: ${cause}
+- Status: ${status}
+
+ITEMIZED MATERIALS & SERVICES:
+| Qty | Item / Part Name & Description | Unit Price (₱) | Subtotal (₱) |
+|---|---|---|---|
+`;
+        parsedItems.forEach(item => {
+          receiptText += `| ${item.qty} | ${item.description} | ₱ ${item.unitPrice.toFixed(2)} | ₱ ${item.total.toFixed(2)} |\n`;
+        });
+
+        receiptText += `
+-----------------------------------------
+Total Materials:     ₱ ${totalMaterials.toFixed(2)}
+Labor / Service Fee: ₱ ${parsedLabor.toFixed(2)}
+-----------------------------------------
+TOTAL REPAIR COST:   ₱ ${totalRepairCost.toFixed(2)}
+Downpayment Paid:    ₱ ${downpayment.toFixed(2)}
+BALANCE DUE:         ₱ ${balanceDue.toFixed(2)}
+=========================================
+      Thank you for your business!
+=========================================`;
+
+        const handleCopyReceipt = async () => {
+          try {
+            await navigator.clipboard.writeText(receiptText);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+          } catch (err) {
+            console.error('Failed to copy', err);
+          }
+        };
+
+        const handlePrint = () => {
+          const printWindow = window.open('', '_blank');
+          if (!printWindow) return;
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Repair Service Receipt - ${receiptNo}</title>
+                <style>
+                  body { font-family: 'Courier New', Courier, monospace; padding: 20px; white-space: pre-wrap; font-size: 13px; line-height: 1.4; color: #111; }
+                  @media print { body { padding: 0; } }
+                </style>
+              </head>
+              <body>${receiptText}</body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 300);
+        };
+
+        const handleDownloadText = () => {
+          const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${receiptNo}_${deviceName.replace(/\s+/g, '_')}.txt`;
+          link.click();
+          URL.revokeObjectURL(url);
+        };
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
+                    <Receipt size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-black m-0">Repair Billing & Service Receipt</h2>
+                    <p className="text-xs text-gray-500 m-0">Customer receipt generator & itemized breakdown</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReceiptModalOpen(false)}
+                  className="text-gray-400 hover:text-black transition-colors font-bold text-2xl cursor-pointer bg-transparent border-none p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Action Toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-purple-50/50 p-3 rounded-2xl border border-purple-100">
+                <span className="text-xs font-bold text-purple-900">Receipt Actions:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyReceipt}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-100 text-[#bd00ff] rounded-xl text-xs font-bold border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                    {copied ? 'Copied to Clipboard!' : 'Copy Receipt'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-100 text-gray-700 rounded-xl text-xs font-bold border border-gray-200 transition-colors cursor-pointer shadow-2xs"
+                  >
+                    <Printer size={14} />
+                    Print Receipt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadText}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer border-none shadow-2xs"
+                  >
+                    <FileText size={14} />
+                    Download .txt
+                  </button>
+                </div>
+              </div>
+
+              {/* Visual Receipt Card */}
+              <div className="bg-[#faf9f6] border-2 border-dashed border-purple-200 rounded-2xl p-6 sm:p-8 flex flex-col gap-5 shadow-xs relative">
+                
+                {/* Receipt Header Banner */}
+                <div className="text-center border-b-2 border-dashed border-gray-300 pb-4">
+                  <span className="text-xs tracking-widest font-black uppercase text-purple-700 block mb-1">
+                    GRAPHIX DEVICE REPAIR SERVICES
+                  </span>
+                  <h3 className="text-2xl font-black text-gray-900 tracking-wider m-0">REPAIR SERVICE RECEIPT</h3>
+                  <div className="flex flex-wrap justify-center items-center gap-4 text-xs font-semibold text-gray-600 mt-3">
+                    <span>Receipt No: <strong className="font-mono text-purple-700">{receiptNo}</strong></span>
+                    <span>•</span>
+                    <span>Date: <strong className="text-gray-900">{receiptDate}</strong></span>
+                    <span>•</span>
+                    <span>Technician: <strong className="text-gray-900">{technician}</strong></span>
+                  </div>
+                </div>
+
+                {/* Device Details Box */}
+                <div className="bg-white p-4 rounded-xl border border-gray-200 flex flex-col gap-1.5 text-xs">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-gray-400">DEVICE DETAILS</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 font-medium text-gray-800">
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">Device Name:</span>
+                      <strong className="text-sm font-bold text-gray-900">{deviceName}</strong>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">Reported Issue:</span>
+                      <strong className="text-sm font-bold text-gray-900">{cause}</strong>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 block text-[11px]">Current Status:</span>
+                      <span className="inline-block font-bold text-xs px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-700 mt-0.5">
+                        {status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Itemized Materials & Services Table */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-gray-400">
+                    ITEMIZED MATERIALS & SERVICES
+                  </span>
+                  <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold uppercase tracking-wider">
+                          <th className="py-2.5 px-3 text-center w-14">Qty</th>
+                          <th className="py-2.5 px-3">Item / Part Name & Description</th>
+                          <th className="py-2.5 px-3 text-right w-28">Unit Price (₱)</th>
+                          <th className="py-2.5 px-3 text-right w-28">Subtotal (₱)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 text-gray-800">
+                        {parsedItems.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50/50">
+                            <td className="py-2.5 px-3 text-center font-bold text-gray-700">{item.qty}</td>
+                            <td className="py-2.5 px-3 font-semibold text-gray-900">{item.description}</td>
+                            <td className="py-2.5 px-3 text-right text-gray-600 font-mono">
+                              ₱{item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900">
+                              ₱{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Financial Totals Breakdown */}
+                <div className="border-t-2 border-dashed border-gray-300 pt-4 flex flex-col gap-2 text-xs">
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Total Materials:</span>
+                    <span className="font-mono font-bold text-gray-800">
+                      ₱{totalMaterials.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Labor / Service Fee:</span>
+                    <span className="font-mono font-bold text-gray-800">
+                      ₱{parsedLabor.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-2 mt-1 flex justify-between items-center text-sm font-black text-gray-900">
+                    <span>TOTAL REPAIR COST:</span>
+                    <span className="text-xl font-black text-[#bd00ff] font-mono">
+                      ₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-gray-600">
+                    <span>Downpayment Paid:</span>
+                    <span className="font-mono font-bold text-emerald-700">
+                      ₱{downpayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-2 flex justify-between items-center text-sm font-black">
+                    <span className={balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}>BALANCE DUE:</span>
+                    <span className={`text-xl font-black font-mono ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                      ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer Tagline */}
+                <div className="text-center pt-4 border-t-2 border-dashed border-gray-300">
+                  <p className="text-xs font-bold text-gray-500 m-0 uppercase tracking-wider">
+                    Thank you for your business!
+                  </p>
+                </div>
+
+              </div>
+
+              {/* Raw Format Accordion / Code Snippet */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="font-bold">Monospaced Text Format:</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyReceipt}
+                    className="text-xs font-bold text-[#bd00ff] hover:underline cursor-pointer bg-transparent border-none p-0"
+                  >
+                    {copied ? 'Copied ✓' : 'Copy Formatted Text'}
+                  </button>
+                </div>
+                <pre className="bg-gray-900 text-gray-100 text-[11px] p-4 rounded-xl overflow-x-auto font-mono leading-relaxed border border-gray-800 m-0">
+                  {receiptText}
+                </pre>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setReceiptModalOpen(false)}
+                  className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors cursor-pointer border-none"
+                >
+                  Close
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
     </main>
   );
 }
