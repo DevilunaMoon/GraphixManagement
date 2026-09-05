@@ -589,22 +589,6 @@ BALANCE DUE:         ₱ ${balanceDue.toFixed(2)}
 
               </div>
 
-              {/* Raw Format Accordion / Code Snippet */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="font-bold">Monospaced Text Format:</span>
-                  <button
-                    type="button"
-                    onClick={handleCopyReceipt}
-                    className="text-xs font-bold text-[#bd00ff] hover:underline cursor-pointer bg-transparent border-none p-0"
-                  >
-                    {copied ? 'Copied ✓' : 'Copy Formatted Text'}
-                  </button>
-                </div>
-                <pre className="bg-gray-900 text-gray-100 text-[11px] p-4 rounded-xl overflow-x-auto font-mono leading-relaxed border border-gray-800 m-0">
-                  {receiptText}
-                </pre>
-              </div>
 
               {/* Modal Footer */}
               <div className="flex justify-end pt-2 border-t border-gray-100">
