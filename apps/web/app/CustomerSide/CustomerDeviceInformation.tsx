@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import MaterialBreakdownEditor from '../../components/Repair/MaterialBreakdownEditor';
 
 interface CustomerDeviceInformationProps {
   deviceId?: string;
@@ -173,6 +174,37 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                         <span className="text-lg font-semibold text-gray-900">{device.technician || 'Pending Assignment'}</span>
                       </div>
                     </div>
+
+                    {/* Customer Itemized Material Breakdown */}
+                    {device.materials && (() => {
+                      let items: any[] = [];
+                      let labor = '0';
+                      try {
+                        const parsed = JSON.parse(device.materials);
+                        if (Array.isArray(parsed)) {
+                          items = parsed;
+                        } else if (parsed && typeof parsed === 'object') {
+                          items = parsed.items || [];
+                          labor = String(parsed.laborCost ?? 0);
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                      if (items.length === 0 && (!labor || labor === '0')) return null;
+
+                      return (
+                        <div className="sm:col-span-2 pt-4 border-t border-gray-200">
+                          <MaterialBreakdownEditor
+                            readOnly
+                            items={items}
+                            laborCost={labor}
+                            downpayment={device.downpayment || '0'}
+                            deviceName={device.deviceName}
+                            customerName={device.ownerName || 'Customer'}
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
 
                 </div>

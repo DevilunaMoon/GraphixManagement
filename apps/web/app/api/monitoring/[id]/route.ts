@@ -38,6 +38,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const technician = formData.get('technician') as string | null;
       const repairCost = formData.get('repairCost') as string | null;
       const downpayment = formData.get('downpayment') as string | null;
+      const materials = formData.get('materials') as string | null;
+      const ownerName = formData.get('ownerName') as string | null;
       const proofImage = formData.get('proofImage') as File | null;
       const repairHistory = formData.get('repairHistory') as string | null;
 
@@ -47,6 +49,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (technician !== null) updateData.technician = technician;
       if (repairCost !== null) updateData.repairCost = repairCost;
       if (downpayment !== null) updateData.downpayment = downpayment;
+      if (materials !== null) updateData.materials = materials;
+      if (ownerName !== null) updateData.ownerName = ownerName;
       if (repairHistory !== null) updateData.repairHistory = repairHistory;
 
       if (proofImage && proofImage.name && proofImage.size > 0) {
@@ -56,7 +60,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     } else {
       const body = await req.json();
-      const { status, cause, technician, repairCost, downpayment, repairHistory } = body;
+      const { status, cause, technician, repairCost, downpayment, materials, repairHistory, ownerName } = body;
       progress = body.progress;
 
       if (status !== undefined) updateData.status = status;
@@ -65,6 +69,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (technician !== undefined) updateData.technician = technician;
       if (repairCost !== undefined) updateData.repairCost = repairCost;
       if (downpayment !== undefined) updateData.downpayment = downpayment;
+      if (materials !== undefined) updateData.materials = materials;
+      if (ownerName !== undefined) updateData.ownerName = ownerName;
       if (repairHistory !== undefined) updateData.repairHistory = repairHistory;
     }
 

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Upload } from 'lucide-react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Upload, Wrench, Receipt, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
+import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
+import { useBranch } from '../../context/BranchContext';
 
 interface DeviceProgress {
   id: string;
@@ -17,7 +19,10 @@ interface DeviceProgress {
   technician: string | null;
   repairCost: string | null;
   downpayment: string | null;
+  materials?: string | null;
+  branch?: string;
   repairHistory: string | null;
+  createdAt?: string;
 }
 
 interface UserData {
@@ -26,11 +31,10 @@ interface UserData {
   email: string;
 }
 
-
-
 export default function AdminMonitoring() {
   const router = useRouter();
   const navigate = router.push;
+  const { selectedBranch, branches, isSuperAdmin } = useBranch();
   const [searchQuery, setSearchQuery] = useState('');
   const [devices, setDevices] = useState<DeviceProgress[]>([]);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
@@ -45,7 +49,8 @@ export default function AdminMonitoring() {
   // Add Modal State
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addDeviceName, setAddDeviceName] = useState('');
-  const [addProgress, setAddProgress] = useState('');
+  const [addOwnerName, setAddOwnerName] = useState('');
+  const [addProgress, setAddProgress] = useState('Diagnostic');
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
   const [addRepairCost, setAddRepairCost] = useState('');
@@ -54,6 +59,13 @@ export default function AdminMonitoring() {
   const [addImage, setAddImage] = useState<File | null>(null);
   const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
+  const [addMaterials, setAddMaterials] = useState<MaterialItem[]>([]);
+  const [addLaborCost, setAddLaborCost] = useState<string>('0');
+  const [addBranch, setAddBranch] = useState<string>('Tagoloan');
+
+  // View Details Modal State
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [deviceToView, setDeviceToView] = useState<DeviceProgress | null>(null);
 
   // Account Linking States
   const [users, setUsers] = useState<UserData[]>([]);
@@ -64,6 +76,7 @@ export default function AdminMonitoring() {
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
+  const [editOwnerName, setEditOwnerName] = useState('');
   const [editProgress, setEditProgress] = useState('Diagnostic');
   const [initialEditProgress, setInitialEditProgress] = useState('Diagnostic');
   const [editCause, setEditCause] = useState('');
@@ -74,6 +87,8 @@ export default function AdminMonitoring() {
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editMaterials, setEditMaterials] = useState<MaterialItem[]>([]);
+  const [editLaborCost, setEditLaborCost] = useState<string>('0');
 
   const progressLevels = ['Diagnostic', 'Repairing', 'Completed'];
   const initialProgressIndex = progressLevels.indexOf(initialEditProgress);
@@ -85,11 +100,12 @@ export default function AdminMonitoring() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, selectedBranch]);
 
   const fetchMonitoring = () => {
     setIsLoading(true);
-    fetch(`/api/monitoring?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(searchQuery)}`)
+    const branchQuery = (isSuperAdmin && selectedBranch) ? `&branch=${encodeURIComponent(selectedBranch)}` : '';
+    fetch(`/api/monitoring?page=${currentPage}&limit=${ITEMS_PER_PAGE}&search=${encodeURIComponent(searchQuery)}${branchQuery}`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.requests)) {
@@ -107,7 +123,7 @@ export default function AdminMonitoring() {
       fetchMonitoring();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, selectedBranch]);
 
   useEffect(() => {
     fetch('/api/admin/accounts')
@@ -126,6 +142,9 @@ export default function AdminMonitoring() {
     const matchedUser = users.find(u => u.email.toLowerCase() === addCustomerEmail.toLowerCase());
     if (matchedUser) {
       setAddUserId(matchedUser.id);
+      if (!addOwnerName && matchedUser.name) {
+        setAddOwnerName(matchedUser.name);
+      }
     } else {
       setAddUserId(null);
     }
@@ -200,6 +219,7 @@ export default function AdminMonitoring() {
 
   const openEditModal = (device: DeviceProgress) => {
     setDeviceToEdit(device);
+    setEditOwnerName(device.ownerName || '');
     setEditProgress(device.progress || 'Diagnostic');
     setInitialEditProgress(device.progress || 'Diagnostic');
     setEditCause(device.cause || '');
@@ -209,6 +229,24 @@ export default function AdminMonitoring() {
     setEditRepairHistory(device.repairHistory || '');
     setEditImage(null);
     setEditImagePreview(device.proofImage || null);
+
+    let items: MaterialItem[] = [];
+    let labor = '0';
+    if (device.materials) {
+      try {
+        const parsed = JSON.parse(device.materials);
+        if (Array.isArray(parsed)) {
+          items = parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          items = parsed.items || [];
+          labor = String(parsed.laborCost ?? 0);
+        }
+      } catch (e) {
+        console.error("Failed to parse materials:", e);
+      }
+    }
+    setEditMaterials(items);
+    setEditLaborCost(labor);
     setEditModalOpen(true);
   };
 
@@ -241,6 +279,7 @@ export default function AdminMonitoring() {
     setIsSubmittingAdd(true);
     const formData = new FormData();
     formData.append('deviceName', addDeviceName);
+    if (addOwnerName) formData.append('ownerName', addOwnerName);
     formData.append('progress', addProgress);
     if (addCause) formData.append('cause', addCause);
     if (addTechnician) formData.append('technician', addTechnician);
@@ -249,6 +288,12 @@ export default function AdminMonitoring() {
     if (addRepairHistory) formData.append('repairHistory', addRepairHistory);
     if (addImage) formData.append('image', addImage);
     if (addUserId) formData.append('userId', addUserId);
+    if (isSuperAdmin && addBranch) formData.append('branch', addBranch);
+
+    formData.append('materials', JSON.stringify({
+      items: addMaterials,
+      laborCost: parseFloat(addLaborCost) || 0
+    }));
 
     try {
       const res = await fetch('/api/monitoring', {
@@ -258,16 +303,17 @@ export default function AdminMonitoring() {
 
       if (res.ok) {
         setAddModalOpen(false);
-        fetch(`/api/monitoring?t=${Date.now()}`)
-          .then(r => r.json())
-          .then(data => setDevices(Array.isArray(data) ? data : []));
+        fetchMonitoring();
         setAddDeviceName('');
+        setAddOwnerName('');
         setAddProgress('');
         setAddCause('');
         setAddTechnician('');
         setAddRepairCost('');
         setAddRepairHistory('');
         setAddDownpayment('');
+        setAddMaterials([]);
+        setAddLaborCost('0');
         setAddImage(null);
         setAddImagePreview(null);
         setAddCustomerEmail('');
@@ -310,12 +356,18 @@ export default function AdminMonitoring() {
 
     const formData = new FormData();
     formData.append('progress', editProgress);
+    if (editOwnerName !== null) formData.append('ownerName', editOwnerName);
     if (editCause !== null) formData.append('cause', editCause);
     if (editTechnician !== null) formData.append('technician', editTechnician);
     if (editRepairCost !== null) formData.append('repairCost', editRepairCost);
     if (editDownpayment !== null) formData.append('downpayment', editDownpayment);
     formData.append('repairHistory', editRepairHistory);
     if (editImage) formData.append('proofImage', editImage);
+
+    formData.append('materials', JSON.stringify({
+      items: editMaterials,
+      laborCost: parseFloat(editLaborCost) || 0
+    }));
 
     try {
       const res = await fetch(`/api/monitoring/${deviceToEdit.id}`, {
@@ -328,10 +380,12 @@ export default function AdminMonitoring() {
         setDevices(prev => prev.map(d => d.id === deviceToEdit.id ? { 
           ...d, 
           progress: updatedDevice.progress,
+          ownerName: updatedDevice.ownerName,
           cause: updatedDevice.cause,
           technician: updatedDevice.technician,
           repairCost: updatedDevice.repairCost,
           downpayment: updatedDevice.downpayment,
+          materials: updatedDevice.materials,
           proofImage: updatedDevice.proofImage,
           repairHistory: updatedDevice.repairHistory
         } : d));
@@ -477,7 +531,8 @@ export default function AdminMonitoring() {
                 <thead>
                   <tr className="bg-gray-50 border-b border-[#bd00ff]/20 text-gray-700">
                     <th className="p-4 font-bold text-center w-28 text-[1.05rem]">Device</th>
-                    <th className="p-4 font-bold text-[1.05rem]">Device Name</th>
+                    <th className="p-4 font-bold text-[1.05rem]">Device & Customer</th>
+                    {isSuperAdmin && <th className="p-4 font-bold text-center text-[1.05rem]">Branch</th>}
                     <th className="p-4 font-bold text-center text-[1.05rem]">Progress</th>
                     <th className="p-4 font-bold text-center text-[1.05rem]">Actions</th>
                   </tr>
@@ -494,15 +549,42 @@ export default function AdminMonitoring() {
                           )}
                         </div>
                       </td>
-                      <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.deviceName}</td>
+                      <td className="p-4 font-bold text-[1.1rem] text-black align-middle">
+                        <div>{device.deviceName}</div>
+                        {device.ownerName ? (
+                          <div className="text-xs text-purple-700 font-medium mt-0.5 flex items-center gap-1">
+                            <span>👤</span> {device.ownerName}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-400 font-normal mt-0.5">Walk-in Customer</div>
+                        )}
+                      </td>
+                      {isSuperAdmin && (
+                        <td className="p-4 align-middle text-center">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-[#bd00ff] border border-purple-200">
+                            <Building2 size={12} />
+                            {device.branch || 'Tagoloan'}
+                          </span>
+                        </td>
+                      )}
                       <td className="p-4 align-middle text-center">
                         <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{formatProgress(device.progress)}</span>
                       </td>
                       <td className="p-4 align-middle">
-                        <div className="flex gap-4 justify-center items-center">
+                        <div className="flex gap-3 justify-center items-center">
+                          <button 
+                            onClick={() => {
+                              setDeviceToView(device);
+                              setViewDetailsOpen(true);
+                            }}
+                            className="w-10 h-10 rounded-full flex justify-center items-center bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white transition-all shadow-sm border border-[#bd00ff]/30 cursor-pointer"
+                            title="View Intake & Material Breakdown"
+                          >
+                            <Receipt size={18} />
+                          </button>
                           <button 
                             onClick={() => openEditModal(device)}
-                            className="w-11 h-11 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md"
+                            className="w-10 h-10 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md cursor-pointer border-none"
                             title="Edit Progress"
                           >
                             <Pencil size={18} />
@@ -658,6 +740,17 @@ export default function AdminMonitoring() {
                 </div>
 
                 <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Customer Name</label>
+                  <input 
+                    type="text" 
+                    value={editOwnerName} 
+                    onChange={(e) => setEditOwnerName(e.target.value)} 
+                    placeholder="e.g. Marga Picardal" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
                   <label className="font-semibold text-base text-black">Progress</label>
                   <div className="relative">
                     <select 
@@ -705,45 +798,30 @@ export default function AdminMonitoring() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Technician</label>
-                    <input 
-                      type="text" 
-                      value={editTechnician}
-                      onChange={(e) => setEditTechnician(e.target.value)}
-                      placeholder="Technician Name" 
-                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Repair Cost</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                      <input 
-                        type="text" 
-                        value={editRepairCost}
-                        onChange={(e) => setEditRepairCost(e.target.value)}
-                        placeholder="2,000" 
-                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                      />
-                    </div>
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Technician</label>
+                  <input 
+                    type="text" 
+                    value={editTechnician}
+                    onChange={(e) => setEditTechnician(e.target.value)}
+                    placeholder="Technician Name" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Downpayment</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                    <input 
-                      type="text" 
-                      value={editDownpayment}
-                      onChange={(e) => setEditDownpayment(e.target.value)}
-                      placeholder="e.g. 500" 
-                      className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
+                {/* Itemized Materials Breakdown */}
+                <div className="pt-2 border-t border-gray-200">
+                  <MaterialBreakdownEditor
+                    items={editMaterials}
+                    onItemsChange={setEditMaterials}
+                    laborCost={editLaborCost}
+                    onLaborCostChange={setEditLaborCost}
+                    downpayment={editDownpayment}
+                    onDownpaymentChange={setEditDownpayment}
+                    onTotalCostCalculated={(total) => setEditRepairCost(total.toString())}
+                    deviceName={deviceToEdit.deviceName}
+                    customerName={editOwnerName || deviceToEdit.ownerName || 'Customer'}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2 mt-2">
@@ -864,9 +942,38 @@ export default function AdminMonitoring() {
                   )}
                 </div>
 
+                {isSuperAdmin && (
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-base text-black flex items-center gap-1.5">
+                      <Building2 size={16} className="text-[#bd00ff]" />
+                      Branch Assignment
+                    </label>
+                    <select
+                      value={addBranch}
+                      onChange={(e) => setAddBranch(e.target.value)}
+                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors font-medium bg-white"
+                    >
+                      {branches.map(b => (
+                        <option key={b.name} value={b.name}>{b.name} Branch</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Customer Name</label>
+                  <input 
+                    type="text" 
+                    value={addOwnerName} 
+                    onChange={(e) => setAddOwnerName(e.target.value)} 
+                    placeholder="e.g. Marga Picardal" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" 
+                  />
+                </div>
+
                 <div className="flex flex-col gap-2">
                   <label className="font-semibold text-base text-black">Device Name</label>
-                  <input type="text" value={addDeviceName} onChange={(e) => setAddDeviceName(e.target.value)} className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
+                  <input type="text" value={addDeviceName} onChange={(e) => setAddDeviceName(e.target.value)} placeholder="e.g. iPhone 11" className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -892,9 +999,9 @@ export default function AdminMonitoring() {
                   <label className="font-semibold text-base text-black">Cause of the problem</label>
                   <input 
                     type="text" 
-                    value={addCause}
-                    onChange={(e) => setAddCause(e.target.value)}
-                    placeholder="e.g. Broken LCD" 
+                    value={addCause} 
+                    onChange={(e) => setAddCause(e.target.value)} 
+                    placeholder="e.g. Broken LCD / Motherboard Issue" 
                     className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
                   />
                 </div>
@@ -903,52 +1010,37 @@ export default function AdminMonitoring() {
                   <label className="font-semibold text-base text-black">Repair History</label>
                   <input 
                     type="text" 
-                    value={addRepairHistory}
-                    onChange={(e) => setAddRepairHistory(e.target.value)}
+                    value={addRepairHistory} 
+                    onChange={(e) => setAddRepairHistory(e.target.value)} 
                     placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
                     className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Technician</label>
-                    <input 
-                      type="text" 
-                      value={addTechnician}
-                      onChange={(e) => setAddTechnician(e.target.value)}
-                      placeholder="Technician Name" 
-                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Repair Cost</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                      <input 
-                        type="text" 
-                        value={addRepairCost}
-                        onChange={(e) => setAddRepairCost(e.target.value)}
-                        placeholder="2,000" 
-                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                      />
-                    </div>
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Technician</label>
+                  <input 
+                    type="text" 
+                    value={addTechnician} 
+                    onChange={(e) => setAddTechnician(e.target.value)} 
+                    placeholder="Technician Name" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Downpayment</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                    <input 
-                      type="text" 
-                      value={addDownpayment}
-                      onChange={(e) => setAddDownpayment(e.target.value)}
-                      placeholder="e.g. 500" 
-                      className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
+                {/* Itemized Materials Breakdown */}
+                <div className="pt-2 border-t border-gray-200">
+                  <MaterialBreakdownEditor
+                    items={addMaterials}
+                    onItemsChange={setAddMaterials}
+                    laborCost={addLaborCost}
+                    onLaborCostChange={setAddLaborCost}
+                    downpayment={addDownpayment}
+                    onDownpaymentChange={setAddDownpayment}
+                    onTotalCostCalculated={(total) => setAddRepairCost(total.toString())}
+                    deviceName={addDeviceName || 'Device'}
+                    customerName={addOwnerName || addCustomerEmail || 'Customer'}
+                  />
                 </div>
 
               </div>
@@ -974,7 +1066,103 @@ export default function AdminMonitoring() {
         </div>
       )}
 
+      {/* View Intake & Material Breakdown Modal */}
+      {viewDetailsOpen && deviceToView && (() => {
+        let items: MaterialItem[] = [];
+        let labor = '0';
+        if (deviceToView.materials) {
+          try {
+            const parsed = JSON.parse(deviceToView.materials);
+            if (Array.isArray(parsed)) {
+              items = parsed;
+            } else if (parsed && typeof parsed === 'object') {
+              items = parsed.items || [];
+              labor = String(parsed.laborCost ?? 0);
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-5 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
+                    <Receipt size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-black m-0">Device Repair Intake Sheet</h2>
+                    <p className="text-xs text-gray-500 m-0">Line-item replacement parts breakdown & payment details</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setViewDetailsOpen(false)} 
+                  className="text-gray-400 hover:text-black transition-colors font-bold text-2xl cursor-pointer bg-transparent border-none p-1"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Summary Card */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Device</span>
+                  <span className="text-sm font-bold text-black block truncate">{deviceToView.deviceName}</span>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Customer</span>
+                  <span className="text-sm font-bold text-purple-700 block truncate">{deviceToView.ownerName || 'Walk-in'}</span>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Branch</span>
+                  <span className="text-sm font-bold text-black block">{deviceToView.branch || 'Tagoloan'}</span>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Status</span>
+                  <span className={`text-sm font-bold block ${getProgressColor(deviceToView.progress)}`}>
+                    {formatProgress(deviceToView.progress)}
+                  </span>
+                </div>
+              </div>
+
+              {(deviceToView.cause || deviceToView.technician || deviceToView.repairHistory) && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl">
+                  {deviceToView.cause && (
+                    <div><strong className="text-black">Reported Issue:</strong> {deviceToView.cause}</div>
+                  )}
+                  {deviceToView.technician && (
+                    <div><strong className="text-black">Assigned Tech:</strong> {deviceToView.technician}</div>
+                  )}
+                  {deviceToView.repairHistory && (
+                    <div><strong className="text-black">Repair History:</strong> {deviceToView.repairHistory}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Render Read-Only Material Breakdown */}
+              <MaterialBreakdownEditor
+                readOnly
+                items={items}
+                laborCost={labor}
+                downpayment={deviceToView.downpayment || '0'}
+                deviceName={deviceToView.deviceName}
+                customerName={deviceToView.ownerName || 'Walk-in Customer'}
+              />
+
+              <div className="flex justify-end pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => setViewDetailsOpen(false)}
+                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors cursor-pointer border-none"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </main>
   );
 }
-

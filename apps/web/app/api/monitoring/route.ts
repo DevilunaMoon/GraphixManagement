@@ -12,15 +12,27 @@ export async function GET(req: Request) {
     }
     const isCustomer = session.role === 'CUSTOMER';
     
+    const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const { searchParams } = new URL(req.url);
     const pageParam = searchParams.get('page');
     const limitParam = searchParams.get('limit');
     const search = searchParams.get('search') || '';
     const sort = searchParams.get('sort') || 'Newest';
+    const branchParam = searchParams.get('branch');
 
     const whereClause: any = isCustomer && session?.userId
       ? { userId: session.userId }
-      : { branch: session.branch || 'Tagoloan' };
+      : {};
+
+    if (!isCustomer) {
+      if (isSuperAdmin) {
+        if (branchParam && branchParam !== 'all') {
+          whereClause.branch = branchParam;
+        }
+      } else {
+        whereClause.branch = session.branch || 'Tagoloan';
+      }
+    }
 
     if (search.trim()) {
       whereClause.deviceName = {
@@ -74,7 +86,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'CASHIER')) {
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN' && session.role !== 'CASHIER')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -87,13 +99,19 @@ export async function POST(req: Request) {
     const technician = formData.get('technician') as string;
     const repairCost = formData.get('repairCost') as string;
     const downpayment = formData.get('downpayment') as string;
+    const materials = formData.get('materials') as string | null;
     const image = formData.get('image') as File | null;
     const userId = formData.get('userId') as string | null;
     const repairHistory = formData.get('repairHistory') as string | null;
+    const branchParam = formData.get('branch') as string | null;
 
     if (!deviceName || !progress) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const operatingBranch = (session.role === 'SUPER_ADMIN' && branchParam)
+      ? branchParam
+      : (session.branch || 'Tagoloan');
 
     let imageUrl = null;
     if (image && image.name && image.size > 0) {
@@ -110,7 +128,8 @@ export async function POST(req: Request) {
         technician: technician || null,
         repairCost: repairCost || null,
         downpayment: downpayment || null,
-        branch: session.branch || 'Tagoloan',
+        materials: materials || null,
+        branch: operatingBranch,
         image: imageUrl,
         userId: userId || null,
         repairHistory: repairHistory || null,

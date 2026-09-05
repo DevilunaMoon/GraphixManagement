@@ -114,6 +114,7 @@ model RepairRequest {
   technician    String?
   repairCost    String?
   downpayment   String?
+  materials     String?
   branch        String           @default("Tagoloan")
   image         String?
   proofImage    String?
