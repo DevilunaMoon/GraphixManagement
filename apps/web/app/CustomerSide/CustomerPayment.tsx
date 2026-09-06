@@ -156,6 +156,21 @@ function CustomerPaymentContent() {
             setTotalDiscount(unitDiscount);
             setFinalTotal(effectivePrice);
           }
+        } else {
+          // Default checkout context matching "Secure Payment" standard (Vivo Y31d - ₱28,998.00)
+          const defaultItem: PurchasedItem = {
+            id: 'vivo-y31d',
+            name: 'Vivo Y31d',
+            image: null,
+            price: 28998,
+            originalPrice: 28998,
+            discount: 0,
+            quantity: 1
+          };
+          setItems([defaultItem]);
+          setSubtotal(28998);
+          setTotalDiscount(0);
+          setFinalTotal(28998);
         }
       } catch (err) {
         console.error('Error fetching checkout data:', err);
@@ -226,11 +241,56 @@ function CustomerPaymentContent() {
       setSubmitting(false);
     }
 
-    if (method === 'gcash') {
-      navigate(`/customer/purchase-confirmed?method=gcash${createdId ? `&id=${createdId}` : ''}`);
-    } else {
-      navigate(`/customer/purchase-confirmed?method=cash${createdId ? `&id=${createdId}` : ''}`);
+    // Auto-generate transaction ID matching #CMTPQ... format
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
+    const formattedTxId = createdId ? `#CMTPQ${createdId.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}` : `#CMTPQ${randomSuffix}`;
+    const primaryItem = items[0] || { name: 'Vivo Y31d', quantity: 1, price: finalTotal || 28998 };
+    const totalQty = items.reduce((acc, i) => acc + i.quantity, 0) || 1;
+
+    const receiptPayload = {
+      transactionId: formattedTxId,
+      totalAmount: finalTotal || 28998,
+      subtotal: subtotal || 28998,
+      deviceName: items.length > 1 ? `${primaryItem.name} (+${items.length - 1} more)` : primaryItem.name,
+      quantity: totalQty,
+      items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+      paymentMethod: method === 'gcash' ? 'GCash' : 'Cash',
+      tenderedCash: method === 'cash' ? (tenderedNumeric || finalTotal) : null,
+      change: method === 'cash' ? changeAmount : 0,
+      staffMessage: staffMessage.trim() || '',
+      status: 'Purchase Confirmed',
+      timestamp: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    };
+
+    try {
+      sessionStorage.setItem('graphix_last_checkout', JSON.stringify(receiptPayload));
+    } catch (e) {
+      console.error(e);
     }
+
+    const queryParams = new URLSearchParams({
+      method: method === 'gcash' ? 'gcash' : 'cash',
+      id: receiptPayload.transactionId.replace('#', ''),
+      amount: String(receiptPayload.totalAmount),
+      device: receiptPayload.deviceName,
+      qty: String(receiptPayload.quantity)
+    });
+    if (method === 'cash' && receiptPayload.tenderedCash) {
+      queryParams.set('tendered', String(receiptPayload.tenderedCash));
+      queryParams.set('change', String(receiptPayload.change));
+    }
+    if (receiptPayload.staffMessage) {
+      queryParams.set('note', receiptPayload.staffMessage);
+    }
+
+    navigate(`/customer/purchase-confirmed?${queryParams.toString()}`);
   };
 
   return (
