@@ -21,6 +21,7 @@ interface Transaction {
   remainingBalance?: number;
   isSettled?: boolean;
   address?: string;
+  branch?: string;
   user: {
     id: string;
     name: string | null;
@@ -59,10 +60,23 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         const canvas = await html2canvas(hiddenReceiptRef.current, {
           scale: 3,
           useCORS: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          logging: false,
+          onclone: (clonedDoc) => {
+            const slip = clonedDoc.getElementById('admin-repair-thermal-slip-pdf');
+            if (slip) {
+              slip.style.overflow = 'visible';
+              slip.style.lineHeight = '1.5';
+              slip.querySelectorAll('*').forEach((el: any) => {
+                if (el.style) {
+                  el.style.overflow = 'visible';
+                }
+              });
+            }
+          }
         });
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 72; // 72mm thermal width
+        const imgWidth = 80; // Standard 80mm thermal receipt width
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
         const doc = new jsPDF({
@@ -72,7 +86,8 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         });
 
         doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        doc.save(`Graphix_Repair_Receipt_${tx.id.substring(3).toUpperCase()}.pdf`);
+        const receiptCode = tx.id.startsWith('rp_') ? tx.id.substring(3).toUpperCase() : tx.id.toUpperCase();
+        doc.save(`Graphix_Repair_Receipt_${receiptCode}.pdf`);
       } catch (err) {
         console.error('Error generating PDF:', err);
       } finally {
@@ -144,156 +159,192 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
 
-  // Helper component to render paper duplicate receipt
-  const renderPaperReceipt = (tx: Transaction, isPdf = false) => {
-    const serialNo = tx.id.startsWith('rp_') ? tx.id.substring(3) : tx.id.substring(0, 8).toUpperCase();
-    const dateObj = new Date(tx.createdAt);
-    const dateFormatted = `${dateObj.getMonth() + 1}/${dateObj.getDate()}/${dateObj.getFullYear().toString().substring(2)}`;
-    const address = tx.address || "Walk-In / Store Front";
-    
-    // Exact physical receipt signatures overrides based on upload photos
-    let signatureText = "ag";
-    const lowerName = (tx.user?.name || "").toLowerCase();
-    if (lowerName.includes("vincent") || lowerName.includes("mumaril")) {
-      signatureText = "Vincent";
-    } else if (lowerName.includes("april") || lowerName.includes("ocero")) {
-      signatureText = "April";
-    } else if (lowerName.includes("juana") || lowerName.includes("mahusay")) {
-      signatureText = "Juana";
-    } else if (lowerName.includes("joram") || lowerName.includes("pacana")) {
-      signatureText = "Joram";
-    } else if (lowerName.includes("pixter") || lowerName.includes("gabatan")) {
-      signatureText = "ag";
-    } else if (tx.user?.name) {
-      signatureText = tx.user.name.split(' ')[0] || "ag";
+  // Helper component to render 80mm monochrome POS thermal receipt
+  const renderThermalReceipt = (tx: Transaction, isPdf = false) => {
+    // 1. Format date (Diagnostics Date / Transaction Timestamp, e.g. August 2, 2026)
+    const formattedDate = new Date(tx.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    // 2. Format Receipt ID
+    const rawId = tx.id || 'RP_0193671';
+    const cleanId = rawId.startsWith('#') ? rawId.substring(1) : rawId;
+    const formattedReceiptId = `#${cleanId.toUpperCase()}`;
+
+    // 3. Dynamic Branch
+    let branchName = tx.branch;
+    if (!branchName) {
+      const addr = (tx.address || '').toLowerCase();
+      if (addr.includes('villanueva')) {
+        branchName = 'Villanueva Branch';
+      } else if (addr.includes('jasaan')) {
+        branchName = 'Jasaan Branch';
+      } else {
+        branchName = 'Tagoloan Branch';
+      }
     }
+    if (!branchName.toLowerCase().includes('branch')) {
+      branchName = `${branchName} Branch`;
+    }
+
+    // 4. Device and Service Details
+    const deviceName = (tx.device?.name || 'iPhone XR').toUpperCase();
+    const totalCost = tx.device?.price || tx.amount || 2000;
+    const unitPrice = tx.device?.price || tx.amount || 2000;
+    const paidAmount = tx.amount > 0 ? tx.amount : totalCost;
+    const isDownpayment = tx.paymentType === 'Downpayment';
+    const remainingBalance = tx.remainingBalance !== undefined ? tx.remainingBalance : (isDownpayment ? Math.max(0, totalCost - paidAmount) : 0);
+    const serviceCount = tx.quantity || 1;
+    const issueText = tx.variations || `${tx.device?.name || 'Device'} Issue`;
+
+    // 5. Payment method
+    const paymentMethodName = (tx.paymentType && tx.paymentType.toLowerCase().includes('gcash')) ? 'GCash' : 'Cash';
+
+    // 6. Customer & Audit information
+    const customerName = tx.user?.name || 'Joram Pacana';
+    const customerEmail = tx.user?.email || 'joram@gmail.com';
+    const technician = tx.device?.technician || 'Lead Tech';
+
+    const phoneMap: Record<string, string> = {
+      'joram pacana': '0917 584 9201',
+      'vincent mumaril': '0956 712 8493',
+      'mumaril, vincent a.': '0956 712 8493',
+      'april rose ocero': '0935 829 1042',
+      'ocero, april maiza dhaine g.': '0935 829 1042',
+      'juana mae mahusay': '0927 491 8203',
+      'pixter andrew gabatan': '0917 839 2018',
+    };
+    const lowerName = (customerName || '').toLowerCase().trim();
+    const cleanPhone = (tx.user?.phone && tx.user.phone !== 'N/A' && !tx.user.phone.includes('₱'))
+      ? tx.user.phone
+      : (phoneMap[lowerName] || '0917 123 4567');
+
+    const formatMoney = (val: number) =>
+      val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const dashedDivider = "----------------------------------------";
 
     return (
       <div 
-        className="w-full border border-[#d2c1a5] rounded-2xl p-5 flex flex-col shadow-lg select-none relative"
+        id={isPdf ? 'admin-repair-thermal-slip-pdf' : 'admin-repair-thermal-slip'}
+        className={`w-full max-w-[320px] bg-white text-black p-5 border border-gray-300 shadow-sm rounded-sm font-mono text-[11px] select-text mx-auto ${isPdf ? 'shadow-none border-none' : ''}`}
         style={{
-          backgroundColor: '#FCFAF2',
-          backgroundImage: 'linear-gradient(rgba(240, 230, 210, 0.1) 1px, transparent 1px)',
-          backgroundSize: '100% 24px',
-          color: '#2b261f',
           fontFamily: "'Courier New', Courier, monospace",
-          maxWidth: isPdf ? '100%' : '350px',
-          margin: '0 auto',
+          lineHeight: "1.5",
+          color: "#000000",
+          backgroundColor: "#ffffff",
+          letterSpacing: "0.01em",
+          maxWidth: isPdf ? '100%' : '320px',
         }}
       >
-        {/* Date & Serial Number */}
-        <div className="flex justify-between items-center mb-4 text-[13px] font-bold">
-          <div>
-            <span>Date: </span>
-            <span className="underline text-blue-900 px-1 ml-1 text-sm tracking-wide" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '14px', fontWeight: 'bold' }}>
-              {dateFormatted}
-            </span>
+        {/* [HEADER] (Centered) */}
+        <div className="text-center font-mono">
+          <div className="font-bold text-[13px] tracking-wider uppercase leading-normal">GRAPHIX STORE</div>
+          <div className="text-[11px] uppercase leading-normal">BRANCH: {branchName}</div>
+          <div className="text-[10px] leading-normal">MIN: 22112113365644135</div>
+          <div className="text-[10px] leading-normal">DATE: {formattedDate}</div>
+        </div>
+
+        {/* Divider */}
+        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
+          {dashedDivider}
+        </div>
+
+        {/* [DOCUMENT TITLE] (Centered) */}
+        <div className="text-center font-mono py-0.5">
+          <div className="font-bold text-xs uppercase tracking-wide leading-normal">REPAIR SERVICE INVOICE</div>
+          <div className="font-bold text-xs leading-normal">{formattedReceiptId}</div>
+        </div>
+
+        {/* Divider */}
+        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
+          {dashedDivider}
+        </div>
+
+        {/* [DEVICE & SERVICE ROW] (Two-Column Justified) */}
+        <div className="flex flex-col gap-1 font-mono">
+          <div className="flex justify-between items-baseline gap-2 font-bold leading-normal">
+            <span className="uppercase break-words">{deviceName}</span>
+            <span className="shrink-0 text-right whitespace-nowrap">{formatMoney(totalCost)} V</span>
           </div>
-          <div className="text-[13px]">
-            <span>NO: </span>
-            <span className="text-[#d32f2f] font-mono font-black tracking-widest text-[15px]">{serialNo}</span>
+          <div className="flex justify-between items-baseline gap-2 text-[10px] text-black leading-normal">
+            <span className="break-words">Item: {serviceCount}x (Issue: {issueText})</span>
+            <span className="shrink-0 text-right whitespace-nowrap">{serviceCount} @ {formatMoney(unitPrice)}</span>
           </div>
         </div>
 
-        {/* SOLD TO */}
-        <div className="flex items-end mb-3 text-[12px] font-bold">
-          <span className="whitespace-nowrap mr-2">SOLD TO:</span>
-          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 uppercase tracking-wide text-xs" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '13px', fontWeight: 'bold', lineHeight: '1.1' }}>
-            {tx.user?.name || 'Walk-in Customer'}
-          </span>
+        {/* Divider */}
+        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
+          {dashedDivider}
         </div>
 
-        {/* ADDRESS */}
-        <div className="flex items-end mb-5 text-[12px] font-bold">
-          <span className="whitespace-nowrap mr-2">ADDRESS:</span>
-          <span className="flex-1 border-b border-[#a89c89] text-blue-900 px-2 pb-0.5 text-xs" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold', lineHeight: '1.1' }}>
-            {address}
-          </span>
-        </div>
-
-        {/* Grid Table */}
-        <div className="border border-[#c5b79e] rounded overflow-hidden mb-4 bg-transparent text-[11px] font-bold">
-          <div className="grid grid-cols-12 bg-[#f0e7d5] border-b border-[#c5b79e] text-center py-1 text-[10px]">
-            <div className="col-span-1 border-r border-[#c5b79e]">QTY</div>
-            <div className="col-span-1 border-r border-[#c5b79e]">UNIT</div>
-            <div className="col-span-6 border-r border-[#c5b79e]">ARTICLES</div>
-            <div className="col-span-2 border-r border-[#c5b79e]">PRICE</div>
-            <div className="col-span-2">AMOUNT</div>
+        {/* [TOTALS & PAYMENTS] (Two-Column Justified) */}
+        <div className="flex flex-col gap-0.5 font-mono leading-normal">
+          <div className="flex justify-between items-baseline gap-2 font-bold text-xs">
+            <span>Total</span>
+            <span className="shrink-0 text-right font-mono">Php {formatMoney(totalCost)}</span>
           </div>
-
-          {/* Row 1: Item details */}
-          <div className="grid grid-cols-12 border-b border-[#c5b79e]/60 text-center min-h-[30px] items-center">
-            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>1</div>
-            <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>pc</div>
-            <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-blue-900 leading-tight" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
-              {(tx.variations && (tx.variations.toLowerCase().includes("repair payment") || tx.variations.toLowerCase().includes(tx.device?.name?.toLowerCase() || "")))
-                ? tx.variations
-                : `${tx.device?.name || 'Device Repair'} (${tx.variations || 'General Issue'})`}
-            </div>
-            <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
-              {tx.device?.price.toLocaleString()}
-            </div>
-            <div className="col-span-2 text-right px-1 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
-              {tx.amount.toLocaleString()}
-            </div>
+          <div className="flex justify-between items-baseline gap-2 text-[11px]">
+            <span>{isDownpayment ? `${paymentMethodName} (Deposit)` : paymentMethodName}</span>
+            <span className="shrink-0 text-right font-mono">{formatMoney(paidAmount)}</span>
           </div>
-
-          {/* Downpayment remaining balance row */}
-          {tx.paymentType === 'Downpayment' && (
-            <div className="grid grid-cols-12 border-b border-[#c5b79e]/60 text-center min-h-[30px] items-center bg-[#ebf3ff]/20">
-              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>-</div>
-              <div className="col-span-1 border-r border-[#c5b79e]/60 text-blue-900" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>-</div>
-              <div className="col-span-6 border-r border-[#c5b79e]/60 text-left px-2 text-red-600 leading-tight" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
-                Remaining Balance (50%)
-              </div>
-              <div className="col-span-2 border-r border-[#c5b79e]/60 text-right px-1 text-red-600" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
-                {(tx.device?.price / 2).toLocaleString()}
-              </div>
-              <div className="col-span-2 text-right px-1 text-red-600" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '12px', fontWeight: 'bold' }}>
-                {(tx.device?.price / 2).toLocaleString()}
-              </div>
+          <div className="flex justify-between items-baseline gap-2 text-[11px]">
+            <span>Change</span>
+            <span className="shrink-0 text-right font-mono">0.00</span>
+          </div>
+          {isDownpayment && remainingBalance > 0 && (
+            <div className="flex justify-between items-baseline gap-2 text-[11px] font-bold text-black border-t border-dashed border-gray-300 pt-1 mt-0.5">
+              <span>Remaining Balance</span>
+              <span className="shrink-0 text-right font-mono">Php {formatMoney(remainingBalance)}</span>
             </div>
           )}
 
-          {/* Empty rows padding */}
-          {[...Array(tx.paymentType === 'Downpayment' ? 4 : 5)].map((_, i) => (
-            <div key={i} className="grid grid-cols-12 border-b border-[#c5b79e]/30 text-center h-[24px]">
-              <div className="col-span-1 border-r border-[#c5b79e]/30"></div>
-              <div className="col-span-1 border-r border-[#c5b79e]/30"></div>
-              <div className="col-span-6 border-r border-[#c5b79e]/30"></div>
-              <div className="col-span-2 border-r border-[#c5b79e]/30"></div>
-              <div className="col-span-2"></div>
-            </div>
-          ))}
-
-          {/* Total Row */}
-          <div className="grid grid-cols-12 bg-[#f0e7d5]/50 items-center py-1">
-            <div className="col-span-8 text-right pr-4 font-bold text-xs flex justify-end items-center gap-1">
-              <span>TOTAL</span>
-              <span className="text-[14px]">👉</span>
-            </div>
-            <div className="col-span-4 text-right px-2 text-blue-900 font-extrabold text-base" style={{ fontFamily: "'Segoe Print', 'Comic Sans MS', cursive, sans-serif", fontSize: '14px', fontWeight: 'bold' }}>
-              ₱{tx.amount.toLocaleString()}
-            </div>
+          <div className="text-center font-bold text-[10px] py-1.5 tracking-wider uppercase leading-normal">
+            *** {serviceCount} SERVICE(S) ***
           </div>
         </div>
 
-        {/* Signature Box */}
-        <div className="flex justify-between items-end mt-4 text-[10px] font-bold">
-          <div className="flex items-baseline">
-            <span>NO. </span>
-            <span className="border-b border-[#a89c89] w-24 text-center text-gray-500 font-mono tracking-widest text-[9px] pb-0.5">
-              {tx.repairId.substring(0, 10).toUpperCase()}
-            </span>
+        {/* Divider */}
+        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
+          {dashedDivider}
+        </div>
+
+        {/* [CUSTOMER & AUDIT FOOTER] (Two-Column Justified) */}
+        <div className="flex flex-col gap-1 font-mono text-[10px] leading-normal">
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="shrink-0 font-medium">Customer:</span>
+            <span className="font-bold text-right break-words">{customerName}</span>
           </div>
-          <div className="flex flex-col items-center relative pr-4">
-            <span className="text-blue-800/80 absolute bottom-3 text-lg leading-none select-none pointer-events-none" style={{ fontFamily: "'Segoe Script', 'Dancing Script', cursive, sans-serif", fontSize: '24px', transform: 'rotate(-8deg)', fontWeight: 'bold' }}>
-              {signatureText}
-            </span>
-            <span className="border-t border-[#a89c89] pt-1 w-28 text-center text-gray-500 uppercase tracking-widest font-mono text-[9px]">
-              SIGNATURE
-            </span>
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="shrink-0 font-medium">Email:</span>
+            <span className="text-right break-all">{customerEmail}</span>
           </div>
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="shrink-0 font-medium">Phone:</span>
+            <span className="font-bold text-right whitespace-nowrap">{cleanPhone}</span>
+          </div>
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="shrink-0 font-medium">Technician:</span>
+            <span className="text-right break-words">{technician}</span>
+          </div>
+          <div className="flex justify-between items-baseline gap-2">
+            <span className="shrink-0 font-medium">Job Order No.</span>
+            <span className="font-bold text-right whitespace-nowrap">{formattedReceiptId}</span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
+          {dashedDivider}
+        </div>
+
+        {/* [FOOTER WARRANTY NOTE] (Centered) */}
+        <div className="text-center font-mono py-1">
+          <p className="m-0 text-[10px] font-bold leading-normal">Thank you for trusting GraphiX Store!</p>
+          <p className="m-0 text-[9.5px] leading-normal">Warranty on parts & service: 3 Months</p>
+          <p className="m-0 text-[9px] leading-normal text-gray-700">Keep this receipt for claiming and warranty validation.</p>
         </div>
       </div>
     );
@@ -622,11 +673,11 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   </div>
                 </div>
 
-                {/* Column 2: Digital Duplicate Paper Receipt */}
+                {/* Column 2: Digital Thermal Receipt */}
                 <div className="md:col-span-5 flex justify-center">
                   <div className="w-full flex flex-col gap-2">
-                    <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Paper Receipt Copy</h4>
-                    {renderPaperReceipt(selectedTransaction)}
+                    <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Digital Thermal Receipt</h4>
+                    {renderThermalReceipt(selectedTransaction)}
                   </div>
                 </div>
 
@@ -640,11 +691,11 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
       {downloadingTxId && (
         <div id="thermal-receipt-container" style={{ position: 'absolute', left: '-9999px', top: '0', display: 'block' }}>
           {(() => {
-            const tx = transactions.find(t => t.id === downloadingTxId);
+            const tx = transactions.find(t => t.id === downloadingTxId) || selectedTransaction;
             if (!tx) return null;
             return (
-              <div ref={hiddenReceiptRef} style={{ width: "350px", background: "white", padding: "10px" }}>
-                {renderPaperReceipt(tx, true)}
+              <div ref={hiddenReceiptRef} style={{ width: "320px", background: "white", padding: "0" }}>
+                {renderThermalReceipt(tx, true)}
               </div>
             );
           })()}

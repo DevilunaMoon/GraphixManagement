@@ -83,7 +83,7 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
   }, []);
 
   useEffect(() => {
-    if (pathname.includes('/cashier/records')) {
+    if (pathname.includes('/cashier/records') || pathname.includes('/cashier/repairs')) {
       setIsOrderHistoryOpen(true);
     }
   }, [pathname]);
@@ -100,7 +100,9 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
       label: 'Order History', 
       icon: ReceiptText,
       subItems: [
-        { href: '/cashier/records', label: 'Completed Purchases' }
+        { href: '/cashier/records', label: 'Completed Purchases' },
+        { href: '/cashier/repairs/transactions', label: 'Completed Repairs' },
+        { href: '/cashier/repairs/transactions/downpayments', label: 'Repair Downpayments' },
       ]
     },
     { href: '/cashier/profile', label: 'My Profile', icon: User },

@@ -18,11 +18,12 @@ const PAPER_RECEIPTS = [
     remainingBalance: 0,
     isSettled: true,
     address: "Zone 3, Mohon / Tagoloan",
+    branch: "Tagoloan Branch",
     user: {
       id: "u_pixter",
       name: "Pixter Andrew Gabatan",
       email: "pixter@gmail.com",
-      phone: "N/A"
+      phone: "0917 839 2018"
     },
     device: {
       id: "dev_pixter",
@@ -47,11 +48,12 @@ const PAPER_RECEIPTS = [
     remainingBalance: 0,
     isSettled: true,
     address: "Sihuyon Zone 8 Sta. Cruz",
+    branch: "Tagoloan Branch",
     user: {
       id: "u_vincent",
       name: "Mumaril, Vincent A.",
       email: "vincent@gmail.com",
-      phone: "N/A"
+      phone: "0956 712 8493"
     },
     device: {
       id: "dev_vincent",
@@ -76,11 +78,12 @@ const PAPER_RECEIPTS = [
     remainingBalance: 0,
     isSettled: true,
     address: "Proper Sta. Ines Malitbog Buk",
+    branch: "Tagoloan Branch",
     user: {
       id: "u_april",
       name: "Ocero, April Maiza Dhaine G.",
       email: "april@gmail.com",
-      phone: "N/A"
+      phone: "0935 829 1042"
     },
     device: {
       id: "dev_april",
@@ -105,11 +108,12 @@ const PAPER_RECEIPTS = [
     remainingBalance: 0,
     isSettled: true,
     address: "Zone 6 Pulot Tagoloan",
+    branch: "Tagoloan Branch",
     user: {
       id: "u_juana",
       name: "Juana Mae Mahusay",
       email: "juana@gmail.com",
-      phone: "N/A"
+      phone: "0927 491 8203"
     },
     device: {
       id: "dev_juana",
@@ -134,11 +138,12 @@ const PAPER_RECEIPTS = [
     remainingBalance: 0,
     isSettled: true,
     address: "Malitbog, Bukidnon",
+    branch: "Tagoloan Branch",
     user: {
       id: "u_joram",
       name: "Joram Pacana",
       email: "joram@gmail.com",
-      phone: "N/A"
+      phone: "0917 584 9201"
     },
     device: {
       id: "dev_joram",
@@ -261,6 +266,7 @@ export async function GET(req: Request) {
         remainingBalance,
         isSettled: type === 'full',
         address: 'Walk-In / Online Request',
+        branch: repair.branch || session.branch || 'Tagoloan Branch',
         user: {
           id: repair.userId || 'guest',
           name: repair.ownerName || repair.user?.name || 'Walk-In Customer',
