@@ -215,7 +215,19 @@ export default function RepairServiceReceiptModal({
         scale: 3, // High-res 300 DPI equivalent for crisp monospace rendering
         useCORS: true,
         backgroundColor: '#ffffff',
-        logging: false
+        logging: false,
+        onclone: (clonedDoc) => {
+          const slip = clonedDoc.getElementById('repair-pos-thermal-slip');
+          if (slip) {
+            slip.style.overflow = 'visible';
+            slip.style.lineHeight = '1.5';
+            slip.querySelectorAll('*').forEach((el: any) => {
+              if (el.style) {
+                el.style.overflow = 'visible';
+              }
+            });
+          }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -324,6 +336,8 @@ export default function RepairServiceReceiptModal({
             box-shadow: none !important;
             background: #ffffff !important;
             color: #000000 !important;
+            overflow: visible !important;
+            line-height: 1.5 !important;
           }
           .no-print,
           .no-print * {
@@ -389,70 +403,70 @@ export default function RepairServiceReceiptModal({
               ref={receiptRef}
               style={{
                 fontFamily: "'Courier New', Courier, monospace",
-                lineHeight: "1.35",
+                lineHeight: "1.5",
                 color: "#000000",
                 backgroundColor: "#ffffff",
                 letterSpacing: "0.01em"
               }}
-              className="w-[316px] max-w-[316px] bg-white text-black p-4 sm:p-5 shadow-md border border-gray-300 rounded-sm font-mono text-[11px] select-text"
+              className="w-[320px] max-w-[320px] bg-white text-black p-5 sm:p-6 shadow-md border border-gray-300 rounded-sm font-mono text-[11px] select-text"
             >
 
               {/* [HEADER] (Centered) */}
               <div className="text-center font-mono">
-                <div className="font-bold text-[13px] tracking-wider uppercase">GRAPHIX STORE</div>
-                <div className="text-[11px] uppercase">BRANCH: {branchName}</div>
-                <div className="text-[10px]">{machineId}</div>
-                <div className="text-[10px]">DATE: {formattedDate}</div>
+                <div className="font-bold text-[13px] tracking-wider uppercase leading-normal">GRAPHIX STORE</div>
+                <div className="text-[11px] uppercase leading-normal">BRANCH: {branchName}</div>
+                <div className="text-[10px] leading-normal">{machineId}</div>
+                <div className="text-[10px] leading-normal">DATE: {formattedDate}</div>
               </div>
 
               {/* Divider */}
-              <div className="text-center select-none overflow-hidden my-1 text-[11px] leading-tight text-black tracking-tighter">
+              <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
                 {dashedDivider}
               </div>
 
               {/* [DOCUMENT TITLE] (Centered) */}
               <div className="text-center font-mono py-0.5">
-                <div className="font-bold text-xs uppercase tracking-wide">REPAIR SERVICE RECEIPT</div>
-                <div className="font-bold text-xs">{formattedReceiptNo}</div>
+                <div className="font-bold text-xs uppercase tracking-wide leading-normal">REPAIR SERVICE RECEIPT</div>
+                <div className="font-bold text-xs leading-normal">{formattedReceiptNo}</div>
               </div>
 
               {/* Divider */}
-              <div className="text-center select-none overflow-hidden my-1 text-[11px] leading-tight text-black tracking-tighter">
+              <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
                 {dashedDivider}
               </div>
 
               {/* [DEVICE DETAILS] (Two-Column Justified) */}
-              <div className="flex flex-col gap-0.5 font-mono">
-                <div className="flex justify-between items-start font-bold">
-                  <span className="truncate pr-1 uppercase">{deviceModel}</span>
-                  <span className="shrink-0 text-right">
+              <div className="flex flex-col gap-1 font-mono">
+                <div className="flex justify-between items-baseline gap-2 font-bold leading-normal">
+                  <span className="uppercase break-words">{deviceModel}</span>
+                  <span className="shrink-0 text-right whitespace-nowrap">
                     {formatMoney(totalRepairCost)} V
                   </span>
                 </div>
-                <div className="flex justify-between items-start text-[10px] text-gray-800">
-                  <span className="truncate pr-1">Item: 1x (Issue: {issueDescription})</span>
-                  <span className="shrink-0 text-right">
+                <div className="flex justify-between items-baseline gap-2 text-[10px] text-gray-800 leading-normal">
+                  <span className="break-words">Item: 1x (Issue: {issueDescription})</span>
+                  <span className="shrink-0 text-right whitespace-nowrap">
                     Status: {status}
                   </span>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="text-center select-none overflow-hidden my-1 text-[11px] leading-tight text-black tracking-tighter">
+              <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
                 {dashedDivider}
               </div>
 
               {/* [ITEMIZED MATERIALS & SERVICES] (Thermal List Format) */}
-              <div className="flex flex-col gap-1.5 font-mono">
+              <div className="flex flex-col gap-2 font-mono">
                 {parsedItems.map((item, idx) => (
-                  <div key={idx} className="flex flex-col">
-                    <div className="flex justify-between items-start font-medium">
-                      <span className="truncate pr-1">{item.description}</span>
-                      <span className="shrink-0 text-right">
+                  <div key={idx} className="flex flex-col leading-normal">
+                    <div className="flex justify-between items-baseline gap-2 font-medium">
+                      <span className="break-words">{item.description}</span>
+                      <span className="shrink-0 text-right whitespace-nowrap font-mono">
                         {formatMoney(item.total)}
                       </span>
                     </div>
-                    <div className="text-[10px] text-gray-800">
+                    <div className="text-[10px] text-gray-800 leading-normal">
                       Item: {item.qty}x @ {formatMoney(item.unitPrice)}
                     </div>
                   </div>
@@ -460,75 +474,75 @@ export default function RepairServiceReceiptModal({
               </div>
 
               {/* Divider */}
-              <div className="text-center select-none overflow-hidden my-1 text-[11px] leading-tight text-black tracking-tighter">
+              <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
                 {dashedDivider}
               </div>
 
               {/* [FINANCIAL BREAKDOWN & BALANCE DUE] (Two-Column Justified) */}
-              <div className="flex flex-col gap-0.5 font-mono">
-                <div className="flex justify-between items-center">
+              <div className="flex flex-col gap-0.5 font-mono leading-normal">
+                <div className="flex justify-between items-baseline gap-2">
                   <span>Total Materials</span>
-                  <span>Php {formatMoney(totalMaterials)}</span>
+                  <span className="shrink-0 text-right font-mono">Php {formatMoney(totalMaterials)}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-baseline gap-2">
                   <span>Labor / Service Fee</span>
-                  <span>{formatMoney(parsedLabor)}</span>
+                  <span className="shrink-0 text-right font-mono">{formatMoney(parsedLabor)}</span>
                 </div>
-                <div className="flex justify-between items-center font-bold text-xs pt-0.5">
+                <div className="flex justify-between items-baseline gap-2 font-bold text-xs pt-1">
                   <span>TOTAL REPAIR COST</span>
-                  <span>Php {formatMoney(totalRepairCost)}</span>
+                  <span className="shrink-0 text-right font-mono">Php {formatMoney(totalRepairCost)}</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-baseline gap-2">
                   <span>Downpayment Paid</span>
-                  <span>{formatMoney(downpayment)}</span>
+                  <span className="shrink-0 text-right font-mono">{formatMoney(downpayment)}</span>
                 </div>
-                <div className="flex justify-between items-center font-bold text-xs pt-0.5">
+                <div className="flex justify-between items-baseline gap-2 font-bold text-xs pt-1">
                   <span>BALANCE DUE</span>
-                  <span>Php {formatMoney(balanceDue)}</span>
+                  <span className="shrink-0 text-right font-mono">Php {formatMoney(balanceDue)}</span>
                 </div>
 
-                <div className="text-center font-bold text-[10px] py-2 tracking-wider uppercase">
+                <div className="text-center font-bold text-[10px] py-2 tracking-wider uppercase leading-normal">
                   *** {totalItemCount} ITEM(S) ***
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="text-center select-none overflow-hidden my-1 text-[11px] leading-tight text-black tracking-tighter">
+              <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
                 {dashedDivider}
               </div>
 
               {/* [CUSTOMER & AUDIT FOOTER] (Two-Column Justified) */}
-              <div className="flex flex-col gap-0.5 font-mono text-[10px]">
-                <div className="flex justify-between items-start">
-                  <span className="shrink-0 pr-1">Customer:</span>
-                  <span className="font-bold text-right truncate max-w-[190px]">{customerName}</span>
+              <div className="flex flex-col gap-1 font-mono text-[10px] leading-normal">
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="shrink-0 font-medium">Customer:</span>
+                  <span className="font-bold text-right break-words">{customerName}</span>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="shrink-0 pr-1">Email:</span>
-                  <span className="text-right truncate max-w-[200px]">{customerEmail}</span>
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="shrink-0 font-medium">Email:</span>
+                  <span className="text-right break-all">{customerEmail}</span>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="shrink-0 pr-1">Phone:</span>
-                  <span className="font-bold text-right">{cleanPhone}</span>
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="shrink-0 font-medium">Phone:</span>
+                  <span className="font-bold text-right whitespace-nowrap">{cleanPhone}</span>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="shrink-0 pr-1">Technician:</span>
-                  <span className="text-right truncate max-w-[180px]">{technician}</span>
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="shrink-0 font-medium">Technician:</span>
+                  <span className="text-right break-words">{technician}</span>
                 </div>
-                <div className="flex justify-between items-start">
-                  <span className="shrink-0 pr-1">Job Order No.</span>
-                  <span className="font-bold text-right">{formattedReceiptNo}</span>
+                <div className="flex justify-between items-baseline gap-2">
+                  <span className="shrink-0 font-medium">Job Order No.</span>
+                  <span className="font-bold text-right whitespace-nowrap">{formattedReceiptNo}</span>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="text-center select-none overflow-hidden my-1 text-[11px] leading-tight text-black tracking-tighter">
+              <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
                 {dashedDivider}
               </div>
 
               {/* [FOOTER NOTE] (Centered) */}
-              <div className="text-center font-mono py-1">
-                <p className="m-0 text-[10px] font-bold">Thank you for your business!</p>
+              <div className="text-center font-mono py-1.5">
+                <p className="m-0 text-[10px] font-bold leading-normal">Thank you for your business!</p>
               </div>
 
             </div>
