@@ -14,7 +14,8 @@ import {
   Sparkles,
   ShoppingBag,
   ShieldCheck,
-  Receipt
+  Receipt,
+  MapPin
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -35,6 +36,7 @@ function CustomerPaymentContent() {
   const deviceId = searchParams.get('deviceId');
   const variationIds = searchParams.get('variationIds');
   const cartItemIdsParam = searchParams.get('cartItemIds');
+  const branchParam = searchParams.get('branch');
   const navigate = router.push;
 
   const [method, setMethod] = useState<'cash' | 'gcash'>('cash');
@@ -44,6 +46,12 @@ function CustomerPaymentContent() {
   const [finalTotal, setFinalTotal] = useState<number>(0);
   const [selectedVariationsStr, setSelectedVariationsStr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Branch Selection State
+  const [selectedBranch, setSelectedBranch] = useState<string>(
+    branchParam ? (branchParam.includes('Branch') ? branchParam : `${branchParam} Branch`) : 'Tagoloan Branch'
+  );
+  const [customerProfile, setCustomerProfile] = useState<{ name: string; email: string; phone: string } | null>(null);
 
   // Cash Payment States
   const [tenderedCash, setTenderedCash] = useState<string>('');
@@ -60,6 +68,25 @@ function CustomerPaymentContent() {
   const [showItemsList, setShowItemsList] = useState(false);
 
   const gcashNumber = "0967 123 4567";
+
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) {
+          const phoneClean = (data.phone && !data.phone.includes('₱')) ? data.phone : '0917 123 4567';
+          setCustomerProfile({
+            name: data.name || 'Customer',
+            email: data.email || 'customer@graphix.com',
+            phone: phoneClean
+          });
+          if (!branchParam && data.branch) {
+            setSelectedBranch(data.branch.includes('Branch') ? data.branch : `${data.branch} Branch`);
+          }
+        }
+      })
+      .catch(console.error);
+  }, [branchParam]);
 
   useEffect(() => {
     const fetchCheckoutData = async () => {
@@ -223,8 +250,9 @@ function CustomerPaymentContent() {
           amount: finalTotal,
           variations: selectedVariationsStr,
           cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined,
-          phoneNumber: method === 'cash' ? `₱${tenderedNumeric.toLocaleString()}` : gcashRef || undefined,
-          staffMessage: fullStaffMessage || undefined
+          phoneNumber: customerProfile?.phone || undefined,
+          staffMessage: fullStaffMessage || undefined,
+          branch: selectedBranch.replace(' Branch', '')
         })
       });
 
@@ -253,7 +281,24 @@ function CustomerPaymentContent() {
       subtotal: subtotal || 28998,
       deviceName: items.length > 1 ? `${primaryItem.name} (+${items.length - 1} more)` : primaryItem.name,
       quantity: totalQty,
-      items: items.map(i => ({ name: i.name, quantity: i.quantity, price: i.price })),
+      items: items.map(i => {
+        let variationLabel = '';
+        if (i.variations && Array.isArray(i.variations) && i.variations.length > 0) {
+          variationLabel = i.variations.map((v: any) => v.name || v.value || v).join(', ');
+        }
+        return {
+          id: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          unitPrice: i.price,
+          total: i.price * i.quantity,
+          variations: variationLabel || 'Standard'
+        };
+      }),
+      branch: selectedBranch,
+      customerName: customerProfile?.name || 'Customer',
+      customerEmail: customerProfile?.email || 'customer@graphix.com',
+      customerPhone: customerProfile?.phone || '0917 123 4567',
       paymentMethod: method === 'gcash' ? 'GCash' : 'Cash',
       tenderedCash: method === 'cash' ? (tenderedNumeric || finalTotal) : null,
       change: method === 'cash' ? changeAmount : 0,
@@ -280,7 +325,8 @@ function CustomerPaymentContent() {
       id: receiptPayload.transactionId.replace('#', ''),
       amount: String(receiptPayload.totalAmount),
       device: receiptPayload.deviceName,
-      qty: String(receiptPayload.quantity)
+      qty: String(receiptPayload.quantity),
+      branch: receiptPayload.branch
     });
     if (method === 'cash' && receiptPayload.tenderedCash) {
       queryParams.set('tendered', String(receiptPayload.tenderedCash));
@@ -383,6 +429,33 @@ function CustomerPaymentContent() {
             )}
           </div>
         )}
+
+        {/* Section 0: Pickup Branch Location */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="font-extrabold text-gray-800 text-sm tracking-wide flex items-center gap-1.5">
+              <MapPin size={16} className="text-[#bd00ff]" />
+              Pickup Branch Location
+            </label>
+            <span className="text-[10px] text-gray-400 font-bold uppercase">Store Branch</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {['Tagoloan Branch', 'Villanueva Branch', 'Jasaan Branch'].map((bName) => (
+              <button
+                key={bName}
+                type="button"
+                onClick={() => setSelectedBranch(bName)}
+                className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
+                  selectedBranch === bName
+                    ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] shadow-xs'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {bName.replace(' Branch', '')}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Section 1: Payment Method Selection */}
         <div className="flex flex-col gap-3">

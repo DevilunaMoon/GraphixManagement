@@ -1,14 +1,25 @@
 "use client";
 
-import React, { useRef } from 'react';
-import { Check, Download } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Check, Download, Receipt, Printer, Copy, FileText } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+
+export interface ReceiptCartItem {
+  id?: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  variations?: string; // e.g. "Color: Black, Storage: 128GB" or "Black, 128GB"
+}
 
 export interface DigitalReceiptData {
   totalAmount?: number;
   deviceName?: string;
   quantity?: number;
+  items?: ReceiptCartItem[];
+  branch?: string; // "Tagoloan Branch", "Villanueva Branch", or "Jasaan Branch"
   paymentMethod?: 'Cash' | 'GCash' | string;
   tenderedCash?: number | null;
   changeAmount?: number | null;
@@ -16,6 +27,9 @@ export interface DigitalReceiptData {
   transactionId?: string;
   timestamp?: string;
   status?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 }
 
 interface CustomerDigitalReceiptCardProps {
@@ -29,36 +43,17 @@ export default function CustomerDigitalReceiptCard({
   onDownload,
   onReturnToDashboard
 }: CustomerDigitalReceiptCardProps) {
-  const receiptRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
-  // 1. Total Amount / Item Price: Default to ₱28,998.00
-  const totalAmount = data?.totalAmount !== undefined && data.totalAmount > 0 
-    ? data.totalAmount 
-    : 28998.00;
+  // 1. Dynamic Branch Location: Default to Tagoloan Branch
+  let branchLocation = data?.branch || 'Tagoloan Branch';
+  if (!branchLocation.toLowerCase().includes('branch')) {
+    branchLocation = `${branchLocation} Branch`;
+  }
 
-  // 2. Item Details: Default to Vivo Y31d, Quantity 1
-  const deviceName = data?.deviceName || 'Vivo Y31d';
-  const quantity = data?.quantity && data.quantity > 0 ? data.quantity : 1;
-
-  // 3. Payment Method: 'Cash' or 'GCash'
-  const paymentMethod = data?.paymentMethod 
-    ? (data.paymentMethod.toLowerCase().includes('gcash') ? 'GCash' : 'Cash') 
-    : 'Cash';
-
-  // 4. Tendered Amount & Change Calculation
-  const tenderedCash = data?.tenderedCash !== undefined && data.tenderedCash !== null
-    ? data.tenderedCash
-    : (paymentMethod === 'Cash' ? totalAmount : null);
-
-  const changeAmount = data?.changeAmount !== undefined && data.changeAmount !== null
-    ? data.changeAmount
-    : (paymentMethod === 'Cash' && tenderedCash !== null ? Math.max(0, tenderedCash - totalAmount) : 0);
-
-  // 5. Notes / Instructions
-  const orderNote = data?.orderNote || null;
-
-  // 6. Transaction Metadata
-  const status = data?.status || 'Purchase Confirmed';
+  // 2. Machine ID & Metadata
+  const machineId = "MIN: 22112113365644135";
   const transactionId = data?.transactionId || '#CMTPQWI5Q0';
   const timestamp = data?.timestamp || new Date().toLocaleString('en-US', {
     month: 'short',
@@ -69,21 +64,188 @@ export default function CustomerDigitalReceiptCard({
     hour12: true
   });
 
-  // VAT calculations for PDF thermal receipt
-  const vatRate = 0.12;
-  const vatableSales = totalAmount / (1 + vatRate);
-  const vatAmount = totalAmount - vatableSales;
+  // 3. Dynamic Cart Items & Financial Calculations
+  const resolvedItems: ReceiptCartItem[] = (data?.items && data.items.length > 0)
+    ? data.items
+    : [
+        {
+          name: data?.deviceName || 'Vivo Y31d',
+          quantity: data?.quantity || 1,
+          unitPrice: data?.totalAmount || 28998,
+          total: data?.totalAmount || 28998,
+          variations: 'Black, 128GB'
+        }
+      ];
 
+  const totalItemCount = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
+  const computedTotal = resolvedItems.reduce((sum, item) => sum + (item.total || (item.quantity * item.unitPrice)), 0);
+  const grandTotal = data?.totalAmount && data.totalAmount > 0 ? data.totalAmount : computedTotal;
+
+  // 4. Payment Method & Tendered / Change
+  const paymentMethod = data?.paymentMethod 
+    ? (data.paymentMethod.toLowerCase().includes('gcash') ? 'GCash' : 'Cash') 
+    : 'Cash';
+
+  const tenderedCash = (data?.tenderedCash !== undefined && data?.tenderedCash !== null)
+    ? data.tenderedCash
+    : (paymentMethod === 'Cash' ? (grandTotal >= 28000 ? 29000 : grandTotal) : grandTotal);
+
+  const changeAmount = (data?.changeAmount !== undefined && data?.changeAmount !== null)
+    ? data.changeAmount
+    : (paymentMethod === 'Cash' ? Math.max(0, (tenderedCash || grandTotal) - grandTotal) : 0);
+
+  // 5. BIR 12% Tax Calculations
+  const vatRate = 0.12;
+  const vatableSales = grandTotal / (1 + vatRate);
+  const vatAmount = grandTotal - vatableSales;
+
+  // 6. Customer & Audit Details (Real Phone binding, not a price variable)
+  const customerName = data?.customerName || 'Customer';
+  const customerEmail = data?.customerEmail || 'customer@graphix.com';
+  
+  // Guard against any accidental currency symbol in phone
+  let cleanPhone = data?.customerPhone || '0917 123 4567';
+  if (cleanPhone.includes('₱') || cleanPhone.toLowerCase().includes('cash')) {
+    cleanPhone = '0917 123 4567';
+  }
+
+  const shortTransId = transactionId.startsWith('#') ? transactionId : `#${transactionId}`;
+  const storeAgent = 'ONLINE CHECKOUT';
+
+  // Build exact plain text receipt for Copy & Download .txt
+  const separator = '--------------------------------------------------';
+  const doubleSeparator = '==================================================';
+
+  let receiptText = `${doubleSeparator}\n                  GRAPHIX STORE\n                 ${branchLocation}\n              ${machineId}\n              ${timestamp}\n${separator}\nSALES INVOICE\n${shortTransId}\n${separator}\n`;
+
+  resolvedItems.forEach((item) => {
+    const itemName = item.name.toUpperCase();
+    const itemTotalStr = `${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V`;
+    const line1Pad = Math.max(1, 50 - itemName.length - itemTotalStr.length);
+    receiptText += `${itemName}${' '.repeat(line1Pad)}${itemTotalStr}\n`;
+
+    const varPart = item.variations ? ` (${item.variations})` : '';
+    const line2Left = `Item: ${item.quantity}x${varPart}`;
+    const line2Right = `${item.quantity} @ ${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
+    receiptText += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
+  });
+
+  const totalStr = `Php ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const totalPad = Math.max(1, 50 - 'Total'.length - totalStr.length);
+  receiptText += `${separator}\nTotal${' '.repeat(totalPad)}${totalStr}\n`;
+
+  if (paymentMethod === 'Cash') {
+    const cashStr = `Php ${(tenderedCash || grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const cashPad = Math.max(1, 50 - 'Cash'.length - cashStr.length);
+    receiptText += `Cash${' '.repeat(cashPad)}${cashStr}\n`;
+
+    const changeStr = `Php ${changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const changePad = Math.max(1, 50 - 'Change'.length - changeStr.length);
+    receiptText += `Change${' '.repeat(changePad)}${changeStr}\n`;
+  } else {
+    const gcashStr = `Php ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const gcashPad = Math.max(1, 50 - 'GCash'.length - gcashStr.length);
+    receiptText += `GCash${' '.repeat(gcashPad)}${gcashStr}\n`;
+
+    const changeStr = `Php 0.00`;
+    const changePad = Math.max(1, 50 - 'Change'.length - changeStr.length);
+    receiptText += `Change${' '.repeat(changePad)}${changeStr}\n`;
+  }
+
+  receiptText += `*** ${totalItemCount} ITEM(S) ***\n${separator}\n`;
+
+  const vatableStr = vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  receiptText += `VATable Sales${' '.repeat(Math.max(1, 50 - 'VATable Sales'.length - vatableStr.length))}${vatableStr}\n`;
+
+  const vatAmtStr = vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  receiptText += `VAT Amount${' '.repeat(Math.max(1, 50 - 'VAT Amount'.length - vatAmtStr.length))}${vatAmtStr}\n`;
+
+  receiptText += `VAT Exempt Sales${' '.repeat(Math.max(1, 50 - 'VAT Exempt Sales'.length - '0.00'.length))}0.00\n`;
+  receiptText += `Zero Rated Sales${' '.repeat(Math.max(1, 50 - 'Zero Rated Sales'.length - '0.00'.length))}0.00\n`;
+  receiptText += `${separator}\n`;
+
+  receiptText += `Sold To: ${customerName}\n`;
+  receiptText += `Email: ${customerEmail}\n`;
+  receiptText += `Phone: ${cleanPhone}\n`;
+  receiptText += `Store Agent: ${storeAgent}\n`;
+  receiptText += `Global Trans No. ${shortTransId}\n`;
+  receiptText += `${separator}\n`;
+  receiptText += `Thank you for shopping at GraphiX Store!\nKeep this receipt for warranty claims.\n`;
+  receiptText += `${doubleSeparator}`;
+
+  // Action 1: Copy Receipt
+  const handleCopyReceipt = async () => {
+    try {
+      await navigator.clipboard.writeText(receiptText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (err) {
+      console.error('Failed to copy receipt:', err);
+    }
+  };
+
+  // Action 2: Print Receipt
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Sales Receipt - ${shortTransId}</title>
+          <style>
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              width: 80mm;
+              margin: 0 auto;
+              padding: 4mm;
+              color: #000;
+              font-size: 12px;
+              line-height: 1.35;
+              white-space: pre-wrap;
+            }
+            @media print {
+              body { width: 80mm; padding: 2mm; }
+            }
+          </style>
+        </head>
+        <body>${receiptText}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 300);
+  };
+
+  // Action 3: Download .txt
+  const handleDownloadText = () => {
+    const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `GraphiX_Receipt_${shortTransId.replace('#', '')}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Action 4: Download 80mm thermal-style PDF
   const handleDownloadPDF = async () => {
     if (onDownload) {
       onDownload();
       return;
     }
 
-    const element = document.getElementById('thermal-receipt-printable');
+    const element = document.getElementById('thermal-80mm-printable');
     if (!element) return;
 
     try {
+      setIsExportingPDF(true);
       element.style.display = 'block';
       element.style.position = 'absolute';
       element.style.left = '-9999px';
@@ -102,7 +264,7 @@ export default function CustomerDigitalReceiptCard({
       element.style.top = '';
 
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 72; // mm
+      const imgWidth = 80; // 80mm thermal width
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       const pdf = new jsPDF({
@@ -112,200 +274,247 @@ export default function CustomerDigitalReceiptCard({
       });
 
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`Graphix_Receipt_${transactionId.replace('#', '')}.pdf`);
+      pdf.save(`GraphiX_Store_Receipt_${shortTransId.replace('#', '')}.pdf`);
     } catch (err) {
-      console.error('PDF generation error:', err);
+      console.error('Error generating 80mm PDF:', err);
       window.print();
+    } finally {
+      setIsExportingPDF(false);
     }
   };
 
   return (
-    <>
-      {/* On-screen Visual Receipt Card matching exact provided design */}
-      <div 
-        ref={receiptRef}
-        className="w-full max-w-[500px] bg-white rounded-3xl p-8 sm:p-10 shadow-xl border border-gray-100 flex flex-col items-center relative overflow-hidden text-gray-900"
-      >
-        {/* Top Decorative Arc / Rainbow Gradient Line */}
-        <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-[#bd00ff] via-[#7928ca] to-[#01f0ff]"></div>
-
-        {/* Green Checkmark Confirmation Badge */}
-        <div className="w-24 h-24 bg-[#dcfce7] rounded-full flex justify-center items-center mt-2 mb-1 shadow-xs">
-          <Check size={48} className="text-[#22c55e]" strokeWidth={3.5} />
-        </div>
-
-        {/* Header Title & Subtitle */}
-        <div className="text-center flex flex-col gap-1.5">
-          <h2 className="text-3xl sm:text-[32px] font-black text-[#6d1cb0] m-0 border-none tracking-tight">
-            Purchase Confirmed
-          </h2>
-          <p className="text-gray-500 font-semibold text-base sm:text-lg m-0">
-            Thank you for your purchase!
-          </p>
-        </div>
-
-        {/* Item & Price Row */}
-        <div className="w-full flex justify-between items-center py-5 border-b-2 border-dashed border-gray-200 mt-4 mb-2">
-          <span className="font-semibold text-gray-700 text-base">
-            Device Name: <strong className="text-black font-black ml-1">{deviceName}</strong>
-            {quantity > 1 && (
-              <span className="text-xs text-gray-500 font-bold ml-1.5">({quantity}x)</span>
-            )}
-          </span>
-          <div className="flex items-center text-[#bd00ff] font-black text-2xl tracking-tight">
-            <span className="text-xl mr-1">₱</span>
-            <span>{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+    <div className="w-full max-w-2xl bg-white rounded-3xl p-5 sm:p-8 shadow-2xl border border-purple-100 flex flex-col gap-6 text-gray-900">
+      
+      {/* 1. Header: Matches Repair Billing & Service Receipt aesthetic */}
+      <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
+            <Receipt size={22} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-black m-0">Repair Billing & Service Receipt</h2>
+            <p className="text-xs text-gray-500 m-0">Customer receipt generator & itemized breakdown</p>
           </div>
         </div>
+      </div>
 
-        {/* Transaction Metadata Key-Value List */}
-        <div className="w-full flex flex-col py-2 gap-3.5 mb-2 text-left text-sm">
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-500">Transaction ID:</span>
-            <span className="font-black text-gray-900 font-mono tracking-wider">{transactionId}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-500">Date:</span>
-            <span className="font-bold text-gray-900">{timestamp}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="font-semibold text-gray-500">Payment Method:</span>
-            <span className="font-bold text-gray-900">{paymentMethod}</span>
-          </div>
-
-          {/* Tendered Cash & Change (For Cash Payments) */}
-          {paymentMethod === 'Cash' && tenderedCash !== null && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-gray-500">Tendered Cash:</span>
-                <span className="font-bold text-gray-900 font-mono">
-                  ₱{tenderedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-gray-500">Change:</span>
-                <span className="font-black text-emerald-600 font-mono">
-                  ₱{changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </>
-          )}
-
-          {/* Optional Order Note / Instructions */}
-          {orderNote && (
-            <div className="flex flex-col gap-1 pt-2 border-t border-gray-100">
-              <span className="font-semibold text-gray-500 text-xs uppercase tracking-wider">
-                Message for Staff / Order Note:
-              </span>
-              <p className="text-xs text-gray-800 bg-gray-50 rounded-xl p-2.5 border border-gray-200/70 m-0 italic leading-relaxed">
-                "{orderNote}"
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="w-full flex flex-col sm:flex-row gap-3.5 no-print mt-3">
-          <button 
+      {/* 2. Action Toolbar: Retain Copy, Print, Download .txt, and ADD primary Download PDF */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-purple-50/50 p-3 rounded-2xl border border-purple-100">
+        <span className="text-xs font-bold text-purple-900">Receipt Actions:</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleCopyReceipt}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-100 text-[#bd00ff] rounded-xl text-xs font-bold border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+            {copied ? 'Copied to Clipboard!' : 'Copy Receipt'}
+          </button>
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-100 text-gray-700 rounded-xl text-xs font-bold border border-gray-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            <Printer size={14} />
+            Print Receipt
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadText}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-50 text-gray-700 rounded-xl text-xs font-bold border border-gray-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            <FileText size={14} />
+            Download .txt
+          </button>
+          <button
             type="button"
             onClick={handleDownloadPDF}
-            className="flex-1 flex justify-center items-center gap-2 py-4 px-4 border-none bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-black text-base rounded-2xl cursor-pointer transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+            disabled={isExportingPDF}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-all cursor-pointer border-none shadow-md hover:shadow-lg disabled:opacity-50"
           >
-            <Download size={20} />
-            Download Receipt
+            <Download size={14} />
+            {isExportingPDF ? 'Exporting PDF...' : 'Download PDF'}
           </button>
-          <button 
+        </div>
+      </div>
+
+      {/* 3. On-screen 80mm Thermal Receipt Card */}
+      <div className="flex justify-center w-full">
+        <div className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed">
+          
+          {/* Header & Store Info */}
+          <div className="text-center pb-3 border-b border-dashed border-gray-300">
+            <h3 className="text-base font-black tracking-widest uppercase m-0 text-black">
+              GRAPHIX STORE
+            </h3>
+            <p className="text-xs font-bold text-gray-800 m-0 mt-0.5">
+              {branchLocation}
+            </p>
+            <p className="text-[11px] text-gray-500 m-0 mt-0.5 font-sans">
+              {machineId}
+            </p>
+            <p className="text-[11px] text-gray-600 m-0 mt-0.5">
+              {timestamp}
+            </p>
+          </div>
+
+          {/* Invoice Header */}
+          <div className="py-2.5 border-b border-dashed border-gray-300 text-center">
+            <span className="font-black text-xs tracking-wider block">SALES INVOICE</span>
+            <span className="font-bold text-xs text-purple-700">{shortTransId}</span>
+          </div>
+
+          {/* Cart Item Breakdown */}
+          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-2.5">
+            {resolvedItems.map((item, idx) => (
+              <div key={idx} className="flex flex-col gap-0.5">
+                <div className="flex justify-between items-start font-black text-black">
+                  <span className="truncate pr-2">{item.name.toUpperCase()}</span>
+                  <span className="shrink-0 font-bold">
+                    {item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[11px] text-gray-600">
+                  <span className="truncate pr-2">
+                    Item: {item.quantity}x {item.variations ? `(${item.variations})` : ''}
+                  </span>
+                  <span className="shrink-0">
+                    {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Financial Totals & Payment Method */}
+          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1.5">
+            <div className="flex justify-between items-center font-black text-black text-sm">
+              <span>Total</span>
+              <span>Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+
+            {paymentMethod === 'Cash' ? (
+              <>
+                <div className="flex justify-between items-center text-gray-700">
+                  <span>Cash</span>
+                  <span>Php {(tenderedCash || grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-gray-900">
+                  <span>Change</span>
+                  <span>Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between items-center text-gray-700">
+                  <span>GCash</span>
+                  <span>Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between items-center font-bold text-gray-900">
+                  <span>Change</span>
+                  <span>Php 0.00</span>
+                </div>
+              </>
+            )}
+
+            <div className="text-center font-black py-1 tracking-wider text-[11px] text-gray-800">
+              *** {totalItemCount} ITEM(S) ***
+            </div>
+          </div>
+
+          {/* BIR 12% Tax Breakdown */}
+          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[11px] text-gray-600">
+            <div className="flex justify-between items-center">
+              <span>VATable Sales</span>
+              <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>VAT Amount</span>
+              <span>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>VAT Exempt Sales</span>
+              <span>0.00</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Zero Rated Sales</span>
+              <span>0.00</span>
+            </div>
+          </div>
+
+          {/* Customer & Audit Details */}
+          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[11px] text-gray-700">
+            <div className="flex justify-between items-center">
+              <span className="font-bold">Sold To:</span>
+              <span className="font-semibold text-black">{customerName}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Email:</span>
+              <span className="truncate max-w-[200px]">{customerEmail}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Phone:</span>
+              <span className="font-semibold text-black">{cleanPhone}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Store Agent:</span>
+              <span>{storeAgent}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span>Global Trans No.</span>
+              <span className="font-bold text-purple-700">{shortTransId}</span>
+            </div>
+          </div>
+
+          {/* Footer Note */}
+          <div className="text-center pt-3 text-[11px] text-gray-500 font-sans leading-normal">
+            <p className="m-0 font-medium">Thank you for shopping at GraphiX Store!</p>
+            <p className="m-0 text-[10px] text-gray-400 mt-0.5">Keep this receipt for warranty claims.</p>
+          </div>
+
+        </div>
+      </div>
+
+      {/* 4. Bottom Controls */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={handleDownloadPDF}
+          disabled={isExportingPDF}
+          className="flex-1 flex justify-center items-center gap-2 py-3.5 px-4 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-sm rounded-xl cursor-pointer transition-all shadow-md hover:shadow-lg disabled:opacity-50 border-none"
+        >
+          <Download size={18} />
+          {isExportingPDF ? 'Exporting PDF...' : 'Download PDF Receipt (80mm)'}
+        </button>
+        {onReturnToDashboard && (
+          <button
             type="button"
             onClick={onReturnToDashboard}
-            className="flex-1 flex justify-center items-center py-4 px-4 border-2 border-[#bd00ff] bg-white hover:bg-purple-50 text-[#bd00ff] font-black text-base rounded-2xl cursor-pointer transition-all active:scale-[0.98]"
+            className="flex-1 flex justify-center items-center py-3.5 px-4 border-2 border-[#bd00ff] bg-white hover:bg-purple-50 text-[#bd00ff] font-bold text-sm rounded-xl cursor-pointer transition-all"
           >
             Return to Dashboard
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Hidden Thermal Receipt for High-Resolution PDF Rendering & Printing */}
-      <div id="thermal-receipt-printable" className="hidden print:block" style={{ display: 'none' }}>
+      {/* 5. Hidden 80mm Thermal Receipt for High-Res PDF Export */}
+      <div id="thermal-80mm-printable" className="hidden print:block" style={{ display: 'none' }}>
         <div style={{
           fontFamily: "'Courier New', Courier, monospace",
-          width: "72mm",
-          color: "black",
-          background: "white",
+          width: "80mm",
+          color: "#000",
+          background: "#fff",
           fontSize: "12px",
-          lineHeight: "1.3",
+          lineHeight: "1.35",
           padding: "4mm",
-          margin: "0 auto"
+          margin: "0 auto",
+          whiteSpace: "pre-wrap"
         }}>
-          <div style={{ textAlign: "center", marginBottom: "12px" }}>
-            <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
-            <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
-            <div style={{ fontSize: "10px" }}>DATE: {timestamp}</div>
-            <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
-              OFFICIAL SALES RECEIPT<br />
-              {transactionId}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-            <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{deviceName.toUpperCase()}</span>
-            <span>₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
-            <span>Qty: {quantity}x</span>
-            <span>@ ₱{(totalAmount / quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-
-          <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-            <span>FINAL TOTAL PAYMENT</span>
-            <span>Php {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Payment Method</span>
-            <span>{paymentMethod}</span>
-          </div>
-          {paymentMethod === 'Cash' && tenderedCash !== null && (
-            <>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>Tendered Cash</span>
-                <span>Php {tenderedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                <span>Change</span>
-                <span>Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-            </>
-          )}
-
-          {orderNote && (
-            <div style={{ marginTop: "6px", fontSize: "10px", borderTop: "1px dashed #ccc", paddingTop: "4px" }}>
-              <strong>Note:</strong> {orderNote}
-            </div>
-          )}
-
-          <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
-            *** {quantity} ITEM(S) • PAYMENT SUCCESSFUL ***
-          </div>
-
-          <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-            <span>VATable Sales (12%)</span>
-            <span>₱{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-            <span>VAT Amount</span>
-            <span>₱{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-
-          <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-          <div style={{ textAlign: "center", fontSize: "10px", marginTop: "8px" }}>
-            THANK YOU FOR YOUR PURCHASE!
-          </div>
+          {receiptText}
         </div>
       </div>
-    </>
+
+    </div>
   );
 }

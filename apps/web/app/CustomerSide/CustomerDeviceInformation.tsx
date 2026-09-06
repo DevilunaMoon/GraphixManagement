@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ThumbsUp, ThumbsDown, Receipt, Printer, Copy, Check, FileText } from 'lucide-react';
+import { ChevronLeft, ThumbsUp, ThumbsDown, Receipt, Printer, Copy, Check, FileText, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import MaterialBreakdownEditor from '../../components/Repair/MaterialBreakdownEditor';
 
 interface CustomerDeviceInformationProps {
@@ -416,6 +418,41 @@ BALANCE DUE:         ₱ ${balanceDue.toFixed(2)}
           URL.revokeObjectURL(url);
         };
 
+        const handleDownloadPDF = async () => {
+          const element = document.getElementById('repair-thermal-receipt-printable');
+          if (!element) return;
+          try {
+            element.style.display = 'block';
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '0';
+            const content = element.firstElementChild as HTMLElement;
+            const canvas = await html2canvas(content, {
+              scale: 3,
+              useCORS: true,
+              backgroundColor: '#ffffff'
+            });
+            element.style.display = 'none';
+            element.style.position = '';
+            element.style.left = '';
+            element.style.top = '';
+
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 80;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const pdf = new jsPDF({
+              orientation: 'portrait',
+              unit: 'mm',
+              format: [imgWidth, imgHeight]
+            });
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save(`${receiptNo}_${deviceName.replace(/\s+/g, '_')}.pdf`);
+          } catch (err) {
+            console.error('PDF error', err);
+            window.print();
+          }
+        };
+
         return (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
@@ -463,10 +500,18 @@ BALANCE DUE:         ₱ ${balanceDue.toFixed(2)}
                   <button
                     type="button"
                     onClick={handleDownloadText}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer border-none shadow-2xs"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-50 text-gray-700 rounded-xl text-xs font-bold border border-gray-200 transition-colors cursor-pointer shadow-2xs"
                   >
                     <FileText size={14} />
                     Download .txt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadPDF}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-colors cursor-pointer border-none shadow-2xs"
+                  >
+                    <Download size={14} />
+                    Download PDF
                   </button>
                 </div>
               </div>
@@ -587,6 +632,23 @@ BALANCE DUE:         ₱ ${balanceDue.toFixed(2)}
                   </p>
                 </div>
 
+              </div>
+
+              {/* Hidden 80mm Thermal Receipt for PDF Export */}
+              <div id="repair-thermal-receipt-printable" className="hidden print:block" style={{ display: 'none' }}>
+                <div style={{
+                  fontFamily: "'Courier New', Courier, monospace",
+                  width: "80mm",
+                  color: "#000",
+                  background: "#fff",
+                  fontSize: "12px",
+                  lineHeight: "1.3",
+                  padding: "4mm",
+                  margin: "0 auto",
+                  whiteSpace: "pre-wrap"
+                }}>
+                  {receiptText}
+                </div>
               </div>
 
 

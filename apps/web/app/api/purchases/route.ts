@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     const actualUserId = targetUserId || session.userId;
 
-    if (phoneNumber && actualUserId) {
+    if (phoneNumber && actualUserId && !phoneNumber.includes('₱') && !phoneNumber.toLowerCase().includes('cash')) {
       await prisma.user.update({
         where: { id: actualUserId },
         data: { phone: phoneNumber }
