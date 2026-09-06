@@ -8,7 +8,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const { id } = await params;
     
     const request = await prisma.repairRequest.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        user: true
+      }
     });
 
     if (!request) {
