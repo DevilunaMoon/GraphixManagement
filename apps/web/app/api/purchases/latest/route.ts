@@ -14,15 +14,9 @@ export async function GET(req: Request) {
 
     let purchase;
     if (purchaseId) {
-      const cleanId = purchaseId.trim();
       purchase = await prisma.purchase.findFirst({
         where: { 
-          OR: [
-            { id: cleanId },
-            { referenceId: cleanId },
-            { referenceId: `#${cleanId.replace(/^#/, '')}` },
-            { referenceId: cleanId.replace(/^#/, '') }
-          ],
+          id: purchaseId,
           userId: session.userId 
         },
         include: {

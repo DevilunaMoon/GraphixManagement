@@ -214,16 +214,8 @@ function CustomerPaymentContent() {
   const handlePlaceOrder = async () => {
     setSubmitting(true);
 
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
-    const plannedTxId = `#CMTPQ${randomSuffix}`;
     let createdId = '';
-    let formattedTxId = plannedTxId;
-
     try {
-      const selectedVariationsStr = (items[0]?.variations && items[0].variations.length > 0)
-        ? JSON.stringify(items[0].variations)
-        : null;
-
       const fullStaffMessage = [
         staffMessage.trim() ? `Note: ${staffMessage.trim()}` : '',
         method === 'cash' ? 'Payment: Cash on Pickup' : '',
@@ -244,20 +236,14 @@ function CustomerPaymentContent() {
           paymentMethod: method === 'cash' ? 'Cash' : 'GCash',
           paymentType: method === 'cash' ? 'Cash' : 'Full',
           source: 'Online',
-          branch: selectedBranch.replace(/\s*Branch$/i, '').trim(),
-          referenceId: plannedTxId
+          branch: selectedBranch.replace(/\s*Branch$/i, '').trim()
         })
       });
 
       if (res.ok) {
         const data = await res.json();
-        if (data) {
-          createdId = data.id || '';
-          if (data.referenceId) {
-            formattedTxId = data.referenceId;
-          } else if (data.id) {
-            formattedTxId = `#CMTPQ${data.id.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}`;
-          }
+        if (data && data.id) {
+          createdId = data.id;
         }
       }
       window.dispatchEvent(new Event('cartUpdated'));
@@ -267,6 +253,9 @@ function CustomerPaymentContent() {
       setSubmitting(false);
     }
 
+    // Auto-generate transaction ID matching #CMTPQ... format
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
+    const formattedTxId = createdId ? `#CMTPQ${createdId.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}` : `#CMTPQ${randomSuffix}`;
     const primaryItem = items[0] || { name: 'Vivo Y31d', quantity: 1, price: finalTotal || 28998 };
     const totalQty = items.reduce((acc, i) => acc + i.quantity, 0) || 1;
 

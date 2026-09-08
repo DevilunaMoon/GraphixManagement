@@ -125,27 +125,10 @@ export async function POST(req: Request) {
 
     // Handle PAID or UNPAID notifications
     if (action === 'PAID' || action === 'UNPAID') {
-      if (action === 'PAID') {
-        if (purchaseIds.length > 0) {
-          for (const pId of purchaseIds) {
-            await prisma.purchase.updateMany({
-              where: { id: pId },
-              data: { status: 'Paid', isSettled: true }
-            });
-          }
-        }
-
-        const claimCodeMatch = message.match(/\[ClaimCode:\s*([^\]]+)\]/i);
-        if (claimCodeMatch?.[1]) {
-          const cleanRef = claimCodeMatch[1].trim();
+      if (action === 'PAID' && purchaseIds.length > 0) {
+        for (const pId of purchaseIds) {
           await prisma.purchase.updateMany({
-            where: {
-              OR: [
-                { referenceId: cleanRef },
-                { referenceId: `#${cleanRef.replace(/^#/, '')}` },
-                { referenceId: cleanRef.replace(/^#/, '') }
-              ]
-            },
+            where: { id: pId },
             data: { status: 'Paid', isSettled: true }
           });
         }
@@ -177,8 +160,8 @@ export async function POST(req: Request) {
         let customerTitle = '';
         let customerMsg = '';
         if (action === 'PAID') {
-          customerTitle = 'Payment Verified & Official Receipt Unlocked';
-          customerMsg = 'Your in-store cash payment has been verified as PAID by our staff. Your official 80mm PDF sales receipt is now unlocked!';
+          customerTitle = 'Payment Successful';
+          customerMsg = 'Your payment at GraphiX Store has been successfully verified and confirmed as PAID by our staff. Thank you for your purchase!';
         } else if (action === 'UNPAID') {
           customerTitle = 'Payment Pending / Unpaid';
           customerMsg = 'Your checkout payment was marked as UNPAID by our staff. Please complete or verify your payment at the store.';

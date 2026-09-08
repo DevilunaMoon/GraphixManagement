@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Clock, CheckCircle2, Copy, Check, ShieldCheck } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import CustomerDigitalReceiptCard, { DigitalReceiptData, ReceiptCartItem } from '../../components/CustomerSide/CustomerDigitalReceiptCard';
 
 function CustomerPurchaseConfirmedContent() {
@@ -22,8 +22,6 @@ function CustomerPurchaseConfirmedContent() {
 
   const [receiptData, setReceiptData] = useState<DigitalReceiptData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isVerified, setIsVerified] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
 
   useEffect(() => {
     const resolveReceiptData = async () => {
@@ -202,9 +200,6 @@ function CustomerPurchaseConfirmedContent() {
         hour12: true
       });
 
-      const initiallyVerified = resolvedMethod === 'GCash' || apiPurchase?.status === 'Paid' || Boolean(apiPurchase?.isSettled);
-      setIsVerified(initiallyVerified);
-
       setReceiptData({
         totalAmount: resolvedAmount,
         deviceName: resolvedDevice,
@@ -217,11 +212,10 @@ function CustomerPurchaseConfirmedContent() {
         orderNote: resolvedNote,
         transactionId: resolvedTxId,
         timestamp: storedReceipt?.timestamp || currentFormattedDate,
-        status: initiallyVerified ? 'Purchase Confirmed' : 'Pending In-Store Payment',
+        status: 'Purchase Confirmed',
         customerName: resolvedCustomerName,
         customerEmail: resolvedCustomerEmail,
-        customerPhone: candidatePhone,
-        isVerified: initiallyVerified
+        customerPhone: candidatePhone
       });
 
       setLoading(false);
@@ -229,31 +223,6 @@ function CustomerPurchaseConfirmedContent() {
 
     resolveReceiptData();
   }, [purchaseId, paramAmount, paramDevice, paramQty, paramMethod, paramTendered, paramChange, paramNote, paramBranch]);
-
-  // Real-time polling: Detects when cashier clicks "Verify / Paid" in store
-  useEffect(() => {
-    if (receiptData?.paymentMethod !== 'Cash' || isVerified) return;
-
-    const pollTimer = setInterval(async () => {
-      try {
-        const checkId = purchaseId || receiptData?.transactionId;
-        const url = checkId ? `/api/purchases/latest?id=${encodeURIComponent(checkId)}` : '/api/purchases/latest';
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && (data.status === 'Paid' || data.isSettled === true)) {
-            setIsVerified(true);
-            setReceiptData(prev => prev ? { ...prev, isVerified: true, status: 'Purchase Confirmed' } : null);
-            clearInterval(pollTimer);
-          }
-        }
-      } catch (e) {
-        console.error('Error polling verification status:', e);
-      }
-    }, 5000);
-
-    return () => clearInterval(pollTimer);
-  }, [receiptData?.paymentMethod, isVerified, purchaseId, receiptData?.transactionId]);
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex flex-col justify-center items-center p-4 sm:p-6 font-['Inter']">
@@ -264,90 +233,33 @@ function CustomerPurchaseConfirmedContent() {
         </div>
       ) : (
         <div className="w-full max-w-lg flex flex-col items-center">
-          
-          {/* Status & Verification Banners for Cash on Pickup */}
+          {/* 8-Hour Store Claim Limit Banner for Cash on Pickup */}
           {receiptData?.paymentMethod === 'Cash' && (
-            isVerified ? (
-              /* Verified Banner */
-              <div className="w-full mb-4 bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-4 shadow-sm flex items-start gap-3.5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-2.5 bg-emerald-500 text-white rounded-xl shrink-0 shadow-sm mt-0.5">
-                  <CheckCircle2 size={22} strokeWidth={2.5} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-                    <h4 className="text-sm font-black text-emerald-950 uppercase tracking-wide m-0">
-                      Payment Verified by Cashier
-                    </h4>
-                    <span className="text-[10px] font-black bg-emerald-200 text-emerald-900 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      VERIFIED PAID
-                    </span>
-                  </div>
-                  <p className="text-xs font-semibold text-emerald-900/90 leading-relaxed m-0">
-                    Your in-store cash payment at <span className="font-extrabold text-emerald-950">{receiptData.branch}</span> has been confirmed. Your official 80mm PDF sales receipt is now completely unlocked!
-                  </p>
-                </div>
+            <div className="w-full mb-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-400 rounded-2xl p-4 shadow-sm flex items-start gap-3.5 backdrop-blur-sm">
+              <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm mt-0.5">
+                <Clock size={20} strokeWidth={2.5} />
               </div>
-            ) : (
-              /* Unverified Claim Voucher Card */
-              <div className="w-full mb-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-400 rounded-2xl p-4 shadow-sm flex flex-col gap-3 backdrop-blur-sm">
-                
-                {/* Header row */}
-                <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm mt-0.5">
-                    <Clock size={20} strokeWidth={2.5} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 flex-wrap mb-0.5">
-                      <h4 className="text-sm font-black text-amber-950 uppercase tracking-wide m-0">
-                        8-Hour Store Pickup Window
-                      </h4>
-                      <span className="text-[10px] font-black bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                        Pending Cashier Verification
-                      </span>
-                    </div>
-                    <p className="text-xs font-semibold text-amber-900/90 leading-relaxed m-0">
-                      Reserved at <span className="font-extrabold text-amber-950 underline decoration-amber-400">{receiptData.branch}</span>. Please visit the store and pay in cash within <span className="font-extrabold text-amber-950">8 hours</span>.
-                    </p>
-                  </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                  <h4 className="text-sm font-black text-amber-950 uppercase tracking-wide m-0">
+                    8-Hour Store Pickup Window
+                  </h4>
+                  <span className="text-[10px] font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Cash on Pickup
+                  </span>
                 </div>
-
-                {/* Claim Code Badge & Offline Instructions */}
-                <div className="bg-white/95 border border-amber-200 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-                  <div className="text-center sm:text-left">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
-                      Your In-Store Claim Code:
-                    </span>
-                    <span className="font-mono font-black text-lg text-purple-700 tracking-wider">
-                      {receiptData.transactionId}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (receiptData.transactionId) {
-                        navigator.clipboard.writeText(receiptData.transactionId);
-                        setCopiedCode(true);
-                        setTimeout(() => setCopiedCode(false), 2000);
-                      }
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl text-xs font-bold border border-purple-200 transition-all cursor-pointer shadow-2xs"
-                  >
-                    {copiedCode ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
-                    <span>{copiedCode ? 'Copied!' : 'Copy Code'}</span>
-                  </button>
-                </div>
-
-                {/* No-Internet Reminder */}
-                <div className="bg-amber-100/70 rounded-xl px-3 py-2 text-[11px] text-amber-950 font-medium leading-relaxed">
-                  💡 <strong>No WiFi or mobile load at the store?</strong> Don't worry! You can simply give the cashier your <strong>Name ({receiptData.customerName})</strong> or <strong>Phone ({receiptData.customerPhone})</strong>. Once the cashier receives your cash, your official PDF receipt unlocks automatically!
-                </div>
+                <p className="text-xs font-semibold text-amber-900/90 leading-relaxed m-0">
+                  Your unit is reserved at <span className="font-extrabold text-amber-950 underline decoration-amber-400">{receiptData.branch}</span>. Please visit the store and pay in cash within <span className="font-extrabold text-amber-950">8 hours</span> of placing this order.
+                </p>
+                <p className="text-[11px] text-amber-800/80 mt-1 m-0 font-medium">
+                  ⏰ Unclaimed reservations will automatically expire after 8 hours and be returned to stock.
+                </p>
               </div>
-            )
+            </div>
           )}
 
           <CustomerDigitalReceiptCard 
-            data={receiptData ? { ...receiptData, isVerified } : undefined}
+            data={receiptData || undefined}
             onReturnToDashboard={() => navigate('/customer/dashboard')}
           />
         </div>
