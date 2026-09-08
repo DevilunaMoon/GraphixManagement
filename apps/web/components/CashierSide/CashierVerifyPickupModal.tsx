@@ -38,6 +38,47 @@ interface CashierVerifyPickupModalProps {
   onSuccess?: () => void;
 }
 
+function getVariationPills(variationsStr: string | null | undefined): string[] {
+  if (!variationsStr) return [];
+  try {
+    const parsed = typeof variationsStr === 'string' ? JSON.parse(variationsStr) : variationsStr;
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((v: any) => {
+          if (typeof v === 'string') return v;
+          if (v && typeof v === 'object') {
+            if (v.type && v.name) {
+              const displayVal = (v.type.toLowerCase() === 'storage' && !String(v.name).toLowerCase().includes('gb'))
+                ? `${v.name}GB`
+                : v.name;
+              return `${v.type}: ${displayVal}`;
+            }
+            return v.name || v.value || '';
+          }
+          return '';
+        })
+        .filter(Boolean);
+    }
+    if (parsed && typeof parsed === 'object') {
+      return Object.entries(parsed)
+        .map(([k, v]: [string, any]) => {
+          if (typeof v === 'string') return `${k}: ${v}`;
+          if (v && typeof v === 'object') return `${v.type || k}: ${v.name || v.value || ''}`;
+          return String(v);
+        })
+        .filter(Boolean);
+    }
+  } catch (e) {}
+
+  const clean = String(variationsStr).trim();
+  return clean && !clean.startsWith('[') && !clean.startsWith('{') ? [clean] : [];
+}
+
+function formatVariations(variationsStr: string | null | undefined): string {
+  const pills = getVariationPills(variationsStr);
+  return pills.join(' • ');
+}
+
 export default function CashierVerifyPickupModal({
   isOpen,
   onClose,
@@ -231,9 +272,14 @@ export default function CashierVerifyPickupModal({
                     )}
                   </div>
                   <h4 className="text-base font-extrabold text-gray-900 m-0">{selectedOrder.device.name}</h4>
-                  <p className="text-xs text-gray-500 m-0 mt-0.5">
-                    Qty: {selectedOrder.quantity} {selectedOrder.variations ? `• ${selectedOrder.variations}` : ''}
-                  </p>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                    <span className="text-xs font-bold text-gray-600">Qty: {selectedOrder.quantity}</span>
+                    {getVariationPills(selectedOrder.variations).map((pill, idx) => (
+                      <span key={idx} className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
+                        {pill}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
@@ -355,7 +401,7 @@ export default function CashierVerifyPickupModal({
                           )}
                         </div>
                         <p className="text-xs text-gray-600 m-0 truncate">
-                          {resItem.device.name} (Qty: {resItem.quantity})
+                          {resItem.device.name} (Qty: {resItem.quantity}) {formatVariations(resItem.variations) ? `• ${formatVariations(resItem.variations)}` : ''}
                         </p>
                       </div>
 

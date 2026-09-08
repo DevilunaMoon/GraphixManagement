@@ -66,7 +66,43 @@ export default function CustomerDigitalReceiptCard({
   });
 
   // 3. Dynamic Cart Items & Financial Calculations
-  const resolvedItems: ReceiptCartItem[] = (data?.items && data.items.length > 0)
+  const sanitizeVarStr = (v: string | null | undefined): string => {
+    if (!v) return '';
+    try {
+      const parsed = typeof v === 'string' ? JSON.parse(v) : v;
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((x: any) => {
+            if (typeof x === 'string') return x;
+            if (x && typeof x === 'object') {
+              if (x.type && x.name) {
+                const displayVal = (x.type.toLowerCase() === 'storage' && !String(x.name).toLowerCase().includes('gb'))
+                  ? `${x.name}GB`
+                  : x.name;
+                return `${x.type}: ${displayVal}`;
+              }
+              return x.name || x.value || '';
+            }
+            return '';
+          })
+          .filter(Boolean)
+          .join(', ');
+      }
+      if (parsed && typeof parsed === 'object') {
+        return Object.entries(parsed)
+          .map(([key, val]: [string, any]) => {
+            if (typeof val === 'string') return `${key}: ${val}`;
+            if (val && typeof val === 'object') return `${val.type || key}: ${val.name || val.value || ''}`;
+            return String(val);
+          })
+          .filter(Boolean)
+          .join(', ');
+      }
+    } catch (e) {}
+    return String(v);
+  };
+
+  const rawItems: ReceiptCartItem[] = (data?.items && data.items.length > 0)
     ? data.items
     : [
         {
@@ -77,6 +113,11 @@ export default function CustomerDigitalReceiptCard({
           variations: 'Black, 128GB'
         }
       ];
+
+  const resolvedItems: ReceiptCartItem[] = rawItems.map(item => ({
+    ...item,
+    variations: sanitizeVarStr(item.variations)
+  }));
 
   const totalItemCount = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
   const computedTotal = resolvedItems.reduce((sum, item) => sum + (item.total || (item.quantity * item.unitPrice)), 0);
