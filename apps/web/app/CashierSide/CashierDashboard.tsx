@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Filter, Search, Trash2, Loader2, ShieldCheck, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashierVerifyPickupModal from '../../components/CashierSide/CashierVerifyPickupModal';
@@ -18,44 +18,94 @@ interface Product {
   discountEndDate?: string | null;
 }
 
-interface CartItem extends Product {
-  cartQty: number;
+interface FlattenedItem {
+  id: string;
+  cartKey: string;
+  name: string;
+  cartName: string;
+  storage: string;
+  price: number;
+  stock: number;
+  discount?: number;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
 }
 
-const getDeviceStorage = (device: Product): string => {
-  if (device.variations && Array.isArray(device.variations)) {
-    const storageVars = device.variations.filter(
+interface CartItem {
+  id: string;
+  name: string;
+  cartKey: string;
+  price: number;
+  stock: number;
+  cartQty: number;
+  storage?: string;
+  discount?: number;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
+}
+
+const getNumericStorage = (name: string): number => {
+  const match = name.match(/(\d+)/);
+  if (!match || !match[1]) return 0;
+  const num = parseInt(match[1], 10);
+  if (/tb/i.test(name)) return num * 1024;
+  return num;
+};
+
+const formatStorageLabel = (raw: string): string => {
+  const trimmed = raw.trim();
+  if (/gb|tb/i.test(trimmed)) return trimmed.toUpperCase();
+  return `${trimmed}GB`;
+};
+
+const flattenProductsIntoStorageRows = (products: Product[]): FlattenedItem[] => {
+  const items: FlattenedItem[] = [];
+
+  for (const product of products) {
+    const storageVars = (product.variations || []).filter(
       (v: any) => v.type && String(v.type).toLowerCase() === 'storage'
     );
+
     if (storageVars.length > 0) {
-      const formatted = Array.from(
-        new Set(
-          storageVars.map((v: any) => {
-            const val = String(v.name).trim();
-            return /gb|tb/i.test(val) ? val.toUpperCase() : `${val}GB`;
-          })
-        )
-      );
-      return formatted.join(' / ');
+      const sorted = [...storageVars].sort((a, b) => {
+        return getNumericStorage(String(a.name)) - getNumericStorage(String(b.name));
+      });
+
+      for (const v of sorted) {
+        const storageLabel = formatStorageLabel(String(v.name));
+        const itemPrice = (v.price && Number(v.price) > 0) ? Number(v.price) : product.price;
+        const itemStock = (v.stock !== undefined && v.stock !== null) ? Number(v.stock) : product.stock;
+
+        items.push({
+          id: product.id,
+          cartKey: `${product.id}_${v.id || v.name}`,
+          name: product.name,
+          cartName: `${product.name} (${storageLabel})`,
+          storage: storageLabel,
+          price: itemPrice,
+          stock: itemStock,
+          discount: product.discount,
+          discountStartDate: product.discountStartDate,
+          discountEndDate: product.discountEndDate
+        });
+      }
+    } else {
+      items.push({
+        id: product.id,
+        cartKey: product.id,
+        name: product.name,
+        cartName: product.name,
+        storage: '—',
+        price: product.price,
+        stock: product.stock,
+        discount: product.discount,
+        discountStartDate: product.discountStartDate,
+        discountEndDate: product.discountEndDate
+      });
     }
   }
 
-  if (device.specs) {
-    const specs = String(device.specs);
-    const storageLineMatch =
-      specs.match(/(?:ROM|storage|internal)\s*[:\-]?\s*([0-9\s/+,]+(?:GB|TB))/i) ||
-      specs.match(/([0-9\s/+,]+(?:GB|TB))\s*(?:storage|ROM|internal)/i) ||
-      specs.match(/([0-9]+(?:\s*\/\s*[0-9]+)?\s*(?:GB|TB))\s*storage/i);
-    if (storageLineMatch && storageLineMatch[1]) {
-      return storageLineMatch[1].trim();
-    }
-    const generalMatch = specs.match(/\b([0-9]{2,4}\s*(?:GB|TB))\b/i);
-    if (generalMatch && generalMatch[1]) {
-      return generalMatch[1].trim();
-    }
-  }
-
-  return '—';
+  return items;
 };
 
 export default function CashierDashboard() {
@@ -72,23 +122,20 @@ export default function CashierDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     setIsLoading(true);
     const delayDebounceFn = setTimeout(() => {
-      fetch(`/api/devices?page=${currentPage}&limit=10&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}`)
+      fetch(`/api/devices?page=1&limit=100&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}`)
         .then(res => res.json())
         .then(data => {
           if (data && Array.isArray(data.devices)) {
             setProducts(data.devices);
-            setTotalPages(data.totalPages || 1);
-            setTotalItems(data.total || 0);
+          } else if (Array.isArray(data)) {
+            setProducts(data);
           } else {
             setProducts([]);
-            setTotalPages(1);
-            setTotalItems(0);
           }
         })
         .catch(err => {
@@ -99,7 +146,7 @@ export default function CashierDashboard() {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery, brandFilter]);
+  }, [searchQuery, brandFilter]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -122,29 +169,63 @@ export default function CashierDashboard() {
     setCurrentPage(1);
   };
 
-  const addToCart = (product: Product) => {
+  const flattenedItems = useMemo(() => {
+    return flattenProductsIntoStorageRows(products);
+  }, [products]);
+
+  const totalPages = Math.max(1, Math.ceil(flattenedItems.length / itemsPerPage));
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return flattenedItems.slice(startIndex, startIndex + itemsPerPage);
+  }, [flattenedItems, currentPage]);
+
+  const addToCart = (item: FlattenedItem) => {
     setCart(prev => {
-      const existing = prev[product.name];
+      const existing = prev[item.cartKey];
       const currentQty = existing ? existing.cartQty : 0;
-      if (currentQty >= product.stock) return prev; // Limit reached
+      if (currentQty >= item.stock) return prev; // Limit reached
+
+      const now = new Date();
+      const hasDiscount = (item.discount || 0) > 0;
+      const isScheduled = hasDiscount && item.discountStartDate && new Date(item.discountStartDate) > now;
+      const isExpired = hasDiscount && item.discountEndDate && new Date(item.discountEndDate) < now;
+      const isDiscountActive = hasDiscount && !isScheduled && !isExpired;
+      const effectivePrice = isDiscountActive ? item.price * (1 - (item.discount || 0) / 100) : item.price;
 
       if (existing) {
-        return { ...prev, [product.name]: { ...existing, cartQty: existing.cartQty + 1 } };
+        return {
+          ...prev,
+          [item.cartKey]: { ...existing, cartQty: existing.cartQty + 1 }
+        };
       }
-      return { ...prev, [product.name]: { ...product, cartQty: 1 } };
+      return {
+        ...prev,
+        [item.cartKey]: {
+          id: item.id,
+          name: item.cartName,
+          cartKey: item.cartKey,
+          price: effectivePrice,
+          stock: item.stock,
+          cartQty: 1,
+          storage: item.storage,
+          discount: item.discount,
+          discountStartDate: item.discountStartDate,
+          discountEndDate: item.discountEndDate
+        }
+      };
     });
   };
 
-  const removeFromCart = (productName: string) => {
+  const removeFromCart = (cartKey: string) => {
     setCart(prev => {
       const newCart = { ...prev };
-      delete newCart[productName];
+      delete newCart[cartKey];
       return newCart;
     });
   };
 
-  const cartTotal = Object.values(cart).reduce((sum, item) => sum + (item.price * item.cartQty), 0);
   const cartItemsArray = Object.values(cart);
+  const cartTotal = cartItemsArray.reduce((sum, item) => sum + (item.price * item.cartQty), 0);
 
   return (
     <main className="flex-1 flex flex-col lg:flex-row p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden">
@@ -228,44 +309,43 @@ export default function CashierDashboard() {
                     </div>
                   </td>
                 </tr>
-              ) : products.length === 0 ? (
+              ) : flattenedItems.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-500 font-semibold border border-[#bd00ff]/20">
                     No products found.
                   </td>
                 </tr>
               ) : (
-                products.map(product => {
-                  const currentQty = cart[product.name]?.cartQty || 0;
-                  const remainingStock = Math.max(0, product.stock - currentQty);
+                paginatedItems.map(item => {
+                  const currentQty = cart[item.cartKey]?.cartQty || 0;
+                  const remainingStock = Math.max(0, item.stock - currentQty);
                   const isMaxedOut = remainingStock <= 0;
-                  const storage = getDeviceStorage(product);
 
                   const now = new Date();
-                  const hasDiscount = (product.discount || 0) > 0;
-                  const isScheduled = hasDiscount && product.discountStartDate && new Date(product.discountStartDate) > now;
-                  const isExpired = hasDiscount && product.discountEndDate && new Date(product.discountEndDate) < now;
+                  const hasDiscount = (item.discount || 0) > 0;
+                  const isScheduled = hasDiscount && item.discountStartDate && new Date(item.discountStartDate) > now;
+                  const isExpired = hasDiscount && item.discountEndDate && new Date(item.discountEndDate) < now;
                   const isDiscountActive = hasDiscount && !isScheduled && !isExpired;
-                  const effectivePrice = isDiscountActive ? product.price * (1 - (product.discount || 0) / 100) : product.price;
+                  const effectivePrice = isDiscountActive ? item.price * (1 - (item.discount || 0) / 100) : item.price;
 
                   return (
                     <tr
-                      key={product.id}
-                      onClick={() => !isMaxedOut && addToCart(product)}
+                      key={item.cartKey}
+                      onClick={() => !isMaxedOut && addToCart(item)}
                       className={`transition-colors border-b border-[#bd00ff]/20 ${
                         isMaxedOut
                           ? 'opacity-55 bg-gray-50/50 cursor-not-allowed'
                           : 'cursor-pointer hover:bg-purple-50/60'
                       }`}
-                      title={isMaxedOut ? 'Out of stock or max added' : `Click to add ${product.name} to cart`}
+                      title={isMaxedOut ? 'Out of stock or max added' : `Click to add ${item.cartName} to cart`}
                     >
                       <td className="p-3.5 border border-[#bd00ff]/20 font-bold text-black text-[0.95rem] align-middle">
-                        <span className="leading-snug">{product.name}</span>
+                        <span className="leading-snug">{item.name}</span>
                       </td>
                       <td className="p-3.5 border border-[#bd00ff]/20 text-center align-middle whitespace-nowrap">
-                        {storage !== '—' ? (
+                        {item.storage !== '—' ? (
                           <span className="inline-block px-2.5 py-1 text-xs font-bold bg-purple-50 text-[#9c00d6] rounded-md border border-purple-200">
-                            {storage}
+                            {item.storage}
                           </span>
                         ) : (
                           <span className="text-gray-400 font-medium text-xs">—</span>
@@ -279,16 +359,16 @@ export default function CashierDashboard() {
                                 ₱{effectivePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                               <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">
-                                {product.discount}% OFF
+                                {item.discount}% OFF
                               </span>
                             </div>
                             <span className="text-xs text-gray-400 line-through">
-                              ₱{product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ₱{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                         ) : (
                           <span className="font-bold text-black text-[0.95rem]">
-                            ₱{product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ₱{productPriceFormatted(item.price)}
                           </span>
                         )}
                       </td>
@@ -308,7 +388,7 @@ export default function CashierDashboard() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!isMaxedOut) addToCart(product);
+                            if (!isMaxedOut) addToCart(item);
                           }}
                           disabled={isMaxedOut}
                           className="px-3.5 py-1.5 rounded-lg bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1 mx-auto disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border-none"
@@ -330,7 +410,7 @@ export default function CashierDashboard() {
         {!isLoading && totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-purple-100 gap-4">
             <span className="text-sm font-semibold text-gray-500">
-              Showing {totalItems === 0 ? 0 : (currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, totalItems)} of {totalItems} items
+              Showing {flattenedItems.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, flattenedItems.length)} of {flattenedItems.length} items
             </span>
             <div className="flex items-center gap-1.5">
               <button
@@ -391,7 +471,7 @@ export default function CashierDashboard() {
           ) : (
             <div className="flex flex-col">
               {cartItemsArray.map(item => (
-                <div key={item.name} className="flex justify-between items-center border-b border-gray-100 px-4 py-3 group">
+                <div key={item.cartKey} className="flex justify-between items-center border-b border-gray-100 px-4 py-3 group">
                   <div className="flex flex-col gap-1">
                     <strong className="text-[0.95rem] text-black leading-tight pr-2">{item.name}</strong>
                     <span className="text-sm text-gray-500">
@@ -399,7 +479,7 @@ export default function CashierDashboard() {
                     </span>
                   </div>
                   <button 
-                    onClick={() => removeFromCart(item.name)}
+                    onClick={() => removeFromCart(item.cartKey)}
                     className="text-red-500 opacity-50 hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
                     title="Remove Item"
                   >
@@ -441,3 +521,7 @@ export default function CashierDashboard() {
     </main>
   );
 }
+
+const productPriceFormatted = (price: number): string => {
+  return (price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
