@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, Banknote, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2 } from 'lucide-react';
 
 interface PickupReservation {
   id: string;
@@ -89,7 +89,6 @@ export default function CashierVerifyPickupModal({
   const [reservations, setReservations] = useState<PickupReservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PickupReservation | null>(null);
-  const [tenderedCash, setTenderedCash] = useState<number | string>('');
   const [verifying, setVerifying] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -104,7 +103,6 @@ export default function CashierVerifyPickupModal({
         setReservations(data.purchases);
         if (data.purchases.length === 1 && query.trim()) {
           setSelectedOrder(data.purchases[0]);
-          setTenderedCash(data.purchases[0].amount);
         }
       } else {
         setReservations([]);
@@ -132,7 +130,6 @@ export default function CashierVerifyPickupModal({
 
   const handleSelectOrder = (order: PickupReservation) => {
     setSelectedOrder(order);
-    setTenderedCash(order.amount);
     setErrorMessage(null);
     setSuccessMessage(null);
   };
@@ -142,13 +139,6 @@ export default function CashierVerifyPickupModal({
     setVerifying(true);
     setErrorMessage(null);
 
-    const tenderedNum = Number(tenderedCash) || selectedOrder.amount;
-    if (tenderedNum < selectedOrder.amount) {
-      setErrorMessage(`Tendered cash (₱${tenderedNum.toLocaleString()}) is less than total due (₱${selectedOrder.amount.toLocaleString()})`);
-      setVerifying(false);
-      return;
-    }
-
     try {
       const res = await fetch('/api/purchases/verify-pickup', {
         method: 'POST',
@@ -156,7 +146,7 @@ export default function CashierVerifyPickupModal({
         body: JSON.stringify({
           purchaseId: selectedOrder.id,
           referenceId: selectedOrder.referenceId,
-          amountTendered: tenderedNum
+          amountTendered: selectedOrder.amount
         })
       });
 
@@ -180,9 +170,6 @@ export default function CashierVerifyPickupModal({
   };
 
   if (!isOpen) return null;
-
-  const tenderedVal = Number(tenderedCash) || 0;
-  const changeVal = selectedOrder ? Math.max(0, tenderedVal - selectedOrder.amount) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
@@ -311,42 +298,18 @@ export default function CashierVerifyPickupModal({
 
               {/* Cash Collection Section */}
               {selectedOrder.status !== 'Paid' && (
-                <div className="bg-purple-50/60 border border-purple-200/80 rounded-2xl p-4 flex flex-col gap-3">
+                <div className="flex flex-col gap-3 pt-1">
                   {selectedOrder.isExpired && (
                     <div className="p-2.5 bg-amber-100/80 border border-amber-300 rounded-xl text-xs font-semibold text-amber-900 flex items-center gap-2">
                       <Clock size={16} className="text-amber-700 shrink-0" />
-                      <span>Note: The 8-hour claim window passed, but you can still collect cash and confirm fulfillment.</span>
+                      <span>Note: The 8-hour claim window passed, but you can still confirm payment & fulfillment.</span>
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-950">
-                    <Banknote size={16} className="text-[#bd00ff]" />
-                    <span>In-Store Cash Collection</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                    <div>
-                      <label className="text-[11px] font-bold text-gray-600 mb-1 block">Cash Tendered (₱):</label>
-                      <input
-                        type="number"
-                        value={tenderedCash}
-                        onChange={(e) => setTenderedCash(e.target.value)}
-                        placeholder={String(selectedOrder.amount)}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-bold text-base text-gray-900 focus:outline-none focus:border-[#bd00ff]"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-gray-600 mb-1 block">Change to Customer:</span>
-                      <div className="px-3 py-2 bg-white border border-gray-200 rounded-xl font-black text-base text-emerald-600">
-                        ₱{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  </div>
 
                   <button
                     onClick={handleConfirmVerification}
                     disabled={verifying}
-                    className="w-full mt-2 py-3 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50"
+                    className="w-full py-3.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50"
                   >
                     {verifying ? (
                       <Loader2 size={18} className="animate-spin" />
