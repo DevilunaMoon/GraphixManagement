@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
@@ -29,6 +29,13 @@ export default function CashierNotifications() {
   const [totalPages, setTotalPages] = useState(1);
   const [unreadCount, setUnreadCount] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  // Update clock every 30 seconds for live 8-hour countdown and auto-expiration
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const fetchNotifications = async (pageToFetch = page) => {
     try {
@@ -52,7 +59,7 @@ export default function CashierNotifications() {
     return () => clearInterval(interval);
   }, [page]);
 
-  const handleAction = async (id: string, action: 'PAID' | 'UNPAID' | 'READ') => {
+  const handleAction = async (id: string, action: 'PAID' | 'UNPAID' | 'READ' | 'RELEASE_STOCK') => {
     try {
       const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
@@ -69,6 +76,8 @@ export default function CashierNotifications() {
           setFeedbackMessage('Transaction marked as PAID successfully!');
         } else if (action === 'UNPAID') {
           setFeedbackMessage('Unpaid pending notification sent to customer successfully!');
+        } else if (action === 'RELEASE_STOCK') {
+          setFeedbackMessage('Stock released back to inventory and customer notified successfully!');
         } else {
           setFeedbackMessage('Notification marked as read.');
         }
@@ -105,6 +114,8 @@ export default function CashierNotifications() {
         return <AlertTriangle size={20} className="text-white" />;
       case 'STOCK_LOW':
         return <AlertCircle size={20} className="text-white" />;
+      case 'CASH_RESERVATION':
+        return <Clock size={20} className="text-white" />;
       case 'PAYMENT':
         return <ShoppingCart size={20} className="text-white" />;
       default:
@@ -163,22 +174,49 @@ export default function CashierNotifications() {
               const isStockLow = notification.type === 'STOCK_LOW';
               const isStockAlert = isStockOut || isStockLow;
 
+              const isCashReservation = notification.type === 'CASH_RESERVATION' || 
+                notification.title.toLowerCase().includes('cash on pickup') || 
+                notification.title.toLowerCase().includes('cash reservation');
+
+              const isPaid = notification.title.toLowerCase().includes('paid') && !notification.title.toLowerCase().includes('unpaid');
+              const isUnpaid = notification.title.toLowerCase().includes('unpaid');
+              const isStockReleased = notification.title.toLowerCase().includes('stock released') || notification.title.toLowerCase().includes('released');
+
+              // Strict 8-hour claim deadline calculation
+              const createdAtMs = new Date(notification.createdAt).getTime();
+              const expiresAtMs = createdAtMs + (8 * 60 * 60 * 1000);
+              const is8HoursPassed = now >= expiresAtMs;
+
+              const diffMs = Math.max(0, expiresAtMs - now);
+              const remainingHrs = Math.floor(diffMs / (1000 * 60 * 60));
+              const remainingMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
               let iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-300';
               if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
               if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
+              if (isCashReservation) {
+                if (isPaid) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
+                else if (isStockReleased) iconBg = 'bg-gray-400';
+                else if (is8HoursPassed) iconBg = !notification.isRead ? 'bg-red-600' : 'bg-gray-400';
+                else iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
+              }
+
+              let cardBg = 'hover:bg-gray-50';
+              if (!notification.isRead) {
+                if (isStockOut) cardBg = 'bg-rose-50/40 hover:bg-rose-50/60';
+                else if (isStockLow) cardBg = 'bg-amber-50/40 hover:bg-amber-50/60';
+                else if (isCashReservation) {
+                  if (is8HoursPassed && !isPaid && !isStockReleased) cardBg = 'bg-red-50/40 hover:bg-red-50/60';
+                  else cardBg = 'bg-amber-50/30 hover:bg-amber-50/50';
+                } else {
+                  cardBg = 'bg-purple-50/50 hover:bg-purple-50';
+                }
+              }
 
               return (
                 <div 
                   key={notification.id} 
-                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${
-                    !notification.isRead 
-                      ? isStockOut 
-                        ? 'bg-rose-50/40 hover:bg-rose-50/60' 
-                        : isStockLow 
-                          ? 'bg-amber-50/40 hover:bg-amber-50/60' 
-                          : 'bg-purple-50/50 hover:bg-purple-50' 
-                      : 'hover:bg-gray-50'
-                  }`}
+                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${cardBg}`}
                 >
                   <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${iconBg}`}>
                     {getIcon(notification.type)}
@@ -199,12 +237,27 @@ export default function CashierNotifications() {
                           LOW STOCK
                         </span>
                       )}
-                      {notification.title.toLowerCase().includes('paid') && !notification.title.toLowerCase().includes('unpaid') && (
+                      {isCashReservation && !isPaid && !isStockReleased && is8HoursPassed && (
+                        <span className="shrink-0 bg-red-100 text-red-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-red-300">
+                          EXPIRED (8-HOUR LIMIT PASSED)
+                        </span>
+                      )}
+                      {isCashReservation && !isPaid && !isStockReleased && !is8HoursPassed && (
+                        <span className="shrink-0 bg-amber-100 text-amber-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm border border-amber-300">
+                          RESERVED (8H WINDOW)
+                        </span>
+                      )}
+                      {isStockReleased && (
+                        <span className="shrink-0 bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-sm border border-gray-300">
+                          EXPIRED & RELEASED
+                        </span>
+                      )}
+                      {isPaid && (
                         <span className="shrink-0 bg-green-100 text-green-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
                           PAID
                         </span>
                       )}
-                      {notification.title.toLowerCase().includes('unpaid') && (
+                      {isUnpaid && (
                         <span className="shrink-0 bg-red-100 text-red-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
                           UNPAID
                         </span>
@@ -213,12 +266,36 @@ export default function CashierNotifications() {
                         <span className="shrink-0 bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm animate-pulse"></span>
                       )}
                     </div>
+
                     <p className={`text-sm leading-relaxed ${!notification.isRead ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
                       {notification.message}
                     </p>
+
+                    {/* Cash on Pickup 8-Hour Status Banner */}
+                    {isCashReservation && !isPaid && !isStockReleased && (
+                      is8HoursPassed ? (
+                        <div className="mt-2.5 p-2.5 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between text-xs text-red-800 font-semibold gap-2">
+                          <div className="flex items-center gap-2">
+                            <Clock size={14} className="text-red-600 shrink-0" />
+                            <span>8-hour physical store claim window has expired. Reservation is automatically expired.</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-2 p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900 font-semibold gap-2">
+                          <div className="flex items-center gap-2">
+                            <Clock size={14} className="text-amber-600 shrink-0 animate-pulse" />
+                            <span>In-Store Claim Window: <strong>{remainingHrs}h {remainingMins}m remaining</strong> before automatic expiration</span>
+                          </div>
+                        </div>
+                      )
+                    )}
+
                     <div className="flex items-center gap-1.5 mt-2.5 text-xs text-gray-500 font-semibold bg-gray-50 w-max px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
                       <Clock size={12} className="text-[#bd00ff]" />
                       <span>{formatDateTime(notification.createdAt)}</span>
+                      {notification.branch && (
+                        <span className="ml-1 text-[#bd00ff]">• {notification.branch}</span>
+                      )}
                     </div>
                   </div>
 
@@ -240,6 +317,38 @@ export default function CashierNotifications() {
                         </button>
                       )}
                     </div>
+                  ) : isCashReservation ? (
+                    !isPaid && !isStockReleased && (
+                      <div className="flex items-center gap-2 sm:self-center">
+                        {is8HoursPassed ? (
+                          // Automatically expired: Cashier only needs the "Release Stock" button to return stock to store
+                          <button 
+                            onClick={() => handleAction(notification.id, 'RELEASE_STOCK')}
+                            className="shrink-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer border-none"
+                            title="Release reserved stock back to store inventory"
+                          >
+                            <RotateCcw size={15} strokeWidth={2.5} /> Release Stock
+                          </button>
+                        ) : (
+                          // Within 8 hours: Cashier can confirm payment or release early
+                          <>
+                            <button 
+                              onClick={() => handleAction(notification.id, 'PAID')}
+                              className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                            >
+                              <Check size={16} strokeWidth={3} /> Paid
+                            </button>
+                            <button 
+                              onClick={() => handleAction(notification.id, 'RELEASE_STOCK')}
+                              className="shrink-0 px-3.5 py-2 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                              title="Cancel reservation and return stock to inventory"
+                            >
+                              <RotateCcw size={14} strokeWidth={2.5} /> Release Stock
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )
                   ) : (
                     !(notification.title.toLowerCase().includes('paid') || notification.title.toLowerCase().includes('unpaid')) && (
                       <div className="flex items-center gap-2 sm:self-center">

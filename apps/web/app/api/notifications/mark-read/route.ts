@@ -34,6 +34,8 @@ export async function POST(req: Request) {
     let updateData: any = {};
     if (action === 'PAID') {
       updateData = { isRead: true, title: 'Paid Checkout Alert' };
+    } else if (action === 'RELEASE_STOCK') {
+      updateData = { isRead: true, title: 'Expired & Stock Released' };
     } else if (action === 'UNPAID') {
       // Keep cashier notification unread so buttons remain active, just send customer notification
       updateData = {};
@@ -46,13 +48,105 @@ export async function POST(req: Request) {
       data: updateData
     });
 
-    // Notify the customer if the action was PAID or UNPAID
+    const message = existingNotification.message || '';
+
+    // Extract purchase IDs if embedded in message
+    const purchaseIdsMatch = message.match(/\[PurchaseIds?:\s*([^\]]+)\]/i);
+    let purchaseIds: string[] = [];
+    if (purchaseIdsMatch?.[1]) {
+      purchaseIds = purchaseIdsMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+    }
+
+    // Handle RELEASE_STOCK: Return reserved inventory stock and alert customer
+    if (action === 'RELEASE_STOCK') {
+      if (purchaseIds.length > 0) {
+        for (const pId of purchaseIds) {
+          const purchase = await prisma.purchase.findUnique({
+            where: { id: pId },
+            include: { device: true, user: true }
+          });
+          if (purchase && purchase.status !== 'Expired') {
+            await prisma.device.update({
+              where: { id: purchase.deviceId },
+              data: {
+                stock: { increment: purchase.quantity },
+                sold: { decrement: Math.max(0, purchase.quantity) }
+              }
+            });
+            await prisma.purchase.update({
+              where: { id: purchase.id },
+              data: { status: 'Expired', isSettled: false }
+            });
+            await prisma.notification.create({
+              data: {
+                userId: purchase.userId,
+                title: 'Reservation Expired — Stock Released',
+                message: `Your 8-hour store pickup reservation for "${purchase.device.name}" (Qty: ${purchase.quantity}) at GraphiX ${purchase.branch || 'store'} has expired. The reserved unit has been released back to store stock.`,
+                branch: purchase.branch,
+                type: 'SYSTEM'
+              }
+            });
+          }
+        }
+      } else {
+        // Fallback: match by CustomerId or name
+        const customerIdMatch = message.match(/\[CustomerId:\s*([^\]]+)\]/i);
+        const custId = customerIdMatch?.[1] ? customerIdMatch[1].trim() : null;
+        if (custId) {
+          const pendingPurchases = await prisma.purchase.findMany({
+            where: { userId: custId, status: 'Pending Pickup' },
+            include: { device: true }
+          });
+          for (const purchase of pendingPurchases) {
+            await prisma.device.update({
+              where: { id: purchase.deviceId },
+              data: {
+                stock: { increment: purchase.quantity },
+                sold: { decrement: Math.max(0, purchase.quantity) }
+              }
+            });
+            await prisma.purchase.update({
+              where: { id: purchase.id },
+              data: { status: 'Expired', isSettled: false }
+            });
+            await prisma.notification.create({
+              data: {
+                userId: purchase.userId,
+                title: 'Reservation Expired — Stock Released',
+                message: `Your 8-hour store pickup reservation for "${purchase.device.name}" at GraphiX ${purchase.branch || 'store'} has expired. The reserved unit has been released back to store stock.`,
+                branch: purchase.branch,
+                type: 'SYSTEM'
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // Handle PAID or UNPAID notifications
     if (action === 'PAID' || action === 'UNPAID') {
-      const message = existingNotification.message;
-      const match = message.match(/^(.*?) just checked out via/);
-      if (match && match[1]) {
+      if (action === 'PAID' && purchaseIds.length > 0) {
+        for (const pId of purchaseIds) {
+          await prisma.purchase.updateMany({
+            where: { id: pId },
+            data: { status: 'Paid', isSettled: true }
+          });
+        }
+      }
+
+      const match = message.match(/^(.*?)\s+(?:just checked out via|reserved)/i);
+      let customerUser: any = null;
+
+      const customerIdMatch = message.match(/\[CustomerId:\s*([^\]]+)\]/i);
+      if (customerIdMatch?.[1]) {
+        customerUser = await prisma.user.findUnique({
+          where: { id: customerIdMatch[1].trim() }
+        });
+      }
+
+      if (!customerUser && match?.[1]) {
         const customerName = match[1].trim();
-        const customer = await prisma.user.findFirst({
+        customerUser = await prisma.user.findFirst({
           where: {
             OR: [
               { name: customerName },
@@ -60,28 +154,28 @@ export async function POST(req: Request) {
             ]
           }
         });
+      }
 
-        if (customer) {
-          let customerTitle = '';
-          let customerMsg = '';
-          if (action === 'PAID') {
-            customerTitle = 'Payment Successful';
-            customerMsg = 'Your checkout payment for the purchase has been successfully processed and verified as PAID by our staff. Thank you!';
-          } else if (action === 'UNPAID') {
-            customerTitle = 'Payment Pending / Unpaid';
-            customerMsg = 'Your checkout payment for the purchase was marked as UNPAID by our staff. Please complete or verify your payment.';
-          }
+      if (customerUser) {
+        let customerTitle = '';
+        let customerMsg = '';
+        if (action === 'PAID') {
+          customerTitle = 'Payment Successful';
+          customerMsg = 'Your payment at GraphiX Store has been successfully verified and confirmed as PAID by our staff. Thank you for your purchase!';
+        } else if (action === 'UNPAID') {
+          customerTitle = 'Payment Pending / Unpaid';
+          customerMsg = 'Your checkout payment was marked as UNPAID by our staff. Please complete or verify your payment at the store.';
+        }
 
-          if (customerTitle && customerMsg) {
-            await prisma.notification.create({
-              data: {
-                userId: customer.id,
-                title: customerTitle,
-                message: customerMsg,
-                type: 'SYSTEM'
-              }
-            });
-          }
+        if (customerTitle && customerMsg) {
+          await prisma.notification.create({
+            data: {
+              userId: customerUser.id,
+              title: customerTitle,
+              message: customerMsg,
+              type: 'SYSTEM'
+            }
+          });
         }
       }
     }

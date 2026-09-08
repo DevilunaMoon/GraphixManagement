@@ -228,11 +228,15 @@ function CustomerPaymentContent() {
         body: JSON.stringify({
           deviceId: deviceId || undefined,
           amount: finalTotal,
+          quantity: items[0]?.quantity || 1,
           variations: selectedVariationsStr,
           cartItemIds: cartItemIdsParam ? cartItemIdsParam.split(',') : undefined,
           phoneNumber: customerProfile?.phone || undefined,
           staffMessage: fullStaffMessage || undefined,
-          branch: selectedBranch.replace(' Branch', '')
+          paymentMethod: method === 'cash' ? 'Cash' : 'GCash',
+          paymentType: method === 'cash' ? 'Cash' : 'Full',
+          source: 'Online',
+          branch: selectedBranch.replace(/\s*Branch$/i, '').trim()
         })
       });
 

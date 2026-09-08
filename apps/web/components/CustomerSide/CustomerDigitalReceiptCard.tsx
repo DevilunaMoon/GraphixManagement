@@ -116,7 +116,7 @@ export default function CustomerDigitalReceiptCard({
   const separator = '--------------------------------------------------';
   const doubleSeparator = '==================================================';
 
-  let receiptText = `${doubleSeparator}\n                  GRAPHIX STORE\n                 ${branchLocation}\n              ${machineId}\n              ${timestamp}\n${separator}\nSALES INVOICE\n${shortTransId}\n${separator}\n`;
+  let receiptText = `${doubleSeparator}\n                  GRAPHIX STORE\n                 ${branchLocation}\n              ${machineId}\n              ${timestamp}\n${separator}\nSALES INVOICE\n${shortTransId}\n${paymentMethod === 'Cash' ? 'TERMS: CASH ON PICKUP (8-HOUR CLAIM LIMIT)\n' : ''}${separator}\n`;
 
   resolvedItems.forEach((item) => {
     const itemName = item.name.toUpperCase();
@@ -357,6 +357,11 @@ export default function CustomerDigitalReceiptCard({
             <p className="text-[11px] text-gray-600 m-0 mt-0.5">
               {timestamp}
             </p>
+            {paymentMethod === 'Cash' && (
+              <p className="text-[10px] font-black text-amber-800 bg-amber-50 rounded px-2 py-0.5 mt-1.5 inline-block border border-amber-300 uppercase tracking-tight">
+                CLAIM LIMIT: 8 HOURS FROM ORDER (CASH ON PICKUP)
+              </p>
+            )}
           </div>
 
           {/* Invoice Header */}

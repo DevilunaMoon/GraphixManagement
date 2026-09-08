@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Clock } from 'lucide-react';
 import CustomerDigitalReceiptCard, { DigitalReceiptData, ReceiptCartItem } from '../../components/CustomerSide/CustomerDigitalReceiptCard';
 
 function CustomerPurchaseConfirmedContent() {
@@ -224,17 +225,44 @@ function CustomerPurchaseConfirmedContent() {
   }, [purchaseId, paramAmount, paramDevice, paramQty, paramMethod, paramTendered, paramChange, paramNote, paramBranch]);
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex justify-center items-center p-4 sm:p-6 font-['Inter']">
+    <div className="min-h-screen bg-[#f4f5f7] flex flex-col justify-center items-center p-4 sm:p-6 font-['Inter']">
       {loading ? (
         <div className="flex flex-col items-center justify-center gap-3">
           <div className="w-12 h-12 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
           <p className="text-gray-500 font-semibold text-sm">Generating digital receipt...</p>
         </div>
       ) : (
-        <CustomerDigitalReceiptCard 
-          data={receiptData || undefined}
-          onReturnToDashboard={() => navigate('/customer/dashboard')}
-        />
+        <div className="w-full max-w-lg flex flex-col items-center">
+          {/* 8-Hour Store Claim Limit Banner for Cash on Pickup */}
+          {receiptData?.paymentMethod === 'Cash' && (
+            <div className="w-full mb-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-400 rounded-2xl p-4 shadow-sm flex items-start gap-3.5 backdrop-blur-sm">
+              <div className="p-2.5 bg-amber-500 text-white rounded-xl shrink-0 shadow-sm mt-0.5">
+                <Clock size={20} strokeWidth={2.5} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                  <h4 className="text-sm font-black text-amber-950 uppercase tracking-wide m-0">
+                    8-Hour Store Pickup Window
+                  </h4>
+                  <span className="text-[10px] font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Cash on Pickup
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-amber-900/90 leading-relaxed m-0">
+                  Your unit is reserved at <span className="font-extrabold text-amber-950 underline decoration-amber-400">{receiptData.branch}</span>. Please visit the store and pay in cash within <span className="font-extrabold text-amber-950">8 hours</span> of placing this order.
+                </p>
+                <p className="text-[11px] text-amber-800/80 mt-1 m-0 font-medium">
+                  ⏰ Unclaimed reservations will automatically expire after 8 hours and be returned to stock.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <CustomerDigitalReceiptCard 
+            data={receiptData || undefined}
+            onReturnToDashboard={() => navigate('/customer/dashboard')}
+          />
+        </div>
       )}
     </div>
   );

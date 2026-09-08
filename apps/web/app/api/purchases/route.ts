@@ -17,13 +17,15 @@ export async function POST(req: Request) {
       variations, 
       cartItemIds, 
       paymentType, 
+      paymentMethod,
       phoneNumber, 
       staffMessage, 
       source, 
       downpaymentAmount, 
       remainingBalance, 
       isSettled, 
-      targetUserId 
+      targetUserId,
+      branch
     } = await req.json();
 
     const actualUserId = targetUserId || session.userId;
@@ -41,32 +43,106 @@ export async function POST(req: Request) {
     });
     const userName = user?.name || user?.email || 'A customer';
 
-    const operatingBranch = (session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
+    // Strictly resolve operating branch from the customer's selected branch
+    const requestedBranch = typeof branch === 'string' ? branch.replace(/\s*Branch$/i, '').trim() : '';
+    const operatingBranch = requestedBranch || ((session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
       ? (session.branch || 'Tagoloan')
-      : 'Tagoloan';
+      : 'Tagoloan');
 
-    async function notifyCashiers(paymentLabel: string) {
+    // Detect Cash on Pickup order
+    const isCashOrder = Boolean(
+      (paymentMethod && paymentMethod.toLowerCase().includes('cash')) ||
+      (paymentType && paymentType.toLowerCase().includes('cash')) ||
+      (staffMessage && staffMessage.toLowerCase().includes('cash on pickup'))
+    );
+
+    // Exact 8-hour claim window calculation
+    const CLAIM_LIMIT_HOURS = 8;
+    const deadlineDate = new Date(Date.now() + CLAIM_LIMIT_HOURS * 60 * 60 * 1000);
+    const formattedDeadline = deadlineDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }) + ' (' + deadlineDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }) + ')';
+    const deadlineIso = deadlineDate.toISOString();
+
+    async function notifyCashiers(details: {
+      paymentLabel: string;
+      itemSummary: string;
+      totalAmount: number;
+      purchaseIds?: string[];
+      isCash?: boolean;
+    }) {
+      // 1. Strictly isolate notifications to Cashiers in this operating branch
       const cashiers = await prisma.user.findMany({
-        where: { role: 'CASHIER', branch: operatingBranch },
-        select: { id: true }
+        where: { 
+          role: 'CASHIER', 
+          branch: { equals: operatingBranch, mode: 'insensitive' } 
+        },
+        select: { id: true, name: true, branch: true }
       });
-      if (cashiers.length > 0) {
-        let msg = `${userName} just checked out via ${paymentLabel}.`;
+
+      let recipientIds = cashiers.map(c => c.id);
+      // Fallback: If no cashier is assigned to this branch, alert branch staff
+      if (recipientIds.length === 0) {
+        const branchStaff = await prisma.user.findMany({
+          where: {
+            role: { in: ['CASHIER', 'ADMIN'] },
+            branch: { equals: operatingBranch, mode: 'insensitive' }
+          },
+          select: { id: true }
+        });
+        recipientIds = branchStaff.map(s => s.id);
+      }
+
+      if (recipientIds.length > 0) {
+        const title = details.isCash
+          ? `Cash on Pickup Order — ${operatingBranch} Branch`
+          : `New Checkout Alert — ${operatingBranch} Branch`;
+
+        let msg = details.isCash
+          ? `${userName} reserved "${details.itemSummary}" for Cash on Pickup at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ⏰ 8-Hour Limit: Must be claimed by ${formattedDeadline}.`
+          : `${userName} just checked out via ${details.paymentLabel} at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+
         if (phoneNumber) {
-          msg += ` Cash: ${phoneNumber}.`;
+          msg += ` Phone: ${phoneNumber}.`;
         }
         if (staffMessage) {
           msg += ` Msg: "${staffMessage}".`;
         }
+        if (details.purchaseIds && details.purchaseIds.length > 0) {
+          msg += ` [PurchaseIds: ${details.purchaseIds.join(',')}]`;
+        }
+        if (details.isCash) {
+          msg += ` [Deadline: ${deadlineIso}] [CustomerId: ${actualUserId}]`;
+        }
 
-        const notifications = cashiers.map(c => ({
-          userId: c.id,
-          title: 'New Checkout Alert',
+        const notifications = recipientIds.map(userId => ({
+          userId,
+          title,
           message: msg,
           branch: operatingBranch,
-          type: 'PAYMENT'
+          type: details.isCash ? 'CASH_RESERVATION' : 'PAYMENT'
         }));
+
         await prisma.notification.createMany({ data: notifications });
+      }
+
+      // 2. Also dispatch an automated confirmation notification to the customer for Cash reservations
+      if (actualUserId && details.isCash) {
+        await prisma.notification.create({
+          data: {
+            userId: actualUserId,
+            title: 'Order Reserved — Cash on Pickup',
+            message: `Your reservation for "${details.itemSummary}" at GraphiX ${operatingBranch} Branch is confirmed! Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Please claim and pay in cash within 8 hours (before ${formattedDeadline}). Unclaimed reservations will automatically expire.`,
+            branch: operatingBranch,
+            type: 'SYSTEM'
+          }
+        });
       }
     }
 
@@ -113,7 +189,8 @@ export async function POST(req: Request) {
 
         // Create purchases
         const now = new Date();
-        const purchaseData = cartItems.map(item => {
+        const createdPurchases = [];
+        for (const item of cartItems) {
           const device = deviceMap.get(item.deviceId);
           const vars = item.variations ? JSON.parse(item.variations) : [];
           const basePrice = (vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : device?.price) || 0;
@@ -127,36 +204,51 @@ export async function POST(req: Request) {
 
           const discountedPrice = isDiscountActive ? (basePrice * (1 - (device?.discount || 0) / 100)) : basePrice;
 
-          return {
-            userId: session.userId,
-            deviceId: item.deviceId,
-            amount: discountedPrice * item.quantity,
-            quantity: item.quantity,
-            variations: item.variations,
-            paymentType: paymentType || 'Full',
-            source: source || 'Online',
-            branch: operatingBranch,
-            downpaymentAmount: 0,
-            remainingBalance: 0,
-            isSettled: true
-          };
-        });
-
-        await tx.purchase.createMany({
-          data: purchaseData
-        });
+          const p = await tx.purchase.create({
+            data: {
+              userId: session.userId,
+              deviceId: item.deviceId,
+              amount: discountedPrice * item.quantity,
+              quantity: item.quantity,
+              variations: item.variations,
+              paymentType: isCashOrder ? 'Cash' : (paymentType || 'Full'),
+              source: source || 'Online',
+              branch: operatingBranch,
+              status: isCashOrder ? 'Pending Pickup' : 'Active',
+              downpaymentAmount: 0,
+              remainingBalance: 0,
+              isSettled: !isCashOrder
+            }
+          });
+          createdPurchases.push(p);
+        }
 
         // Delete from cart
         await tx.cartItem.deleteMany({
           where: { id: { in: cartItemIds }, userId: session.userId }
         });
 
-        return { success: true };
+        return { 
+          success: true,
+          createdPurchases,
+          totalCartAmount: createdPurchases.reduce((sum, p) => sum + p.amount, 0),
+          itemNames: cartItems.map(i => deviceMap.get(i.deviceId)?.name || 'Device')
+        };
       });
 
       if (result.success) {
-        const pTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
-        await notifyCashiers(pTypeLabel);
+        const pTypeLabel = isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)');
+        const summary = result.itemNames.length > 1
+          ? `${result.itemNames[0]} (+${result.itemNames.length - 1} more)`
+          : (result.itemNames[0] || 'Cart Items');
+
+        await notifyCashiers({
+          paymentLabel: pTypeLabel,
+          itemSummary: summary,
+          totalAmount: result.totalCartAmount,
+          purchaseIds: result.createdPurchases.map((p: any) => p.id),
+          isCash: isCashOrder
+        });
 
         // Check and trigger stock alerts for all purchased cart items
         for (const cId of cartItemIds) {
@@ -222,18 +314,28 @@ export async function POST(req: Request) {
           amount: dpAmt,
           quantity: reqQty,
           variations: variations || null,
-          paymentType: paymentType || 'Full',
+          paymentType: isCashOrder ? 'Cash' : (paymentType || 'Full'),
           source: source || 'Online',
           branch: operatingBranch,
+          status: isCashOrder ? 'Pending Pickup' : 'Active',
           downpaymentAmount: isDp ? dpAmt : 0,
           remainingBalance: remBal,
-          isSettled: settled
+          isSettled: isDp ? settled : (isCashOrder ? false : true)
+        },
+        include: {
+          device: true
         }
       });
     });
 
-    const singlePTypeLabel = paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)';
-    await notifyCashiers(singlePTypeLabel);
+    const singlePTypeLabel = isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)');
+    await notifyCashiers({
+      paymentLabel: singlePTypeLabel,
+      itemSummary: purchase.device?.name || 'Device',
+      totalAmount: purchase.amount,
+      purchaseIds: [purchase.id],
+      isCash: isCashOrder
+    });
 
     // Trigger stock alert check for single purchase
     await triggerStockAlert({ deviceId });
