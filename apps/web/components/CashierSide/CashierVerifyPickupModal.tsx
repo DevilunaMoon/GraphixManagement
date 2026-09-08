@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PickupReservation {
   id: string;
@@ -87,6 +87,8 @@ export default function CashierVerifyPickupModal({
 }: CashierVerifyPickupModalProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [reservations, setReservations] = useState<PickupReservation[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 3;
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PickupReservation | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -101,15 +103,18 @@ export default function CashierVerifyPickupModal({
       const data = await res.json();
       if (res.ok && data && Array.isArray(data.purchases)) {
         setReservations(data.purchases);
+        setCurrentPage(1);
         if (data.purchases.length === 1 && query.trim()) {
           setSelectedOrder(data.purchases[0]);
         }
       } else {
         setReservations([]);
+        setCurrentPage(1);
       }
     } catch (err) {
       console.error('Error fetching reservations:', err);
       setReservations([]);
+      setCurrentPage(1);
     } finally {
       setLoading(false);
     }
@@ -125,6 +130,7 @@ export default function CashierVerifyPickupModal({
       setSelectedOrder(null);
       setSuccessMessage(null);
       setErrorMessage(null);
+      setCurrentPage(1);
     }
   }, [isOpen, searchQuery]);
 
@@ -168,6 +174,12 @@ export default function CashierVerifyPickupModal({
       setVerifying(false);
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(reservations.length / itemsPerPage));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentReservations = reservations.slice(startIndex, endIndex);
 
   if (!isOpen) return null;
 
@@ -335,71 +347,123 @@ export default function CashierVerifyPickupModal({
                   <p className="text-xs text-gray-400">Ask the customer for their full name, phone number, or show their order screenshot.</p>
                 </div>
               ) : (
-                reservations.map((resItem) => {
-                  const isPaid = resItem.status === 'Paid';
-                  return (
-                    <div
-                      key={resItem.id}
-                      onClick={() => handleSelectOrder(resItem)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
-                        isPaid
-                          ? 'bg-gray-50 border-gray-200 opacity-75'
-                          : resItem.isExpired
-                          ? 'bg-rose-50/40 border-rose-200'
-                          : 'bg-white border-purple-100 hover:border-[#bd00ff] hover:shadow-md'
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-mono font-bold text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-                            {resItem.referenceId}
-                          </span>
-                          <span className="font-bold text-sm text-gray-900 truncate">
-                            {resItem.user.name || 'Customer'}
-                          </span>
-                          {resItem.user.phone && (
-                            <span className="text-xs text-gray-500 font-medium">
-                              ({resItem.user.phone})
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-600 m-0 truncate">
-                          {resItem.device.name} (Qty: {resItem.quantity}) {formatVariations(resItem.variations) ? `• ${formatVariations(resItem.variations)}` : ''}
-                        </p>
-                      </div>
+                <>
+                  <div className="flex flex-col gap-2.5">
+                    {currentReservations.map((resItem) => {
+                      const isPaid = resItem.status === 'Paid';
+                      return (
+                        <div
+                          key={resItem.id}
+                          onClick={() => handleSelectOrder(resItem)}
+                          className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
+                            isPaid
+                              ? 'bg-gray-50 border-gray-200 opacity-75'
+                              : resItem.isExpired
+                              ? 'bg-rose-50/40 border-rose-200'
+                              : 'bg-white border-purple-100 hover:border-[#bd00ff] hover:shadow-md'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className="font-mono font-bold text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                                {resItem.referenceId}
+                              </span>
+                              <span className="font-bold text-sm text-gray-900 truncate">
+                                {resItem.user.name || 'Customer'}
+                              </span>
+                              {resItem.user.phone && (
+                                <span className="text-xs text-gray-500 font-medium">
+                                  ({resItem.user.phone})
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 m-0 truncate">
+                              {resItem.device.name} (Qty: {resItem.quantity}) {formatVariations(resItem.variations) ? `• ${formatVariations(resItem.variations)}` : ''}
+                            </p>
+                          </div>
 
-                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
-                        <div className="text-right">
-                          <span className="font-black text-sm text-black block">
-                            ₱{resItem.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                          </span>
-                          {isPaid ? (
-                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                              VERIFIED
-                            </span>
-                          ) : resItem.isExpired ? (
-                            <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
-                              EXPIRED
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                              PENDING
-                            </span>
-                          )}
+                          <div className="flex items-center gap-3 shrink-0 self-end sm:self-center">
+                            <div className="text-right">
+                              <span className="font-black text-sm text-black block">
+                                ₱{resItem.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </span>
+                              {isPaid ? (
+                                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                  VERIFIED
+                                </span>
+                              ) : resItem.isExpired ? (
+                                <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                                  EXPIRED
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                                  PENDING
+                                </span>
+                              )}
+                            </div>
+
+                            {!isPaid && (
+                              <button
+                                type="button"
+                                className="px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all"
+                              >
+                                Verify
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-purple-100 mt-2 px-1">
+                      <span className="text-xs font-semibold text-gray-500">
+                        Showing <strong className="text-gray-900">{startIndex + 1}</strong> to <strong className="text-gray-900">{Math.min(endIndex, reservations.length)}</strong> of <strong className="text-gray-900">{reservations.length}</strong> reservations
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={safeCurrentPage === 1}
+                          className="px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                        >
+                          <ChevronLeft size={14} />
+                          <span>Previous</span>
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`w-7 h-7 rounded-lg text-xs font-bold transition-all border-none cursor-pointer flex items-center justify-center ${
+                                safeCurrentPage === pageNum
+                                  ? 'bg-[#bd00ff] text-white shadow-sm'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-900'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
                         </div>
 
-                        {!isPaid && !resItem.isExpired && (
-                          <button
-                            type="button"
-                            className="px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all"
-                          >
-                            Verify
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={safeCurrentPage === totalPages}
+                          className="px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-xs font-bold text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                        >
+                          <span>Next</span>
+                          <ChevronRight size={14} />
+                        </button>
                       </div>
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
             </div>
           )}
