@@ -25,10 +25,16 @@ export async function POST(req: Request) {
       remainingBalance, 
       isSettled, 
       targetUserId,
-      branch
+      branch,
+      referenceId
     } = await req.json();
 
     const actualUserId = targetUserId || session.userId;
+
+    // Unique Claim Code / Reference ID for the transaction
+    const cleanRefId = (typeof referenceId === 'string' && referenceId.trim())
+      ? (referenceId.trim().startsWith('#') ? referenceId.trim() : `#${referenceId.trim()}`)
+      : `#CMTPQ${Math.random().toString(36).substring(2, 6).toUpperCase()}${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
 
     if (phoneNumber && actualUserId && !phoneNumber.includes('₱') && !phoneNumber.toLowerCase().includes('cash')) {
       await prisma.user.update({
@@ -108,6 +114,9 @@ export async function POST(req: Request) {
           ? `${userName} reserved "${details.itemSummary}" for Cash on Pickup at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ⏰ 8-Hour Limit: Must be claimed by ${formattedDeadline}.`
           : `${userName} just checked out via ${details.paymentLabel} at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
 
+        if (cleanRefId) {
+          msg += ` Claim Code: ${cleanRefId}.`;
+        }
         if (phoneNumber) {
           msg += ` Phone: ${phoneNumber}.`;
         }
@@ -118,7 +127,7 @@ export async function POST(req: Request) {
           msg += ` [PurchaseIds: ${details.purchaseIds.join(',')}]`;
         }
         if (details.isCash) {
-          msg += ` [Deadline: ${deadlineIso}] [CustomerId: ${actualUserId}]`;
+          msg += ` [ClaimCode: ${cleanRefId}] [Deadline: ${deadlineIso}] [CustomerId: ${actualUserId}]`;
         }
 
         const notifications = recipientIds.map(userId => ({
@@ -138,7 +147,7 @@ export async function POST(req: Request) {
           data: {
             userId: actualUserId,
             title: 'Order Reserved — Cash on Pickup',
-            message: `Your reservation for "${details.itemSummary}" at GraphiX ${operatingBranch} Branch is confirmed! Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Please claim and pay in cash within 8 hours (before ${formattedDeadline}). Unclaimed reservations will automatically expire.`,
+            message: `Your reservation for "${details.itemSummary}" at GraphiX ${operatingBranch} Branch is confirmed! Claim Code: ${cleanRefId}. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Please claim and pay in cash within 8 hours (before ${formattedDeadline}). Unclaimed reservations will automatically expire.`,
             branch: operatingBranch,
             type: 'SYSTEM'
           }
@@ -190,7 +199,8 @@ export async function POST(req: Request) {
         // Create purchases
         const now = new Date();
         const createdPurchases = [];
-        for (const item of cartItems) {
+        for (let i = 0; i < cartItems.length; i++) {
+          const item = cartItems[i]!;
           const device = deviceMap.get(item.deviceId);
           const vars = item.variations ? JSON.parse(item.variations) : [];
           const basePrice = (vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : device?.price) || 0;
@@ -203,6 +213,7 @@ export async function POST(req: Request) {
           );
 
           const discountedPrice = isDiscountActive ? (basePrice * (1 - (device?.discount || 0) / 100)) : basePrice;
+          const itemRefId = cartItems.length > 1 ? `${cleanRefId}-${i + 1}` : cleanRefId;
 
           const p = await tx.purchase.create({
             data: {
@@ -215,6 +226,7 @@ export async function POST(req: Request) {
               source: source || 'Online',
               branch: operatingBranch,
               status: isCashOrder ? 'Pending Pickup' : 'Active',
+              referenceId: itemRefId,
               downpaymentAmount: 0,
               remainingBalance: 0,
               isSettled: !isCashOrder
@@ -258,7 +270,12 @@ export async function POST(req: Request) {
           }
         }
 
-        return NextResponse.json({ success: true, message: 'Cart items purchased' }, { status: 201 });
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Cart items purchased',
+          referenceId: cleanRefId,
+          purchases: result.createdPurchases
+        }, { status: 201 });
       }
     }
 
@@ -318,6 +335,7 @@ export async function POST(req: Request) {
           source: source || 'Online',
           branch: operatingBranch,
           status: isCashOrder ? 'Pending Pickup' : 'Active',
+          referenceId: cleanRefId,
           downpaymentAmount: isDp ? dpAmt : 0,
           remainingBalance: remBal,
           isSettled: isDp ? settled : (isCashOrder ? false : true)
