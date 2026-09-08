@@ -25,6 +25,7 @@ export async function GET(req: Request) {
         { referenceId: { contains: cleanRef, mode: 'insensitive' } },
         { id: { contains: query, mode: 'insensitive' } },
         { id: { contains: cleanRef, mode: 'insensitive' } },
+        { imei: { contains: query, mode: 'insensitive' } },
         { user: { name: { contains: query, mode: 'insensitive' } } },
         { user: { phone: { contains: query, mode: 'insensitive' } } },
         { user: { email: { contains: query, mode: 'insensitive' } } },
@@ -103,6 +104,7 @@ export async function GET(req: Request) {
       return {
         id: p.id,
         referenceId: p.referenceId || `#CMTPQ${p.id.slice(-5).toUpperCase()}`,
+        imei: p.imei || null,
         amount: p.amount,
         quantity: p.quantity,
         variations: p.variations,

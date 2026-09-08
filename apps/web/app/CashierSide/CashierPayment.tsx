@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, CheckCircle2, AlertCircle, AlertTriangle, CreditCard, Receipt, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
+import { isIPhoneProduct } from '../../lib/imei';
 
 interface CartItem {
   id: string;
@@ -28,6 +30,14 @@ export default function CashierPayment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [terminateModalOpen, setTerminateModalOpen] = useState(false);
+  const [pendingImeiPurchases, setPendingImeiPurchases] = useState<{
+    purchaseId: string;
+    deviceName: string;
+    referenceId?: string;
+    customerName?: string;
+  }[]>([]);
+  const [currentImeiIndex, setCurrentImeiIndex] = useState(0);
+  const [showImeiModal, setShowImeiModal] = useState(false);
 
   useEffect(() => {
     if (terminateModalOpen) {
@@ -113,6 +123,13 @@ export default function CashierPayment() {
     setErrorMsg('');
 
     try {
+      const createdIphonePurchases: {
+        purchaseId: string;
+        deviceName: string;
+        referenceId?: string;
+        customerName?: string;
+      }[] = [];
+
       // Process each cart item as a purchase record
       for (const item of cartItems) {
         const itemTotal = item.price * item.cartQty;
@@ -120,44 +137,92 @@ export default function CashierPayment() {
           ? Math.round((downpaymentAmount / totalAmount) * itemTotal)
           : itemTotal;
         const itemRemBal = paymentType === 'Downpayment' ? Math.max(0, itemTotal - itemDpAmount) : 0;
+        const isIPhone = isIPhoneProduct(item.name);
 
-        const res = await fetch('/api/purchases', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            deviceId: item.id,
-            amount: itemDpAmount,
-            quantity: item.cartQty,
-            paymentType: paymentType,
-            source: 'POS',
-            downpaymentAmount: paymentType === 'Downpayment' ? itemDpAmount : 0,
-            remainingBalance: itemRemBal,
-            isSettled: isSettled,
-            phoneNumber: contactNumber,
-            customerName: customerName
-          })
-        });
+        // If iPhone with quantity > 1, create individual unit records for unique IMEI assignment
+        const unitsToProcess = isIPhone ? item.cartQty : 1;
+        const perUnitAmount = isIPhone ? Math.round(itemDpAmount / item.cartQty) : itemDpAmount;
+        const perUnitRemBal = isIPhone ? Math.round(itemRemBal / item.cartQty) : itemRemBal;
+        const perUnitQuantity = isIPhone ? 1 : item.cartQty;
 
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || 'Failed to process POS purchase');
+        for (let u = 0; u < unitsToProcess; u++) {
+          const res = await fetch('/api/purchases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              deviceId: item.id,
+              amount: perUnitAmount,
+              quantity: perUnitQuantity,
+              paymentType: paymentType,
+              source: 'POS',
+              downpaymentAmount: paymentType === 'Downpayment' ? perUnitAmount : 0,
+              remainingBalance: perUnitRemBal,
+              isSettled: isSettled,
+              phoneNumber: contactNumber,
+              customerName: customerName
+            })
+          });
+
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to process POS purchase');
+          }
+
+          const createdData = await res.json();
+          if (isIPhone && createdData?.id) {
+            createdIphonePurchases.push({
+              purchaseId: createdData.id,
+              deviceName: item.name,
+              referenceId: createdData.referenceId || null,
+              customerName: customerName || 'Walk-in Customer'
+            });
+          }
         }
       }
 
       // Clear session cart
       sessionStorage.removeItem('pos_cart');
 
-      // Navigate to appropriate Order History section based on Payment Type
-      if (paymentType === 'Downpayment') {
-        router.push('/cashier/records/downpayments');
+      // If iPhone(s) were purchased, prompt cashier for 15-digit IMEI
+      if (createdIphonePurchases.length > 0) {
+        setPendingImeiPurchases(createdIphonePurchases);
+        setCurrentImeiIndex(0);
+        setShowImeiModal(true);
       } else {
-        router.push('/cashier/records');
+        // Navigate to appropriate Order History section based on Payment Type
+        if (paymentType === 'Downpayment') {
+          router.push('/cashier/records/downpayments');
+        } else {
+          router.push('/cashier/records');
+        }
       }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Failed to complete transaction.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleImeiSaved = () => {
+    if (currentImeiIndex + 1 < pendingImeiPurchases.length) {
+      setCurrentImeiIndex(prev => prev + 1);
+    } else {
+      setShowImeiModal(false);
+      if (paymentType === 'Downpayment') {
+        router.push('/cashier/records/downpayments');
+      } else {
+        router.push('/cashier/records');
+      }
+    }
+  };
+
+  const handleImeiClose = () => {
+    setShowImeiModal(false);
+    if (paymentType === 'Downpayment') {
+      router.push('/cashier/records/downpayments');
+    } else {
+      router.push('/cashier/records');
     }
   };
 
@@ -402,6 +467,21 @@ export default function CashierPayment() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* iPhone IMEI Prompt Modal */}
+      {showImeiModal && pendingImeiPurchases[currentImeiIndex] && (
+        <CashierImeiPromptModal
+          isOpen={showImeiModal}
+          onClose={handleImeiClose}
+          purchaseId={pendingImeiPurchases[currentImeiIndex].purchaseId}
+          deviceName={pendingImeiPurchases[currentImeiIndex].deviceName}
+          referenceId={pendingImeiPurchases[currentImeiIndex].referenceId}
+          customerName={pendingImeiPurchases[currentImeiIndex].customerName}
+          unitIndex={currentImeiIndex + 1}
+          totalUnits={pendingImeiPurchases.length}
+          onSaved={handleImeiSaved}
+        />
       )}
     </main>
   );

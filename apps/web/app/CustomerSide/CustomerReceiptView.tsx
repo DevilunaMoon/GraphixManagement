@@ -15,6 +15,8 @@ interface PurchaseDetails {
   source: string;
   status: string;
   createdAt: string;
+  imei?: string | null;
+  referenceId?: string | null;
   device: {
     name: string;
     price: number;
@@ -221,6 +223,11 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
               <span style={{ textAlign: 'left' }}>Item: {purchase.quantity || 1}x {purchase.variations ? `(${formatVariations(purchase.variations)})` : ''}</span>
               <span style={{ textAlign: 'right' }}>{purchase.quantity || 1} @ {devicePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
+            {purchase.imei && (
+              <div style={{ textAlign: 'left', fontSize: '11px', fontFamily: 'monospace', color: '#111', fontWeight: 'bold', marginBottom: '8px' }}>
+                IMEI: {purchase.imei}
+              </div>
+            )}
 
             <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 

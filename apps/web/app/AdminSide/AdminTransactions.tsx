@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck, CheckCircle2, Receipt } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck, CheckCircle2, Receipt, Smartphone } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -19,6 +19,8 @@ interface Transaction {
   downpaymentAmount?: number;
   remainingBalance?: number;
   isSettled?: boolean;
+  imei?: string | null;
+  referenceId?: string | null;
   user: {
     id: string;
     name: string | null;
@@ -265,6 +267,11 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           <span className="text-xs text-gray-500 font-semibold truncate">
                             Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                           </span>
+                          {tx.imei && (
+                            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                              IMEI: {tx.imei}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -457,6 +464,16 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                     </div>
                   </div>
 
+                  {/* IMEI row */}
+                  {selectedTransaction.imei && (
+                    <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                      <span className="text-gray-500 font-semibold text-sm">iPhone IMEI</span>
+                      <span className="font-mono font-bold text-sm text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-200 select-all">
+                        {selectedTransaction.imei}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
                     <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
                     <span className="font-bold text-gray-900">
@@ -613,6 +630,11 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                     <span>Qty: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
                     <span>{tx.quantity} @ {(tx.device?.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
+                  {tx.imei && (
+                    <div style={{ fontSize: "10px", fontFamily: "monospace", color: "#222", marginBottom: "6px", fontWeight: "bold" }}>
+                      IMEI: {tx.imei}
+                    </div>
+                  )}
 
                   <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 
@@ -712,6 +734,11 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                     <span>Item: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
                     <span>{tx.quantity} @ {(tx.device?.price || tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
+                  {tx.imei && (
+                    <div style={{ fontSize: "10px", fontFamily: "monospace", color: "#222", marginBottom: "6px", fontWeight: "bold" }}>
+                      IMEI: {tx.imei}
+                    </div>
+                  )}
 
                   <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 

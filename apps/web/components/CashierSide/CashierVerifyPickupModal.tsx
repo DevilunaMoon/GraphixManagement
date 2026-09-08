@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight, Smartphone } from 'lucide-react';
+import CashierImeiPromptModal from './CashierImeiPromptModal';
+import { isIPhoneProduct } from '../../lib/imei';
 
 interface PickupReservation {
   id: string;
   referenceId: string;
+  imei?: string | null;
   amount: number;
   quantity: number;
   variations: string | null;
@@ -94,6 +97,13 @@ export default function CashierVerifyPickupModal({
   const [verifying, setVerifying] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [imeiModalTarget, setImeiModalTarget] = useState<{
+    purchaseId: string;
+    deviceName: string;
+    referenceId?: string;
+    customerName?: string | null;
+    initialImei?: string | null;
+  } | null>(null);
 
   const fetchOrders = async (query = searchQuery) => {
     setLoading(true);
@@ -164,6 +174,16 @@ export default function CashierVerifyPickupModal({
         );
         setSelectedOrder(prev => prev ? { ...prev, status: 'Paid', isSettled: true } : null);
         if (onSuccess) onSuccess();
+
+        // Check if this verified order is an iPhone without an IMEI recorded yet
+        if (isIPhoneProduct(selectedOrder.device.name) && !selectedOrder.imei) {
+          setImeiModalTarget({
+            purchaseId: selectedOrder.id,
+            deviceName: selectedOrder.device.name,
+            referenceId: selectedOrder.referenceId,
+            customerName: selectedOrder.user.name
+          });
+        }
       } else {
         setErrorMessage(data.error || 'Failed to verify payment');
       }
@@ -173,6 +193,15 @@ export default function CashierVerifyPickupModal({
     } finally {
       setVerifying(false);
     }
+  };
+
+  const handleImeiSaved = (newImei: string) => {
+    if (imeiModalTarget) {
+      setReservations(prev => prev.map(r => r.id === imeiModalTarget.purchaseId ? { ...r, imei: newImei } : r));
+      setSelectedOrder(prev => (prev && prev.id === imeiModalTarget.purchaseId) ? { ...prev, imei: newImei } : prev);
+    }
+    setImeiModalTarget(null);
+    if (onSuccess) onSuccess();
   };
 
   const totalPages = Math.max(1, Math.ceil(reservations.length / itemsPerPage));
@@ -279,6 +308,34 @@ export default function CashierVerifyPickupModal({
                       </span>
                     ))}
                   </div>
+
+                  {/* Recorded IMEI Badge or Prompt for iPhone */}
+                  {selectedOrder.imei ? (
+                    <div className="flex items-center gap-1.5 mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-xl">
+                      <Smartphone size={15} className="text-indigo-600 shrink-0" />
+                      <span className="text-xs font-semibold text-gray-700">Recorded IMEI:</span>
+                      <span className="font-mono font-black text-xs text-indigo-900">{selectedOrder.imei}</span>
+                    </div>
+                  ) : isIPhoneProduct(selectedOrder.device.name) && (selectedOrder.status === 'Paid' || selectedOrder.isSettled || selectedOrder.status === 'Active') ? (
+                    <div className="flex items-center justify-between gap-2 mt-2 p-2 bg-amber-50 border border-amber-200 rounded-xl">
+                      <div className="flex items-center gap-1.5">
+                        <Smartphone size={15} className="text-amber-600 shrink-0" />
+                        <span className="text-xs font-bold text-amber-900">iPhone IMEI Not Recorded Yet</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setImeiModalTarget({
+                          purchaseId: selectedOrder.id,
+                          deviceName: selectedOrder.device.name,
+                          referenceId: selectedOrder.referenceId,
+                          customerName: selectedOrder.user.name
+                        })}
+                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[11px] rounded-lg border-none cursor-pointer transition-all shadow-sm flex items-center gap-1"
+                      >
+                        + Enter IMEI
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
@@ -304,31 +361,42 @@ export default function CashierVerifyPickupModal({
                 </div>
                 <div>
                   <span className="text-gray-400 font-medium block">Total Amount Due:</span>
-                  <span className="font-black text-sm text-black">₱{selectedOrder.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-black text-sm text-black">
+                    {selectedOrder.isSettled ? (
+                      <span className="text-emerald-600 font-bold">₱0.00 (Paid via {selectedOrder.paymentType || 'GCash'})</span>
+                    ) : (
+                      `₱${selectedOrder.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                    )}
+                  </span>
                 </div>
               </div>
 
-              {/* Cash Collection Section */}
+              {/* Payment Verification / Unit Handover Section */}
               {selectedOrder.status !== 'Paid' && (
                 <div className="flex flex-col gap-3 pt-1">
-                  {selectedOrder.isExpired && (
+                  {selectedOrder.isSettled ? (
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-900 flex items-center gap-2">
+                      <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                      <span>Online payment ({selectedOrder.paymentType || 'GCash'}) verified. No cash collection required.</span>
+                    </div>
+                  ) : selectedOrder.isExpired ? (
                     <div className="p-2.5 bg-amber-100/80 border border-amber-300 rounded-xl text-xs font-semibold text-amber-900 flex items-center gap-2">
                       <Clock size={16} className="text-amber-700 shrink-0" />
                       <span>Note: The 8-hour claim window passed, but you can still confirm payment & fulfillment.</span>
                     </div>
-                  )}
+                  ) : null}
 
                   <button
                     onClick={handleConfirmVerification}
                     disabled={verifying}
-                    className="w-full py-3.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50"
+                    className={`w-full py-3.5 ${selectedOrder.isSettled ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#bd00ff] hover:bg-[#9c00d6]'} text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50`}
                   >
                     {verifying ? (
                       <Loader2 size={18} className="animate-spin" />
                     ) : (
                       <CheckCircle2 size={18} />
                     )}
-                    <span>Confirm Cash Payment & Unlock Receipt</span>
+                    <span>{selectedOrder.isSettled ? 'Confirm Handover & Record IMEI' : 'Confirm Cash Payment & Unlock Receipt'}</span>
                   </button>
                 </div>
               )}
@@ -481,6 +549,20 @@ export default function CashierVerifyPickupModal({
         </div>
 
       </div>
+
+      {/* iPhone IMEI Prompt Modal */}
+      {imeiModalTarget && (
+        <CashierImeiPromptModal
+          isOpen={Boolean(imeiModalTarget)}
+          onClose={() => setImeiModalTarget(null)}
+          purchaseId={imeiModalTarget.purchaseId}
+          deviceName={imeiModalTarget.deviceName}
+          referenceId={imeiModalTarget.referenceId}
+          customerName={imeiModalTarget.customerName}
+          initialImei={imeiModalTarget.initialImei}
+          onSaved={handleImeiSaved}
+        />
+      )}
     </div>
   );
 }

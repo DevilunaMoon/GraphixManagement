@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Download, UserCircle2, Search, ReceiptText, ShieldCheck, CheckCircle2, Receipt } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Download, UserCircle2, Search, ReceiptText, ShieldCheck, CheckCircle2, Receipt, Smartphone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
+import { isIPhoneProduct } from '../../lib/imei';
 
 interface Transaction {
   id: string;
@@ -20,6 +22,8 @@ interface Transaction {
   downpaymentAmount?: number;
   remainingBalance?: number;
   isSettled?: boolean;
+  imei?: string | null;
+  referenceId?: string | null;
   user: {
     id: string;
     name: string | null;
@@ -57,6 +61,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
   const [filterDate, setFilterDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [imeiModalTarget, setImeiModalTarget] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
 
   const hiddenReceiptRef = useRef<HTMLDivElement>(null);
@@ -118,6 +123,16 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
     } finally {
       setSettlingTxId(null);
     }
+  };
+
+  const handleImeiSaved = (newImei: string) => {
+    if (imeiModalTarget) {
+      setTransactions(prev => prev.map(t => t.id === imeiModalTarget.id ? { ...t, imei: newImei } : t));
+      if (selectedTransaction && selectedTransaction.id === imeiModalTarget.id) {
+        setSelectedTransaction({ ...selectedTransaction, imei: newImei });
+      }
+    }
+    setImeiModalTarget(null);
   };
 
   const [totalItems, setTotalItems] = useState(0);
@@ -265,6 +280,23 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                           <span className="text-xs text-gray-500 font-semibold truncate">
                             Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                           </span>
+                          {tx.imei ? (
+                            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                              IMEI: {tx.imei}
+                            </span>
+                          ) : isIPhoneProduct(tx.device?.name) && tx.status !== 'Cancelled' ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImeiModalTarget(tx);
+                              }}
+                              className="text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 px-2 py-0.5 rounded mt-1 cursor-pointer transition-all flex items-center gap-1 w-fit"
+                              title="Enter iPhone IMEI number"
+                            >
+                              <Smartphone size={12} /> + Record IMEI
+                            </button>
+                          ) : null}
                         </div>
                       </div>
                     </td>
@@ -428,6 +460,27 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                       <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${formatVariations(selectedTransaction.variations)}`}</div>
                     </div>
                   </div>
+
+                  {/* IMEI row */}
+                  {selectedTransaction.imei ? (
+                    <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                      <span className="text-gray-500 font-semibold text-sm">iPhone IMEI</span>
+                      <span className="font-mono font-bold text-sm text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-200 select-all">
+                        {selectedTransaction.imei}
+                      </span>
+                    </div>
+                  ) : isIPhoneProduct(selectedTransaction.device?.name) && selectedTransaction.status !== 'Cancelled' ? (
+                    <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                      <span className="text-gray-500 font-semibold text-sm">iPhone IMEI</span>
+                      <button
+                        type="button"
+                        onClick={() => setImeiModalTarget(selectedTransaction)}
+                        className="text-xs font-bold text-white bg-[#bd00ff] hover:bg-[#9c00d6] px-3 py-1 rounded-lg cursor-pointer border-none transition-all flex items-center gap-1 shadow-sm"
+                      >
+                        <Smartphone size={13} /> + Record IMEI
+                      </button>
+                    </div>
+                  ) : null}
 
                   <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
                     <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
@@ -594,6 +647,11 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                     <span>Qty: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
                     <span>{tx.quantity} @ {(tx.device?.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
+                  {tx.imei && (
+                    <div style={{ fontSize: "10px", fontFamily: "monospace", color: "#222", marginBottom: "6px", fontWeight: "bold" }}>
+                      IMEI: {tx.imei}
+                    </div>
+                  )}
 
                   <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 
@@ -693,6 +751,11 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                     <span>Item: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
                     <span>{tx.quantity} @ {(tx.device?.price || tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
+                  {tx.imei && (
+                    <div style={{ fontSize: "10px", fontFamily: "monospace", color: "#222", marginBottom: "6px", fontWeight: "bold" }}>
+                      IMEI: {tx.imei}
+                    </div>
+                  )}
 
                   <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
 
@@ -755,6 +818,20 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
             }
           })()}
         </div>
+      )}
+
+      {/* iPhone IMEI Prompt Modal */}
+      {imeiModalTarget && (
+        <CashierImeiPromptModal
+          isOpen={Boolean(imeiModalTarget)}
+          onClose={() => setImeiModalTarget(null)}
+          purchaseId={imeiModalTarget.id}
+          deviceName={imeiModalTarget.device?.name || 'iPhone'}
+          referenceId={imeiModalTarget.referenceId}
+          customerName={imeiModalTarget.user?.name}
+          initialImei={imeiModalTarget.imei}
+          onSaved={handleImeiSaved}
+        />
       )}
     </main>
   );

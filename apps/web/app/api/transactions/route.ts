@@ -43,6 +43,18 @@ export async function GET(req: Request) {
           }
         },
         {
+          imei: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          referenceId: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
           user: {
             name: {
               contains: search,

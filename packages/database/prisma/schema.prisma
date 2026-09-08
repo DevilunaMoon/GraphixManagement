@@ -193,6 +193,7 @@ model Purchase {
   paymentIntentId String? @unique
   paymentUrl      String?
   receiptUrl      String?
+  imei            String? @unique
 
   createdAt DateTime @default(now())
 

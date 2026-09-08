@@ -12,6 +12,7 @@ export interface ReceiptCartItem {
   unitPrice: number;
   total: number;
   variations?: string; // e.g. "Color: Black, Storage: 128GB" or "Black, 128GB"
+  imei?: string | null;
 }
 
 export interface DigitalReceiptData {
@@ -31,6 +32,7 @@ export interface DigitalReceiptData {
   customerEmail?: string;
   customerPhone?: string;
   isVerified?: boolean;
+  imei?: string | null;
 }
 
 interface CustomerDigitalReceiptCardProps {
@@ -175,6 +177,10 @@ export default function CustomerDigitalReceiptCard({
     const line2Right = `${item.quantity} @ ${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
     receiptText += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
+
+    if (item.imei || data?.imei) {
+      receiptText += `IMEI: ${item.imei || data?.imei}\n`;
+    }
   });
 
   const totalStr = `Php ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -448,6 +454,11 @@ export default function CustomerDigitalReceiptCard({
                     {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
+                {(item.imei || data?.imei) && (
+                  <div className="font-mono font-bold text-[10px] text-gray-800 text-left">
+                    IMEI: {item.imei || data?.imei}
+                  </div>
+                )}
               </div>
             ))}
           </div>

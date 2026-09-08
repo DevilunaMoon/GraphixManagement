@@ -221,7 +221,8 @@ function CustomerPurchaseConfirmedContent() {
         customerName: resolvedCustomerName,
         customerEmail: resolvedCustomerEmail,
         customerPhone: candidatePhone,
-        isVerified: initiallyVerified
+        isVerified: initiallyVerified,
+        imei: apiPurchase?.imei || storedReceipt?.imei || null
       });
 
       setLoading(false);
@@ -243,7 +244,12 @@ function CustomerPurchaseConfirmedContent() {
           const data = await res.json();
           if (data && (data.status === 'Paid' || data.isSettled === true)) {
             setIsVerified(true);
-            setReceiptData(prev => prev ? { ...prev, isVerified: true, status: 'Purchase Confirmed' } : null);
+            setReceiptData(prev => prev ? {
+              ...prev,
+              isVerified: true,
+              status: 'Purchase Confirmed',
+              imei: data.imei || prev.imei
+            } : null);
             clearInterval(pollTimer);
           }
         }
