@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Filter, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
+import { Filter, Search, Trash2, Loader2, ShieldCheck, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashierVerifyPickupModal from '../../components/CashierSide/CashierVerifyPickupModal';
 
@@ -11,11 +11,52 @@ interface Product {
   price: number;
   image: string | null;
   stock: number;
+  specs?: string | null;
+  variations?: any[];
+  discount?: number;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
 }
 
 interface CartItem extends Product {
   cartQty: number;
 }
+
+const getDeviceStorage = (device: Product): string => {
+  if (device.variations && Array.isArray(device.variations)) {
+    const storageVars = device.variations.filter(
+      (v: any) => v.type && String(v.type).toLowerCase() === 'storage'
+    );
+    if (storageVars.length > 0) {
+      const formatted = Array.from(
+        new Set(
+          storageVars.map((v: any) => {
+            const val = String(v.name).trim();
+            return /gb|tb/i.test(val) ? val.toUpperCase() : `${val}GB`;
+          })
+        )
+      );
+      return formatted.join(' / ');
+    }
+  }
+
+  if (device.specs) {
+    const specs = String(device.specs);
+    const storageLineMatch =
+      specs.match(/(?:ROM|storage|internal)\s*[:\-]?\s*([0-9\s/+,]+(?:GB|TB))/i) ||
+      specs.match(/([0-9\s/+,]+(?:GB|TB))\s*(?:storage|ROM|internal)/i) ||
+      specs.match(/([0-9]+(?:\s*\/\s*[0-9]+)?\s*(?:GB|TB))\s*storage/i);
+    if (storageLineMatch && storageLineMatch[1]) {
+      return storageLineMatch[1].trim();
+    }
+    const generalMatch = specs.match(/\b([0-9]{2,4}\s*(?:GB|TB))\b/i);
+    if (generalMatch && generalMatch[1]) {
+      return generalMatch[1].trim();
+    }
+  }
+
+  return '—';
+};
 
 export default function CashierDashboard() {
   const router = useRouter();
@@ -37,7 +78,7 @@ export default function CashierDashboard() {
   useEffect(() => {
     setIsLoading(true);
     const delayDebounceFn = setTimeout(() => {
-      fetch(`/api/devices?page=${currentPage}&limit=15&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}`)
+      fetch(`/api/devices?page=${currentPage}&limit=10&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}`)
         .then(res => res.json())
         .then(data => {
           if (data && Array.isArray(data.devices)) {
@@ -165,41 +206,131 @@ export default function CashierDashboard() {
           </div>
         </div>
  
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-          {isLoading ? (
-            <div className="col-span-full py-20 flex flex-col justify-center items-center gap-3">
-              <Loader2 className="w-10 h-10 text-[#bd00ff] animate-spin" />
-              <span className="text-gray-500 font-medium animate-pulse">Loading products...</span>
-            </div>
-          ) : (
-            products.map(product => {
-              const currentQty = cart[product.name]?.cartQty || 0;
-              const isMaxedOut = currentQty >= product.stock;
- 
-              return (
-                <div 
-                  key={product.id}
-                  onClick={() => !isMaxedOut && addToCart(product)}
-                  className={`border border-[#c084fc] rounded-lg p-4 flex flex-col items-center text-center gap-2 transition-all duration-200 bg-white relative overflow-hidden ${isMaxedOut ? 'opacity-60 cursor-not-allowed grayscale' : 'cursor-pointer hover:-translate-y-1 hover:shadow-[0_4px_10px_rgba(189,0,255,0.1)]'}`}
-                >
-                  <span className="text-sm font-semibold leading-tight text-black mt-2">{product.name}</span>
-                  <span className={`text-sm font-bold ${isMaxedOut ? 'text-red-500' : 'text-gray-500'}`}>
-                    {isMaxedOut ? 'Max Out' : `${product.stock - currentQty}x left`}
-                  </span>
-                </div>
-              );
-            })
-          )}
-          {!isLoading && products.length === 0 && (
-            <div className="col-span-full py-10 text-center text-gray-500">No products found.</div>
-          )}
+        {/* Products Table */}
+        <div className="overflow-x-auto w-full border-2 border-[#bd00ff] rounded-xl bg-white shadow-sm">
+          <table className="w-full text-left border-collapse border border-[#bd00ff]/30 min-w-[550px]">
+            <thead>
+              <tr className="bg-purple-50/80 text-black whitespace-nowrap">
+                <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-left">Device Name</th>
+                <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-center w-36">Storage</th>
+                <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-right w-36">Price</th>
+                <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-center w-28">Quantity</th>
+                <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-center w-28">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="py-20 text-center border border-[#bd00ff]/20">
+                    <div className="flex flex-col justify-center items-center gap-3">
+                      <Loader2 className="w-9 h-9 text-[#bd00ff] animate-spin" />
+                      <span className="text-gray-500 font-semibold animate-pulse text-sm">Loading devices...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-gray-500 font-semibold border border-[#bd00ff]/20">
+                    No products found.
+                  </td>
+                </tr>
+              ) : (
+                products.map(product => {
+                  const currentQty = cart[product.name]?.cartQty || 0;
+                  const remainingStock = Math.max(0, product.stock - currentQty);
+                  const isMaxedOut = remainingStock <= 0;
+                  const storage = getDeviceStorage(product);
+
+                  const now = new Date();
+                  const hasDiscount = (product.discount || 0) > 0;
+                  const isScheduled = hasDiscount && product.discountStartDate && new Date(product.discountStartDate) > now;
+                  const isExpired = hasDiscount && product.discountEndDate && new Date(product.discountEndDate) < now;
+                  const isDiscountActive = hasDiscount && !isScheduled && !isExpired;
+                  const effectivePrice = isDiscountActive ? product.price * (1 - (product.discount || 0) / 100) : product.price;
+
+                  return (
+                    <tr
+                      key={product.id}
+                      onClick={() => !isMaxedOut && addToCart(product)}
+                      className={`transition-colors border-b border-[#bd00ff]/20 ${
+                        isMaxedOut
+                          ? 'opacity-55 bg-gray-50/50 cursor-not-allowed'
+                          : 'cursor-pointer hover:bg-purple-50/60'
+                      }`}
+                      title={isMaxedOut ? 'Out of stock or max added' : `Click to add ${product.name} to cart`}
+                    >
+                      <td className="p-3.5 border border-[#bd00ff]/20 font-bold text-black text-[0.95rem] align-middle">
+                        <span className="leading-snug">{product.name}</span>
+                      </td>
+                      <td className="p-3.5 border border-[#bd00ff]/20 text-center align-middle whitespace-nowrap">
+                        {storage !== '—' ? (
+                          <span className="inline-block px-2.5 py-1 text-xs font-bold bg-purple-50 text-[#9c00d6] rounded-md border border-purple-200">
+                            {storage}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-medium text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="p-3.5 border border-[#bd00ff]/20 text-right align-middle whitespace-nowrap">
+                        {isDiscountActive ? (
+                          <div className="flex flex-col items-end">
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <span className="font-bold text-[#bd00ff] text-[0.95rem]">
+                                ₱{effectivePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                              <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">
+                                {product.discount}% OFF
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-400 line-through">
+                              ₱{product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-black text-[0.95rem]">
+                            ₱{product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 border border-[#bd00ff]/20 text-center align-middle whitespace-nowrap">
+                        <span
+                          className={`inline-block px-2.5 py-1 text-xs font-bold rounded-full ${
+                            isMaxedOut
+                              ? 'bg-red-50 text-red-600 border border-red-200'
+                              : 'bg-green-50 text-green-700 border border-green-200'
+                          }`}
+                        >
+                          {isMaxedOut ? 'Max Out' : `${remainingStock}x left`}
+                        </span>
+                      </td>
+                      <td className="p-3.5 border border-[#bd00ff]/20 text-center align-middle whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isMaxedOut) addToCart(product);
+                          }}
+                          disabled={isMaxedOut}
+                          className="px-3.5 py-1.5 rounded-lg bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1 mx-auto disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border-none"
+                          title={isMaxedOut ? 'No more stock available' : 'Add to Cart'}
+                        >
+                          <Plus size={14} />
+                          <span>Add</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Pagination Controls */}
         {!isLoading && totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-purple-100 gap-4">
             <span className="text-sm font-semibold text-gray-500">
-              Showing {(currentPage - 1) * 15 + 1} to {Math.min(currentPage * 15, totalItems)} of {totalItems} items
+              Showing {totalItems === 0 ? 0 : (currentPage - 1) * 10 + 1} to {Math.min(currentPage * 10, totalItems)} of {totalItems} items
             </span>
             <div className="flex items-center gap-1.5">
               <button
