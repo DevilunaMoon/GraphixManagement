@@ -152,10 +152,10 @@ function CustomerPurchaseConfirmedContent() {
           resolvedChange = paramChange ? parseFloat(paramChange) : Math.max(0, tVal - resolvedAmount);
         }
 
-        // Fallback realistic tender if none entered
+        // Fallback exact tender if none entered
         if (resolvedTendered === null) {
-          resolvedTendered = resolvedAmount >= 28000 ? 29000 : resolvedAmount;
-          resolvedChange = Math.max(0, resolvedTendered - resolvedAmount);
+          resolvedTendered = resolvedAmount;
+          resolvedChange = 0;
         }
       }
 

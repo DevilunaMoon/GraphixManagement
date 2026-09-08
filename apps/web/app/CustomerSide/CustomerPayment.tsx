@@ -53,10 +53,6 @@ function CustomerPaymentContent() {
   );
   const [customerProfile, setCustomerProfile] = useState<{ name: string; email: string; phone: string } | null>(null);
 
-  // Cash Payment States
-  const [tenderedCash, setTenderedCash] = useState<string>('');
-  const [cashError, setCashError] = useState<string | null>(null);
-
   // GCash States
   const [gcashRef, setGcashRef] = useState<string>('');
   const [copiedNumber, setCopiedNumber] = useState(false);
@@ -209,11 +205,6 @@ function CustomerPaymentContent() {
     fetchCheckoutData();
   }, [deviceId, variationIds, cartItemIdsParam]);
 
-  // Numerical change calculation
-  const tenderedNumeric = parseFloat(tenderedCash) || 0;
-  const changeAmount = Math.max(0, tenderedNumeric - finalTotal);
-  const isTenderedSufficient = tenderedNumeric >= finalTotal;
-
   const handleCopyGcashNumber = () => {
     navigator.clipboard.writeText("09671234567");
     setCopiedNumber(true);
@@ -221,24 +212,13 @@ function CustomerPaymentContent() {
   };
 
   const handlePlaceOrder = async () => {
-    if (method === 'cash') {
-      if (!tenderedCash || tenderedNumeric <= 0) {
-        setCashError('Please enter the cash amount you will tender.');
-        return;
-      }
-      if (tenderedNumeric < finalTotal) {
-        setCashError(`Tendered cash must be at least ₱${finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}.`);
-        return;
-      }
-    }
-    setCashError(null);
     setSubmitting(true);
 
     let createdId = '';
     try {
       const fullStaffMessage = [
         staffMessage.trim() ? `Note: ${staffMessage.trim()}` : '',
-        method === 'cash' ? `Tendered Cash: ₱${tenderedNumeric.toLocaleString()} (Change: ₱${changeAmount.toLocaleString()})` : '',
+        method === 'cash' ? 'Payment: Cash on Pickup' : '',
         method === 'gcash' && gcashRef.trim() ? `GCash Ref#: ${gcashRef.trim()}` : ''
       ].filter(Boolean).join(' | ');
 
@@ -300,8 +280,8 @@ function CustomerPaymentContent() {
       customerEmail: customerProfile?.email || 'customer@graphix.com',
       customerPhone: customerProfile?.phone || '0917 123 4567',
       paymentMethod: method === 'gcash' ? 'GCash' : 'Cash',
-      tenderedCash: method === 'cash' ? (tenderedNumeric || finalTotal) : null,
-      change: method === 'cash' ? changeAmount : 0,
+      tenderedCash: method === 'cash' ? finalTotal : null,
+      change: 0,
       staffMessage: staffMessage.trim() || '',
       status: 'Purchase Confirmed',
       timestamp: new Date().toLocaleDateString('en-US', {
@@ -328,9 +308,9 @@ function CustomerPaymentContent() {
       qty: String(receiptPayload.quantity),
       branch: receiptPayload.branch
     });
-    if (method === 'cash' && receiptPayload.tenderedCash) {
-      queryParams.set('tendered', String(receiptPayload.tenderedCash));
-      queryParams.set('change', String(receiptPayload.change));
+    if (method === 'cash') {
+      queryParams.set('tendered', String(finalTotal));
+      queryParams.set('change', '0');
     }
     if (receiptPayload.staffMessage) {
       queryParams.set('note', receiptPayload.staffMessage);
@@ -517,109 +497,8 @@ function CustomerPaymentContent() {
           </div>
         </div>
 
-        {/* Section 2: Dynamic Method-Specific Form */}
-        {method === 'cash' ? (
-          <div className="bg-gray-50/80 border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
-            <div className="flex justify-between items-center">
-              <label className="font-bold text-gray-800 text-xs uppercase tracking-wider">
-                Tendered Cash (Amount you have) *
-              </label>
-              <span className="text-[10px] text-gray-400">Exact or higher</span>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 font-black text-base">
-                ₱
-              </div>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                placeholder="Enter cash amount"
-                value={tenderedCash}
-                onChange={(e) => {
-                  setTenderedCash(e.target.value);
-                  setCashError(null);
-                }}
-                className={`w-full pl-9 pr-4 py-3 bg-white border rounded-xl outline-none font-bold text-base text-gray-900 transition-all ${
-                  cashError 
-                    ? 'border-red-500 ring-2 ring-red-100' 
-                    : 'border-gray-200 focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100'
-                }`}
-              />
-            </div>
-
-            {/* Quick Bill Chips */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-bold text-gray-400 mr-1">Quick:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setTenderedCash(String(finalTotal));
-                  setCashError(null);
-                }}
-                className="text-[11px] font-bold px-2.5 py-1 bg-white border border-gray-200 hover:border-purple-300 hover:text-[#bd00ff] rounded-lg transition-all cursor-pointer shadow-2xs"
-              >
-                Exact (₱{finalTotal.toLocaleString()})
-              </button>
-              {[100, 500, 1000].map(addVal => (
-                <button
-                  key={addVal}
-                  type="button"
-                  onClick={() => {
-                    const current = parseFloat(tenderedCash) || finalTotal;
-                    setTenderedCash(String(Math.ceil((current + addVal) / 100) * 100));
-                    setCashError(null);
-                  }}
-                  className="text-[11px] font-bold px-2 py-1 bg-white border border-gray-200 hover:border-purple-300 hover:text-[#bd00ff] rounded-lg transition-all cursor-pointer shadow-2xs"
-                >
-                  +{addVal}
-                </button>
-              ))}
-            </div>
-
-            {/* Live Change Calculation Display */}
-            {tenderedNumeric > 0 && (
-              <div className={`mt-1 p-3 rounded-xl border flex items-center justify-between transition-all ${
-                isTenderedSufficient 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
-                  : 'bg-amber-50 border-amber-200 text-amber-900'
-              }`}>
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  {isTenderedSufficient ? (
-                    <>
-                      <CheckCircle2 size={16} className="text-emerald-600" />
-                      <span>Change to Return:</span>
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle size={16} className="text-amber-600" />
-                      <span>Insufficient Cash:</span>
-                    </>
-                  )}
-                </div>
-
-                <div className="text-sm font-black">
-                  {isTenderedSufficient ? (
-                    <span className="text-emerald-700">
-                      ₱{changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  ) : (
-                    <span className="text-amber-700">
-                      Short by ₱{(finalTotal - tenderedNumeric).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {cashError && (
-              <span className="text-red-500 text-xs font-bold mt-0.5 flex items-center gap-1">
-                <AlertCircle size={13} /> {cashError}
-              </span>
-            )}
-          </div>
-        ) : (
+        {/* Section 2: Dynamic Method-Specific Form (GCash Only) */}
+        {method === 'gcash' && (
           /* GCash Payment Info Box */
           <div className="bg-gradient-to-b from-blue-50/80 to-white border border-blue-200 rounded-2xl p-4 flex flex-col gap-3.5">
             <div className="flex items-center justify-between pb-2 border-b border-blue-100">
