@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Filter, Search, Trash2, Loader2 } from 'lucide-react';
+import { Filter, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import CashierVerifyPickupModal from '../../components/CashierSide/CashierVerifyPickupModal';
 
 interface Product {
   id: string;
@@ -23,6 +24,7 @@ export default function CashierDashboard() {
   const [brandFilter, setBrandFilter] = useState('All Brands');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<{ [key: string]: CartItem }>({});
@@ -149,6 +151,17 @@ export default function CashierDashboard() {
                 onChange={e => handleSearchChange(e.target.value)}
               />
             </div>
+
+            {/* Verify Customer In-Store Pickup */}
+            <button
+              type="button"
+              onClick={() => setIsVerifyModalOpen(true)}
+              className="flex items-center justify-center bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-lg px-4 py-2 text-sm font-bold shadow-sm transition-all gap-1.5 cursor-pointer border-none shrink-0"
+              title="Verify and collect cash for customer in-store pickups by Name, Phone, or Claim Code"
+            >
+              <ShieldCheck size={18} />
+              <span className="hidden sm:inline">Verify Pickup</span>
+            </button>
           </div>
         </div>
  
@@ -289,6 +302,11 @@ export default function CashierDashboard() {
           </div>
         </div>
       </aside>
+
+      <CashierVerifyPickupModal
+        isOpen={isVerifyModalOpen}
+        onClose={() => setIsVerifyModalOpen(false)}
+      />
     </main>
   );
 }

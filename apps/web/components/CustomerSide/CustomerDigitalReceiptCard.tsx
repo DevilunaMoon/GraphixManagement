@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from 'react';
-import { Check, Download, Receipt, Printer, Copy, FileText } from 'lucide-react';
+import { Check, Download, Receipt, Printer, Copy, FileText, Lock } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -30,6 +30,7 @@ export interface DigitalReceiptData {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  isVerified?: boolean;
 }
 
 interface CustomerDigitalReceiptCardProps {
@@ -85,6 +86,10 @@ export default function CustomerDigitalReceiptCard({
   const paymentMethod = data?.paymentMethod 
     ? (data.paymentMethod.toLowerCase().includes('gcash') ? 'GCash' : 'Cash') 
     : 'Cash';
+
+  const isCashOrder = paymentMethod === 'Cash';
+  const isVerified = data?.isVerified !== undefined ? data.isVerified : !isCashOrder;
+  const isLocked = isCashOrder && !isVerified;
 
   const tenderedCash = (data?.tenderedCash !== undefined && data?.tenderedCash !== null)
     ? data.tenderedCash
@@ -327,15 +332,27 @@ export default function CustomerDigitalReceiptCard({
             <FileText size={14} />
             Download .txt
           </button>
-          <button
-            type="button"
-            onClick={handleDownloadPDF}
-            disabled={isExportingPDF}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-all cursor-pointer border-none shadow-md hover:shadow-lg disabled:opacity-50"
-          >
-            <Download size={14} />
-            {isExportingPDF ? 'Exporting PDF...' : 'Download PDF'}
-          </button>
+          {isLocked ? (
+            <button
+              type="button"
+              disabled
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gray-200 text-gray-500 rounded-xl text-xs font-bold cursor-not-allowed border border-gray-300 shadow-none opacity-80"
+              title="Official PDF receipt is locked until verified and paid at the store counter"
+            >
+              <Lock size={14} />
+              <span>Download PDF (Locked)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleDownloadPDF}
+              disabled={isExportingPDF}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-all cursor-pointer border-none shadow-md hover:shadow-lg disabled:opacity-50"
+            >
+              <Download size={14} />
+              {isExportingPDF ? 'Exporting PDF...' : 'Download PDF'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -359,14 +376,16 @@ export default function CustomerDigitalReceiptCard({
             </p>
             {paymentMethod === 'Cash' && (
               <p className="text-[10px] font-black text-amber-800 bg-amber-50 rounded px-2 py-0.5 mt-1.5 inline-block border border-amber-300 uppercase tracking-tight">
-                CLAIM LIMIT: 8 HOURS FROM ORDER (CASH ON PICKUP)
+                {isLocked ? 'UNVERIFIED RESERVATION (8H CLAIM LIMIT)' : 'OFFICIAL SALES INVOICE (VERIFIED PAID)'}
               </p>
             )}
           </div>
 
           {/* Invoice Header */}
           <div className="py-2.5 border-b border-dashed border-gray-300 text-center">
-            <span className="font-black text-xs tracking-wider block">SALES INVOICE</span>
+            <span className="font-black text-xs tracking-wider block">
+              {isLocked ? 'RESERVATION CLAIM SLIP (UNPAID)' : 'SALES INVOICE'}
+            </span>
             <span className="font-bold text-xs text-purple-700">{shortTransId}</span>
           </div>
 
@@ -483,15 +502,27 @@ export default function CustomerDigitalReceiptCard({
 
       {/* 4. Bottom Controls */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={handleDownloadPDF}
-          disabled={isExportingPDF}
-          className="flex-1 flex justify-center items-center gap-2 py-3.5 px-4 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-sm rounded-xl cursor-pointer transition-all shadow-md hover:shadow-lg disabled:opacity-50 border-none"
-        >
-          <Download size={18} />
-          {isExportingPDF ? 'Exporting PDF...' : 'Download PDF Receipt (80mm)'}
-        </button>
+        {isLocked ? (
+          <button
+            type="button"
+            disabled
+            className="flex-1 flex justify-center items-center gap-2 py-3.5 px-4 bg-gray-100 text-gray-400 font-bold text-sm rounded-xl cursor-not-allowed border border-gray-200"
+            title="Please pay in cash at the store counter to unlock your official 80mm PDF receipt"
+          >
+            <Lock size={18} />
+            <span>Download PDF (Locked until Cashier Verifies)</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleDownloadPDF}
+            disabled={isExportingPDF}
+            className="flex-1 flex justify-center items-center gap-2 py-3.5 px-4 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-sm rounded-xl cursor-pointer transition-all shadow-md hover:shadow-lg disabled:opacity-50 border-none"
+          >
+            <Download size={18} />
+            {isExportingPDF ? 'Exporting PDF...' : 'Download PDF Receipt (80mm)'}
+          </button>
+        )}
         {onReturnToDashboard && (
           <button
             type="button"

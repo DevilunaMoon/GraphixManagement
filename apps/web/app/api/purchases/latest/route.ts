@@ -14,9 +14,15 @@ export async function GET(req: Request) {
 
     let purchase;
     if (purchaseId) {
+      const cleanId = purchaseId.trim();
       purchase = await prisma.purchase.findFirst({
         where: { 
-          id: purchaseId,
+          OR: [
+            { id: cleanId },
+            { referenceId: cleanId },
+            { referenceId: `#${cleanId.replace(/^#/, '')}` },
+            { referenceId: cleanId.replace(/^#/, '') }
+          ],
           userId: session.userId 
         },
         include: {
