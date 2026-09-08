@@ -102,7 +102,6 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
       subItems: [
         { href: '/cashier/records', label: 'Completed Purchases' },
         { href: '/cashier/repairs/transactions', label: 'Completed Repairs' },
-        { href: '/cashier/repairs/transactions/downpayments', label: 'Repair Downpayments' },
       ]
     },
     { href: '/cashier/profile', label: 'My Profile', icon: User },
