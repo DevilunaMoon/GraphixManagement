@@ -16,20 +16,25 @@ export async function POST(req: Request) {
     }
 
     // Locate the purchase
-    const whereCondition: any = {};
-    if (purchaseId) {
-      whereCondition.id = purchaseId;
-    } else if (referenceId) {
-      const cleanRef = referenceId.trim();
-      whereCondition.OR = [
-        { referenceId: cleanRef },
-        { referenceId: `#${cleanRef.replace(/^#/, '')}` },
-        { referenceId: cleanRef.replace(/^#/, '') }
-      ];
+    const targetId = (purchaseId || referenceId || '').trim();
+    const cleanRef = targetId.replace(/^#/, '');
+    const codeSuffix = cleanRef.replace(/^CMTPQ/i, '').trim();
+
+    const orConditions: any[] = [
+      { id: targetId },
+      { id: cleanRef },
+      { referenceId: targetId },
+      { referenceId: `#${cleanRef}` },
+      { referenceId: cleanRef }
+    ];
+
+    if (codeSuffix.length >= 2) {
+      orConditions.push({ id: { endsWith: codeSuffix, mode: 'insensitive' } });
+      orConditions.push({ referenceId: { contains: codeSuffix, mode: 'insensitive' } });
     }
 
     const purchase = await prisma.purchase.findFirst({
-      where: whereCondition,
+      where: { OR: orConditions },
       include: {
         device: true,
         user: true

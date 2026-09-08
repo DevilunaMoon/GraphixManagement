@@ -78,13 +78,16 @@ export default function CashierVerifyPickupModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchOrders(initialQuery);
+      const timer = setTimeout(() => {
+        fetchOrders(searchQuery);
+      }, 250);
+      return () => clearTimeout(timer);
     } else {
       setSelectedOrder(null);
       setSuccessMessage(null);
       setErrorMessage(null);
     }
-  }, [isOpen]);
+  }, [isOpen, searchQuery]);
 
   const handleSelectOrder = (order: PickupReservation) => {
     setSelectedOrder(order);
@@ -261,8 +264,15 @@ export default function CashierVerifyPickupModal({
               </div>
 
               {/* Cash Collection Section */}
-              {selectedOrder.status !== 'Paid' && !selectedOrder.isExpired && (
+              {selectedOrder.status !== 'Paid' && (
                 <div className="bg-purple-50/60 border border-purple-200/80 rounded-2xl p-4 flex flex-col gap-3">
+                  {selectedOrder.isExpired && (
+                    <div className="p-2.5 bg-amber-100/80 border border-amber-300 rounded-xl text-xs font-semibold text-amber-900 flex items-center gap-2">
+                      <Clock size={16} className="text-amber-700 shrink-0" />
+                      <span>Note: The 8-hour claim window passed, but you can still collect cash and confirm fulfillment.</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 text-xs font-bold text-purple-950">
                     <Banknote size={16} className="text-[#bd00ff]" />
                     <span>In-Store Cash Collection</span>

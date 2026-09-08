@@ -15,14 +15,23 @@ export async function GET(req: Request) {
     let purchase;
     if (purchaseId) {
       const cleanId = purchaseId.trim();
+      const codeSuffix = cleanId.replace(/^#/, '').replace(/^CMTPQ/i, '').trim();
+
+      const orItems: any[] = [
+        { id: cleanId },
+        { referenceId: cleanId },
+        { referenceId: `#${cleanId.replace(/^#/, '')}` },
+        { referenceId: cleanId.replace(/^#/, '') }
+      ];
+
+      if (codeSuffix.length >= 2) {
+        orItems.push({ id: { endsWith: codeSuffix, mode: 'insensitive' } });
+        orItems.push({ referenceId: { contains: codeSuffix, mode: 'insensitive' } });
+      }
+
       purchase = await prisma.purchase.findFirst({
         where: { 
-          OR: [
-            { id: cleanId },
-            { referenceId: cleanId },
-            { referenceId: `#${cleanId.replace(/^#/, '')}` },
-            { referenceId: cleanId.replace(/^#/, '') }
-          ],
+          OR: orItems,
           userId: session.userId 
         },
         include: {
