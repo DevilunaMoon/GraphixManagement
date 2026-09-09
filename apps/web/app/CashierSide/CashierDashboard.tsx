@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Filter, Search, Trash2, Loader2, ShieldCheck, Plus } from 'lucide-react';
+import { Filter, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashierVerifyPickupModal from '../../components/CashierSide/CashierVerifyPickupModal';
 
@@ -296,13 +296,12 @@ export default function CashierDashboard() {
                 <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-center w-36">Storage</th>
                 <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-right w-36">Price</th>
                 <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-center w-28">Quantity</th>
-                <th className="p-3.5 border border-[#bd00ff]/30 font-bold text-[0.95rem] text-center w-28">Action</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center border border-[#bd00ff]/20">
+                  <td colSpan={4} className="py-20 text-center border border-[#bd00ff]/20">
                     <div className="flex flex-col justify-center items-center gap-3">
                       <Loader2 className="w-9 h-9 text-[#bd00ff] animate-spin" />
                       <span className="text-gray-500 font-semibold animate-pulse text-sm">Loading devices...</span>
@@ -311,7 +310,7 @@ export default function CashierDashboard() {
                 </tr>
               ) : flattenedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500 font-semibold border border-[#bd00ff]/20">
+                  <td colSpan={4} className="py-12 text-center text-gray-500 font-semibold border border-[#bd00ff]/20">
                     No products found.
                   </td>
                 </tr>
@@ -382,21 +381,6 @@ export default function CashierDashboard() {
                         >
                           {isMaxedOut ? 'Max Out' : `${remainingStock}x left`}
                         </span>
-                      </td>
-                      <td className="p-3.5 border border-[#bd00ff]/20 text-center align-middle whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isMaxedOut) addToCart(item);
-                          }}
-                          disabled={isMaxedOut}
-                          className="px-3.5 py-1.5 rounded-lg bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1 mx-auto disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer border-none"
-                          title={isMaxedOut ? 'No more stock available' : 'Add to Cart'}
-                        >
-                          <Plus size={14} />
-                          <span>Add</span>
-                        </button>
                       </td>
                     </tr>
                   );
