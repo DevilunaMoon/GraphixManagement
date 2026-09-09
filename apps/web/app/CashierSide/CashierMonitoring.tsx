@@ -240,6 +240,8 @@ export default function CashierMonitoring() {
       } catch (e) {
         console.error("Failed to parse materials:", e);
       }
+    } else if (device.repairCost) {
+      labor = device.repairCost;
     }
     setEditMaterials(items);
     setEditLaborCost(labor);
@@ -738,45 +740,30 @@ export default function CashierMonitoring() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Technician</label>
-                    <input 
-                      type="text" 
-                      value={editTechnician}
-                      onChange={(e) => setEditTechnician(e.target.value)}
-                      placeholder="Technician Name" 
-                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Repair Cost</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                      <input 
-                        type="text" 
-                        value={editRepairCost}
-                        onChange={(e) => setEditRepairCost(e.target.value)}
-                        placeholder="2,000" 
-                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                      />
-                    </div>
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Technician</label>
+                  <input 
+                    type="text" 
+                    value={editTechnician}
+                    onChange={(e) => setEditTechnician(e.target.value)}
+                    placeholder="Technician Name" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Downpayment</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                    <input 
-                      type="text" 
-                      value={editDownpayment}
-                      onChange={(e) => setEditDownpayment(e.target.value)}
-                      placeholder="e.g. 500" 
-                      className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
+                {/* Itemized Materials Breakdown */}
+                <div className="pt-2 border-t border-gray-200">
+                  <MaterialBreakdownEditor
+                    items={editMaterials}
+                    onItemsChange={setEditMaterials}
+                    laborCost={editLaborCost}
+                    onLaborCostChange={setEditLaborCost}
+                    downpayment={editDownpayment}
+                    onDownpaymentChange={setEditDownpayment}
+                    onTotalCostCalculated={(total) => setEditRepairCost(total.toString())}
+                    deviceName={deviceToEdit.deviceName}
+                    customerName={editOwnerName || deviceToEdit.ownerName || 'Customer'}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2 mt-2">
@@ -815,7 +802,7 @@ export default function CashierMonitoring() {
                  disabled={isSavingEdit}
                  className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50"
                >
-                 {isSavingEdit ? "Saving..." : "Save Changes"}
+                 {isSavingEdit ? "Saving..." : "Save and Send Notifications"}
                </button>
             </div>
           </div>
@@ -954,45 +941,30 @@ export default function CashierMonitoring() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Technician</label>
-                    <input 
-                      type="text" 
-                      value={addTechnician}
-                      onChange={(e) => setAddTechnician(e.target.value)}
-                      placeholder="Technician Name" 
-                      className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="font-semibold text-base text-black">Repair Cost</label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                      <input 
-                        type="text" 
-                        value={addRepairCost}
-                        onChange={(e) => setAddRepairCost(e.target.value)}
-                        placeholder="2,000" 
-                        className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                      />
-                    </div>
-                  </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-base text-black">Technician</label>
+                  <input 
+                    type="text" 
+                    value={addTechnician} 
+                    onChange={(e) => setAddTechnician(e.target.value)} 
+                    placeholder="Technician Name" 
+                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Downpayment</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                    <input 
-                      type="text" 
-                      value={addDownpayment}
-                      onChange={(e) => setAddDownpayment(e.target.value)}
-                      placeholder="e.g. 500" 
-                      className="h-10 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                    />
-                  </div>
+                {/* Itemized Materials Breakdown */}
+                <div className="pt-2 border-t border-gray-200">
+                  <MaterialBreakdownEditor
+                    items={addMaterials}
+                    onItemsChange={setAddMaterials}
+                    laborCost={addLaborCost}
+                    onLaborCostChange={setAddLaborCost}
+                    downpayment={addDownpayment}
+                    onDownpaymentChange={setAddDownpayment}
+                    onTotalCostCalculated={(total) => setAddRepairCost(total.toString())}
+                    deviceName={addDeviceName || 'Device'}
+                    customerName={addOwnerName || addCustomerEmail || 'Customer'}
+                  />
                 </div>
 
               </div>

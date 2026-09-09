@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronDown, Upload } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
 
 import { Suspense } from 'react';
 
@@ -18,7 +19,10 @@ function CashierEditProgressContent() {
   const [cause, setCause] = useState('');
   const [technician, setTechnician] = useState('');
   const [repairCost, setRepairCost] = useState('');
+  const [downpayment, setDownpayment] = useState('');
   const [repairHistory, setRepairHistory] = useState('');
+  const [materials, setMaterials] = useState<MaterialItem[]>([]);
+  const [laborCost, setLaborCost] = useState<string>('0');
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,7 +43,28 @@ function CashierEditProgressContent() {
             setCause(data.cause || '');
             setTechnician(data.technician || '');
             setRepairCost(data.repairCost || '');
+            setDownpayment(data.downpayment || '');
             setRepairHistory(data.repairHistory || '');
+
+            let items: MaterialItem[] = [];
+            let labor = '0';
+            if (data.materials) {
+              try {
+                const parsed = JSON.parse(data.materials);
+                if (Array.isArray(parsed)) {
+                  items = parsed;
+                } else if (parsed && typeof parsed === 'object') {
+                  items = parsed.items || [];
+                  labor = String(parsed.laborCost ?? 0);
+                }
+              } catch (e) {
+                console.error("Failed to parse materials:", e);
+              }
+            } else if (data.repairCost) {
+              labor = data.repairCost;
+            }
+            setMaterials(items);
+            setLaborCost(labor);
           }
         })
         .catch(console.error)
@@ -81,7 +106,12 @@ function CashierEditProgressContent() {
           cause,
           technician,
           repairCost,
-          repairHistory
+          downpayment,
+          repairHistory,
+          materials: JSON.stringify({
+            items: materials,
+            laborCost: parseFloat(laborCost) || 0
+          })
         })
       });
 
@@ -198,18 +228,19 @@ function CashierEditProgressContent() {
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="font-semibold text-lg text-black">Repair Cost</label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-semibold text-black">₱</span>
-                <input 
-                  type="text" 
-                  value={repairCost}
-                  onChange={(e) => setRepairCost(e.target.value)}
-                  placeholder="2,000" 
-                  className="h-12 w-full border-2 border-gray-300 rounded-xl pl-8 pr-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                />
-              </div>
+            {/* Itemized Materials Breakdown */}
+            <div className="pt-2 border-t border-gray-200">
+              <MaterialBreakdownEditor
+                items={materials}
+                onItemsChange={setMaterials}
+                laborCost={laborCost}
+                onLaborCostChange={setLaborCost}
+                downpayment={downpayment}
+                onDownpaymentChange={setDownpayment}
+                onTotalCostCalculated={(total) => setRepairCost(total.toString())}
+                deviceName={deviceData?.deviceName || 'Device'}
+                customerName={deviceData?.ownerName || 'Customer'}
+              />
             </div>
 
           </div>
