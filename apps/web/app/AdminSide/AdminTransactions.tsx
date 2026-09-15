@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck, CheckCircle2, Receipt, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2 } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { useBranch } from '../../context/BranchContext';
+import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 
 interface Transaction {
   id: string;
@@ -15,6 +15,7 @@ interface Transaction {
   paymentType?: string;
   source?: string;
   status?: string;
+  branch?: string;
   isExpired?: boolean;
   downpaymentAmount?: number;
   remainingBalance?: number;
@@ -22,13 +23,13 @@ interface Transaction {
   imei?: string | null;
   referenceId?: string | null;
   user: {
-    id: string;
+    id?: string;
     name: string | null;
     email: string;
     phone?: string | null;
   };
   device: {
-    id: string;
+    id?: string;
     name: string;
     price: number;
     image: string | null;
@@ -49,10 +50,8 @@ const formatVariations = (variationsStr: string | null): string => {
   return variationsStr;
 };
 
-import { useBranch } from '../../context/BranchContext';
-
 export default function AdminTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
-  const { selectedBranch } = useBranch();
+  const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,43 +59,6 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
-
-  const hiddenReceiptRef = useRef<HTMLDivElement>(null);
-  const [downloadingTxId, setDownloadingTxId] = useState<string | null>(null);
-
-  const handleDownloadPDF = async (tx: Transaction) => {
-    // Real data: render pixel-perfect thermal POS receipt
-    setDownloadingTxId(tx.id);
-    setTimeout(async () => {
-      if (!hiddenReceiptRef.current) {
-        setDownloadingTxId(null);
-        return;
-      }
-      try {
-        const canvas = await html2canvas(hiddenReceiptRef.current, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 72; // 72mm thermal width
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        const doc = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: [imgWidth, imgHeight]
-        });
-
-        doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        doc.save(`Graphix_Receipt_${tx.id.substring(0, 8).toUpperCase()}.pdf`);
-      } catch (err) {
-        console.error('Error generating PDF:', err);
-      } finally {
-        setDownloadingTxId(null);
-      }
-    }, 150);
-  };
 
   const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
 
@@ -167,11 +129,43 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900 m-0">{type === "downpayment" ? "Downpayments" : "Order History"}</h2>
-              <p className="text-gray-500 m-0 text-sm">{type === "downpayment" ? "View all downpayment purchases" : "View all completed purchases"}</p>
+              <p className="text-gray-500 m-0 text-sm">
+                {type === "downpayment" ? "View all downpayment purchases" : "View all completed purchases"}
+                {isSuperAdmin && (
+                  <span className="ml-2 font-bold text-purple-600">
+                    • {selectedBranch === 'all' ? 'All Branches' : `${selectedBranch} Branch`}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
+          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 items-stretch sm:items-center flex-wrap">
+            {/* Branch Filter for Super Admin */}
+            {isSuperAdmin && (
+              <div className="relative min-w-[170px]">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
+                  <Building2 size={16} />
+                </div>
+                <select
+                  value={selectedBranch}
+                  onChange={(e) => {
+                    setSelectedBranch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[48px] pl-9 pr-8 bg-purple-50/50 border-2 border-purple-100 hover:border-purple-200 rounded-2xl text-xs font-bold text-purple-900 outline-none transition-all cursor-pointer appearance-none"
+                >
+                  <option value="all">🏢 All Branches</option>
+                  <option value="Tagoloan">📍 Tagoloan</option>
+                  <option value="Villanueva">📍 Villanueva</option>
+                  <option value="Jasaan">📍 Jasaan</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
+                  ▼
+                </div>
+              </div>
+            )}
+
             <div className="w-full sm:w-40 md:w-48 relative">
               <DatePicker 
                 value={filterDate}
@@ -183,8 +177,8 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                 placeholder="Filter date..."
               />
             </div>
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text" 
                 placeholder="Search transactions..." 
@@ -193,7 +187,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold"
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold text-black"
               />
             </div>
           </div>
@@ -215,6 +209,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
               <thead>
                 <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Transaction ID</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Branch</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
                   {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Source</th>}
@@ -248,6 +243,11 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           #{tx.id.substring(0, 8).toUpperCase()}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 inline-block shadow-2xs">
+                        {tx.branch || 'Tagoloan'}
+                      </span>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -336,11 +336,11 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           </button>
                         )}
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
-                          className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
-                          title="Download Receipt"
+                          onClick={(e) => { e.stopPropagation(); setSelectedTransaction(tx); }}
+                          className="px-3.5 py-1.5 rounded-xl inline-flex justify-center items-center gap-1.5 bg-[#bd00ff] text-white hover:bg-[#9c00d6] transition-all shadow-xs border-none cursor-pointer font-bold text-xs"
+                          title="View Digital Receipt"
                         >
-                          <Download size={18} />
+                          <ReceiptText size={14} /> Receipt
                         </button>
                       </div>
                     </td>
@@ -390,419 +390,66 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
         )}
       </div>
 
-      {/* Transaction Details Modal */}
+      {/* Standardized Digital Receipt Modal (Matches SECOND IMAGE Exactly) */}
       {selectedTransaction && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedTransaction(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
-              <div className="flex items-center gap-2">
-                <ReceiptText className="text-purple-600" size={24} />
-                <h3 className="font-bold text-[#111] text-xl">Transaction Details</h3>
-              </div>
-              <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setSelectedTransaction(null)}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-6">
-              
-              {selectedTransaction.isExpired && selectedTransaction.status !== 'Cancelled' && (
-                <div className="mb-6 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm shadow-sm flex flex-col gap-2">
-                  <div className="flex items-center gap-2 font-bold text-red-900">
-                    <span className="text-lg">⚠️</span> 3-Day Expiry Passed
-                  </div>
-                  <p className="m-0 leading-relaxed text-red-700">This downpayment has exceeded the 72-hour limit. The customer has not completed the payment.</p>
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/api/transactions/${selectedTransaction.id}/cancel`, { method: 'PATCH' });
-                        if (res.ok) {
-                          setTransactions(prev => prev.map(t => t.id === selectedTransaction.id ? { ...t, status: 'Cancelled' } : t));
-                          setSelectedTransaction({ ...selectedTransaction, status: 'Cancelled' });
-                        } else {
-                          alert('Failed to cancel transaction');
-                        }
-                      } catch (err) {
-                        console.error(err);
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto" 
+          onClick={() => setSelectedTransaction(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-5 sm:p-7 flex flex-col gap-4 my-8" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Downpayment Expiry or Action Notification */}
+            {selectedTransaction.isExpired && selectedTransaction.status !== 'Cancelled' && (
+              <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-2xl text-xs shadow-xs flex flex-col gap-2 font-sans">
+                <div className="flex items-center gap-2 font-bold text-red-900 text-sm">
+                  <span>⚠️</span> 3-Day Expiry Passed
+                </div>
+                <p className="m-0 leading-relaxed text-red-700">
+                  This reservation has exceeded the claim limit without full settlement.
+                </p>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/transactions/${selectedTransaction.id}/cancel`, { method: 'PATCH' });
+                      if (res.ok) {
+                        setTransactions(prev => prev.map(t => t.id === selectedTransaction.id ? { ...t, status: 'Cancelled' } : t));
+                        setSelectedTransaction({ ...selectedTransaction, status: 'Cancelled' });
+                      } else {
+                        alert('Failed to cancel transaction');
                       }
-                    }}
-                    className="mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors text-center cursor-pointer border-none shadow-sm"
-                  >
-                    Cancel & Release Inventory
-                  </button>
-                </div>
-              )}
-
-              {selectedTransaction.status === 'Cancelled' && (
-                <div className="mb-6 bg-gray-50 border border-gray-200 text-gray-600 p-4 rounded-xl text-sm shadow-sm">
-                  <div className="font-bold text-gray-800 mb-1">Transaction Cancelled</div>
-                  <p className="m-0">This transaction was cancelled and the reserved inventory has been officially restocked.</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                {/* Column 1: Details */}
-                <div className="flex flex-col gap-4">
-                  <h4 className="font-bold text-gray-900 text-base border-b border-gray-100 pb-2 mb-2">Order Information</h4>
-                  
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
-                    <span className="text-gray-500 font-semibold text-sm">Transaction ID</span>
-                    <span className="font-bold text-gray-900">{selectedTransaction.id.toUpperCase()}</span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
-                    <span className="text-gray-500 font-semibold text-sm">Customer</span>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900">{selectedTransaction.user?.name || 'Anonymous'}</div>
-                      <div className="text-xs text-gray-500">{selectedTransaction.user?.email}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
-                    <span className="text-gray-500 font-semibold text-sm">Device</span>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900">{selectedTransaction.device?.name}</div>
-                      <div className="text-xs text-gray-500">Qty: {selectedTransaction.quantity} {selectedTransaction.variations && `• ${formatVariations(selectedTransaction.variations)}`}</div>
-                    </div>
-                  </div>
-
-                  {/* IMEI row */}
-                  {selectedTransaction.imei && (
-                    <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
-                      <span className="text-gray-500 font-semibold text-sm">iPhone IMEI</span>
-                      <span className="font-mono font-bold text-sm text-indigo-800 bg-indigo-50 px-2.5 py-0.5 rounded border border-indigo-200 select-all">
-                        {selectedTransaction.imei}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
-                    <span className="text-gray-500 font-semibold text-sm">Purchase Date</span>
-                    <span className="font-bold text-gray-900">
-                      {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
-                  
-                  {/* Warranty */}
-                  <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-4 rounded-xl border border-purple-100 flex items-start gap-4 mt-2">
-                    <div className="p-2 bg-purple-100 text-purple-600 rounded-lg shrink-0">
-                      <ShieldCheck size={24} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-purple-900 m-0 text-sm">12 Months Warranty</h4>
-                      <p className="text-xs text-purple-700 mt-1 mb-0 leading-normal">
-                        Valid until <span className="font-bold text-purple-900">
-                          {new Date(new Date(selectedTransaction.createdAt).setMonth(new Date(selectedTransaction.createdAt).getMonth() + 12)).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Column 2: Financials & Actions */}
-                <div className="flex flex-col justify-between gap-6">
-                  
-                  {type === "downpayment" ? (
-                    <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/70 flex flex-col gap-3">
-                      <h4 className="font-bold text-blue-900 m-0 text-base mb-1 border-b border-blue-200/50 pb-2">Payment Breakdown</h4>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700 font-medium">Total Device Price</span>
-                        <span className="font-bold text-blue-900">₱{((selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700 font-medium">Downpayment Paid</span>
-                        <span className="font-bold text-green-600">₱{(selectedTransaction.amount || 0).toLocaleString()}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-sm border-t border-blue-200/60 pt-3 mt-1">
-                        <span className="text-blue-800 font-bold">Remaining Balance</span>
-                        <span className="font-bold text-red-500">₱{Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)).toLocaleString()}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700 font-medium">Monthly Installment</span>
-                        <span className="font-bold text-blue-900">₱{(Math.max(0, ((selectedTransaction.device?.price || 0) * selectedTransaction.quantity) - (selectedTransaction.amount || 0)) / 12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col gap-3">
-                      <h4 className="font-bold text-purple-900 m-0 text-base mb-1 border-b border-purple-200/40 pb-2">Payment Breakdown</h4>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-purple-700 font-medium">Device Price</span>
-                        <span className="font-bold text-gray-900">₱{(selectedTransaction.device?.price || 0).toLocaleString()}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-purple-700 font-medium">Quantity Purchased</span>
-                        <span className="font-bold text-gray-900">{selectedTransaction.quantity}x</span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-sm border-t border-purple-200/40 pt-3 mt-1">
-                        <span className="text-purple-800 font-bold">Total Paid Amount</span>
-                        <span className="font-black text-xl text-[#bd00ff]">₱{(selectedTransaction.amount > 0 ? selectedTransaction.amount : (selectedTransaction.device?.price || 0) * selectedTransaction.quantity).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2 mt-auto">
-                    <button
-                      onClick={() => handleDownloadPDF(selectedTransaction)}
-                      className="w-full px-4 py-3 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Download size={18} /> Download PDF Receipt
-                    </button>
-                    <button
-                      onClick={() => setSelectedTransaction(null)}
-                      className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-sm cursor-pointer border-none"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="mt-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-xl transition-colors text-center cursor-pointer border-none shadow-xs text-xs"
+                >
+                  Cancel & Release Inventory
+                </button>
               </div>
+            )}
 
-            </div>
+            {/* Standard Digital Receipt Component */}
+            <StandardDigitalReceipt 
+              data={selectedTransaction as any}
+              onBack={() => setSelectedTransaction(null)}
+              showToolbar={true}
+            />
+
+            {/* Settle Balance Button if Downpayment is not settled */}
+            {type === 'downpayment' && !selectedTransaction.isSettled && (selectedTransaction.remainingBalance ?? 1) > 0 && (
+              <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
+                <button
+                  onClick={() => handleSettleBalance(selectedTransaction.id)}
+                  disabled={settlingTxId === selectedTransaction.id}
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer border-none text-xs"
+                >
+                  <CheckCircle2 size={16} /> {settlingTxId === selectedTransaction.id ? 'Settling Balance...' : 'Settle Remaining Balance'}
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      )}
-
-      {/* Hidden Thermal Receipt for PDF Generation */}
-      {downloadingTxId && (
-        <div id="thermal-receipt-container" style={{ position: 'absolute', left: '-9999px', top: '0', display: 'block' }}>
-          {(() => {
-            const tx = transactions.find(t => t.id === downloadingTxId);
-            if (!tx) return null;
-            const formatVariations = (variationsStr: string | null) => {
-              if (!variationsStr) return '';
-              try {
-                const parsed = JSON.parse(variationsStr);
-                if (Array.isArray(parsed)) {
-                  return parsed.map((v: any) => v.name).join(', ');
-                }
-                if (parsed && typeof parsed === 'object') {
-                  return Object.values(parsed).map((v: any) => v.name).join(', ');
-                }
-              } catch (e) {}
-              return variationsStr;
-            };
-
-            const storeAgentLabel = tx.source === 'In-Store' ? 'CASHIER DESK' : 'ONLINE CHECKOUT';
-            const isDownpayment = tx.paymentType === 'Downpayment';
-
-            if (isDownpayment) {
-              const totalDevicePrice = (tx.device?.price || 0) * tx.quantity;
-              const downpaymentPaid = tx.amount > 0 ? tx.amount : 0;
-              const remainingBalance = Math.max(0, totalDevicePrice - downpaymentPaid);
-              const monthlyInstallment = remainingBalance / 12;
-
-              return (
-                <div 
-                  ref={hiddenReceiptRef}
-                  style={{
-                    fontFamily: "'Courier New', Courier, monospace",
-                    width: "72mm",
-                    color: "black",
-                    background: "white",
-                    fontSize: "12px",
-                    lineHeight: "1.3",
-                    padding: "4mm",
-                    margin: "0 auto"
-                  }}
-                >
-                  <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                    <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
-                    <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
-                    <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                    <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
-                      DOWNPAYMENT INVOICE<br />
-                      #{tx.id.substring(0, 12).toUpperCase()}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Product").toUpperCase()}</span>
-                    <span>{downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
-                    <span>Qty: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
-                    <span>{tx.quantity} @ {(tx.device?.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  {tx.imei && (
-                    <div style={{ fontSize: "10px", fontFamily: "monospace", color: "#222", marginBottom: "6px", fontWeight: "bold" }}>
-                      IMEI: {tx.imei}
-                    </div>
-                  )}
-
-                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span>Total Price</span>
-                    <span>Php {totalDevicePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span>Downpayment Paid</span>
-                    <span>Php {downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span>Remaining Balance</span>
-                    <span>Php {remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                    <span>Installment (12m)</span>
-                    <span>Php {monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                    <span>Payment Method</span>
-                    <span>Downpayment</span>
-                  </div>
-
-                  <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
-                    *** {tx.quantity} ITEM(S) ***
-                  </div>
-
-                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                  <div style={{ fontSize: "11px", marginTop: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Sold To:</span>
-                      <span>{tx.user.name || 'Anonymous Customer'}</span>
-                    </div>
-                    <div>Email: {tx.user.email}</div>
-                    <div>Phone: {tx.user.phone || 'N/A'}</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-                      <span>Store Agent:</span>
-                      <span>{storeAgentLabel}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
-                      <span>Global Trans No.</span>
-                      <span>#{tx.id.substring(0, 8).toUpperCase()}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            } else {
-              const totalAmount = tx.amount > 0 ? tx.amount : (tx.device?.price || 0) * tx.quantity;
-              const vatRate = 0.12;
-              const vatableSales = totalAmount / (1 + vatRate);
-              const vatAmount = totalAmount - vatableSales;
-
-              const rawCash = tx.user?.phone ? tx.user.phone.replace(/[^0-9.]/g, '') : '';
-              let parsedCash = parseFloat(rawCash) || 0;
-
-              // If parsedCash is not a realistic cash tender (e.g. it is a phone number, which is very large, or zero)
-              if (parsedCash <= 0 || parsedCash > totalAmount * 3) {
-                const next500 = Math.ceil(totalAmount / 500) * 500;
-                const next1000 = Math.ceil(totalAmount / 1000) * 1000;
-                parsedCash = next500 >= totalAmount ? next500 : next1000;
-              }
-
-              const changeVal = parsedCash >= totalAmount ? parsedCash - totalAmount : 0;
-              const cashPaid = parsedCash;
-
-              return (
-                <div 
-                  ref={hiddenReceiptRef}
-                  style={{
-                    fontFamily: "'Courier New', Courier, monospace",
-                    width: "72mm",
-                    color: "black",
-                    background: "white",
-                    fontSize: "12px",
-                    lineHeight: "1.3",
-                    padding: "4mm",
-                    margin: "0 auto"
-                  }}
-                >
-                  <div style={{ textAlign: "center", marginBottom: "12px" }}>
-                    <div style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "1px" }}>GRAPHIX STORE</div>
-                    <div style={{ fontSize: "10px", marginTop: "2px" }}>MIN: 22112113365644135</div>
-                    <div style={{ fontSize: "10px" }}>DATE: {new Date(tx.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-                    <div style={{ borderTop: "1px dashed black", borderBottom: "1px dashed black", padding: "6px 0", margin: "8px 0", fontWeight: "bold" }}>
-                      SALES INVOICE<br />
-                      #{tx.id.substring(0, 12).toUpperCase()}
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span style={{ maxWidth: "70%", display: "inline-block", lineHeight: "1.4" }}>{(tx.device?.name || "Product").toUpperCase()}</span>
-                    <span>{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "#333", fontSize: "11px", marginBottom: "8px" }}>
-                    <span>Item: {tx.quantity}x {tx.variations ? `(${formatVariations(tx.variations)})` : ''}</span>
-                    <span>{tx.quantity} @ {(tx.device?.price || tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  {tx.imei && (
-                    <div style={{ fontSize: "10px", fontFamily: "monospace", color: "#222", marginBottom: "6px", fontWeight: "bold" }}>
-                      IMEI: {tx.imei}
-                    </div>
-                  )}
-
-                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
-                    <span>Total</span>
-                    <span>Php {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Cash</span>
-                    <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Change</span>
-                    <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-
-                  <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
-                    *** {tx.quantity} ITEM(S) ***
-                  </div>
-
-                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                    <span>VATable Sales</span>
-                    <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                    <span>VAT Amount</span>
-                    <span>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                    <span>VAT Exempt Sales</span>
-                    <span>0.00</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                    <span>Zero Rated Sales</span>
-                    <span>0.00</span>
-                  </div>
-
-                  <div style={{ borderTop: "1px dashed black", margin: "6px 0" }}></div>
-
-                  <div style={{ fontSize: "11px", marginTop: "8px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span>Sold To:</span>
-                      <span>{tx.user.name || 'Anonymous Customer'}</span>
-                    </div>
-                    <div>Email: {tx.user.email}</div>
-                    <div>Phone: {tx.user.phone || 'N/A'}</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-                      <span>Store Agent:</span>
-                      <span>{storeAgentLabel}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px", fontWeight: "bold" }}>
-                      <span>Global Trans No.</span>
-                      <span>#{tx.id.substring(0, 8).toUpperCase()}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-          })()}
         </div>
       )}
     </div>
