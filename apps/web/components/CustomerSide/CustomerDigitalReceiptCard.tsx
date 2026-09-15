@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { Check, Download, Receipt, Printer, Copy, FileText, Lock } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { formatDisplayInvoiceId, getBranchCode } from '../../lib/invoice';
 
 export interface ReceiptCartItem {
   id?: string;
@@ -57,7 +58,8 @@ export default function CustomerDigitalReceiptCard({
 
   // 2. Machine ID & Metadata
   const machineId = "MIN: 22112113365644135";
-  const transactionId = data?.transactionId || '#CMTPQWI5Q0';
+  const branchLetter = getBranchCode(branchLocation);
+  const transactionId = data?.transactionId || `#GRPX-${branchLetter}-A1`;
   const timestamp = data?.timestamp || new Date().toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -157,7 +159,7 @@ export default function CustomerDigitalReceiptCard({
     cleanPhone = '0917 123 4567';
   }
 
-  const shortTransId = transactionId.startsWith('#') ? transactionId : `#${transactionId}`;
+  const shortTransId = formatDisplayInvoiceId(transactionId, branchLocation);
   const storeAgent = 'ONLINE CHECKOUT';
 
   // Build exact plain text receipt for Copy & Download .txt

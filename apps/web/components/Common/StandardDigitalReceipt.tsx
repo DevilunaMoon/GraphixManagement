@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { ChevronLeft, Printer, Download, Copy, Check, ShieldCheck } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { formatDisplayInvoiceId } from '../../lib/invoice';
 
 export interface StandardReceiptItem {
   id?: string;
@@ -119,9 +120,9 @@ export default function StandardDigitalReceipt({
     hour12: true
   });
 
-  // 3. Transaction / Claim Code
+  // 3. Transaction / Claim Code (GRPX-T-A1, GRPX-V-A1, GRPX-J-A1 format)
   const rawTransId = data.referenceId || data.id;
-  const shortTransId = rawTransId.startsWith('#') ? rawTransId : `#${rawTransId}`;
+  const shortTransId = formatDisplayInvoiceId(rawTransId, branchLocation);
 
   // 4. Payment Method & Status Logic
   const paymentMethod = data.paymentType?.toLowerCase().includes('gcash')

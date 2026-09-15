@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QRCodeDisplay from '../../components/Common/QRCodeDisplay';
+import { getBranchCode, formatDisplayInvoiceId } from '../../lib/invoice';
 
 interface BranchData {
   id: string;
@@ -251,8 +252,8 @@ function CustomerPaymentContent() {
   const handlePlaceOrder = async () => {
     setSubmitting(true);
 
-    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
-    const plannedTxId = `#CMTPQ${randomSuffix}`;
+    const branchCode = getBranchCode(selectedBranch);
+    const plannedTxId = `#GRPX-${branchCode}-A1`;
     let createdId = '';
     let formattedTxId = plannedTxId;
 
@@ -282,7 +283,6 @@ function CustomerPaymentContent() {
           paymentType: method === 'cash' ? 'Cash' : 'Full',
           source: 'Online',
           branch: selectedBranch.replace(/\s*Branch$/i, '').trim(),
-          referenceId: plannedTxId
         })
       });
 
@@ -293,7 +293,7 @@ function CustomerPaymentContent() {
           if (data.referenceId) {
             formattedTxId = data.referenceId;
           } else if (data.id) {
-            formattedTxId = `#CMTPQ${data.id.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}`;
+            formattedTxId = formatDisplayInvoiceId(data.id, selectedBranch);
           }
         }
       }

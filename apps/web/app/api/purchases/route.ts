@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../lib/session';
 import { triggerStockAlert } from '../../../lib/stock-alerts';
+import { generateNextInvoiceId } from '../../../lib/invoice';
 
 export async function POST(req: Request) {
   try {
@@ -31,11 +32,6 @@ export async function POST(req: Request) {
 
     const actualUserId = targetUserId || session.userId;
 
-    // Unique Claim Code / Reference ID for the transaction
-    const cleanRefId = (typeof referenceId === 'string' && referenceId.trim())
-      ? (referenceId.trim().startsWith('#') ? referenceId.trim() : `#${referenceId.trim()}`)
-      : `#CMTPQ${Math.random().toString(36).substring(2, 6).toUpperCase()}${Math.random().toString(36).substring(2, 4).toUpperCase()}`;
-
     if (phoneNumber && actualUserId && !phoneNumber.includes('₱') && !phoneNumber.toLowerCase().includes('cash')) {
       await prisma.user.update({
         where: { id: actualUserId },
@@ -54,6 +50,14 @@ export async function POST(req: Request) {
     const operatingBranch = requestedBranch || ((session && (session.role === 'ADMIN' || session.role === 'CASHIER'))
       ? (session.branch || 'Tagoloan')
       : 'Tagoloan');
+
+    // Unique Claim Code / Reference ID for the transaction (GRPX-T-A1, GRPX-V-A1, GRPX-J-A1 format)
+    let cleanRefId = '';
+    if (typeof referenceId === 'string' && referenceId.trim() && !referenceId.includes('CMTPQ') && !referenceId.includes('CWTPQ')) {
+      cleanRefId = referenceId.trim().startsWith('#') ? referenceId.trim() : `#${referenceId.trim()}`;
+    } else {
+      cleanRefId = await generateNextInvoiceId(operatingBranch);
+    }
 
     // Detect Cash on Pickup order
     const isCashOrder = Boolean(

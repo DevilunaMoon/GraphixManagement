@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
 import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
+import { formatDisplayInvoiceId } from '../../lib/invoice';
 
 interface Transaction {
   id: string;
@@ -219,8 +220,8 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                       {tx.status === 'Cancelled' && (
                         <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Cancelled</span>
                       )}
-                      <span className="text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-100">
-                        #{tx.id.substring(0, 8).toUpperCase()}
+                      <span className="text-xs font-bold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
+                        {formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch)}
                       </span>
                     </div>
                   </td>

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, CheckCircle2, Copy, Check, ShieldCheck } from 'lucide-react';
 import CustomerDigitalReceiptCard, { DigitalReceiptData, ReceiptCartItem } from '../../components/CustomerSide/CustomerDigitalReceiptCard';
+import { formatDisplayInvoiceId, getBranchCode } from '../../lib/invoice';
 
 function CustomerPurchaseConfirmedContent() {
   const router = useRouter();
@@ -179,18 +180,11 @@ function CustomerPurchaseConfirmedContent() {
         candidatePhone = userProfile?.phone && !userProfile.phone.includes('₱') ? userProfile.phone : '0917 123 4567';
       }
 
-      // 12. Resolve Transaction ID: Priority: #CMTPQ... format
-      let resolvedTxId = '#CMTPQWI5Q0';
-      if (storedReceipt?.transactionId) {
-        resolvedTxId = storedReceipt.transactionId.startsWith('#') 
-          ? storedReceipt.transactionId 
-          : `#${storedReceipt.transactionId}`;
-      } else if (purchaseId) {
-        const clean = purchaseId.replace('#', '').toUpperCase();
-        resolvedTxId = clean.startsWith('CMTPQ') ? `#${clean}` : `#CMTPQ${clean.slice(-5)}`;
-      } else if (apiPurchase?.id) {
-        resolvedTxId = `#CMTPQ${apiPurchase.id.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}`;
-      }
+      // 12. Resolve Transaction ID (GRPX-T-A1, GRPX-V-A1, GRPX-J-A1)
+      let resolvedTxId = formatDisplayInvoiceId(
+        storedReceipt?.transactionId || apiPurchase?.referenceId || apiPurchase?.id || purchaseId,
+        resolvedBranch
+      );
 
       // 13. Resolve Timestamp
       const currentFormattedDate = new Date().toLocaleString('en-US', {
