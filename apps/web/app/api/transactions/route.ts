@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../lib/session';
-import { formatDisplayInvoiceId } from '../../../lib/invoice';
+import { formatDisplayInvoiceId, getBranchCode } from '../../../lib/invoice';
 
 export async function GET(req: Request) {
   try {
@@ -85,6 +85,30 @@ export async function GET(req: Request) {
       };
     }
 
+    // Build branch sequence lookup map across all purchases ordered by createdAt ascending
+    const branchSeqMap = new Map<string, string>();
+    try {
+      const allPurchasesAsc = await prisma.purchase.findMany({
+        select: { id: true, branch: true, createdAt: true, referenceId: true },
+        orderBy: { createdAt: 'asc' }
+      });
+
+      const branchCounters: Record<string, number> = {};
+      for (const p of allPurchasesAsc) {
+        const bCode = getBranchCode(p.branch);
+        branchCounters[bCode] = (branchCounters[bCode] || 0) + 1;
+        let ref = p.referenceId;
+        const isStd = typeof ref === 'string' && ref.replace(/^#/, '').match(/^GRPX-([TVJ]|[A-Z])-A\d+$/i);
+        if (isStd && ref) {
+          branchSeqMap.set(p.id, ref.startsWith('#') ? ref : `#${ref}`);
+        } else {
+          branchSeqMap.set(p.id, `#GRPX-${bCode}-A${branchCounters[bCode]}`);
+        }
+      }
+    } catch (seqErr) {
+      console.warn("Could not build global sequence map:", seqErr);
+    }
+
     if (pageStr) {
       const page = Math.max(1, parseInt(pageStr, 10) || 1);
       const limit = Math.max(1, parseInt(limitStr || '8', 10) || 8);
@@ -129,7 +153,7 @@ export async function GET(req: Request) {
         }
         return { 
           ...tx, 
-          referenceId: formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch),
+          referenceId: branchSeqMap.get(tx.id) || formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch),
           isExpired 
         };
       });
@@ -173,7 +197,7 @@ export async function GET(req: Request) {
       }
       return { 
         ...tx, 
-        referenceId: formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch),
+        referenceId: branchSeqMap.get(tx.id) || formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch),
         isExpired 
       };
     });

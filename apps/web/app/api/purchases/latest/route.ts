@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
-import { formatDisplayInvoiceId } from '../../../../lib/invoice';
+import { formatDisplayInvoiceId, getBranchCode } from '../../../../lib/invoice';
 
 export async function GET(req: Request) {
   try {
@@ -63,9 +63,30 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'No purchase found' }, { status: 404 });
     }
 
+    // Resolve exact unique sequence index for this purchase within its branch (GRPX-T-A1, GRPX-T-A2, ...)
+    const cleanBranch = (purchase.branch || 'Tagoloan').replace(/\s*Branch$/i, '').trim();
+    const bCode = getBranchCode(purchase.branch);
+    let resolvedRefId = purchase.referenceId;
+    const isStandard = typeof resolvedRefId === 'string' && resolvedRefId.replace(/^#/, '').match(/^GRPX-([TVJ]|[A-Z])-A\d+$/i);
+
+    if (!isStandard) {
+      try {
+        const priorCount = await prisma.purchase.count({
+          where: {
+            branch: { contains: cleanBranch, mode: 'insensitive' },
+            createdAt: { lt: purchase.createdAt }
+          }
+        });
+        const seq = priorCount + 1;
+        resolvedRefId = `#GRPX-${bCode}-A${seq}`;
+      } catch (e) {
+        resolvedRefId = `#GRPX-${bCode}-A1`;
+      }
+    }
+
     const formattedPurchase = {
       ...purchase,
-      referenceId: formatDisplayInvoiceId(purchase.referenceId || purchase.id, purchase.branch)
+      referenceId: resolvedRefId ? (resolvedRefId.startsWith('#') ? resolvedRefId : `#${resolvedRefId}`) : `#GRPX-${bCode}-A1`
     };
 
     return NextResponse.json(formattedPurchase);
