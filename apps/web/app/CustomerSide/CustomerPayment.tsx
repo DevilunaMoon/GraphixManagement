@@ -379,354 +379,375 @@ function CustomerPaymentContent() {
       {/* Sleek frosted backdrop */}
       <div className="absolute inset-0 bg-black/75 backdrop-blur-[3px] z-0"></div>
 
-      <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-8 shadow-2xl border border-gray-100 flex flex-col gap-6 relative z-10 my-6 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-5xl bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-gray-100 flex flex-col gap-6 relative z-10 my-6 animate-in fade-in zoom-in-95 duration-200">
 
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between pb-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => router.back()}
-              className="p-2 hover:bg-purple-50 rounded-full text-gray-500 hover:text-[#bd00ff] transition-all cursor-pointer"
+              className="p-2.5 hover:bg-purple-50 rounded-2xl text-gray-500 hover:text-[#bd00ff] transition-all cursor-pointer border border-gray-100 shadow-xs"
               title="Go back"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={20} />
             </button>
             <div>
-              <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 m-0">
-                Secure Payment
-                <ShieldCheck size={18} className="text-emerald-500" />
+              <h2 className="text-xl md:text-2xl font-black text-gray-900 flex items-center gap-2 m-0">
+                Secure Checkout & Payment
+                <ShieldCheck size={20} className="text-emerald-500" />
               </h2>
-              <p className="text-xs text-gray-400 m-0 mt-0.5">Complete your transaction safely</p>
+              <p className="text-xs text-gray-400 m-0 mt-0.5">Complete your transaction safely and pick up in store</p>
             </div>
           </div>
 
-          <span className="text-[11px] font-bold px-2.5 py-1 bg-purple-50 text-[#bd00ff] rounded-full border border-purple-100 flex items-center gap-1">
-            <ShoppingBag size={12} />
+          <span className="text-xs font-bold px-3 py-1.5 bg-purple-50 text-[#bd00ff] rounded-full border border-purple-100 flex items-center gap-1.5 shadow-xs">
+            <ShoppingBag size={14} />
             {items.reduce((acc, i) => acc + i.quantity, 0)} {items.reduce((acc, i) => acc + i.quantity, 0) === 1 ? 'Item' : 'Items'}
           </span>
         </div>
 
-        {/* Order Item Summary Preview (Collapsible) */}
-        {items.length > 0 && (
-          <div className="bg-gray-50/70 border border-gray-200/70 rounded-2xl p-3.5 flex flex-col gap-2">
-            <div 
-              className="flex justify-between items-center cursor-pointer select-none"
-              onClick={() => setShowItemsList(!showItemsList)}
-            >
-              <div className="flex items-center gap-2">
-                <Receipt size={16} className="text-purple-600" />
-                <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  Order Items ({items.length})
-                </span>
+        {/* 2-Column Responsive Checkout Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Column: Configuration (Branch, Payment Method, GCash Details, Notes) */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
+
+            {/* Section 0: Pickup Branch Location */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <label className="font-extrabold text-gray-800 text-sm tracking-wide flex items-center gap-1.5">
+                  <MapPin size={16} className="text-[#bd00ff]" />
+                  Pickup Branch Location
+                </label>
+                <span className="text-[10px] text-gray-400 font-bold uppercase">Store Branch</span>
               </div>
-              <span className="text-xs text-[#bd00ff] font-bold hover:underline">
-                {showItemsList ? 'Hide Details' : 'View Items'}
-              </span>
-            </div>
-
-            {showItemsList && (
-              <div className="flex flex-col gap-2.5 pt-3 border-t border-gray-200/60 mt-1 max-h-48 overflow-y-auto pr-1">
-                {items.map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-0.5">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
-                        ) : (
-                          <ShoppingBag size={16} className="text-gray-400" />
-                        )}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-gray-900 truncate">{item.name}</span>
-                        <span className="text-[10px] text-gray-400">
-                          Qty: {item.quantity} {item.variations && item.variations.length > 0 && `• ${item.variations.map(v => v.name || v.value).join(', ')}`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <span className="font-black text-gray-900">
-                        ₱{(item.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
-                      {item.discount > 0 && (
-                        <span className="block text-[10px] text-emerald-600 font-semibold line-through">
-                          ₱{(item.originalPrice * item.quantity).toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-3 gap-2.5">
+                {(branches.length > 0
+                  ? branches.map(b => ({
+                      id: b.id,
+                      displayName: cleanBranchName(b.name),
+                      fullName: b.name.includes('Branch') ? b.name : `${b.name} Branch`
+                    }))
+                  : [
+                      { id: 'tagoloan', displayName: 'Tagoloan', fullName: 'Tagoloan Branch' },
+                      { id: 'villanueva', displayName: 'Villanueva', fullName: 'Villanueva Branch' },
+                      { id: 'jasaan', displayName: 'Jasaan', fullName: 'Jasaan Branch' }
+                    ]
+                ).map((b) => (
+                  <button
+                    key={b.id || b.fullName}
+                    type="button"
+                    onClick={() => setSelectedBranch(b.fullName)}
+                    className={`py-3 px-3 rounded-2xl border text-xs font-bold transition-all text-center cursor-pointer ${
+                      cleanBranchName(selectedBranch).toLowerCase() === b.displayName.toLowerCase()
+                        ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] shadow-xs'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    {b.displayName}
+                  </button>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Section 0: Pickup Branch Location */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <label className="font-extrabold text-gray-800 text-sm tracking-wide flex items-center gap-1.5">
-              <MapPin size={16} className="text-[#bd00ff]" />
-              Pickup Branch Location
-            </label>
-            <span className="text-[10px] text-gray-400 font-bold uppercase">Store Branch</span>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {(branches.length > 0
-              ? branches.map(b => ({
-                  id: b.id,
-                  displayName: cleanBranchName(b.name),
-                  fullName: b.name.includes('Branch') ? b.name : `${b.name} Branch`
-                }))
-              : [
-                  { id: 'tagoloan', displayName: 'Tagoloan', fullName: 'Tagoloan Branch' },
-                  { id: 'villanueva', displayName: 'Villanueva', fullName: 'Villanueva Branch' },
-                  { id: 'jasaan', displayName: 'Jasaan', fullName: 'Jasaan Branch' }
-                ]
-            ).map((b) => (
-              <button
-                key={b.id || b.fullName}
-                type="button"
-                onClick={() => setSelectedBranch(b.fullName)}
-                className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                  cleanBranchName(selectedBranch).toLowerCase() === b.displayName.toLowerCase()
-                    ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] shadow-xs'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                {b.displayName}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Section 1: Payment Method Selection */}
-        <div className="flex flex-col gap-3">
-          <label className="font-extrabold text-gray-800 text-sm tracking-wide">
-            Select Payment Method
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Cash Card */}
-            <button
-              type="button"
-              onClick={() => setMethod('cash')}
-              className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                method === 'cash'
-                  ? 'border-[#bd00ff] bg-purple-50/50 shadow-md shadow-purple-500/10'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              {method === 'cash' && (
-                <div className="absolute top-2.5 right-2.5 text-[#bd00ff]">
-                  <CheckCircle2 size={16} />
-                </div>
-              )}
-              <div className={`p-3 rounded-full transition-colors ${
-                method === 'cash' ? 'bg-[#bd00ff] text-white' : 'bg-gray-100 text-gray-500'
-              }`}>
-                <Coins size={22} />
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <span className="font-black text-xs text-gray-900">Cash Payment</span>
-                <span className="text-[10px] text-gray-400 mt-0.5">Pay in cash upon pickup</span>
-              </div>
-            </button>
-
-            {/* GCash Card */}
-            <button
-              type="button"
-              onClick={() => setMethod('gcash')}
-              className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
-                method === 'gcash'
-                  ? 'border-[#005ce6] bg-blue-50/50 shadow-md shadow-blue-500/10'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              {method === 'gcash' && (
-                <div className="absolute top-2.5 right-2.5 text-[#005ce6]">
-                  <CheckCircle2 size={16} />
-                </div>
-              )}
-              <div className={`p-3 rounded-full transition-colors ${
-                method === 'gcash' ? 'bg-[#005ce6] text-white' : 'bg-gray-100 text-gray-500'
-              }`}>
-                <Smartphone size={22} />
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <span className="font-black text-xs text-gray-900">GCash Payment</span>
-                <span className="text-[10px] text-gray-400 mt-0.5">Instant online e-wallet</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* Section 2: Dynamic Method-Specific Form (GCash Only) */}
-        {method === 'gcash' && (
-          /* GCash Payment Info Box */
-          <div className="bg-gradient-to-b from-blue-50/80 to-white border border-blue-200 rounded-2xl p-4 flex flex-col gap-3.5">
-            <div className="flex items-center justify-between pb-2 border-b border-blue-100">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-[#005ce6] text-white rounded-lg flex items-center justify-center font-black text-sm shadow-xs">
-                  G
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">GCash Transfer</h4>
-                  <span className="text-[10px] text-blue-600 font-semibold">Official Verified Merchant</span>
-                </div>
-              </div>
-
-              <span className="text-[11px] font-black text-[#005ce6] bg-blue-100/70 px-2 py-0.5 rounded-full">
-                0% Transaction Fee
-              </span>
             </div>
 
-            {/* Merchant Details */}
-            <div className="bg-white rounded-xl p-3 border border-blue-100 flex flex-col gap-2">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-500 font-medium">Account Name:</span>
-                <span className="font-bold text-gray-900">{activeGcashName}</span>
+            {/* Section 1: Payment Method Selection */}
+            <div className="flex flex-col gap-3">
+              <label className="font-extrabold text-gray-800 text-sm tracking-wide">
+                Select Payment Method
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {/* Cash Card */}
+                <button
+                  type="button"
+                  onClick={() => setMethod('cash')}
+                  className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                    method === 'cash'
+                      ? 'border-[#bd00ff] bg-purple-50/50 shadow-md shadow-purple-500/10'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  {method === 'cash' && (
+                    <div className="absolute top-2.5 right-2.5 text-[#bd00ff]">
+                      <CheckCircle2 size={16} />
+                    </div>
+                  )}
+                  <div className={`p-3 rounded-full transition-colors ${
+                    method === 'cash' ? 'bg-[#bd00ff] text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    <Coins size={22} />
+                  </div>
+                  <div className="flex flex-col items-center text-center">
+                    <span className="font-black text-xs text-gray-900">Cash Payment</span>
+                    <span className="text-[10px] text-gray-400 mt-0.5">Pay in cash upon pickup</span>
+                  </div>
+                </button>
+
+                {/* GCash Card */}
+                <button
+                  type="button"
+                  onClick={() => setMethod('gcash')}
+                  className={`relative flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                    method === 'gcash'
+                      ? 'border-[#005ce6] bg-blue-50/50 shadow-md shadow-blue-500/10'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  {method === 'gcash' && (
+                    <div className="absolute top-2.5 right-2.5 text-[#005ce6]">
+                      <CheckCircle2 size={16} />
+                    </div>
+                  )}
+                  <div className={`p-3 rounded-full transition-colors ${
+                    method === 'gcash' ? 'bg-[#005ce6] text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    <Smartphone size={22} />
+                  </div>
+                  <div className="flex flex-col items-center text-center">
+                    <span className="font-black text-xs text-gray-900">GCash Payment</span>
+                    <span className="text-[10px] text-gray-400 mt-0.5">Instant online e-wallet</span>
+                  </div>
+                </button>
               </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-500 font-medium">Account Number:</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[#005ce6] text-sm">{activeGcashNumber}</span>
+            </div>
+
+            {/* Section 2: Dynamic Method-Specific Form (GCash Only) */}
+            {method === 'gcash' && (
+              <div className="bg-gradient-to-b from-blue-50/80 to-white border border-blue-200 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 shadow-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-blue-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 bg-[#005ce6] text-white rounded-lg flex items-center justify-center font-black text-sm shadow-xs">
+                      G
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">GCash Transfer</h4>
+                      <span className="text-[10px] text-blue-600 font-semibold">Official Verified Merchant</span>
+                    </div>
+                  </div>
+
+                  <span className="text-[11px] font-black text-[#005ce6] bg-blue-100/70 px-2 py-0.5 rounded-full">
+                    0% Transaction Fee
+                  </span>
+                </div>
+
+                {/* Merchant Details */}
+                <div className="bg-white rounded-xl p-3 border border-blue-100 flex flex-col gap-2 shadow-xs">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 font-medium">Account Name:</span>
+                    <span className="font-bold text-gray-900">{activeGcashName}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-500 font-medium">Account Number:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[#005ce6] text-sm">{activeGcashNumber}</span>
+                      <button
+                        type="button"
+                        onClick={handleCopyGcashNumber}
+                        className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors cursor-pointer"
+                        title="Copy GCash number"
+                      >
+                        {copiedNumber ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* QR Code Trigger & Modal Preview */}
+                <div className="flex items-center justify-between bg-blue-900/5 rounded-xl p-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <QrCode size={18} className="text-[#005ce6]" />
+                    <span className="font-semibold text-gray-700">Scan QR Code directly</span>
+                  </div>
                   <button
                     type="button"
-                    onClick={handleCopyGcashNumber}
-                    className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors cursor-pointer"
-                    title="Copy GCash number"
+                    onClick={() => setShowGcashModal(true)}
+                    className="text-xs font-bold text-[#005ce6] hover:underline cursor-pointer flex items-center gap-1"
                   >
-                    {copiedNumber ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                    View QR Code →
                   </button>
                 </div>
-              </div>
-            </div>
 
-            {/* QR Code Trigger & Modal Preview */}
-            <div className="flex items-center justify-between bg-blue-900/5 rounded-xl p-2.5 text-xs">
-              <div className="flex items-center gap-2">
-                <QrCode size={18} className="text-[#005ce6]" />
-                <span className="font-semibold text-gray-700">Scan QR Code directly</span>
+                {/* Optional Reference Number Input */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-gray-700">
+                    GCash Reference No. (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="E.g., 901234567890"
+                    value={gcashRef}
+                    onChange={(e) => setGcashRef(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-[#005ce6] focus:ring-1 focus:ring-blue-100"
+                  />
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowGcashModal(true)}
-                className="text-xs font-bold text-[#005ce6] hover:underline cursor-pointer"
-              >
-                View QR Code →
-              </button>
-            </div>
+            )}
 
-            {/* Optional Reference Number Input */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-bold text-gray-700">
-                GCash Reference No. (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="E.g., 901234567890"
-                value={gcashRef}
-                onChange={(e) => setGcashRef(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-[#005ce6] focus:ring-1 focus:ring-blue-100"
+            {/* Section 3: Optional Customer / Order Note */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-gray-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare size={14} className="text-gray-400" />
+                  Message for Staff / Order Note
+                </label>
+                <span className="text-[10px] text-gray-400 font-medium">Optional</span>
+              </div>
+              <textarea
+                placeholder="E.g., Preferred pickup schedule, branch instructions, notes for staff..."
+                value={staffMessage}
+                onChange={(e) => setStaffMessage(e.target.value)}
+                rows={2}
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs text-gray-800 focus:border-[#bd00ff] focus:bg-white focus:ring-1 focus:ring-[#bd00ff] transition-all resize-none"
               />
             </div>
           </div>
-        )}
 
-        {/* Section 3: Optional Customer / Order Note */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <label className="font-bold text-gray-700 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <MessageSquare size={14} className="text-gray-400" />
-              Message for Staff / Order Note
-            </label>
-            <span className="text-[10px] text-gray-400 font-medium">Optional</span>
-          </div>
-          <textarea
-            placeholder="E.g., Preferred pickup schedule, branch instructions, notes for staff..."
-            value={staffMessage}
-            onChange={(e) => setStaffMessage(e.target.value)}
-            rows={2}
-            className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs text-gray-800 focus:border-[#bd00ff] focus:bg-white focus:ring-1 focus:ring-[#bd00ff] transition-all resize-none"
-          />
-        </div>
+          {/* Right Column: Order Items, Summary & Confirmation */}
+          <div className="lg:col-span-5 flex flex-col gap-5 lg:sticky lg:top-6">
+            
+            {/* Order Item Summary Preview */}
+            {items.length > 0 && (
+              <div className="bg-gray-50/80 border border-gray-200/80 rounded-2xl p-4 flex flex-col gap-2.5 shadow-xs">
+                <div 
+                  className="flex justify-between items-center cursor-pointer select-none"
+                  onClick={() => setShowItemsList(!showItemsList)}
+                >
+                  <div className="flex items-center gap-2">
+                    <Receipt size={16} className="text-purple-600" />
+                    <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      Order Items ({items.length})
+                    </span>
+                  </div>
+                  <span className="text-xs text-[#bd00ff] font-bold hover:underline">
+                    {showItemsList ? 'Hide Details' : 'View Items'}
+                  </span>
+                </div>
 
-        {/* Section 4: Payment Details Breakdown (Inspired by Reference 2) */}
-        <div className="bg-white border-2 border-purple-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-xs">
-          <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
-            <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider m-0">
-              Payment Details
-            </h3>
-            <span className="text-[10px] text-gray-400 font-medium">
-              No extra fees
-            </span>
-          </div>
+                {showItemsList && (
+                  <div className="flex flex-col gap-2.5 pt-3 border-t border-gray-200/60 mt-1 max-h-56 overflow-y-auto pr-1">
+                    {items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between gap-3 text-xs bg-white p-2.5 rounded-xl border border-gray-100">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden p-0.5">
+                            {item.image ? (
+                              <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                            ) : (
+                              <ShoppingBag size={16} className="text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-gray-900 truncate">{item.name}</span>
+                            <span className="text-[10px] text-gray-400">
+                              Qty: {item.quantity} {item.variations && item.variations.length > 0 && `• ${item.variations.map(v => v.name || v.value).join(', ')}`}
+                            </span>
+                          </div>
+                        </div>
 
-          <div className="flex flex-col gap-2 text-xs">
-            {/* 1. Product/Order Subtotal */}
-            <div className="flex justify-between items-center text-gray-600 font-medium">
-              <span>Order Subtotal</span>
-              <span className="font-bold text-gray-900">
-                ₱{loading ? '...' : subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            {/* 2. Discount (ONLY DISPLAYED IF DISCOUNT APPLIED) */}
-            {totalDiscount > 0 && (
-              <div className="flex justify-between items-center text-emerald-600 font-bold animate-in fade-in">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-emerald-500" />
-                  Promotional Discount
-                </span>
-                <span className="text-emerald-700 font-black">
-                  -₱{totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+                        <div className="text-right flex-shrink-0">
+                          <span className="font-black text-gray-900">
+                            ₱{(item.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          {item.discount > 0 && (
+                            <span className="block text-[10px] text-emerald-600 font-semibold line-through">
+                              ₱{(item.originalPrice * item.quantity).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Strict Notice: NO shipping fees, NO protection fees, NO e-commerce additions */}
-          </div>
-
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-xs font-black text-gray-900 uppercase tracking-wider">
-                Final Total Payment
-              </span>
-              <span className="text-[10px] text-gray-400">
-                Actual payable amount
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-black text-[#bd00ff] tracking-tight">
-                ₱{loading ? '...' : finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-              {totalDiscount > 0 && (
-                <span className="text-[10px] font-bold text-emerald-600 block mt-0.5">
-                  Saved ₱{totalDiscount.toLocaleString()}
+            {/* Section 4: Payment Details Breakdown */}
+            <div className="bg-white border-2 border-purple-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-xs">
+              <div className="flex items-center justify-between pb-2.5 border-b border-gray-100">
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider m-0">
+                  Payment Details
+                </h3>
+                <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                  Free In-Store Pickup
                 </span>
-              )}
+              </div>
+
+              <div className="flex flex-col gap-2 text-xs">
+                {/* 1. Product/Order Subtotal */}
+                <div className="flex justify-between items-center text-gray-600 font-medium">
+                  <span>Order Subtotal</span>
+                  <span className="font-bold text-gray-900">
+                    ₱{loading ? '...' : subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                {/* 2. Discount */}
+                {totalDiscount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-600 font-bold animate-in fade-in">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-emerald-500" />
+                      Promotional Discount
+                    </span>
+                    <span className="text-emerald-700 font-black">
+                      -₱{totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                    Final Total Payment
+                  </span>
+                  <span className="text-[10px] text-gray-400">
+                    Actual payable amount
+                  </span>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-black text-[#bd00ff] tracking-tight">
+                    ₱{loading ? '...' : finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  {totalDiscount > 0 && (
+                    <span className="text-[10px] font-bold text-emerald-600 block mt-0.5">
+                      Saved ₱{totalDiscount.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Section 5: Place Order / Confirm Payment Button */}
+            <button
+              type="button"
+              disabled={loading || submitting}
+              onClick={handlePlaceOrder}
+              className="w-full py-4 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-sm md:text-base rounded-2xl border-none cursor-pointer shadow-lg shadow-purple-500/25 active:scale-[0.99] transition-all uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <>
+                  <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Processing Order...</span>
+                </>
+              ) : (
+                <>
+                  <span>Place Order • ₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </>
+              )}
+            </button>
+
+            {/* Trust Badges */}
+            <div className="flex items-center justify-center gap-3 text-[11px] text-gray-400 font-medium">
+              <span className="flex items-center gap-1">
+                <ShieldCheck size={14} className="text-emerald-500" /> Secure Checkout
+              </span>
+              <span>•</span>
+              <span>100% In-Store Pickup</span>
+              <span>•</span>
+              <span>Official Warranty</span>
+            </div>
+
           </div>
         </div>
-
-        {/* Section 5: Place Order / Confirm Payment Button */}
-        <button
-          type="button"
-          disabled={loading || submitting}
-          onClick={handlePlaceOrder}
-          className="w-full py-4 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-base rounded-2xl border-none cursor-pointer shadow-lg shadow-purple-500/25 active:scale-[0.99] transition-all uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? (
-            <>
-              <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>Processing Order...</span>
-            </>
-          ) : (
-            <>
-              <span>Place Order • ₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </>
-          )}
-        </button>
 
       </div>
 
