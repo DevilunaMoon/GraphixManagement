@@ -30,8 +30,8 @@ export default function CashierThemes() {
   const { activeTheme, setActiveTheme, activeBg, setActiveBg } = useTheme();
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center">
-      <div className="w-full max-w-5xl bg-white border border-[#bd00ff] rounded-2xl p-6 md:p-10 flex flex-col gap-10 shadow-sm">
+    <main className="flex-1 p-4 md:p-6 lg:p-8 font-['Inter'] flex flex-col items-center w-full">
+      <div className="w-full max-w-6xl bg-white border border-[#bd00ff] rounded-3xl p-6 md:p-10 flex flex-col gap-10 shadow-sm">
         
         <div className="border-b border-gray-200 pb-4">
           <h2 className="text-2xl font-bold text-black border-none">Theme Selection</h2>

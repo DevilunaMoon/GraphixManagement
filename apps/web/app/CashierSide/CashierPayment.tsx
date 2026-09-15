@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, CheckCircle2, AlertCircle, AlertTriangle, CreditCard, Receipt, X } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, AlertCircle, AlertTriangle, CreditCard, Receipt, X, User, Package, Store } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
 import { isIPhoneProduct } from '../../lib/imei';
@@ -227,202 +227,291 @@ export default function CashierPayment() {
   };
 
   return (
-    <main className="flex-1 flex justify-center items-start p-4 md:p-8 mt-4">
-      <div className="w-full max-w-[650px] border-2 border-[#bd00ff] rounded-2xl p-6 md:p-10 bg-white flex flex-col gap-6 shadow-lg relative">
+    <main className="flex-1 flex justify-center items-start p-2 sm:p-4 md:p-6 w-full animate-in fade-in duration-300">
+      <div className="w-full max-w-6xl border-2 border-[#bd00ff] rounded-3xl p-6 md:p-8 lg:p-10 bg-white flex flex-col gap-6 md:gap-8 shadow-sm relative">
         
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-purple-100 pb-4">
-          <button 
-            type="button"
-            onClick={() => setTerminateModalOpen(true)} 
-            className="text-black hover:text-[#bd00ff] transition-colors bg-transparent border-none cursor-pointer p-1 rounded-lg hover:bg-purple-50"
-            title="Back / Cancel Transaction"
-          >
-            <ChevronLeft size={32} />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-black m-0">Payment Information Section</h2>
-            <p className="text-sm text-gray-500 m-0">Complete physical store checkout for walk-in customer</p>
+        <div className="flex items-center justify-between border-b border-purple-100 pb-5 gap-4">
+          <div className="flex items-center gap-4">
+            <button 
+              type="button"
+              onClick={() => setTerminateModalOpen(true)} 
+              className="text-black hover:text-[#bd00ff] transition-colors bg-purple-50 hover:bg-purple-100 border-none cursor-pointer p-2.5 rounded-xl shrink-0"
+              title="Back / Cancel Transaction"
+            >
+              <ChevronLeft size={28} />
+            </button>
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-black m-0">Payment Information Section</h2>
+              <p className="text-xs sm:text-sm text-gray-500 m-0 mt-0.5">Complete physical store checkout for walk-in customer</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold shrink-0">
+            <span className="w-2 h-2 rounded-full bg-[#bd00ff] animate-pulse"></span>
+            <span>POS Walk-In Terminal</span>
           </div>
         </div>
 
         {errorMsg && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-semibold flex items-center gap-2">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-semibold flex items-center gap-2 shadow-xs">
             <AlertCircle size={20} className="shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* Selected Product Summary */}
-        {cartItems.length > 0 && (
-          <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-100 flex flex-col gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700">Selected Items ({cartItems.length})</span>
-            <div className="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
-              {cartItems.map((item, idx) => {
-                const now = new Date();
-                const isDiscountActive = Boolean(
-                  item.discount && 
-                  item.discount > 0 &&
-                  (!item.discountStartDate || new Date(item.discountStartDate) <= now) &&
-                  (!item.discountEndDate || new Date(item.discountEndDate) >= now)
-                );
-                const discount = (isDiscountActive ? item.discount : 0) || 0;
-                const effectivePrice = discount > 0 ? (item.price * (1 - discount / 100)) : item.price;
-                const itemTotal = effectivePrice * item.cartQty;
+        <form onSubmit={handleConfirm} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Column (7 cols): Customer Information & Payment Configuration */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            
+            {/* Customer Details Card */}
+            <div className="bg-gray-50/70 border border-gray-200 rounded-2xl p-5 md:p-6 flex flex-col gap-4 shadow-2xs">
+              <div className="flex items-center justify-between pb-2.5 border-b border-gray-200">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-800 flex items-center gap-2">
+                  <User size={16} className="text-[#bd00ff]" />
+                  Customer Information
+                </span>
+                <span className="text-[11px] font-semibold text-gray-400">Required for receipt & records</span>
+              </div>
 
-                return (
-                  <div key={idx} className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-2">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-8 h-8 rounded object-cover bg-white border" />
-                      ) : (
-                        <div className="w-8 h-8 bg-purple-200 rounded flex items-center justify-center text-purple-700 font-bold text-xs">P</div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-gray-800">{item.name} <strong className="text-purple-600">x{item.cartQty}</strong></span>
-                        {discount > 0 && (
-                          <span className="text-[10px] text-rose-600 font-bold">
-                            {discount}% OFF (₱{Number(item.price).toLocaleString()} orig)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="font-bold text-gray-900">₱{itemTotal.toLocaleString()}</span>
-                      {discount > 0 && (
-                        <span className="text-[10px] text-gray-400 line-through">₱{(item.price * item.cartQty).toLocaleString()}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleConfirm} className="flex flex-col gap-6">
-          {/* Customer Name */}
-          <div className="flex flex-col gap-2">
-            <label className="text-base font-semibold text-black">Name</label>
-            <input 
-              type="text" 
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Enter customer full name..."
-              className="w-full h-12 border-2 border-[#bd00ff] rounded-xl px-4 text-base outline-none focus:shadow-[0_0_5px_rgba(189,0,255,0.4)] transition-shadow text-black" 
-              required
-            />
-          </div>
-
-          {/* Contact Number */}
-          <div className="flex flex-col gap-2">
-            <label className="text-base font-semibold text-black">Contact Number</label>
-            <input 
-              type="text" 
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              placeholder="e.g. 09171234567"
-              className="w-full h-12 border-2 border-[#bd00ff] rounded-xl px-4 text-base outline-none focus:shadow-[0_0_5px_rgba(189,0,255,0.4)] transition-shadow text-black"
-              required 
-            />
-          </div>
-
-          {/* Payment Type Option Selector */}
-          <div className="flex flex-col gap-2">
-            <label className="text-base font-semibold text-black">Payment Option</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentType('Full')}
-                className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                  paymentType === 'Full' 
-                    ? 'border-[#bd00ff] bg-purple-50 text-purple-900 font-bold shadow-sm' 
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <CreditCard size={18} className={paymentType === 'Full' ? 'text-[#bd00ff]' : 'text-gray-400'} />
-                  <span className="font-extrabold text-sm">Full Purchase</span>
-                </div>
-                <span className="text-xs text-gray-500 font-normal">Pay total amount upfront</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentType('Downpayment')}
-                className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                  paymentType === 'Downpayment' 
-                    ? 'border-[#bd00ff] bg-purple-50 text-purple-900 font-bold shadow-sm' 
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Receipt size={18} className={paymentType === 'Downpayment' ? 'text-[#bd00ff]' : 'text-gray-400'} />
-                  <span className="font-extrabold text-sm">Downpayment</span>
-                </div>
-                <span className="text-xs text-gray-500 font-normal">Initial deposit & installment</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Amount Field / Downpayment Input */}
-          {paymentType === 'Full' ? (
-            <div className="flex flex-col gap-2">
-              <label className="text-base font-semibold text-black">Amount</label>
-              <input 
-                type="number" 
-                value={totalAmount}
-                readOnly
-                className="w-full h-12 border-2 border-[#bd00ff] rounded-xl px-4 text-lg font-bold text-[#bd00ff] bg-gray-50 outline-none" 
-                required
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 p-4 bg-purple-50/50 rounded-xl border border-purple-200">
+              {/* Customer Name */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-base font-bold text-purple-900">Initial Downpayment Amount (₱)</label>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Customer Name *</label>
                 <input 
-                  type="number" 
-                  min="1"
-                  max={totalAmount}
-                  value={downpaymentAmount}
-                  onChange={(e) => setDownpaymentAmount(Number(e.target.value))}
-                  className="w-full h-12 border-2 border-[#bd00ff] rounded-xl px-4 text-lg font-extrabold text-emerald-600 bg-white outline-none focus:ring-2 focus:ring-purple-400" 
+                  type="text" 
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Enter customer full name..."
+                  className="w-full h-12 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-sm font-semibold outline-none focus:shadow-[0_0_5px_rgba(189,0,255,0.3)] transition-all text-black" 
                   required
                 />
               </div>
 
-              <div className="flex justify-between items-center text-sm font-semibold text-gray-700 pt-2 border-t border-purple-200">
-                <span>Total Device Price:</span>
-                <span className="font-bold text-gray-900">₱{totalAmount.toLocaleString()}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-sm font-bold text-gray-900">
-                <span>Remaining Balance:</span>
-                <span className="font-extrabold text-red-500 text-base">₱{remainingBalance.toLocaleString()}</span>
-              </div>
-
-              <div className="flex justify-between items-center text-xs text-gray-500 pt-1">
-                <span>Monthly Installment (12 mos):</span>
-                <span className="font-extrabold text-blue-600">₱{(remainingBalance / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo</span>
+              {/* Contact Number */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Contact Number *</label>
+                <input 
+                  type="text" 
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  placeholder="e.g. 09171234567"
+                  className="w-full h-12 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-sm font-mono font-semibold outline-none focus:shadow-[0_0_5px_rgba(189,0,255,0.3)] transition-all text-black"
+                  required 
+                />
               </div>
             </div>
-          )}
 
-          {/* Submit Button */}
-          <div className="flex justify-center mt-2">
-            <button 
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-[#4b0082] hover:bg-[#34005b] text-white text-xl font-semibold rounded-xl py-3.5 w-full transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            {/* Payment Option Selector Card */}
+            <div className="bg-gray-50/70 border border-gray-200 rounded-2xl p-5 md:p-6 flex flex-col gap-4 shadow-2xs">
+              <div className="flex items-center justify-between pb-2.5 border-b border-gray-200">
+                <span className="text-xs font-black uppercase tracking-wider text-gray-800 flex items-center gap-2">
+                  <CreditCard size={16} className="text-[#bd00ff]" />
+                  Payment Option
+                </span>
+                <span className="text-[11px] font-bold text-purple-700 bg-purple-100/70 px-2.5 py-0.5 rounded-full">
+                  {paymentType === 'Full' ? 'Full Payment' : 'Installment Plan'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('Full')}
+                  className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                    paymentType === 'Full' 
+                      ? 'border-[#bd00ff] bg-purple-50/90 text-purple-900 font-bold shadow-xs' 
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <CreditCard size={18} className={paymentType === 'Full' ? 'text-[#bd00ff]' : 'text-gray-400'} />
+                    <span className="font-extrabold text-sm">Full Purchase</span>
+                  </div>
+                  <span className="text-xs text-gray-500 font-normal">Pay total amount upfront</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('Downpayment')}
+                  className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                    paymentType === 'Downpayment' 
+                      ? 'border-[#bd00ff] bg-purple-50/90 text-purple-900 font-bold shadow-xs' 
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Receipt size={18} className={paymentType === 'Downpayment' ? 'text-[#bd00ff]' : 'text-gray-400'} />
+                    <span className="font-extrabold text-sm">Downpayment</span>
+                  </div>
+                  <span className="text-xs text-gray-500 font-normal">Initial deposit & installment</span>
+                </button>
+              </div>
+
+              {/* Amount Display or Downpayment Input */}
+              {paymentType === 'Full' ? (
+                <div className="flex flex-col gap-1.5 pt-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Payable Full Amount</label>
+                  <div className="w-full h-12 border-2 border-purple-200 bg-purple-50/50 rounded-xl px-4 flex items-center justify-between text-base md:text-lg font-black text-[#bd00ff]">
+                    <span>Total Due Now:</span>
+                    <span>₱{totalAmount.toLocaleString()}</span>
+                  </div>
+                </div>
               ) : (
-                'Confirm'
+                <div className="flex flex-col gap-3 pt-2 p-4 bg-purple-50/60 rounded-xl border border-purple-200">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-extrabold text-purple-900 uppercase tracking-wider">
+                      Initial Downpayment Amount (₱) *
+                    </label>
+                    <input 
+                      type="number" 
+                      min="1"
+                      max={totalAmount}
+                      value={downpaymentAmount}
+                      onChange={(e) => setDownpaymentAmount(Number(e.target.value))}
+                      className="w-full h-12 border-2 border-[#bd00ff] rounded-xl px-4 text-base md:text-lg font-black text-emerald-600 bg-white outline-none focus:ring-2 focus:ring-purple-400 shadow-2xs" 
+                      required
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs font-semibold text-gray-700 pt-2 border-t border-purple-200">
+                    <span>Total Device Price:</span>
+                    <span className="font-bold text-gray-900">₱{totalAmount.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-xs font-bold text-gray-900">
+                    <span>Remaining Balance:</span>
+                    <span className="font-extrabold text-red-500 text-sm">₱{remainingBalance.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-[11px] text-gray-500 pt-1">
+                    <span>Est. Monthly Installment (12 mos):</span>
+                    <span className="font-extrabold text-blue-600">₱{(remainingBalance / 12).toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo</span>
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
+
           </div>
+
+          {/* Right Column (5 cols): Selected Items & Final Checkout Action */}
+          <div className="lg:col-span-5 flex flex-col gap-6 lg:sticky lg:top-6">
+            
+            {/* Selected Items Card */}
+            <div className="bg-white border-2 border-purple-100 rounded-2xl p-5 md:p-6 shadow-xs flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700 flex items-center gap-2">
+                  <Package size={16} />
+                  Selected Items ({cartItems.length})
+                </span>
+                <span className="text-xs font-bold text-gray-500">
+                  {cartItems.reduce((sum, item) => sum + item.cartQty, 0)} units total
+                </span>
+              </div>
+
+              {/* Items List */}
+              <div className="flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
+                {cartItems.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-400">No items selected</div>
+                ) : (
+                  cartItems.map((item, idx) => {
+                    const now = new Date();
+                    const isDiscountActive = Boolean(
+                      item.discount && 
+                      item.discount > 0 &&
+                      (!item.discountStartDate || new Date(item.discountStartDate) <= now) &&
+                      (!item.discountEndDate || new Date(item.discountEndDate) >= now)
+                    );
+                    const discount = (isDiscountActive ? item.discount : 0) || 0;
+                    const effectivePrice = discount > 0 ? (item.price * (1 - discount / 100)) : item.price;
+                    const itemTotal = effectivePrice * item.cartQty;
+
+                    return (
+                      <div key={idx} className="flex justify-between items-center p-2 rounded-xl bg-gray-50/70 border border-gray-100 text-sm">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="w-9 h-9 rounded-lg object-cover bg-white border border-gray-200 shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center text-[#bd00ff] font-bold text-xs shrink-0">P</div>
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-gray-900 text-xs truncate">
+                              {item.name} <strong className="text-[#bd00ff]">x{item.cartQty}</strong>
+                            </span>
+                            {discount > 0 ? (
+                              <span className="text-[10px] text-rose-600 font-bold">
+                                {discount}% OFF (₱{Number(item.price).toLocaleString()})
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-gray-400 font-mono">
+                                ₱{Number(item.price).toLocaleString()} each
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end shrink-0 pl-2">
+                          <span className="font-extrabold text-gray-900 text-xs">₱{itemTotal.toLocaleString()}</span>
+                          {discount > 0 && (
+                            <span className="text-[10px] text-gray-400 line-through">₱{(item.price * item.cartQty).toLocaleString()}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Price Summary Breakdown */}
+              <div className="flex flex-col gap-2 pt-3 border-t border-gray-100 text-xs">
+                <div className="flex justify-between items-center text-gray-600 font-medium">
+                  <span>Subtotal:</span>
+                  <span className="font-bold text-gray-800">₱{totalAmount.toLocaleString()}</span>
+                </div>
+                {paymentType === 'Downpayment' && (
+                  <>
+                    <div className="flex justify-between items-center text-emerald-600 font-bold">
+                      <span>Initial Downpayment:</span>
+                      <span>- ₱{downpaymentAmount.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-rose-600 font-bold">
+                      <span>Remaining Balance:</span>
+                      <span>₱{remainingBalance.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between items-center text-sm font-black text-gray-900 pt-2 border-t border-gray-200">
+                  <span>Payable Amount Now:</span>
+                  <span className="text-lg font-black text-[#bd00ff]">
+                    ₱{(paymentType === 'Downpayment' ? downpaymentAmount : totalAmount).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Confirm CTA Button */}
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-[#4b0082] hover:bg-[#34005b] text-white text-base font-bold rounded-xl py-3.5 w-full transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-1 border-none"
+              >
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <CheckCircle2 size={19} />
+                    Confirm & Complete Checkout
+                  </>
+                )}
+              </button>
+
+              <div className="text-center">
+                <span className="text-[11px] text-gray-400 font-medium flex items-center justify-center gap-1">
+                  <Store size={12} className="text-[#bd00ff]" />
+                  Official In-Store Walk-In Transaction
+                </span>
+              </div>
+            </div>
+
+          </div>
+
         </form>
 
       </div>

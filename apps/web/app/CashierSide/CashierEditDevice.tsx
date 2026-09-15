@@ -104,8 +104,8 @@ function CashierEditDeviceContent() {
   }
 
   return (
-    <main className="flex-1 flex justify-center items-start p-6 md:p-10 font-['Inter']">
-      <div className="w-full max-w-4xl bg-white border border-[#bd00ff] rounded-2xl p-6 md:p-10 flex flex-col gap-8 shadow-sm">
+    <main className="flex-1 flex justify-center items-start p-4 md:p-6 lg:p-8 font-['Inter'] w-full">
+      <div className="w-full max-w-6xl bg-white border-2 border-[#bd00ff] rounded-3xl p-6 md:p-10 flex flex-col gap-8 shadow-sm">
         
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-gray-100 pb-4">
