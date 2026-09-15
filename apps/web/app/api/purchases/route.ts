@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../lib/session';
 import { triggerStockAlert } from '../../../lib/stock-alerts';
-import { generateNextInvoiceId } from '../../../lib/invoice';
+import { generateNextInvoiceId } from '../../../lib/invoice-server';
 
 export async function POST(req: Request) {
   try {

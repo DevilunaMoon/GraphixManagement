@@ -1,4 +1,7 @@
-import { prisma } from 'database';
+/**
+ * Client-safe Invoice utility functions for Graphix Management.
+ * (Does NOT import prisma or any server-only modules so it can be safely used in Client Components)
+ */
 
 /**
  * Returns the single-letter branch code:
@@ -29,53 +32,6 @@ export function formatInvoiceNumber(branch: string | null | undefined, sequenceN
 }
 
 /**
- * Generates the next sequential invoice reference ID from the database for a given branch.
- * Increments the integer sequence (A1 -> A2 -> A3...) per branch.
- */
-export async function generateNextInvoiceId(branch: string | null | undefined): Promise<string> {
-  const branchCode = getBranchCode(branch);
-  const prefix = `GRPX-${branchCode}-A`;
-  const cleanBranchName = (branch || 'Tagoloan').replace(/\s*Branch$/i, '').trim();
-
-  try {
-    // 1. Find all purchases matching this branch or prefix
-    const purchases = await prisma.purchase.findMany({
-      where: {
-        OR: [
-          { referenceId: { contains: prefix, mode: 'insensitive' } },
-          { branch: { contains: cleanBranchName, mode: 'insensitive' } }
-        ]
-      },
-      select: { referenceId: true }
-    });
-
-    let maxSeq = 0;
-    for (const p of purchases) {
-      if (p.referenceId) {
-        const cleanRef = p.referenceId.replace(/^#/, '').trim().toUpperCase();
-        if (cleanRef.startsWith(prefix)) {
-          const numStr = cleanRef.replace(prefix, '');
-          const parsed = parseInt(numStr, 10);
-          if (!isNaN(parsed) && parsed > maxSeq) {
-            maxSeq = parsed;
-          }
-        }
-      }
-    }
-
-    if (maxSeq === 0 && purchases.length > 0) {
-      maxSeq = purchases.length;
-    }
-
-    const nextSeq = maxSeq + 1;
-    return `#${prefix}${nextSeq}`;
-  } catch (error) {
-    console.error('Error calculating next invoice sequence:', error);
-    return `#${prefix}1`;
-  }
-}
-
-/**
  * Formats any raw ID, reference ID, or old string into the official #GRPX-X-A... standard
  */
 export function formatDisplayInvoiceId(rawId: string | null | undefined, branch?: string | null | undefined): string {
@@ -95,7 +51,6 @@ export function formatDisplayInvoiceId(rawId: string | null | undefined, branch?
     return `#GRPX-${bCode}-A${seq}`;
   }
 
-  // If old CMTPQ / CHTP / CUID format, derive branch code and fallback number
-  const code = getBranchCode(branch);
+  // If already starts with #, preserve or fallback
   return clean.startsWith('#') ? clean : `#${clean}`;
 }
