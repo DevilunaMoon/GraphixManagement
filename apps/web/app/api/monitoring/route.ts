@@ -45,13 +45,45 @@ export async function GET(req: Request) {
       ? [ { status: 'asc' }, { createdAt: 'desc' } ]
       : [ { status: 'asc' }, { createdAt: 'asc' } ];
 
+    // Calculate branch sequence numbers (GRPX-TAG-A1, GRPX-VIL-A1, GRPX-JAS-A1)
+    const allBranchRepairs = await prisma.repairRequest.findMany({
+      select: { id: true, branch: true, createdAt: true },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    const branchCounters: Record<string, number> = {};
+    const trackingMap = new Map<string, { trackingNumber: string; orderIndex: number }>();
+
+    for (const r of allBranchRepairs) {
+      const bLower = (r.branch || 'Tagoloan').toLowerCase();
+      let code = 'TAG';
+      if (bLower.includes('vil')) code = 'VIL';
+      else if (bLower.includes('jas')) code = 'JAS';
+
+      const count = (branchCounters[code] || 0) + 1;
+      branchCounters[code] = count;
+      trackingMap.set(r.id, {
+        trackingNumber: `GRPX-${code}-A${count}`,
+        orderIndex: count
+      });
+    }
+
+    const enrichRequests = (reqList: any[]) => reqList.map(item => {
+      const track = trackingMap.get(item.id);
+      return {
+        ...item,
+        trackingNumber: track?.trackingNumber || 'GRPX-TAG-A1',
+        orderIndex: track?.orderIndex || 1
+      };
+    });
+
     // Backward-compatibility: if page/limit parameters are omitted, return list array directly
     if (!pageParam && !limitParam) {
       const requests = await prisma.repairRequest.findMany({
         where: whereClause,
         orderBy
       });
-      return NextResponse.json(requests);
+      return NextResponse.json(enrichRequests(requests));
     }
 
     const page = parseInt(pageParam || '1') || 1;
@@ -71,7 +103,7 @@ export async function GET(req: Request) {
     ]);
 
     return NextResponse.json({
-      requests,
+      requests: enrichRequests(requests),
       totalCount,
       page,
       limit,

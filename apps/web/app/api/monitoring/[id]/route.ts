@@ -18,7 +18,35 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'Repair request not found' }, { status: 404 });
     }
 
-    return NextResponse.json(request);
+    // Resolve branch code: TAG (Tagoloan), VIL (Villanueva), JAS (Jasaan)
+    const rawBranch = (request.branch || 'Tagoloan').toLowerCase();
+    let branchCode = 'TAG';
+    if (rawBranch.includes('vil')) {
+      branchCode = 'VIL';
+    } else if (rawBranch.includes('jas')) {
+      branchCode = 'JAS';
+    } else {
+      branchCode = 'TAG';
+    }
+
+    // Find sequential index among all repairs in this branch ordered by createdAt asc
+    const branchRepairs = await prisma.repairRequest.findMany({
+      where: {
+        branch: { equals: request.branch || 'Tagoloan', mode: 'insensitive' }
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true }
+    });
+
+    const index = branchRepairs.findIndex(r => r.id === request.id);
+    const seqNum = index >= 0 ? index + 1 : 1;
+    const trackingNumber = `GRPX-${branchCode}-A${seqNum}`;
+
+    return NextResponse.json({
+      ...request,
+      trackingNumber,
+      orderIndex: seqNum
+    });
   } catch (error) {
     console.error('Error fetching repair request:', error);
     return NextResponse.json({ error: 'Failed to fetch repair request' }, { status: 500 });

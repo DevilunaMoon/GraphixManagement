@@ -15,6 +15,8 @@ export interface RepairItemPart {
 export interface RepairServiceReceiptData {
   id?: string;
   trackingNumber?: string;
+  orderIndex?: number;
+  sequenceNumber?: number;
   deviceName?: string;
   cause?: string;
   technician?: string;
@@ -79,9 +81,33 @@ export default function RepairServiceReceiptModal({
     hour12: true
   });
 
-  // 3. Tracking / Job Order / Receipt No.
-  const rawId = device.id || 'N275YAG';
-  const receiptNo = device.trackingNumber || `RCPT-${rawId.slice(-7).toUpperCase()}`;
+  // 3. Tracking / Job Order / Receipt No. (Format: GRPX-TAG-A1, GRPX-VIL-A1, GRPX-JAS-A1)
+  const resolveReceiptNo = () => {
+    // 1. If device already has an assigned formatted tracking number (e.g. GRPX-TAG-A1 or #GRPX-TAG-A1)
+    if (device.trackingNumber && typeof device.trackingNumber === 'string') {
+      const clean = device.trackingNumber.replace(/^#/, '').trim();
+      if (clean.startsWith('GRPX-') || clean.startsWith('GPRX-')) {
+        return clean;
+      }
+    }
+
+    // 2. Resolve branch code: TAG (Tagoloan), VIL (Villanueva), JAS (Jasaan)
+    const rawBranch = (device.branch || userProfile?.branch || branchName || 'Tagoloan').toLowerCase();
+    let branchCode = 'TAG';
+    if (rawBranch.includes('vil')) {
+      branchCode = 'VIL';
+    } else if (rawBranch.includes('jas')) {
+      branchCode = 'JAS';
+    } else {
+      branchCode = 'TAG';
+    }
+
+    // 3. Sequential index: number goes up based on branch records (default A1)
+    const seqNum = device.orderIndex || device.sequenceNumber || 1;
+    return `GRPX-${branchCode}-A${seqNum}`;
+  };
+
+  const receiptNo = resolveReceiptNo();
   const formattedReceiptNo = receiptNo.startsWith('#') ? receiptNo : `#${receiptNo}`;
 
   // 4. Device Details
