@@ -416,7 +416,7 @@ export default function AdminAccounts() {
       {/* ========================================================== */}
       {/* 2. ENHANCED USER FILTERS BAR                               */}
       {/* ========================================================== */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-purple-100 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-purple-100 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5 relative z-30">
         {/* Search Bar */}
         <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2 flex-1 max-w-full lg:max-w-xs focus-within:ring-2 focus-within:ring-purple-500 focus-within:bg-white transition-all">
           <Search size={18} className="text-purple-600 mr-2 shrink-0" />
@@ -440,14 +440,14 @@ export default function AdminAccounts() {
                 setIsBranchDropdownOpen(false);
                 setIsStatusDropdownOpen(false);
               }}
-              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm"
             >
               <span>Role: <strong className="text-purple-800">{roleFilter}</strong></span>
               <ChevronDown size={14} className={`transition-transform ${isRoleDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isRoleDropdownOpen && (
-              <div className="absolute top-[110%] left-0 w-44 bg-white rounded-xl shadow-xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
+              <div className="absolute top-[115%] left-0 w-44 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
                 {['All Accounts', 'Super Admin', 'Admin', 'Cashier', 'Customer'].map((role) => (
                   <button 
                     key={role}
@@ -472,14 +472,14 @@ export default function AdminAccounts() {
                   setIsRoleDropdownOpen(false);
                   setIsStatusDropdownOpen(false);
                 }}
-                className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer"
+                className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm"
               >
                 <span>Branch: <strong className="text-purple-800">{branchFilter}</strong></span>
                 <ChevronDown size={14} className={`transition-transform ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isBranchDropdownOpen && (
-                <div className="absolute top-[110%] left-0 w-40 bg-white rounded-xl shadow-xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
+                <div className="absolute top-[115%] left-0 w-40 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
                   {['All Branches', 'Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
                     <button 
                       key={b}
@@ -508,14 +508,14 @@ export default function AdminAccounts() {
                 setIsRoleDropdownOpen(false);
                 setIsBranchDropdownOpen(false);
               }}
-              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm"
             >
               <span>Status: <strong className="text-purple-800">{statusFilter}</strong></span>
               <ChevronDown size={14} className={`transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isStatusDropdownOpen && (
-              <div className="absolute top-[110%] left-0 w-36 bg-white rounded-xl shadow-xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
+              <div className="absolute top-[115%] left-0 w-36 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
                 {['All', 'Active', 'Inactive'].map((st) => (
                   <button 
                     key={st}
@@ -548,7 +548,7 @@ export default function AdminAccounts() {
       {/* ========================================================== */}
       {/* 3. USER MANAGEMENT TABLE                                   */}
       {/* ========================================================== */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-100 shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-100 shadow-sm overflow-hidden flex flex-col relative z-10">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
