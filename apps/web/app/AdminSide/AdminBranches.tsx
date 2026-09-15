@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Building2, 
   Plus, 
@@ -18,7 +19,8 @@ import {
   AlertTriangle,
   RefreshCw,
   QrCode,
-  Upload
+  Upload,
+  ChevronLeft
 } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
@@ -240,8 +242,15 @@ export default function AdminBranches() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* Header Card */}
       <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-[#bd00ff] shadow-sm">
+        <div className="flex items-center gap-3 md:gap-4">
+          <Link
+            href="/admin/settings"
+            className="w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors shrink-0"
+            title="Back to Settings"
+          >
+            <ChevronLeft size={22} />
+          </Link>
+          <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-[#bd00ff] shadow-sm shrink-0">
             <Building2 size={28} />
           </div>
           <div>

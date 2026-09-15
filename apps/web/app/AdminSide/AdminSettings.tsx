@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Palette, MailCheck, KeyRound, FileText, ChevronRight, QrCode } from 'lucide-react';
+import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2 } from 'lucide-react';
 
 export default function AdminSettings() {
   const router = useRouter();
@@ -18,8 +18,8 @@ export default function AdminSettings() {
         <ul className="flex flex-col list-none">
           
           <SettingsItem 
-            icon={<QrCode className="text-[#BF00FF] w-7 h-7" />}
-            label="Branch GCash & QR Code Settings"
+            icon={<Building2 className="text-[#BF00FF] w-7 h-7" />}
+            label="Branch Settings"
             onClick={() => navigate('/admin/branches')}
           />
 

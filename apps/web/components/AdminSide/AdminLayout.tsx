@@ -131,9 +131,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     ...(isSuperAdmin ? [
       { href: '/admin/branches', label: 'Branch Management', icon: Building2 },
       { href: '/admin/activity-logs', label: 'Activity Logs', icon: ScrollText }
-    ] : [
-      { href: '/admin/branches', label: 'Branch Settings', icon: Building2 }
-    ]),
+    ] : []),
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/about-editor', label: 'About Page', icon: FileText },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
