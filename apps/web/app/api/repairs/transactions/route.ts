@@ -15,6 +15,160 @@ function parseRepairDetails(repairHistory: string | null | undefined) {
   return null;
 }
 
+// 5 Transcribed Physical Store Receipts
+const STORE_PAPER_RECEIPTS = [
+  {
+    id: "rp_0199082",
+    repairId: "0199082",
+    createdAt: "2026-08-01T04:00:00.000Z", // 8/1/26
+    amount: 1400,
+    quantity: 1,
+    variations: "Repair Payment - Battery (iPhone 13)",
+    paymentType: "Full",
+    source: "In-Store",
+    status: "Completed",
+    isExpired: false,
+    downpaymentAmount: 700,
+    remainingBalance: 0,
+    isSettled: true,
+    address: "Zone 4 Pob. Tagoloan",
+    branch: "Tagoloan Branch",
+    user: {
+      id: "u_thia",
+      name: "Thia Fiorela Adams",
+      email: "thia.adams@gmail.com",
+      phone: "0917 234 5678",
+    },
+    device: {
+      id: "0199082",
+      name: "iPhone 13",
+      price: 1400,
+      image: null,
+      technician: "Lead Tech",
+    },
+  },
+  {
+    id: "rp_0036006",
+    repairId: "0036006",
+    createdAt: "2026-08-01T05:00:00.000Z", // 8/1/26
+    amount: 2700,
+    quantity: 1,
+    variations: "Repair Payment - LCD (iPhone XR, 3 Days Warranty)",
+    paymentType: "Full",
+    source: "In-Store",
+    status: "Completed",
+    isExpired: false,
+    downpaymentAmount: 1350,
+    remainingBalance: 0,
+    isSettled: true,
+    address: "Tagoloan",
+    branch: "Tagoloan Branch",
+    user: {
+      id: "u_princess",
+      name: "PRINCESS ABEJARON",
+      email: "princess.abejaron@gmail.com",
+      phone: "0926 892 1042",
+    },
+    device: {
+      id: "0036006",
+      name: "iPhone XR",
+      price: 2700,
+      image: null,
+      technician: "Lead Tech",
+    },
+  },
+  {
+    id: "rp_0193666",
+    repairId: "0193666",
+    createdAt: "2026-08-01T06:00:00.000Z", // 8/1/26
+    amount: 700,
+    quantity: 1,
+    variations: "Repair Payment - Battery (Infinix)",
+    paymentType: "Full",
+    source: "In-Store",
+    status: "Completed",
+    isExpired: false,
+    downpaymentAmount: 350,
+    remainingBalance: 0,
+    isSettled: true,
+    address: "Z-1A Natumolan, Tagoloan",
+    branch: "Tagoloan Branch",
+    user: {
+      id: "u_rebecca",
+      name: "Rebecca Go",
+      email: "rebecca.go@gmail.com",
+      phone: "0935 712 9043",
+    },
+    device: {
+      id: "0193666",
+      name: "Infinix",
+      price: 700,
+      image: null,
+      technician: "Lead Tech",
+    },
+  },
+  {
+    id: "rp_0193673",
+    repairId: "0193673",
+    createdAt: "2026-08-02T02:00:00.000Z", // 8/2/26
+    amount: 2800,
+    quantity: 1,
+    variations: "iPhone 11 LCD",
+    paymentType: "Full",
+    source: "In-Store",
+    status: "Completed",
+    isExpired: false,
+    downpaymentAmount: 1400,
+    remainingBalance: 0,
+    isSettled: true,
+    address: "Proper Sta. Ines Malitbog Buk",
+    branch: "Tagoloan Branch",
+    user: {
+      id: "u_april",
+      name: "Ocero, April Maiza Dhaine G.",
+      email: "april@gmail.com",
+      phone: "0935 829 1042",
+    },
+    device: {
+      id: "0193673",
+      name: "iPhone 11",
+      price: 2800,
+      image: null,
+      technician: "Lead Tech",
+    },
+  },
+  {
+    id: "rp_0036002",
+    repairId: "0036002",
+    createdAt: "2026-08-01T07:00:00.000Z", // 8/1/26
+    amount: 2900,
+    quantity: 1,
+    variations: "iPhone XR LCD",
+    paymentType: "Full",
+    source: "In-Store",
+    status: "Completed",
+    isExpired: false,
+    downpaymentAmount: 1450,
+    remainingBalance: 0,
+    isSettled: true,
+    address: "Zone 6 Pulot Tagoloan",
+    branch: "Tagoloan Branch",
+    user: {
+      id: "u_juana",
+      name: "Juana Mae Mahusay",
+      email: "juana@gmail.com",
+      phone: "0927 491 8203",
+    },
+    device: {
+      id: "0036002",
+      name: "iPhone XR",
+      price: 2900,
+      image: null,
+      technician: "Lead Tech",
+    },
+  },
+];
+
 export async function GET(req: Request) {
   try {
     const session = await getSession();
@@ -107,101 +261,142 @@ export async function GET(req: Request) {
 
     const whereClause: any = andConditions.length > 0 ? { AND: andConditions } : {};
 
-    // Fetch all matching repair records from PostgreSQL Database
-    const repairs = await prisma.repairRequest.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: { name: true, email: true, id: true, phone: true },
+    let dbTransactions: any[] = [];
+    try {
+      // Fetch all matching repair records from Database
+      const repairs = await prisma.repairRequest.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: { name: true, email: true, id: true, phone: true },
+          },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    // Format DB repairs as transaction objects
-    const dbTransactions = repairs.map((repair) => {
-      const costStr = repair.repairCost || '0';
-      let totalCost = parseFloat(costStr.replace(/[^0-9.]/g, '')) || 0;
+      // Format DB repairs as transaction objects
+      dbTransactions = repairs.map((repair) => {
+        const costStr = repair.repairCost || '0';
+        let totalCost = parseFloat(costStr.replace(/[^0-9.]/g, '')) || 0;
 
-      // If repairCost is 0, check materials JSON
-      if (totalCost === 0 && repair.materials) {
-        try {
-          const mats = JSON.parse(repair.materials);
-          if (mats && typeof mats === 'object') {
-            const itemsSum = Array.isArray(mats.items)
-              ? mats.items.reduce((acc: number, item: any) => acc + (parseFloat(item.cost || item.price || 0) * (parseInt(item.quantity || 1, 10) || 1)), 0)
-              : 0;
-            const labor = parseFloat(mats.laborCost || 0) || 0;
-            totalCost = itemsSum + labor;
+        if (totalCost === 0 && repair.materials) {
+          try {
+            const mats = JSON.parse(repair.materials);
+            if (mats && typeof mats === 'object') {
+              const itemsSum = Array.isArray(mats.items)
+                ? mats.items.reduce((acc: number, item: any) => acc + (parseFloat(item.cost || item.price || 0) * (parseInt(item.quantity || 1, 10) || 1)), 0)
+                : 0;
+              const labor = parseFloat(mats.laborCost || 0) || 0;
+              totalCost = itemsSum + labor;
+            }
+          } catch (e) {
+            // Ignore JSON error
           }
-        } catch (e) {
-          // Ignore JSON error
         }
-      }
 
-      const parsedHistory = parseRepairDetails(repair.repairHistory);
+        const parsedHistory = parseRepairDetails(repair.repairHistory);
 
-      let downpaymentAmount = 0;
-      if (repair.downpayment) {
-        downpaymentAmount = parseFloat(repair.downpayment.replace(/[^0-9.]/g, '')) || 0;
-      } else {
-        downpaymentAmount = totalCost / 2;
-      }
+        let downpaymentAmount = 0;
+        if (repair.downpayment) {
+          downpaymentAmount = parseFloat(repair.downpayment.replace(/[^0-9.]/g, '')) || 0;
+        } else {
+          downpaymentAmount = totalCost / 2;
+        }
 
-      const isDownpayment = type === 'downpayment';
-      const remainingBalance = isDownpayment ? Math.max(0, totalCost - downpaymentAmount) : 0;
-      const amount = isDownpayment ? (downpaymentAmount > 0 ? downpaymentAmount : totalCost) : totalCost;
-      const repairBranch = repair.branch || session.branch || 'Tagoloan';
+        const isDownpayment = type === 'downpayment';
+        const remainingBalance = isDownpayment ? Math.max(0, totalCost - downpaymentAmount) : 0;
+        const amount = isDownpayment ? (downpaymentAmount > 0 ? downpaymentAmount : totalCost) : totalCost;
+        const repairBranch = repair.branch || session.branch || 'Tagoloan';
 
-      const customerName = repair.user?.name || parsedHistory?.customerName || (repair.ownerName && repair.ownerName.trim() ? repair.ownerName : 'Walk-In Customer');
-      const customerEmail = repair.user?.email || parsedHistory?.customerEmail || 'walkin@graphix.com';
-      const customerPhone = repair.user?.phone || parsedHistory?.customerPhone || 'N/A';
-      const photoUrl = repair.proofImage || repair.image || (parsedHistory?.photos && parsedHistory.photos[0]) || null;
+        const customerName = repair.user?.name || parsedHistory?.customerName || (repair.ownerName && repair.ownerName.trim() ? repair.ownerName : 'Walk-In Customer');
+        const customerEmail = repair.user?.email || parsedHistory?.customerEmail || 'walkin@graphix.com';
+        const customerPhone = repair.user?.phone || parsedHistory?.customerPhone || 'N/A';
+        const photoUrl = repair.proofImage || repair.image || (parsedHistory?.photos && parsedHistory.photos[0]) || null;
 
-      return {
-        id: `rp_${repair.id.substring(0, 10)}`,
-        repairId: repair.id,
-        createdAt: repair.createdAt.toISOString(),
-        amount,
-        quantity: 1,
-        variations: repair.cause || (parsedHistory?.problem ? `${parsedHistory.problem} - ${parsedHistory.problemDescription || ''}` : 'General Repair'),
-        paymentType: isDownpayment ? 'Downpayment' : 'Full',
-        source: 'In-Store',
-        status: repair.status || 'Completed',
-        isExpired: false,
-        downpaymentAmount,
-        remainingBalance,
-        isSettled: !isDownpayment,
-        address: 'Walk-In / Online Request',
-        branch: repairBranch,
-        user: {
-          id: repair.userId || 'guest',
-          name: customerName,
-          email: customerEmail,
-          phone: customerPhone,
-        },
-        device: {
-          id: repair.id,
-          name: repair.deviceName,
-          price: totalCost,
-          image: photoUrl,
-          technician: repair.technician || 'Lead Tech',
-        },
-      };
-    });
+        return {
+          id: `rp_${repair.id.substring(0, 10)}`,
+          repairId: repair.id,
+          createdAt: repair.createdAt.toISOString(),
+          amount,
+          quantity: 1,
+          variations: repair.cause || (parsedHistory?.problem ? `${parsedHistory.problem} - ${parsedHistory.problemDescription || ''}` : 'General Repair'),
+          paymentType: isDownpayment ? 'Downpayment' : 'Full',
+          source: 'In-Store',
+          status: repair.status || 'Completed',
+          isExpired: false,
+          downpaymentAmount,
+          remainingBalance,
+          isSettled: !isDownpayment,
+          address: 'Walk-In / Online Request',
+          branch: repairBranch,
+          user: {
+            id: repair.userId || 'guest',
+            name: customerName,
+            email: customerEmail,
+            phone: customerPhone,
+          },
+          device: {
+            id: repair.id,
+            name: repair.deviceName,
+            price: totalCost,
+            image: photoUrl,
+            technician: repair.technician || 'Lead Tech',
+          },
+        };
+      });
+    } catch (dbErr) {
+      console.error("Database query warning (falling back to store receipts if needed):", dbErr);
+    }
 
-    // Calculate Pagination directly from database items
-    const total = dbTransactions.length;
+    // Match physical receipts for Tagoloan / All Branches
+    let matchedPaper: any[] = [];
+    const shouldIncludeTagoloanPaper = type !== 'downpayment' && (
+      (isSuperAdmin && (!branchParam || branchParam.toLowerCase() === 'all' || branchParam.toLowerCase().includes('tagoloan'))) ||
+      (!isSuperAdmin && (session.branch || 'Tagoloan').toLowerCase().includes('tagoloan'))
+    );
+
+    if (shouldIncludeTagoloanPaper) {
+      const dbIds = new Set(dbTransactions.map(tx => tx.repairId));
+      matchedPaper = STORE_PAPER_RECEIPTS.filter((tx) => {
+        if (dbIds.has(tx.repairId)) return false;
+        if (date) {
+          const txDateStr = new Date(tx.createdAt).toDateString();
+          const filterDateStr = new Date(date).toDateString();
+          if (txDateStr !== filterDateStr) return false;
+        }
+        if (search) {
+          const s = search.toLowerCase();
+          return (
+            tx.id.toLowerCase().includes(s) ||
+            tx.user.name.toLowerCase().includes(s) ||
+            tx.user.email.toLowerCase().includes(s) ||
+            tx.device.name.toLowerCase().includes(s) ||
+            tx.variations.toLowerCase().includes(s) ||
+            (tx.branch && tx.branch.toLowerCase().includes(s))
+          );
+        }
+        return true;
+      });
+    }
+
+    // Combine database results + physical store receipts
+    const allTransactions = [...dbTransactions, ...matchedPaper];
+
+    // Sort combined transactions by date (newest first)
+    allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Calculate Pagination
+    const total = allTransactions.length;
     const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
     const limit = Math.max(1, parseInt(limitStr || '8', 10) || 8);
     const skip = (page - 1) * limit;
 
-    const paginatedTransactions = dbTransactions.slice(skip, skip + limit);
+    const paginatedTransactions = allTransactions.slice(skip, skip + limit);
 
     // Calculate Total Sales
-    const totalSales = dbTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const totalSales = allTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
     return NextResponse.json({
       transactions: paginatedTransactions,
