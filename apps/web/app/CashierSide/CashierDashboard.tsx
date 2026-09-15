@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Filter, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashierVerifyPickupModal from '../../components/CashierSide/CashierVerifyPickupModal';
+import { useBranch } from '../../context/BranchContext';
 
 interface Product {
   id: string;
@@ -111,6 +112,7 @@ const flattenProductsIntoStorageRows = (products: Product[]): FlattenedItem[] =>
 export default function CashierDashboard() {
   const router = useRouter();
   const navigate = router.push;
+  const { userBranch } = useBranch();
   const [searchQuery, setSearchQuery] = useState('');
   const [brandFilter, setBrandFilter] = useState('All Brands');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -127,7 +129,8 @@ export default function CashierDashboard() {
   useEffect(() => {
     setIsLoading(true);
     const delayDebounceFn = setTimeout(() => {
-      fetch(`/api/devices?page=1&limit=100&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}`)
+      const activeBranch = userBranch || 'Tagoloan';
+      fetch(`/api/devices?page=1&limit=100&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}&branch=${encodeURIComponent(activeBranch)}`)
         .then(res => res.json())
         .then(data => {
           if (data && Array.isArray(data.devices)) {
@@ -146,7 +149,7 @@ export default function CashierDashboard() {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, brandFilter]);
+  }, [searchQuery, brandFilter, userBranch]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

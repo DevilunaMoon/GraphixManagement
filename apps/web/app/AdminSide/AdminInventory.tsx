@@ -131,6 +131,7 @@ export default function AdminInventory() {
   const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
 
   // Dynamic Variants for Add Product (Storage Variants with Product IDs & Branch Stocks)
+  const [newDeviceBranch, setNewDeviceBranch] = useState<string>('Tagoloan');
   const [addVariants, setAddVariants] = useState<{
     type: string;
     name: string;
@@ -141,9 +142,9 @@ export default function AdminInventory() {
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '5', villanuevaStock: '2', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '3', villanuevaStock: '0', jasaanStock: '4' },
-    { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '6', jasaanStock: '2' },
+    { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
     { type: 'Storage', name: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
@@ -427,7 +428,10 @@ export default function AdminInventory() {
     formData.append('deviceAsLowAs', newDeviceAsLowAs);
     formData.append('deviceWarranty', newDeviceWarranty);
     formData.append('deviceDownpayment', newDeviceDownpayment);
-    formData.append('branch', isSuperAdmin ? selectedBranch : userBranch);
+    const targetBranch = isSuperAdmin
+      ? (newDeviceBranch && newDeviceBranch !== 'all' ? newDeviceBranch : (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan'))
+      : (userBranch || 'Tagoloan');
+    formData.append('branch', targetBranch);
 
     // Calculate total stocks
     let totalComputedStock = 0;
@@ -475,7 +479,13 @@ export default function AdminInventory() {
         setNewDeviceIsPreOwned(false); setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
-        setSuccessModalContent({ title: 'Success!', message: 'The product and its variants have been successfully added across all branches.' });
+        setAddVariants([
+          { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+        ]);
+        setSuccessModalContent({ title: 'Success!', message: `The product and its variants have been successfully added under ${targetBranch} branch.` });
         setSuccessModalOpen(true);
       } else {
         const data = await res.json().catch(() => ({}));
@@ -1693,7 +1703,7 @@ export default function AdminInventory() {
 
             <form onSubmit={handleAddProduct} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
               {/* Basic Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Name / Model *</label>
                   <input
@@ -1718,6 +1728,24 @@ export default function AdminInventory() {
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Origin / Branch *</label>
+                  {isSuperAdmin ? (
+                    <select
+                      value={newDeviceBranch}
+                      onChange={(e) => setNewDeviceBranch(e.target.value)}
+                      className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="Tagoloan">Tagoloan Branch</option>
+                      <option value="Villanueva">Villanueva Branch</option>
+                      <option value="Jasaan">Jasaan Branch</option>
+                    </select>
+                  ) : (
+                    <div className="w-full bg-gray-100 border border-gray-200 rounded-xl p-2.5 text-sm font-bold text-gray-700">
+                      {userBranch || 'Tagoloan'} Branch
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, Pencil, Trash, ChevronRight, AlertCircle, CheckCircle2, Search, Upload, Plus, X, ShoppingCart, ReceiptText, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
+import { useBranch } from '../../context/BranchContext';
 
 interface Device {
   id: string;
@@ -100,7 +101,8 @@ export default function CashierDevices() {
 
   const downloadPDF = async () => {
     try {
-      const res = await fetch('/api/devices');
+      const activeBranch = userBranch || 'Tagoloan';
+      const res = await fetch(`/api/devices?branch=${encodeURIComponent(activeBranch)}`);
       const allDevices: any[] = await res.json();
       
       const { jsPDF } = await import('jspdf');
@@ -207,7 +209,8 @@ export default function CashierDevices() {
 
   const downloadExcel = async () => {
     try {
-      const res = await fetch('/api/devices');
+      const activeBranch = userBranch || 'Tagoloan';
+      const res = await fetch(`/api/devices?branch=${encodeURIComponent(activeBranch)}`);
       const allDevices: any[] = await res.json();
       
       // CSV headers
@@ -239,9 +242,11 @@ export default function CashierDevices() {
     }
   };
 
+  const { userBranch } = useBranch();
   const fetchDevices = () => {
     setIsLoading(true);
-    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}`)
+    const activeBranch = userBranch || 'Tagoloan';
+    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&branch=${encodeURIComponent(activeBranch)}`)
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
@@ -649,7 +654,7 @@ export default function CashierDevices() {
       fetchDevices();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, userBranch]);
 
   const openDeleteModal = (device: Device) => {
     setDeviceToDelete(device);

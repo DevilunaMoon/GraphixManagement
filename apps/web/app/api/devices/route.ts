@@ -73,6 +73,19 @@ export async function GET(req: Request) {
       where.categoryId = categoryId;
     }
 
+    if (activeBranch) {
+      where.AND = [
+        ...(where.AND || []),
+        {
+          OR: [
+            { branch: { equals: activeBranch, mode: 'insensitive' } },
+            { branchStocks: { some: { branch: { equals: activeBranch, mode: 'insensitive' }, stock: { gt: 0 } } } },
+            { variations: { some: { branchStocks: { some: { branch: { equals: activeBranch, mode: 'insensitive' }, stock: { gt: 0 } } } } } }
+          ]
+        }
+      ];
+    }
+
     const rawDevices = await prisma.device.findMany({
       where,
       include: {
@@ -88,74 +101,84 @@ export async function GET(req: Request) {
     });
 
     // Format devices with rich multi-branch variant breakdowns
-    let formattedDevices = rawDevices.map((device) => {
-      const devVariations = (device.variations || []).map((v) => {
-        const prodId = v.productId || formatProductId(device.name, v.name);
-        const branchStockMap: Record<string, number> = {
+    let formattedDevices = rawDevices
+      .map((device) => {
+        const devVariations = (device.variations || []).map((v) => {
+          const prodId = v.productId || formatProductId(device.name, v.name);
+          const branchStockMap: Record<string, number> = {
+            Tagoloan: 0,
+            Villanueva: 0,
+            Jasaan: 0
+          };
+
+          (v.branchStocks || []).forEach((bs) => {
+            if (bs.branch) {
+              branchStockMap[bs.branch] = bs.stock;
+            }
+          });
+
+          const totalVariantStock = Object.values(branchStockMap).reduce((sum, s) => sum + s, 0);
+          const currentBranchVariantStock = activeBranch ? (branchStockMap[activeBranch] ?? 0) : totalVariantStock;
+
+          return {
+            id: v.id,
+            type: v.type || 'Storage',
+            name: v.name,
+            productId: prodId,
+            price: v.price,
+            cost: v.cost,
+            stock: currentBranchVariantStock,
+            totalStock: totalVariantStock,
+            branchStocks: branchStockMap,
+            tagoloanStock: branchStockMap.Tagoloan || 0,
+            villanuevaStock: branchStockMap.Villanueva || 0,
+            jasaanStock: branchStockMap.Jasaan || 0,
+            isOutOfStock: currentBranchVariantStock === 0,
+            isLowStock: currentBranchVariantStock > 0 && currentBranchVariantStock < 5
+          };
+        });
+
+        // Compute device-level branch stock
+        const devBranchStockMap: Record<string, number> = {
           Tagoloan: 0,
           Villanueva: 0,
           Jasaan: 0
         };
 
-        (v.branchStocks || []).forEach((bs) => {
-          if (bs.branch) {
-            branchStockMap[bs.branch] = bs.stock;
+        branches.forEach((b) => {
+          if (devVariations.length > 0) {
+            devBranchStockMap[b] = devVariations.reduce((sum, v) => sum + (v.branchStocks[b] || 0), 0);
+          } else {
+            const bs = (device.branchStocks || []).find((s) => s.branch === b);
+            devBranchStockMap[b] = bs ? bs.stock : (device.branch === b ? device.stock : 0);
           }
         });
 
-        const totalVariantStock = Object.values(branchStockMap).reduce((sum, s) => sum + s, 0);
-        const currentBranchVariantStock = activeBranch ? (branchStockMap[activeBranch] ?? 0) : totalVariantStock;
+        const totalDeviceStock = Object.values(devBranchStockMap).reduce((sum, s) => sum + s, 0);
+        const activeBranchStock = activeBranch ? (devBranchStockMap[activeBranch] ?? 0) : totalDeviceStock;
+        const belongsToActiveBranch = !activeBranch || (device.branch && device.branch.toLowerCase() === activeBranch.toLowerCase()) || activeBranchStock > 0;
 
         return {
-          id: v.id,
-          type: v.type || 'Storage',
-          name: v.name,
-          productId: prodId,
-          price: v.price,
-          cost: v.cost,
-          stock: currentBranchVariantStock,
-          totalStock: totalVariantStock,
-          branchStocks: branchStockMap,
-          tagoloanStock: branchStockMap.Tagoloan || 0,
-          villanuevaStock: branchStockMap.Villanueva || 0,
-          jasaanStock: branchStockMap.Jasaan || 0,
-          isOutOfStock: currentBranchVariantStock === 0,
-          isLowStock: currentBranchVariantStock > 0 && currentBranchVariantStock < 5
+          ...device,
+          stock: activeBranchStock,
+          totalStock: totalDeviceStock,
+          branchStockMap: devBranchStockMap,
+          tagoloanStock: devBranchStockMap.Tagoloan || 0,
+          villanuevaStock: devBranchStockMap.Villanueva || 0,
+          jasaanStock: devBranchStockMap.Jasaan || 0,
+          isOutOfStock: activeBranchStock === 0,
+          isLowStock: activeBranchStock > 0 && activeBranchStock < 5,
+          belongsToActiveBranch,
+          variations: devVariations
         };
-      });
-
-      // Compute device-level branch stock
-      const devBranchStockMap: Record<string, number> = {
-        Tagoloan: 0,
-        Villanueva: 0,
-        Jasaan: 0
-      };
-
-      branches.forEach((b) => {
-        if (devVariations.length > 0) {
-          devBranchStockMap[b] = devVariations.reduce((sum, v) => sum + (v.branchStocks[b] || 0), 0);
-        } else {
-          const bs = (device.branchStocks || []).find((s) => s.branch === b);
-          devBranchStockMap[b] = bs ? bs.stock : (device.branch === b ? device.stock : 0);
+      })
+      .filter((device) => {
+        // If an active branch is selected/viewed, only keep products that belong to this branch or have stock in this branch
+        if (activeBranch) {
+          return device.belongsToActiveBranch;
         }
+        return true;
       });
-
-      const totalDeviceStock = Object.values(devBranchStockMap).reduce((sum, s) => sum + s, 0);
-      const activeBranchStock = activeBranch ? (devBranchStockMap[activeBranch] ?? 0) : totalDeviceStock;
-
-      return {
-        ...device,
-        stock: activeBranchStock,
-        totalStock: totalDeviceStock,
-        branchStockMap: devBranchStockMap,
-        tagoloanStock: devBranchStockMap.Tagoloan || 0,
-        villanuevaStock: devBranchStockMap.Villanueva || 0,
-        jasaanStock: devBranchStockMap.Jasaan || 0,
-        isOutOfStock: activeBranchStock === 0,
-        isLowStock: activeBranchStock > 0 && activeBranchStock < 5,
-        variations: devVariations
-      };
-    });
 
     // Stock Status filter ('low' | 'out')
     if (stockStatus === 'low') {
@@ -267,7 +290,7 @@ export async function POST(req: Request) {
     const customBranch = formData.get('branch') as string;
 
     const operatingBranch = isSuperAdmin
-      ? (customBranch || 'Tagoloan')
+      ? (customBranch && customBranch !== 'all' ? customBranch : 'Tagoloan')
       : (session.branch || 'Tagoloan');
 
     const name = formData.get('deviceName') as string;
