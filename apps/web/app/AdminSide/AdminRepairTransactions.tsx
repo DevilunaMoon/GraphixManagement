@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck, CheckCircle2, Receipt, Wrench } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck, CheckCircle2, Receipt, Wrench, Building2 } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useBranch } from '../../context/BranchContext';
 
 interface Transaction {
   id: string;
@@ -38,6 +39,7 @@ interface Transaction {
 }
 
 export default function AdminRepairTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
+  const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,7 +134,8 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/repairs/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}`);
+        const branchParam = isSuperAdmin ? selectedBranch : 'all';
+        const res = await fetch(`/api/repairs/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&branch=${encodeURIComponent(branchParam || 'all')}`);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.transactions)) {
@@ -154,7 +157,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchTerm, filterDate, type]);
+  }, [currentPage, searchTerm, filterDate, type, selectedBranch]);
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
@@ -360,24 +363,47 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900 m-0">{type === "downpayment" ? "Repair Downpayments" : "Completed Repairs"}</h2>
-              <p className="text-gray-500 m-0 text-sm">{type === "downpayment" ? "View all active repair downpayments" : "View all completed repair payments"}</p>
+              <p className="text-gray-500 m-0 text-sm">
+                {isSuperAdmin 
+                  ? "System-wide multi-branch completed repair monitoring and receipts" 
+                  : (type === "downpayment" ? "View all active repair downpayments" : "View all completed repair payments")}
+              </p>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
-            <div className="w-full sm:w-40 md:w-48 relative">
+          <div className="flex flex-wrap items-center w-full md:w-auto gap-3">
+            {isSuperAdmin && (
+              <div className="relative w-full sm:w-44">
+                <select
+                  value={selectedBranch || 'all'}
+                  onChange={(e) => {
+                    setSelectedBranch(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[48px] px-3.5 py-2.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-xs md:text-sm font-bold text-gray-700 cursor-pointer shadow-sm"
+                >
+                  <option value="all">🏢 All Branches</option>
+                  <option value="Tagoloan">📍 Tagoloan</option>
+                  <option value="Villanueva">📍 Villanueva</option>
+                  <option value="Jasaan">📍 Jasaan</option>
+                </select>
+              </div>
+            )}
+
+            <div className="w-full sm:w-40 relative">
               <DatePicker 
                 value={filterDate}
                 onChange={(val) => {
                   setFilterDate(val);
                   setCurrentPage(1);
                 }}
-                className="w-full h-[48px] px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-purple-500 focus-within:bg-white outline-none transition-all text-sm font-semibold text-gray-600"
+                className="w-full h-[48px] px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-purple-500 focus-within:bg-white outline-none transition-all text-sm font-semibold text-gray-600 shadow-sm"
                 placeholder="Filter date..."
               />
             </div>
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            
+            <div className="relative w-full sm:w-64 md:w-72">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="text" 
                 placeholder="Search repairs..." 
@@ -386,7 +412,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold"
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-sm font-semibold shadow-sm"
               />
             </div>
           </div>
@@ -410,6 +436,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Receipt ID</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device Name</th>
+                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Branch</th>
                   {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Technician</th>}
                   <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">
                     {type === "downpayment" ? "Payment Info" : "Total Cost"}
@@ -461,6 +488,17 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                           </span>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${
+                        tx.branch?.toLowerCase().includes('villanueva')
+                          ? 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                          : tx.branch?.toLowerCase().includes('jasaan')
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      }`}>
+                        📍 {tx.branch?.replace(/ branch/i, '') || 'Tagoloan'}
+                      </span>
                     </td>
                     {type === "downpayment" && (
                       <td className="px-5 py-4">
@@ -596,7 +634,14 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   
                   <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
                     <span className="text-gray-500 font-semibold text-sm">Receipt ID</span>
-                    <span className="font-bold text-gray-900">{selectedTransaction.id.toUpperCase()}</span>
+                    <span className="font-bold text-gray-900">#{selectedTransaction.id.replace(/^rp_/i, '').toUpperCase()}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">
+                    <span className="text-gray-500 font-semibold text-sm">Branch</span>
+                    <span className="font-bold text-purple-900">
+                      📍 {selectedTransaction.branch?.replace(/ branch/i, '') || 'Tagoloan'} Branch
+                    </span>
                   </div>
                   
                   <div className="flex justify-between items-center border-b border-gray-50 pb-2.5">

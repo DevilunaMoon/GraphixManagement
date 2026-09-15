@@ -158,24 +158,34 @@ const PAPER_RECEIPTS = [
 export async function GET(req: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'CASHIER')) {
+    if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN' && session.role !== 'CASHIER')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type'); // 'full' or 'downpayment'
     const pageStr = searchParams.get('page');
     const limitStr = searchParams.get('limit');
     const search = searchParams.get('search') || '';
     const date = searchParams.get('date') || '';
+    const branchParam = searchParams.get('branch');
 
     // Build where clause for Database
     const whereClause: any = {
-      branch: session.branch || 'Tagoloan',
       repairCost: {
         not: null,
       },
     };
+
+    // Multi-branch filtering
+    if (isSuperAdmin) {
+      if (branchParam && branchParam.toLowerCase() !== 'all') {
+        whereClause.branch = { equals: branchParam, mode: 'insensitive' };
+      }
+    } else {
+      whereClause.branch = session.branch || 'Tagoloan';
+    }
 
     if (type === 'downpayment') {
       whereClause.progress = {
@@ -207,8 +217,22 @@ export async function GET(req: Request) {
           },
         },
         {
+          branch: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
           user: {
             name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          user: {
+            email: {
               contains: search,
               mode: 'insensitive',
             },
@@ -250,6 +274,7 @@ export async function GET(req: Request) {
       const downpaymentAmount = totalCost / 2;
       const remainingBalance = type === 'downpayment' ? totalCost / 2 : 0;
       const amount = type === 'downpayment' ? downpaymentAmount : totalCost;
+      const repairBranch = repair.branch || session.branch || 'Tagoloan';
 
       return {
         id: `rp_${repair.id.substring(0, 10)}`,
@@ -266,7 +291,7 @@ export async function GET(req: Request) {
         remainingBalance,
         isSettled: type === 'full',
         address: 'Walk-In / Online Request',
-        branch: repair.branch || session.branch || 'Tagoloan Branch',
+        branch: repairBranch,
         user: {
           id: repair.userId || 'guest',
           name: repair.ownerName || repair.user?.name || 'Walk-In Customer',
@@ -278,14 +303,19 @@ export async function GET(req: Request) {
           name: repair.deviceName,
           price: totalCost,
           image: repair.proofImage || repair.image || null,
-          technician: repair.technician || 'N/A',
+          technician: repair.technician || 'Lead Tech',
         },
       };
     });
 
-    // Handle Paper Receipts (only for Tagoloan where historical paper receipts belong)
+    // Handle Paper Receipts (only for Tagoloan or All Branches)
     let matchedPaper: any[] = [];
-    if (type !== 'downpayment' && (session.branch || 'Tagoloan') === 'Tagoloan') {
+    const shouldIncludeTagoloanPaper = type !== 'downpayment' && (
+      (isSuperAdmin && (!branchParam || branchParam.toLowerCase() === 'all' || branchParam.toLowerCase() === 'tagoloan')) ||
+      (!isSuperAdmin && (session.branch || 'Tagoloan').toLowerCase() === 'tagoloan')
+    );
+
+    if (shouldIncludeTagoloanPaper) {
       const dbIds = new Set(dbTransactions.map(tx => tx.repairId));
       matchedPaper = PAPER_RECEIPTS.filter((tx) => {
         if (dbIds.has(tx.repairId)) return false;
@@ -301,8 +331,10 @@ export async function GET(req: Request) {
           return (
             tx.id.toLowerCase().includes(s) ||
             tx.user.name.toLowerCase().includes(s) ||
+            tx.user.email.toLowerCase().includes(s) ||
             tx.device.name.toLowerCase().includes(s) ||
-            tx.variations.toLowerCase().includes(s)
+            tx.variations.toLowerCase().includes(s) ||
+            (tx.branch && tx.branch.toLowerCase().includes(s))
           );
         }
         return true;
