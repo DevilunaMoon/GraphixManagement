@@ -138,7 +138,7 @@ export async function triggerStockAlert({ deviceId, tx }: TriggerStockAlertParam
 /**
  * Ensures all current low-stock and out-of-stock items across branches
  * have corresponding active notifications for the given user.
- * Fully batched for ultra-fast performance.
+ * Fully batched and deduplicated.
  */
 export async function syncStockAlertsForUser(userId: string, role: string, userBranch?: string | null) {
   try {
@@ -164,21 +164,40 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
       take: 50
     });
 
-    // 2. Fetch existing unread notifications for this user in 1 query
-    const existingNotifications = await prisma.notification.findMany({
+    // 2. Fetch ALL existing notifications for this user (both read and unread) to never duplicate
+    const allUserNotifications = await prisma.notification.findMany({
       where: {
         userId,
-        isRead: false
       },
       select: {
+        id: true,
         title: true,
-        branch: true
-      }
+        branch: true,
+        isRead: true
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
-    const existingKeySet = new Set(
-      existingNotifications.map((n: any) => `${n.title}|${n.branch || ''}`)
-    );
+    // Clean up any existing duplicate unread notifications that were created previously
+    const seenKeyMap = new Map<string, string>();
+    const duplicateIdsToDelete: string[] = [];
+
+    for (const notif of allUserNotifications) {
+      const key = `${notif.title}|${notif.branch || ''}`;
+      if (seenKeyMap.has(key)) {
+        duplicateIdsToDelete.push(notif.id);
+      } else {
+        seenKeyMap.set(key, notif.id);
+      }
+    }
+
+    if (duplicateIdsToDelete.length > 0) {
+      await prisma.notification.deleteMany({
+        where: {
+          id: { in: duplicateIdsToDelete }
+        }
+      });
+    }
 
     const notificationsToCreate: Array<{
       userId: string;
@@ -200,8 +219,8 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
         : `"${displayName}" is running low on inventory (Only ${bs.stock} unit${bs.stock === 1 ? '' : 's'} remaining) at ${branchName} branch.`;
 
       const key = `${title}|${branchName}`;
-      if (!existingKeySet.has(key)) {
-        existingKeySet.add(key);
+      if (!seenKeyMap.has(key)) {
+        seenKeyMap.set(key, 'pending');
         notificationsToCreate.push({
           userId,
           title,
@@ -222,5 +241,6 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
     console.error('Error syncing stock alerts for user:', err);
   }
 }
+
 
 

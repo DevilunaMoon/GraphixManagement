@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing notification ID' }, { status: 400 });
     }
 
-    const existingNotification = await prisma.notification.findUnique({
+    const existingNotification = await prisma.notification.findFirst({
       where: { id: id, userId: session.userId }
     });
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     const notification = await prisma.notification.update({
-      where: { id: id, userId: session.userId },
+      where: { id: id },
       data: updateData
     });
 
