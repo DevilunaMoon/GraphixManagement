@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { 
   Building2, 
   Plus, 
-  Search, 
   Edit3, 
   Trash2, 
   CheckCircle2, 
@@ -44,7 +43,6 @@ export default function AdminBranches() {
   const { refreshBranches, isSuperAdmin, userBranch } = useBranch();
   const [branches, setBranches] = useState<BranchMetricItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -232,10 +230,7 @@ export default function AdminBranches() {
     if (!isSuperAdmin && userBranch && b.name.toLowerCase() !== userBranch.toLowerCase()) {
       return false;
     }
-    return (
-      b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (b.address && b.address.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    return true;
   });
 
   return (
@@ -284,18 +279,6 @@ export default function AdminBranches() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-        <Search size={20} className="text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search branches by name or location..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
-        />
-      </div>
-
       {/* Branch Cards Grid */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
@@ -305,7 +288,9 @@ export default function AdminBranches() {
         <div className="bg-white rounded-3xl p-12 text-center border border-gray-100">
           <Building2 size={48} className="mx-auto text-gray-300 mb-3" />
           <h3 className="text-lg font-bold text-gray-700">No Branches Found</h3>
-          <p className="text-sm text-gray-500 mt-1">Try adjusting your search query or add a new branch.</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {isSuperAdmin ? 'Click "Add New Branch" to register a branch.' : 'No branch record found for your account.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
