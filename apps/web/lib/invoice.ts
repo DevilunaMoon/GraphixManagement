@@ -32,11 +32,13 @@ export function formatInvoiceNumber(branch: string | null | undefined, sequenceN
 }
 
 /**
- * Formats any raw ID, reference ID, or old string into the official #GRPX-X-A... standard
+ * Formats any raw ID, reference ID, or old string into the official #GRPX-X-A... standard.
+ * Automatically transforms old CMTPQ/CWTPQ/cuid codes into #GRPX-T-A1, #GRPX-V-A1, #GRPX-J-A1.
  */
 export function formatDisplayInvoiceId(rawId: string | null | undefined, branch?: string | null | undefined): string {
+  const code = getBranchCode(branch);
+
   if (!rawId) {
-    const code = getBranchCode(branch);
     return `#GRPX-${code}-A1`;
   }
 
@@ -51,6 +53,9 @@ export function formatDisplayInvoiceId(rawId: string | null | undefined, branch?
     return `#GRPX-${bCode}-A${seq}`;
   }
 
-  // If already starts with #, preserve or fallback
-  return clean.startsWith('#') ? clean : `#${clean}`;
+  // If it ends with digits (e.g. from an old code or sequential ID), extract the number
+  const digitsMatch = withoutHash.match(/(\d+)$/);
+  const derivedSeq = digitsMatch && digitsMatch[1] ? Math.max(1, parseInt(digitsMatch[1].slice(-2), 10) || 1) : 1;
+  
+  return `#GRPX-${code}-A${derivedSeq}`;
 }

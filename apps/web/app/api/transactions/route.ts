@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../lib/session';
+import { formatDisplayInvoiceId } from '../../../lib/invoice';
 
 export async function GET(req: Request) {
   try {
@@ -126,7 +127,11 @@ export async function GET(req: Request) {
             isExpired = true;
           }
         }
-        return { ...tx, isExpired };
+        return { 
+          ...tx, 
+          referenceId: formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch),
+          isExpired 
+        };
       });
 
       return NextResponse.json({
@@ -166,7 +171,11 @@ export async function GET(req: Request) {
           isExpired = true;
         }
       }
-      return { ...tx, isExpired };
+      return { 
+        ...tx, 
+        referenceId: formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch),
+        isExpired 
+      };
     });
 
     return NextResponse.json(processedTransactions);

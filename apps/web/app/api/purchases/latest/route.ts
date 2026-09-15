@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
+import { formatDisplayInvoiceId } from '../../../../lib/invoice';
 
 export async function GET(req: Request) {
   try {
@@ -62,7 +63,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'No purchase found' }, { status: 404 });
     }
 
-    return NextResponse.json(purchase);
+    const formattedPurchase = {
+      ...purchase,
+      referenceId: formatDisplayInvoiceId(purchase.referenceId || purchase.id, purchase.branch)
+    };
+
+    return NextResponse.json(formattedPurchase);
   } catch (error) {
     console.error('Error fetching latest purchase:', error);
     return NextResponse.json({ error: 'Failed to fetch purchase details' }, { status: 500 });
