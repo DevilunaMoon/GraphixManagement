@@ -138,6 +138,7 @@ export async function triggerStockAlert({ deviceId, tx }: TriggerStockAlertParam
 /**
  * Ensures all current low-stock and out-of-stock items across branches
  * have corresponding active notifications for the given user.
+ * Fully batched for ultra-fast performance.
  */
 export async function syncStockAlertsForUser(userId: string, role: string, userBranch?: string | null) {
   try {
@@ -146,17 +147,46 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
 
     if (!isSuperAdmin && !isAdmin) return;
 
-    // Find all branch stocks with stock <= 3
+    // 1. Fetch all low branch stocks in 1 fast query
     const lowBranchStocks = await prisma.branchStock.findMany({
       where: {
         stock: { lte: 3 },
         ...(!isSuperAdmin && userBranch ? { branch: userBranch } : {})
       },
       include: {
-        device: true,
-        variation: true
+        device: {
+          select: { id: true, name: true }
+        },
+        variation: {
+          select: { id: true, name: true }
+        }
+      },
+      take: 50
+    });
+
+    // 2. Fetch existing unread notifications for this user in 1 query
+    const existingNotifications = await prisma.notification.findMany({
+      where: {
+        userId,
+        isRead: false
+      },
+      select: {
+        title: true,
+        branch: true
       }
     });
+
+    const existingKeySet = new Set(
+      existingNotifications.map((n: any) => `${n.title}|${n.branch || ''}`)
+    );
+
+    const notificationsToCreate: Array<{
+      userId: string;
+      title: string;
+      message: string;
+      type: string;
+      branch: string;
+    }> = [];
 
     for (const bs of lowBranchStocks) {
       if (!bs.device) continue;
@@ -169,69 +199,28 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
         ? `"${displayName}" is now OUT OF STOCK (0 units remaining) at ${branchName} branch. Immediate restock required.`
         : `"${displayName}" is running low on inventory (Only ${bs.stock} unit${bs.stock === 1 ? '' : 's'} remaining) at ${branchName} branch.`;
 
-      const existing = await prisma.notification.findFirst({
-        where: {
+      const key = `${title}|${branchName}`;
+      if (!existingKeySet.has(key)) {
+        existingKeySet.add(key);
+        notificationsToCreate.push({
           userId,
           title,
-          branch: branchName,
-          isRead: false
-        }
-      });
-
-      if (!existing) {
-        await prisma.notification.create({
-          data: {
-            userId,
-            title,
-            message,
-            type: alertType,
-            branch: branchName
-          }
+          message,
+          type: alertType,
+          branch: branchName
         });
       }
     }
 
-    // Also check devices without BranchStock records
-    const standaloneLowDevices = await prisma.device.findMany({
-      where: {
-        stock: { lte: 3 },
-        branchStocks: { none: {} },
-        ...(!isSuperAdmin && userBranch ? { branch: userBranch } : {})
-      }
-    });
-
-    for (const dev of standaloneLowDevices) {
-      const branchName = dev.branch || 'Tagoloan';
-      const isOut = dev.stock <= 0;
-      const alertType = isOut ? 'STOCK_OUT' : 'STOCK_LOW';
-      const title = isOut ? `Out of Stock: ${dev.name}` : `Low Stock Warning: ${dev.name}`;
-      const message = isOut 
-        ? `"${dev.name}" is now OUT OF STOCK (0 units remaining) at ${branchName} branch. Immediate restock required.`
-        : `"${dev.name}" is running low on inventory (Only ${dev.stock} unit${dev.stock === 1 ? '' : 's'} remaining) at ${branchName} branch.`;
-
-      const existing = await prisma.notification.findFirst({
-        where: {
-          userId,
-          title,
-          branch: branchName,
-          isRead: false
-        }
+    // 3. Batch insert missing notifications in a single DB operation
+    if (notificationsToCreate.length > 0) {
+      await prisma.notification.createMany({
+        data: notificationsToCreate
       });
-
-      if (!existing) {
-        await prisma.notification.create({
-          data: {
-            userId,
-            title,
-            message,
-            type: alertType,
-            branch: branchName
-          }
-        });
-      }
     }
   } catch (err) {
     console.error('Error syncing stock alerts for user:', err);
   }
 }
+
 

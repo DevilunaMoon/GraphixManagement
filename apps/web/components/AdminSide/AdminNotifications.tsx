@@ -52,15 +52,14 @@ export default function AdminNotifications() {
   };
 
   useEffect(() => {
-    setPage(1);
-    fetchNotifications(1);
-  }, [selectedBranch]);
-
-  useEffect(() => {
     fetchNotifications(page);
     const interval = setInterval(() => fetchNotifications(page), 10000);
     return () => clearInterval(interval);
-  }, [page]);
+  }, [page, selectedBranch]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedBranch]);
 
 
   const handleAction = async (id: string, action: 'READ' | 'PAID' | 'UNPAID') => {
