@@ -597,168 +597,192 @@ export default function AdminBranches() {
 
       {/* Add / Edit Branch Modal */}
       {(isAddModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center pb-4 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 m-0">
-                {isEditModalOpen ? `Edit ${selectedBranch?.name} Branch` : 'Add New Branch'}
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#bd00ff] flex items-center justify-center">
+                  <Building2 size={22} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 m-0">
+                    {isEditModalOpen ? `Edit ${selectedBranch?.name} Branch` : 'Add New Branch'}
+                  </h3>
+                  <p className="text-xs text-gray-500 m-0 mt-0.5">
+                    Configure store details, contact info, and customer checkout GCash details
+                  </p>
+                </div>
+              </div>
               <button 
                 onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }}
-                className="text-gray-400 hover:text-black transition-colors"
+                className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-black flex items-center justify-center transition-colors cursor-pointer border-none"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveBranch} className="flex flex-col gap-4 mt-5">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., Gingoog, Balingasag"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Address</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Highway 1, Gingoog City"
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Contact Phone</label>
-                <input
-                  type="text"
-                  placeholder="e.g., 09123456789"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Status</label>
-                <select
-                  value={formStatus}
-                  disabled={!isSuperAdmin}
-                  onChange={(e) => setFormStatus(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="Active">Active (Open for transactions & staff)</option>
-                  <option value="Inactive">Inactive (Restricted)</option>
-                </select>
-              </div>
-
-              {/* GCash Transfer & QR Configuration Section */}
-              <div className="p-4 bg-gradient-to-b from-blue-50/80 to-white rounded-2xl border border-blue-200 flex flex-col gap-3.5 mt-2">
-                <div className="flex items-center justify-between pb-2 border-b border-blue-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-[#005ce6] text-white flex items-center justify-center font-black text-xs">
-                      G
-                    </div>
-                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">
-                      Branch GCash Transfer Settings
-                    </h4>
+            <form onSubmit={handleSaveBranch} className="flex flex-col gap-6 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Column 1: Store & Branch Info */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <Building2 size={16} className="text-[#bd00ff]" />
+                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">Store Information</h4>
                   </div>
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-2 py-0.5 rounded-full">
-                    Customer Facing
-                  </span>
-                </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    GCash Account Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. GRAPHIX MANAGEMENT - TAGOLOAN"
-                    value={formGcashName}
-                    onChange={(e) => setFormGcashName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-[#005ce6] transition-all"
-                  />
-                  <span className="text-[10px] text-gray-400 mt-1 block">
-                    Shown to customer on checkout as the transfer recipient.
-                  </span>
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g., Gingoog, Balingasag"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all font-semibold"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    GCash Mobile Number *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 0967 123 4567"
-                    value={formGcashNumber}
-                    onChange={(e) => setFormGcashNumber(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold text-[#005ce6] outline-none focus:border-[#005ce6] transition-all"
-                  />
-                  <span className="text-[10px] text-gray-400 mt-1 block">
-                    Recipient number copied with 1-tap by customer.
-                  </span>
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Address</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., Highway 1, Gingoog City"
+                      value={formAddress}
+                      onChange={(e) => setFormAddress(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                    Official GCash QR Code Image
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-blue-200 bg-white flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner">
-                      {formGcashQrCode ? (
-                        <img src={formGcashQrCode} alt="GCash QR Preview" className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-center p-1">
-                          <QrCode size={24} className="text-blue-300" />
-                          <span className="text-[8px] text-blue-500 font-bold mt-1">Auto-Gen</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1.5 flex-1">
-                      <label className="px-3.5 py-2 bg-white hover:bg-blue-50 border border-blue-300 rounded-xl text-xs font-bold text-[#005ce6] flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs">
-                        <Upload size={14} />
-                        <span>{uploadingQr ? 'Uploading...' : formGcashQrCode ? 'Replace QR Image' : 'Upload GCash QR'}</span>
-                        <input type="file" accept="image/*" onChange={handleQrUpload} disabled={uploadingQr} className="hidden" />
-                      </label>
-                      {formGcashQrCode && (
-                        <button
-                          type="button"
-                          onClick={() => setFormGcashQrCode(null)}
-                          className="text-[11px] font-semibold text-red-500 hover:underline bg-transparent border-none cursor-pointer self-start p-0"
-                        >
-                          Remove QR Image (Use Auto-Gen)
-                        </button>
-                      )}
-                      <span className="text-[10px] text-gray-500 leading-tight">
-                        Upload your official GCash QR Code image downloaded from the GCash app, or leave empty to auto-generate a scannable QR.
-                      </span>
-                    </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Contact Phone</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 09123456789"
+                      value={formPhone}
+                      onChange={(e) => setFormPhone(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Status</label>
+                    <select
+                      value={formStatus}
+                      disabled={!isSuperAdmin}
+                      onChange={(e) => setFormStatus(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+                    >
+                      <option value="Active">Active (Open for transactions & staff)</option>
+                      <option value="Inactive">Inactive (Restricted)</option>
+                    </select>
+                    {!isSuperAdmin && (
+                      <span className="text-[10px] text-gray-400 mt-1 block">Only Super Admins can alter operational branch status.</span>
+                    )}
                   </div>
                 </div>
+
+                {/* Column 2: GCash Transfer & QR Configuration */}
+                <div className="p-5 bg-gradient-to-b from-blue-50/90 to-white rounded-2xl border border-blue-200 flex flex-col gap-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-blue-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#005ce6] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                        G
+                      </div>
+                      <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">
+                        GCash Transfer Settings
+                      </h4>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-2.5 py-0.5 rounded-full">
+                      Customer Facing
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                      GCash Account Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. GRAPHIX MANAGEMENT - TAGOLOAN"
+                      value={formGcashName}
+                      onChange={(e) => setFormGcashName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-[#005ce6] transition-all shadow-xs"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      Shown to customer on checkout as the transfer recipient.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                      GCash Mobile Number *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 0967 123 4567"
+                      value={formGcashNumber}
+                      onChange={(e) => setFormGcashNumber(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold text-[#005ce6] outline-none focus:border-[#005ce6] transition-all shadow-xs"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      Recipient number copied with 1-tap by customer.
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-blue-100">
+                    <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-2">
+                      Official GCash QR Code Image
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-blue-200 bg-white flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner p-1">
+                        {formGcashQrCode ? (
+                          <img src={formGcashQrCode} alt="GCash QR Preview" className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-center p-1">
+                            <QrCode size={26} className="text-blue-300" />
+                            <span className="text-[8px] text-blue-500 font-bold mt-1">Auto-Gen</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2 flex-1">
+                        <label className="px-4 py-2.5 bg-white hover:bg-blue-50 border border-blue-300 rounded-xl text-xs font-bold text-[#005ce6] flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-xs">
+                          <Upload size={14} />
+                          <span>{uploadingQr ? 'Uploading...' : formGcashQrCode ? 'Replace QR Image' : 'Upload GCash QR'}</span>
+                          <input type="file" accept="image/*" onChange={handleQrUpload} disabled={uploadingQr} className="hidden" />
+                        </label>
+                        {formGcashQrCode && (
+                          <button
+                            type="button"
+                            onClick={() => setFormGcashQrCode(null)}
+                            className="text-[11px] font-semibold text-red-500 hover:underline bg-transparent border-none cursor-pointer self-start p-0"
+                          >
+                            Remove QR Image (Use Auto-Gen)
+                          </button>
+                        )}
+                        <span className="text-[10px] text-gray-500 leading-relaxed">
+                          Upload official GCash QR Code image downloaded from your business account, or leave empty to auto-generate.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-3 rounded-xl bg-[#bd00ff] hover:bg-purple-700 text-white font-bold shadow-lg shadow-purple-200 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-8 py-3 rounded-xl bg-[#bd00ff] hover:bg-purple-700 text-white font-bold text-sm shadow-lg shadow-purple-200 transition-all cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : isEditModalOpen ? 'Update Branch' : 'Create Branch'}
                 </button>
