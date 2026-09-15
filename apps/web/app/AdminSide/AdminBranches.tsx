@@ -16,7 +16,9 @@ import {
   Phone, 
   X, 
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  QrCode,
+  Upload
 } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
@@ -26,6 +28,9 @@ interface BranchMetricItem {
   address?: string | null;
   phone?: string | null;
   status: string;
+  gcashName?: string | null;
+  gcashNumber?: string | null;
+  gcashQrCode?: string | null;
   createdAt: string;
   adminsCount: number;
   cashiersCount: number;
@@ -34,7 +39,7 @@ interface BranchMetricItem {
 }
 
 export default function AdminBranches() {
-  const { refreshBranches, isSuperAdmin } = useBranch();
+  const { refreshBranches, isSuperAdmin, userBranch } = useBranch();
   const [branches, setBranches] = useState<BranchMetricItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +54,10 @@ export default function AdminBranches() {
   const [formAddress, setFormAddress] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formStatus, setFormStatus] = useState('Active');
+  const [formGcashName, setFormGcashName] = useState('');
+  const [formGcashNumber, setFormGcashNumber] = useState('');
+  const [formGcashQrCode, setFormGcashQrCode] = useState<string | null>(null);
+  const [uploadingQr, setUploadingQr] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Delete State
@@ -81,6 +90,9 @@ export default function AdminBranches() {
     setFormAddress('');
     setFormPhone('');
     setFormStatus('Active');
+    setFormGcashName('GRAPHIX MANAGEMENT');
+    setFormGcashNumber('0967 123 4567');
+    setFormGcashQrCode(null);
     setIsAddModalOpen(true);
   };
 
@@ -90,7 +102,36 @@ export default function AdminBranches() {
     setFormAddress(branch.address || '');
     setFormPhone(branch.phone || '');
     setFormStatus(branch.status);
+    setFormGcashName(branch.gcashName || 'GRAPHIX MANAGEMENT');
+    setFormGcashNumber(branch.gcashNumber || '0967 123 4567');
+    setFormGcashQrCode(branch.gcashQrCode || null);
     setIsEditModalOpen(true);
+  };
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingQr(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'branch_gcash_qr');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.url) {
+        setFormGcashQrCode(data.url);
+      } else {
+        alert(data.error || 'Failed to upload QR image');
+      }
+    } catch (err) {
+      console.error('QR upload error:', err);
+      alert('Failed to upload QR image');
+    } finally {
+      setUploadingQr(false);
+    }
   };
 
   const handleSaveBranch = async (e: React.FormEvent) => {
@@ -114,7 +155,10 @@ export default function AdminBranches() {
           name: formName.trim(),
           address: formAddress.trim() || null,
           phone: formPhone.trim() || null,
-          status: formStatus
+          status: formStatus,
+          gcashName: formGcashName.trim() || null,
+          gcashNumber: formGcashNumber.trim() || null,
+          gcashQrCode: formGcashQrCode || null
         })
       });
 
@@ -180,10 +224,15 @@ export default function AdminBranches() {
     }
   };
 
-  const filteredBranches = branches.filter(b => 
-    b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (b.address && b.address.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredBranches = branches.filter(b => {
+    if (!isSuperAdmin && userBranch && b.name.toLowerCase() !== userBranch.toLowerCase()) {
+      return false;
+    }
+    return (
+      b.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (b.address && b.address.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  });
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -194,8 +243,14 @@ export default function AdminBranches() {
             <Building2 size={28} />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 m-0">Branch Management</h2>
-            <p className="text-gray-500 m-0 text-sm">Create, monitor, and manage system branches across all locations</p>
+            <h2 className="text-2xl font-bold text-gray-900 m-0">
+              {isSuperAdmin ? 'Branch Management' : 'Branch Settings'}
+            </h2>
+            <p className="text-gray-500 m-0 text-sm">
+              {isSuperAdmin 
+                ? 'Create, monitor, and manage system branches across all locations'
+                : 'Configure branch information, GCash payment account, and QR Code for your store location'}
+            </p>
           </div>
         </div>
 
@@ -207,12 +262,14 @@ export default function AdminBranches() {
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
-          <button
-            onClick={handleOpenAdd}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#bd00ff] hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all cursor-pointer"
-          >
-            <Plus size={18} /> Add New Branch
-          </button>
+          {isSuperAdmin && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#bd00ff] hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all cursor-pointer"
+            >
+              <Plus size={18} /> Add New Branch
+            </button>
+          )}
         </div>
       </div>
 
@@ -313,22 +370,63 @@ export default function AdminBranches() {
                     </div>
                   </div>
                 </div>
+
+                {/* GCash Payment Transfer & QR Info */}
+                <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                      <QrCode size={14} className="text-[#005ce6]" />
+                      GCash Payment Details
+                    </span>
+                    {branch.gcashQrCode ? (
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 size={11} /> Official QR
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                        Auto QR Active
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="bg-blue-50/50 rounded-2xl p-3 border border-blue-100/80 flex items-center justify-between gap-2">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Account</span>
+                      <span className="text-xs font-extrabold text-gray-900 truncate">
+                        {branch.gcashName || 'GRAPHIX MANAGEMENT'}
+                      </span>
+                      <span className="text-xs font-mono font-bold text-[#005ce6] mt-0.5">
+                        {branch.gcashNumber || '0967 123 4567'}
+                      </span>
+                    </div>
+
+                    <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                      {branch.gcashQrCode ? (
+                        <img src={branch.gcashQrCode} alt="GCash QR" className="w-full h-full object-contain" />
+                      ) : (
+                        <QrCode size={26} className="text-[#005ce6]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Actions Footer */}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
                 <button
                   onClick={() => handleOpenEdit(branch)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors cursor-pointer border-none"
                 >
-                  <Edit3 size={14} /> Edit Details
+                  <Edit3 size={14} /> Edit GCash & Branch Details
                 </button>
-                <button
-                  onClick={() => setBranchToDelete(branch)}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer"
-                >
-                  <Trash2 size={14} /> Remove
-                </button>
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => setBranchToDelete(branch)}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer border-none"
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -387,15 +485,104 @@ export default function AdminBranches() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Status</label>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Status</label>
                 <select
                   value={formStatus}
+                  disabled={!isSuperAdmin}
                   onChange={(e) => setFormStatus(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all cursor-pointer"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="Active">Active (Open for transactions & staff)</option>
                   <option value="Inactive">Inactive (Restricted)</option>
                 </select>
+              </div>
+
+              {/* GCash Transfer & QR Configuration Section */}
+              <div className="p-4 bg-gradient-to-b from-blue-50/80 to-white rounded-2xl border border-blue-200 flex flex-col gap-3.5 mt-2">
+                <div className="flex items-center justify-between pb-2 border-b border-blue-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-[#005ce6] text-white flex items-center justify-center font-black text-xs">
+                      G
+                    </div>
+                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">
+                      Branch GCash Transfer Settings
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-2 py-0.5 rounded-full">
+                    Customer Facing
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    GCash Account Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. GRAPHIX MANAGEMENT - TAGOLOAN"
+                    value={formGcashName}
+                    onChange={(e) => setFormGcashName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-900 outline-none focus:border-[#005ce6] transition-all"
+                  />
+                  <span className="text-[10px] text-gray-400 mt-1 block">
+                    Shown to customer on checkout as the transfer recipient.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    GCash Mobile Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 0967 123 4567"
+                    value={formGcashNumber}
+                    onChange={(e) => setFormGcashNumber(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono font-bold text-[#005ce6] outline-none focus:border-[#005ce6] transition-all"
+                  />
+                  <span className="text-[10px] text-gray-400 mt-1 block">
+                    Recipient number copied with 1-tap by customer.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Official GCash QR Code Image
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-blue-200 bg-white flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner">
+                      {formGcashQrCode ? (
+                        <img src={formGcashQrCode} alt="GCash QR Preview" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-center p-1">
+                          <QrCode size={24} className="text-blue-300" />
+                          <span className="text-[8px] text-blue-500 font-bold mt-1">Auto-Gen</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1.5 flex-1">
+                      <label className="px-3.5 py-2 bg-white hover:bg-blue-50 border border-blue-300 rounded-xl text-xs font-bold text-[#005ce6] flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs">
+                        <Upload size={14} />
+                        <span>{uploadingQr ? 'Uploading...' : formGcashQrCode ? 'Replace QR Image' : 'Upload GCash QR'}</span>
+                        <input type="file" accept="image/*" onChange={handleQrUpload} disabled={uploadingQr} className="hidden" />
+                      </label>
+                      {formGcashQrCode && (
+                        <button
+                          type="button"
+                          onClick={() => setFormGcashQrCode(null)}
+                          className="text-[11px] font-semibold text-red-500 hover:underline bg-transparent border-none cursor-pointer self-start p-0"
+                        >
+                          Remove QR Image (Use Auto-Gen)
+                        </button>
+                      )}
+                      <span className="text-[10px] text-gray-500 leading-tight">
+                        Upload your official GCash QR Code image downloaded from the GCash app, or leave empty to auto-generate a scannable QR.
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">

@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, address, phone, status } = body;
+    const { name, address, phone, status, gcashName, gcashNumber, gcashQrCode } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Branch name is required' }, { status: 400 });
@@ -87,7 +87,10 @@ export async function POST(req: Request) {
         name: trimmedName,
         address: address ? address.trim() : null,
         phone: phone ? phone.trim() : null,
-        status: status || 'Active'
+        status: status || 'Active',
+        gcashName: gcashName ? gcashName.trim() : 'GRAPHIX MANAGEMENT',
+        gcashNumber: gcashNumber ? gcashNumber.trim() : '0967 123 4567',
+        gcashQrCode: gcashQrCode || null
       }
     });
 

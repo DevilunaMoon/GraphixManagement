@@ -8,13 +8,13 @@ export const dynamic = 'force-dynamic';
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession();
-    if (!session || session.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized: Super Admin access required' }, { status: 403 });
+    if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
     const { id } = await params;
     const body = await req.json();
-    const { name, address, phone, status } = body;
+    const { name, address, phone, status, gcashName, gcashNumber, gcashQrCode } = body;
 
     const existingBranch = await prisma.branch.findUnique({
       where: { id }
@@ -24,7 +24,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
     }
 
-    const trimmedName = name ? name.trim() : existingBranch.name;
+    // Branch Admins can only edit their own assigned branch
+    if (session.role === 'ADMIN' && session.branch !== existingBranch.name) {
+      return NextResponse.json({ error: 'Unauthorized: You can only configure your assigned branch' }, { status: 403 });
+    }
+
+    // Only Super Admin can change the branch name or status
+    const trimmedName = (session.role === 'SUPER_ADMIN' && name) ? name.trim() : existingBranch.name;
 
     // If changing name, check uniqueness
     if (trimmedName !== existingBranch.name) {
@@ -42,7 +48,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         name: trimmedName,
         address: address !== undefined ? (address ? address.trim() : null) : existingBranch.address,
         phone: phone !== undefined ? (phone ? phone.trim() : null) : existingBranch.phone,
-        status: status || existingBranch.status
+        status: (session.role === 'SUPER_ADMIN' && status) ? status : existingBranch.status,
+        gcashName: gcashName !== undefined ? (gcashName ? gcashName.trim() : null) : existingBranch.gcashName,
+        gcashNumber: gcashNumber !== undefined ? (gcashNumber ? gcashNumber.trim() : null) : existingBranch.gcashNumber,
+        gcashQrCode: gcashQrCode !== undefined ? gcashQrCode : existingBranch.gcashQrCode
       }
     });
 

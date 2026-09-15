@@ -18,6 +18,17 @@ import {
   MapPin
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import QRCodeDisplay from '../../components/Common/QRCodeDisplay';
+
+interface BranchData {
+  id: string;
+  name: string;
+  location?: string;
+  gcashName?: string | null;
+  gcashNumber?: string | null;
+  gcashQrCode?: string | null;
+  isActive?: boolean;
+}
 
 interface PurchasedItem {
   id: string;
@@ -47,7 +58,8 @@ function CustomerPaymentContent() {
   const [selectedVariationsStr, setSelectedVariationsStr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Branch Selection State
+  // Branch Selection & GCash States
+  const [branches, setBranches] = useState<BranchData[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>(
     branchParam ? (branchParam.includes('Branch') ? branchParam : `${branchParam} Branch`) : 'Tagoloan Branch'
   );
@@ -63,7 +75,31 @@ function CustomerPaymentContent() {
   const [submitting, setSubmitting] = useState(false);
   const [showItemsList, setShowItemsList] = useState(false);
 
-  const gcashNumber = "0967 123 4567";
+  useEffect(() => {
+    fetch('/api/branches')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const active = data.filter((b: any) => b.isActive !== false);
+          setBranches(active.length > 0 ? active : data);
+        }
+      })
+      .catch(err => console.error('Failed to load branches:', err));
+  }, []);
+
+  const cleanBranchName = (name: string) => name.replace(/\s*Branch$/i, '').trim();
+
+  const currentBranchData = branches.find(
+    b => cleanBranchName(b.name).toLowerCase() === cleanBranchName(selectedBranch).toLowerCase()
+  );
+
+  const activeGcashName = currentBranchData?.gcashName || 'GRAPHIX MANAGEMENT';
+  const activeGcashNumber = currentBranchData?.gcashNumber || '0967 123 4567';
+  const activeGcashQr = currentBranchData?.gcashQrCode || null;
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const cleanGcashDigits = activeGcashNumber.replace(/[^0-9]/g, '');
+  const qrRedirectUrl = `${origin}/pay/gcash?branch=${encodeURIComponent(cleanBranchName(selectedBranch))}&name=${encodeURIComponent(activeGcashName)}&number=${encodeURIComponent(cleanGcashDigits)}&amount=${finalTotal}`;
 
   useEffect(() => {
     fetch('/api/profile')
@@ -206,7 +242,7 @@ function CustomerPaymentContent() {
   }, [deviceId, variationIds, cartItemIdsParam]);
 
   const handleCopyGcashNumber = () => {
-    navigator.clipboard.writeText("09671234567");
+    navigator.clipboard.writeText(cleanGcashDigits || activeGcashNumber);
     setCopiedNumber(true);
     setTimeout(() => setCopiedNumber(false), 2000);
   };
@@ -435,18 +471,29 @@ function CustomerPaymentContent() {
             <span className="text-[10px] text-gray-400 font-bold uppercase">Store Branch</span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {['Tagoloan Branch', 'Villanueva Branch', 'Jasaan Branch'].map((bName) => (
+            {(branches.length > 0
+              ? branches.map(b => ({
+                  id: b.id,
+                  displayName: cleanBranchName(b.name),
+                  fullName: b.name.includes('Branch') ? b.name : `${b.name} Branch`
+                }))
+              : [
+                  { id: 'tagoloan', displayName: 'Tagoloan', fullName: 'Tagoloan Branch' },
+                  { id: 'villanueva', displayName: 'Villanueva', fullName: 'Villanueva Branch' },
+                  { id: 'jasaan', displayName: 'Jasaan', fullName: 'Jasaan Branch' }
+                ]
+            ).map((b) => (
               <button
-                key={bName}
+                key={b.id || b.fullName}
                 type="button"
-                onClick={() => setSelectedBranch(bName)}
+                onClick={() => setSelectedBranch(b.fullName)}
                 className={`py-2 px-2.5 rounded-xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                  selectedBranch === bName
+                  cleanBranchName(selectedBranch).toLowerCase() === b.displayName.toLowerCase()
                     ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] shadow-xs'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                 }`}
               >
-                {bName.replace(' Branch', '')}
+                {b.displayName}
               </button>
             ))}
           </div>
@@ -536,12 +583,12 @@ function CustomerPaymentContent() {
             <div className="bg-white rounded-xl p-3 border border-blue-100 flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-500 font-medium">Account Name:</span>
-                <span className="font-bold text-gray-900">GRAPHIX MANAGEMENT</span>
+                <span className="font-bold text-gray-900">{activeGcashName}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-500 font-medium">Account Number:</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[#005ce6] text-sm">{gcashNumber}</span>
+                  <span className="font-mono font-bold text-[#005ce6] text-sm">{activeGcashNumber}</span>
                   <button
                     type="button"
                     onClick={handleCopyGcashNumber}
@@ -699,22 +746,35 @@ function CustomerPaymentContent() {
               <h3 className="font-extrabold text-base text-gray-900 m-0">GCash Merchant QR</h3>
             </div>
 
-            <div className="w-48 h-48 bg-gray-50 border-2 border-dashed border-blue-200 rounded-2xl flex items-center justify-center relative overflow-hidden shadow-inner">
-              <QrCode size={120} className="text-[#005ce6]" />
+            <div className="w-52 h-52 bg-gray-50 border-2 border-dashed border-blue-200 rounded-2xl flex items-center justify-center relative overflow-hidden shadow-inner p-2">
+              <QRCodeDisplay
+                value={qrRedirectUrl}
+                uploadedImageUrl={activeGcashQr}
+                size={190}
+                alt={`${activeGcashName} GCash QR`}
+              />
             </div>
 
             <div className="flex flex-col gap-1">
-              <span className="font-black text-sm text-gray-900">GRAPHIX MANAGEMENT</span>
-              <span className="font-mono text-xs text-[#005ce6] font-bold">{gcashNumber}</span>
+              <span className="font-black text-sm text-gray-900">{activeGcashName}</span>
+              <span className="font-mono text-xs text-[#005ce6] font-bold">{activeGcashNumber}</span>
               <span className="text-[11px] text-gray-500 mt-1">
-                Scan using the GCash app & transfer exact amount of <strong>₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                Scan using phone camera or GCash app & transfer exact amount of <strong>₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
               </span>
             </div>
+
+            <a
+              href="gcash://app"
+              className="w-full py-2.5 bg-[#005ce6] hover:bg-blue-700 font-bold text-xs text-white rounded-xl transition-colors cursor-pointer text-center no-underline flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Smartphone size={15} />
+              Open in GCash App
+            </a>
 
             <button
               type="button"
               onClick={() => setShowGcashModal(false)}
-              className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 font-bold text-xs text-gray-700 rounded-xl transition-colors cursor-pointer border-none"
+              className="w-full py-2 bg-gray-100 hover:bg-gray-200 font-bold text-xs text-gray-700 rounded-xl transition-colors cursor-pointer border-none"
             >
               Close
             </button>
