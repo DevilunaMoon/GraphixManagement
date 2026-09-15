@@ -48,37 +48,87 @@ export default function AdminDashboard() {
   return (
     <>
       <div className="flex flex-col gap-8">
-        {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard 
-          icon={<span className="text-[22px] font-bold">₱</span>}
-          label="Daily Sales" 
-          value={`₱${dashboardData?.sales?.today?.toLocaleString() || 0}`} 
-          subText={
-            <span className={dashboardData?.sales?.today >= dashboardData?.sales?.yesterday ? 'text-green-600' : 'text-red-500'}>
-              vs Yesterday: ₱{dashboardData?.sales?.yesterday?.toLocaleString() || 0}
-            </span>
-          }
-          iconBg="bg-green-100" 
-          iconColor="text-green-600" 
-        />
-        <StatCard 
-          icon={<span className="text-[22px] font-bold">₱</span>}
-          label="Monthly Sales" 
-          value={`₱${dashboardData?.sales?.monthly?.toLocaleString() || 0}`} 
-          iconBg="bg-purple-100" 
-          iconColor="text-purple-600" 
-        />
-        <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1">
+        {/* Centralized Multi-Branch Metrics Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard 
-            icon={<Users size={24} />} 
-            label="Total Users" 
-            value={userCount.toString()} 
-            iconBg="bg-sky-100" 
-            iconColor="text-sky-600" 
+            icon={<span className="text-xl font-bold">₱</span>}
+            label="Total Sales" 
+            value={`₱${(dashboardData?.summary?.totalSales ?? dashboardData?.breakdown?.total ?? 0).toLocaleString()}`} 
+            subText={
+              <span className="text-purple-700 font-semibold text-[11px]">
+                Today: ₱{(dashboardData?.sales?.today || 0).toLocaleString()}
+              </span>
+            }
+            iconBg="bg-emerald-100" 
+            iconColor="text-emerald-700" 
           />
-        </Link>
-      </div>
+          <StatCard 
+            icon={<Package size={20} />} 
+            label="Units Sold" 
+            value={`${dashboardData?.summary?.totalUnitsSold ?? 0} pcs`} 
+            subText={
+              <span className="text-blue-700 font-semibold text-[11px]">
+                {dashboardData?.summary?.totalOrders ?? 0} purchases
+              </span>
+            }
+            iconBg="bg-blue-100" 
+            iconColor="text-blue-700" 
+          />
+          <StatCard 
+            icon={<ShoppingCart size={20} />} 
+            label="Total Orders" 
+            value={`${dashboardData?.summary?.totalOrders ?? dashboardData?.transactions?.total ?? 0}`} 
+            subText={
+              <span className="text-gray-500 font-semibold text-[11px]">
+                Physical & Online
+              </span>
+            }
+            iconBg="bg-purple-100" 
+            iconColor="text-purple-700" 
+          />
+          <Link href="/admin/inventory" className="block transition-transform hover:-translate-y-1">
+            <StatCard 
+              icon={<Building2 size={20} />} 
+              label="Total Inventory" 
+              value={`${dashboardData?.summary?.totalInventory ?? 0} pcs`} 
+              subText={
+                <span className="text-indigo-600 font-semibold text-[11px]">
+                  Warehouse & Stores
+                </span>
+              }
+              iconBg="bg-indigo-100" 
+              iconColor="text-indigo-700" 
+            />
+          </Link>
+          <Link href="/admin/inventory" className="block transition-transform hover:-translate-y-1">
+            <StatCard 
+              icon={<TrendingDown size={20} />} 
+              label="Low Stock" 
+              value={`${dashboardData?.summary?.lowStockProducts ?? 0}`} 
+              subText={
+                <span className="text-rose-600 font-bold text-[11px]">
+                  Needs restock (&lt; 5 pcs)
+                </span>
+              }
+              iconBg="bg-rose-100" 
+              iconColor="text-rose-600" 
+            />
+          </Link>
+          <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1">
+            <StatCard 
+              icon={<Users size={20} />} 
+              label="Active Users" 
+              value={`${dashboardData?.summary?.activeUsers ?? userCount}`} 
+              subText={
+                <span className="text-sky-600 font-semibold text-[11px]">
+                  System-wide accounts
+                </span>
+              }
+              iconBg="bg-sky-100" 
+              iconColor="text-sky-700" 
+            />
+          </Link>
+        </div>
 
 
 

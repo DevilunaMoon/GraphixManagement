@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Users, ShoppingCart, Wrench, TrendingUp, TrendingDown, X, FileSpreadsheet } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useBranch } from '../../context/BranchContext';
 
 export default function AdminAnalytics() {
+  const { selectedBranch } = useBranch();
   const [userCount, setUserCount] = useState<string | number>("...");
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   
@@ -16,7 +18,7 @@ export default function AdminAnalytics() {
   const { styles } = useTheme();
 
   useEffect(() => {
-    fetch('/api/analytics/users/count')
+    fetch(`/api/analytics/users/count?branch=${encodeURIComponent(selectedBranch)}`)
       .then(res => res.json())
       .then(data => {
         if (typeof data.count === 'number') {
@@ -29,7 +31,7 @@ export default function AdminAnalytics() {
       })
       .catch(err => console.error("Failed to fetch user count:", err));
 
-    fetch('/api/analytics/all-time')
+    fetch(`/api/analytics/all-time?branch=${encodeURIComponent(selectedBranch)}`)
       .then(res => res.json())
       .then(data => {
         setAnalyticsData(data);
@@ -51,7 +53,7 @@ export default function AdminAnalytics() {
       trendUp: Math.random() > 0.2
     })).reverse());
 
-  }, []);
+  }, [selectedBranch]);
 
   const handleDownload = () => {
     if (reportData.length === 0) return;

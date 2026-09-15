@@ -175,6 +175,32 @@ export async function GET(req: Request) {
       .sort((a, b) => b.sold - a.sold)
       .slice(0, 5);
 
+    // Centralized Inventory & Units Statistics
+    const totalUnitsSold = purchases.reduce((sum, p) => sum + (p.quantity || 1), 0);
+    const totalOrders = purchases.length;
+
+    const inventoryWhere = targetBranch ? { branch: targetBranch } : {};
+    const [inventoryAggregate, lowStockCount, activeUsers] = await Promise.all([
+      prisma.branchStock.aggregate({
+        where: inventoryWhere,
+        _sum: { stock: true }
+      }),
+      prisma.branchStock.count({
+        where: {
+          ...inventoryWhere,
+          stock: { gt: 0, lt: 5 }
+        }
+      }),
+      prisma.user.count({
+        where: {
+          status: { notIn: ['Inactive', 'Suspended'] },
+          ...(targetBranch ? { OR: [{ branch: targetBranch }, { role: 'CUSTOMER' }] } : {})
+        }
+      })
+    ]);
+
+    const totalInventory = inventoryAggregate._sum.stock || 0;
+
     // Multi-branch comparison if Super Admin and viewing all branches
     let branchComparison: any[] = [];
     if (isSuperAdmin && (!targetBranch || targetBranch === 'all')) {
@@ -200,6 +226,14 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({
+      summary: {
+        totalSales: totalRetail + totalRepair,
+        totalUnitsSold,
+        totalOrders,
+        totalInventory,
+        lowStockProducts: lowStockCount,
+        activeUsers
+      },
       sales: {
         today: todaySales,
         yesterday: yesterdaySales,
@@ -210,7 +244,7 @@ export async function GET(req: Request) {
       transactions: {
         online: onlineCount,
         physical: physicalCount,
-        total: onlineCount + physicalCount
+        total: totalOrders
       },
       breakdown: {
         retail: totalRetail,

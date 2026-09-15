@@ -2,10 +2,22 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getSession();
-    const branch = session?.branch || 'Tagoloan';
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+
+    const { searchParams } = new URL(req.url);
+    const branchQuery = searchParams.get('branch');
+
+    const branchWhere: any = {};
+    if (isSuperAdmin) {
+      if (branchQuery && branchQuery !== 'all') {
+        branchWhere.branch = branchQuery;
+      }
+    } else {
+      branchWhere.branch = session?.branch || 'Tagoloan';
+    }
 
     const now = new Date();
     
@@ -16,18 +28,18 @@ export async function GET() {
 
     // Fetch all purchases
     const purchases = await prisma.purchase.findMany({
-      where: { branch },
+      where: branchWhere,
       include: { device: { select: { name: true, price: true } } }
     });
 
     // Fetch completed repairs
     const repairs = await prisma.repairRequest.findMany({
-      where: { branch, status: 'Completed' }
+      where: { ...branchWhere, status: 'Completed' }
     });
 
     // Fetch active repairs for workload
     const activeRepairs = await prisma.repairRequest.findMany({
-      where: { branch, status: { not: 'Completed' } }
+      where: { ...branchWhere, status: { not: 'Completed' } }
     });
 
     const pendingRepairs = activeRepairs.length;

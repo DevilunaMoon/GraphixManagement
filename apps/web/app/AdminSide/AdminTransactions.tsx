@@ -49,7 +49,10 @@ const formatVariations = (variationsStr: string | null): string => {
   return variationsStr;
 };
 
+import { useBranch } from '../../context/BranchContext';
+
 export default function AdminTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
+  const { selectedBranch } = useBranch();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,7 +130,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}`);
+        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&branch=${encodeURIComponent(selectedBranch)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.transactions)) {
@@ -149,7 +152,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchTerm, filterDate, type]);
+  }, [currentPage, searchTerm, filterDate, type, selectedBranch]);
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;

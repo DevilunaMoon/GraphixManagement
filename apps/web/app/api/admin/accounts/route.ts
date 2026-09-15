@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const search = searchParams.get('search') || '';
     const roleFilter = searchParams.get('role') || '';
     const branchFilter = searchParams.get('branch') || '';
+    const statusFilter = searchParams.get('status') || '';
 
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const where: any = {};
@@ -41,6 +42,17 @@ export async function GET(req: Request) {
       where.role = roleFilter;
     }
 
+    // Status filtering
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter.toUpperCase() === 'ACTIVE') {
+        where.status = { notIn: ['Inactive', 'Suspended'] };
+      } else if (statusFilter.toUpperCase() === 'INACTIVE') {
+        where.status = 'Inactive';
+      } else if (statusFilter.toUpperCase() === 'SUSPENDED') {
+        where.status = 'Suspended';
+      }
+    }
+
     if (search) {
       const searchCondition = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -58,6 +70,41 @@ export async function GET(req: Request) {
         where.OR = searchCondition;
       }
     }
+
+    // Branch-scoped summary stats
+    const statsWhere: any = {};
+    if (isSuperAdmin) {
+      if (branchFilter && branchFilter !== 'all') {
+        statsWhere.branch = branchFilter;
+      }
+    } else {
+      statsWhere.OR = [
+        { branch: session.branch || 'Tagoloan' },
+        { role: 'CUSTOMER' }
+      ];
+    }
+
+    const [
+      totalUsers,
+      totalAdmins,
+      totalCashiers,
+      totalCustomers,
+      activeAccounts
+    ] = await Promise.all([
+      prisma.user.count({ where: statsWhere }),
+      prisma.user.count({ where: { ...statsWhere, role: { in: ['ADMIN', 'SUPER_ADMIN'] } } }),
+      prisma.user.count({ where: { ...statsWhere, role: 'CASHIER' } }),
+      prisma.user.count({ where: { ...statsWhere, role: 'CUSTOMER' } }),
+      prisma.user.count({ where: { ...statsWhere, status: { notIn: ['Inactive', 'Suspended'] } } })
+    ]);
+
+    const stats = {
+      totalUsers,
+      totalAdmins,
+      totalCashiers,
+      totalCustomers,
+      activeAccounts
+    };
 
     if (pageStr) {
       const page = Math.max(1, parseInt(pageStr, 10) || 1);
@@ -91,7 +138,8 @@ export async function GET(req: Request) {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
+        stats
       });
     }
 
@@ -111,7 +159,7 @@ export async function GET(req: Request) {
       },
       orderBy: { createdAt: 'desc' }
     });
-    return NextResponse.json(users);
+    return NextResponse.json({ users, stats });
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });

@@ -151,12 +151,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="text-[11px] px-2 py-1 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white outline-none [&>option]:text-black"
+              className="text-[11px] px-2 py-1 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white outline-none [&>option]:text-slate-900"
             >
-              <option value="all">🌐 All Branches</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.name}>📍 {b.name}</option>
-              ))}
+              <option value="all">🏢 All Branches</option>
+              <option value="Tagoloan">Tagoloan</option>
+              <option value="Villanueva">Villanueva</option>
+              <option value="Jasaan">Jasaan</option>
             </select>
           ) : (
             <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
@@ -336,17 +336,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             {isSuperAdmin ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-xl text-xs md:text-sm font-bold text-white border border-white/30 shadow-inner">
-                <Building2 size={16} />
+              <div className="flex items-center gap-2 px-3.5 py-1.5 bg-white/20 hover:bg-white/25 backdrop-blur-md rounded-xl text-xs md:text-sm font-bold text-white border border-white/30 shadow-inner transition-all">
+                <span className="text-sm">🏢</span>
                 <select
                   value={selectedBranch}
                   onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer pr-1 [&>option]:text-black"
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer pr-1 [&>option]:text-slate-900 [&>option]:font-semibold"
                 >
-                  <option value="all">🌐 All Branches (System-Wide)</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.name}>📍 {b.name} Branch</option>
-                  ))}
+                  <option value="all">All Branches</option>
+                  <option value="Tagoloan">Tagoloan</option>
+                  <option value="Villanueva">Villanueva</option>
+                  <option value="Jasaan">Jasaan</option>
                 </select>
               </div>
             ) : (
