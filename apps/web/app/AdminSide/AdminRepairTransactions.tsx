@@ -39,7 +39,7 @@ interface Transaction {
 }
 
 export default function AdminRepairTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
-  const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
+  const { selectedBranch, setSelectedBranch, isSuperAdmin, branches } = useBranch();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,7 +157,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchTerm, filterDate, type, selectedBranch]);
+  }, [currentPage, searchTerm, filterDate, type, selectedBranch, isSuperAdmin]);
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
@@ -373,7 +373,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
           
           <div className="flex flex-wrap items-center w-full md:w-auto gap-3">
             {isSuperAdmin && (
-              <div className="relative w-full sm:w-44">
+              <div className="relative w-full sm:w-48">
                 <select
                   value={selectedBranch || 'all'}
                   onChange={(e) => {
@@ -383,9 +383,19 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   className="w-full h-[48px] px-3.5 py-2.5 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-purple-500 focus:bg-white outline-none transition-all text-xs md:text-sm font-bold text-gray-700 cursor-pointer shadow-sm"
                 >
                   <option value="all">🏢 All Branches</option>
-                  <option value="Tagoloan">📍 Tagoloan</option>
-                  <option value="Villanueva">📍 Villanueva</option>
-                  <option value="Jasaan">📍 Jasaan</option>
+                  {branches && branches.length > 0 ? (
+                    branches.map(b => (
+                      <option key={b.id || b.name} value={b.name}>
+                        📍 {b.name.replace(/ branch/i, '')} Branch
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Tagoloan">📍 Tagoloan Branch</option>
+                      <option value="Villanueva">📍 Villanueva Branch</option>
+                      <option value="Jasaan">📍 Jasaan Branch</option>
+                    </>
+                  )}
                 </select>
               </div>
             )}

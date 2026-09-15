@@ -2,158 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 
-const PAPER_RECEIPTS = [
-  {
-    id: "rp_0193672",
-    repairId: "repair_0193672",
-    createdAt: "2026-08-01T04:00:00.000Z", // 8/1/26
-    amount: 500,
-    quantity: 1,
-    variations: "Repair Payment Labor",
-    paymentType: "Full",
-    source: "In-Store",
-    status: "Completed",
-    isExpired: false,
-    downpaymentAmount: 250,
-    remainingBalance: 0,
-    isSettled: true,
-    address: "Zone 3, Mohon / Tagoloan",
-    branch: "Tagoloan Branch",
-    user: {
-      id: "u_pixter",
-      name: "Pixter Andrew Gabatan",
-      email: "pixter@gmail.com",
-      phone: "0917 839 2018"
-    },
-    device: {
-      id: "dev_pixter",
-      name: "Repair Labor Service",
-      price: 500,
-      image: null,
-      technician: "Lead Tech"
+function parseRepairDetails(repairHistory: string | null | undefined) {
+  if (!repairHistory) return null;
+  try {
+    const parsed = JSON.parse(repairHistory);
+    if (parsed && typeof parsed === 'object') {
+      return parsed;
     }
-  },
-  {
-    id: "rp_0193697",
-    repairId: "repair_0193697",
-    createdAt: "2026-08-01T05:00:00.000Z", // 8/1/26
-    amount: 3000,
-    quantity: 1,
-    variations: "Repair Payment LCD (iPhone 11, 3 Days Warranty)",
-    paymentType: "Full",
-    source: "In-Store",
-    status: "Completed",
-    isExpired: false,
-    downpaymentAmount: 1500,
-    remainingBalance: 0,
-    isSettled: true,
-    address: "Sihuyon Zone 8 Sta. Cruz",
-    branch: "Tagoloan Branch",
-    user: {
-      id: "u_vincent",
-      name: "Mumaril, Vincent A.",
-      email: "vincent@gmail.com",
-      phone: "0956 712 8493"
-    },
-    device: {
-      id: "dev_vincent",
-      name: "iPhone 11",
-      price: 3000,
-      image: null,
-      technician: "Lead Tech"
-    }
-  },
-  {
-    id: "rp_0193673",
-    repairId: "repair_0193673",
-    createdAt: "2026-08-02T02:00:00.000Z", // 8/2/26
-    amount: 2800,
-    quantity: 1,
-    variations: "iPhone 11 LCD",
-    paymentType: "Full",
-    source: "In-Store",
-    status: "Completed",
-    isExpired: false,
-    downpaymentAmount: 1400,
-    remainingBalance: 0,
-    isSettled: true,
-    address: "Proper Sta. Ines Malitbog Buk",
-    branch: "Tagoloan Branch",
-    user: {
-      id: "u_april",
-      name: "Ocero, April Maiza Dhaine G.",
-      email: "april@gmail.com",
-      phone: "0935 829 1042"
-    },
-    device: {
-      id: "dev_april",
-      name: "iPhone 11",
-      price: 2800,
-      image: null,
-      technician: "Lead Tech"
-    }
-  },
-  {
-    id: "rp_0036002",
-    repairId: "repair_0036002",
-    createdAt: "2026-08-01T06:00:00.000Z", // 8/1/26
-    amount: 2900,
-    quantity: 1,
-    variations: "iPhone XR LCD",
-    paymentType: "Full",
-    source: "In-Store",
-    status: "Completed",
-    isExpired: false,
-    downpaymentAmount: 1450,
-    remainingBalance: 0,
-    isSettled: true,
-    address: "Zone 6 Pulot Tagoloan",
-    branch: "Tagoloan Branch",
-    user: {
-      id: "u_juana",
-      name: "Juana Mae Mahusay",
-      email: "juana@gmail.com",
-      phone: "0927 491 8203"
-    },
-    device: {
-      id: "dev_juana",
-      name: "iPhone XR",
-      price: 2900,
-      image: null,
-      technician: "Lead Tech"
-    }
-  },
-  {
-    id: "rp_0193671",
-    repairId: "repair_0193671",
-    createdAt: "2026-08-02T03:00:00.000Z", // 8/2/26
-    amount: 2000,
-    quantity: 1,
-    variations: "iPhone XR Battery",
-    paymentType: "Full",
-    source: "In-Store",
-    status: "Completed",
-    isExpired: false,
-    downpaymentAmount: 1000,
-    remainingBalance: 0,
-    isSettled: true,
-    address: "Malitbog, Bukidnon",
-    branch: "Tagoloan Branch",
-    user: {
-      id: "u_joram",
-      name: "Joram Pacana",
-      email: "joram@gmail.com",
-      phone: "0917 584 9201"
-    },
-    device: {
-      id: "dev_joram",
-      name: "iPhone XR",
-      price: 2000,
-      image: null,
-      technician: "Lead Tech"
-    }
+  } catch (e) {
+    // Not JSON
   }
-];
+  return null;
+}
 
 export async function GET(req: Request) {
   try {
@@ -164,96 +24,90 @@ export async function GET(req: Request) {
 
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type'); // 'full' or 'downpayment'
+    const type = searchParams.get('type') || 'full'; // 'full' or 'downpayment'
     const pageStr = searchParams.get('page');
     const limitStr = searchParams.get('limit');
     const search = searchParams.get('search') || '';
     const date = searchParams.get('date') || '';
     const branchParam = searchParams.get('branch');
 
-    // Build where clause for Database
-    const whereClause: any = {
-      repairCost: {
-        not: null,
-      },
-    };
+    // Build database AND conditions
+    const andConditions: any[] = [];
 
-    // Multi-branch filtering
+    // 1. Branch condition:
+    // For Super Admin: if 'all' or empty, no branch filter (fetch all branches). If specific branch, filter by it.
+    // For regular Admin / Cashier: restrict strictly to session branch.
     if (isSuperAdmin) {
       if (branchParam && branchParam.toLowerCase() !== 'all') {
-        whereClause.branch = { equals: branchParam, mode: 'insensitive' };
+        andConditions.push({
+          branch: { contains: branchParam, mode: 'insensitive' }
+        });
       }
     } else {
-      whereClause.branch = session.branch || 'Tagoloan';
+      andConditions.push({
+        branch: { equals: session.branch || 'Tagoloan', mode: 'insensitive' }
+      });
     }
 
+    // 2. Progress / Status condition
     if (type === 'downpayment') {
-      whereClause.progress = {
-        in: ['25%', '50%', '75%'],
-      };
+      andConditions.push({
+        OR: [
+          { progress: { in: ['25%', '50%', '75%', 'Diagnostic', 'Repairing'] } },
+          { downpayment: { not: null } }
+        ]
+      });
     } else {
-      whereClause.progress = '100%';
+      andConditions.push({
+        OR: [
+          { status: { equals: 'Completed', mode: 'insensitive' } },
+          { progress: { in: ['Completed', '100%'] } }
+        ]
+      });
     }
 
-    // Filter database by search query
-    if (search) {
-      whereClause.OR = [
-        {
-          id: {
-            contains: search,
-            mode: 'insensitive',
+    // 3. Search condition
+    if (search.trim()) {
+      const q = search.trim();
+      andConditions.push({
+        OR: [
+          { id: { contains: q, mode: 'insensitive' } },
+          { deviceName: { contains: q, mode: 'insensitive' } },
+          { ownerName: { contains: q, mode: 'insensitive' } },
+          { branch: { contains: q, mode: 'insensitive' } },
+          { technician: { contains: q, mode: 'insensitive' } },
+          { cause: { contains: q, mode: 'insensitive' } },
+          {
+            user: {
+              name: { contains: q, mode: 'insensitive' }
+            }
           },
-        },
-        {
-          deviceName: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          ownerName: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          branch: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
-        {
-          user: {
-            name: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-        },
-        {
-          user: {
-            email: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-        },
-      ];
+          {
+            user: {
+              email: { contains: q, mode: 'insensitive' }
+            }
+          }
+        ]
+      });
     }
 
-    // Filter database by date
+    // 4. Date condition
     if (date) {
       const startDate = new Date(date);
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(date);
       endDate.setHours(23, 59, 59, 999);
-      whereClause.createdAt = {
-        gte: startDate,
-        lte: endDate,
-      };
+      andConditions.push({
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        }
+      });
     }
 
-    // Fetch from database
+    const whereClause: any = andConditions.length > 0 ? { AND: andConditions } : {};
+
+    // Fetch all matching repair records from PostgreSQL Database
     const repairs = await prisma.repairRequest.findMany({
       where: whereClause,
       include: {
@@ -269,94 +123,85 @@ export async function GET(req: Request) {
     // Format DB repairs as transaction objects
     const dbTransactions = repairs.map((repair) => {
       const costStr = repair.repairCost || '0';
-      const totalCost = parseFloat(costStr.replace(/[^0-9.]/g, '')) || 0;
+      let totalCost = parseFloat(costStr.replace(/[^0-9.]/g, '')) || 0;
 
-      const downpaymentAmount = totalCost / 2;
-      const remainingBalance = type === 'downpayment' ? totalCost / 2 : 0;
-      const amount = type === 'downpayment' ? downpaymentAmount : totalCost;
+      // If repairCost is 0, check materials JSON
+      if (totalCost === 0 && repair.materials) {
+        try {
+          const mats = JSON.parse(repair.materials);
+          if (mats && typeof mats === 'object') {
+            const itemsSum = Array.isArray(mats.items)
+              ? mats.items.reduce((acc: number, item: any) => acc + (parseFloat(item.cost || item.price || 0) * (parseInt(item.quantity || 1, 10) || 1)), 0)
+              : 0;
+            const labor = parseFloat(mats.laborCost || 0) || 0;
+            totalCost = itemsSum + labor;
+          }
+        } catch (e) {
+          // Ignore JSON error
+        }
+      }
+
+      const parsedHistory = parseRepairDetails(repair.repairHistory);
+
+      let downpaymentAmount = 0;
+      if (repair.downpayment) {
+        downpaymentAmount = parseFloat(repair.downpayment.replace(/[^0-9.]/g, '')) || 0;
+      } else {
+        downpaymentAmount = totalCost / 2;
+      }
+
+      const isDownpayment = type === 'downpayment';
+      const remainingBalance = isDownpayment ? Math.max(0, totalCost - downpaymentAmount) : 0;
+      const amount = isDownpayment ? (downpaymentAmount > 0 ? downpaymentAmount : totalCost) : totalCost;
       const repairBranch = repair.branch || session.branch || 'Tagoloan';
+
+      const customerName = repair.user?.name || parsedHistory?.customerName || (repair.ownerName && repair.ownerName.trim() ? repair.ownerName : 'Walk-In Customer');
+      const customerEmail = repair.user?.email || parsedHistory?.customerEmail || 'walkin@graphix.com';
+      const customerPhone = repair.user?.phone || parsedHistory?.customerPhone || 'N/A';
+      const photoUrl = repair.proofImage || repair.image || (parsedHistory?.photos && parsedHistory.photos[0]) || null;
 
       return {
         id: `rp_${repair.id.substring(0, 10)}`,
         repairId: repair.id,
-        createdAt: repair.createdAt,
+        createdAt: repair.createdAt.toISOString(),
         amount,
         quantity: 1,
-        variations: repair.cause || 'General Repair',
-        paymentType: type === 'downpayment' ? 'Downpayment' : 'Full',
+        variations: repair.cause || (parsedHistory?.problem ? `${parsedHistory.problem} - ${parsedHistory.problemDescription || ''}` : 'General Repair'),
+        paymentType: isDownpayment ? 'Downpayment' : 'Full',
         source: 'In-Store',
-        status: repair.status || 'Active',
+        status: repair.status || 'Completed',
         isExpired: false,
         downpaymentAmount,
         remainingBalance,
-        isSettled: type === 'full',
+        isSettled: !isDownpayment,
         address: 'Walk-In / Online Request',
         branch: repairBranch,
         user: {
           id: repair.userId || 'guest',
-          name: repair.ownerName || repair.user?.name || 'Walk-In Customer',
-          email: repair.user?.email || 'walkin@graphix.com',
-          phone: repair.user?.phone || 'N/A',
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
         },
         device: {
           id: repair.id,
           name: repair.deviceName,
           price: totalCost,
-          image: repair.proofImage || repair.image || null,
+          image: photoUrl,
           technician: repair.technician || 'Lead Tech',
         },
       };
     });
 
-    // Handle Paper Receipts (only for Tagoloan or All Branches)
-    let matchedPaper: any[] = [];
-    const shouldIncludeTagoloanPaper = type !== 'downpayment' && (
-      (isSuperAdmin && (!branchParam || branchParam.toLowerCase() === 'all' || branchParam.toLowerCase() === 'tagoloan')) ||
-      (!isSuperAdmin && (session.branch || 'Tagoloan').toLowerCase() === 'tagoloan')
-    );
-
-    if (shouldIncludeTagoloanPaper) {
-      const dbIds = new Set(dbTransactions.map(tx => tx.repairId));
-      matchedPaper = PAPER_RECEIPTS.filter((tx) => {
-        if (dbIds.has(tx.repairId)) return false;
-        // Filter by date
-        if (date) {
-          const txDateStr = new Date(tx.createdAt).toDateString();
-          const filterDateStr = new Date(date).toDateString();
-          if (txDateStr !== filterDateStr) return false;
-        }
-        // Filter by search query
-        if (search) {
-          const s = search.toLowerCase();
-          return (
-            tx.id.toLowerCase().includes(s) ||
-            tx.user.name.toLowerCase().includes(s) ||
-            tx.user.email.toLowerCase().includes(s) ||
-            tx.device.name.toLowerCase().includes(s) ||
-            tx.variations.toLowerCase().includes(s) ||
-            (tx.branch && tx.branch.toLowerCase().includes(s))
-          );
-        }
-        return true;
-      });
-    }
-
-    // Combine database results + paper receipts
-    const allTransactions = [...dbTransactions, ...matchedPaper];
-
-    // Sort combined transactions by date (newest first)
-    allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    // Calculate Pagination
-    const total = allTransactions.length;
+    // Calculate Pagination directly from database items
+    const total = dbTransactions.length;
     const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
     const limit = Math.max(1, parseInt(limitStr || '8', 10) || 8);
     const skip = (page - 1) * limit;
 
-    const paginatedTransactions = allTransactions.slice(skip, skip + limit);
+    const paginatedTransactions = dbTransactions.slice(skip, skip + limit);
 
-    // Calculate Total Sales of combined matches
-    const totalSales = allTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    // Calculate Total Sales
+    const totalSales = dbTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
     return NextResponse.json({
       transactions: paginatedTransactions,
