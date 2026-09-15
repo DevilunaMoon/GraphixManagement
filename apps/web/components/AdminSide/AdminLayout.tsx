@@ -86,7 +86,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/notifications');
+        const res = await fetch(`/api/notifications?branch=${encodeURIComponent(selectedBranch || 'all')}`);
         const data = await res.json();
         if (data && typeof data.unreadCount === 'number') {
           setUnreadCount(data.unreadCount);
@@ -102,7 +102,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedBranch]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);

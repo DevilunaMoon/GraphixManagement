@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2 } from 'lucide-react';
 import Link from 'next/link';
+import { useBranch } from '../../context/BranchContext';
 
 interface Notification {
   id: string;
@@ -23,6 +24,7 @@ const formatDateTime = (dateStr: string) => {
 };
 
 export default function AdminNotifications() {
+  const { selectedBranch, isSuperAdmin } = useBranch();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -33,7 +35,8 @@ export default function AdminNotifications() {
 
   const fetchNotifications = async (pageToFetch = page) => {
     try {
-      const res = await fetch(`/api/notifications?page=${pageToFetch}&limit=10`);
+      const branchParam = isSuperAdmin ? selectedBranch : 'all';
+      const res = await fetch(`/api/notifications?page=${pageToFetch}&limit=10&branch=${encodeURIComponent(branchParam || 'all')}`);
       const data = await res.json();
       if (data && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
@@ -49,10 +52,16 @@ export default function AdminNotifications() {
   };
 
   useEffect(() => {
+    setPage(1);
+    fetchNotifications(1);
+  }, [selectedBranch]);
+
+  useEffect(() => {
     fetchNotifications(page);
     const interval = setInterval(() => fetchNotifications(page), 10000);
     return () => clearInterval(interval);
   }, [page]);
+
 
   const handleAction = async (id: string, action: 'READ' | 'PAID' | 'UNPAID') => {
     try {
