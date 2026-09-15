@@ -226,8 +226,10 @@ export default function AdminBranches() {
     }
   };
 
+  const cleanBranch = (name: string) => (name || '').replace(/\s*Branch$/i, '').trim().toLowerCase();
+
   const filteredBranches = branches.filter(b => {
-    if (!isSuperAdmin && userBranch && b.name.toLowerCase() !== userBranch.toLowerCase()) {
+    if (!isSuperAdmin && userBranch && cleanBranch(b.name) !== cleanBranch(userBranch)) {
       return false;
     }
     return true;
@@ -292,7 +294,164 @@ export default function AdminBranches() {
             {isSuperAdmin ? 'Click "Add New Branch" to register a branch.' : 'No branch record found for your account.'}
           </p>
         </div>
+      ) : filteredBranches.length === 1 ? (
+        /* Single Branch Full-Width Layout (matching the header card width) */
+        <div className="w-full">
+          {filteredBranches.map((branch) => {
+            const admins = branch.adminsCount || 0;
+            const cashiers = branch.cashiersCount || 0;
+            const stock = branch.totalStock || 0;
+            const revenue = branch.totalRevenue || 0;
+
+            return (
+              <div 
+                key={branch.id} 
+                className={`w-full bg-white rounded-3xl p-6 md:p-8 shadow-sm border transition-all flex flex-col gap-6 ${
+                  branch.status === 'Active' ? 'border-gray-100' : 'border-red-200 bg-red-50/20'
+                }`}
+              >
+                {/* Branch Header Row */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-2xl md:text-3xl font-black text-gray-900 m-0">{branch.name}</h3>
+                      <button
+                        onClick={() => handleToggleStatus(branch)}
+                        title={`Click to ${branch.status === 'Active' ? 'Deactivate' : 'Activate'}`}
+                        className={`px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                          branch.status === 'Active' 
+                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
+                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        }`}
+                      >
+                        {branch.status === 'Active' ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
+                        {branch.status}
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mt-2">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin size={15} className="text-gray-400 shrink-0" />
+                        <span>{branch.address || 'No address specified'}</span>
+                      </div>
+                      {branch.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={15} className="text-gray-400 shrink-0" />
+                          <span>{branch.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => handleOpenEdit(branch)}
+                      className="flex items-center gap-2 px-5 py-3 text-xs md:text-sm font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 rounded-xl transition-all cursor-pointer border-none shadow-xs"
+                    >
+                      <Edit3 size={15} /> Edit GCash & Branch Details
+                    </button>
+                    {isSuperAdmin && (
+                      <button
+                        onClick={() => setBranchToDelete(branch)}
+                        className="flex items-center gap-1.5 px-4 py-3 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer border-none"
+                      >
+                        <Trash2 size={15} /> Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Metrics & GCash Grid (Full-Width Responsive 4 Columns) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Staff Members */}
+                  <div className="bg-purple-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-purple-100/50">
+                    <div className="flex items-center justify-between text-xs font-bold text-purple-700 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5"><Users size={16} /> Staff Members</span>
+                    </div>
+                    <div>
+                      <span className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
+                        {admins + cashiers}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1.5 m-0 font-medium">
+                        {admins} Admins • {cashiers} Cashiers
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Available Stock */}
+                  <div className="bg-blue-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-blue-100/50">
+                    <div className="flex items-center justify-between text-xs font-bold text-blue-700 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5"><Package size={16} /> Available Stock</span>
+                    </div>
+                    <div>
+                      <span className="text-2xl md:text-3xl font-black text-gray-900 leading-none">
+                        {stock.toLocaleString()}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1.5 m-0 font-medium">
+                        Total units on inventory
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Completed Sales */}
+                  <div className="bg-emerald-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-emerald-100/50">
+                    <div className="flex items-center justify-between text-xs font-bold text-emerald-700 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5"><TrendingUp size={16} /> Completed Sales</span>
+                    </div>
+                    <div>
+                      <span className="text-2xl md:text-3xl font-black text-emerald-700 leading-none">
+                        ₱{revenue.toLocaleString()}
+                      </span>
+                      <p className="text-xs text-gray-500 mt-1.5 m-0 font-medium">
+                        Total branch revenue
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* GCash Payment Info */}
+                  <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/50 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-blue-200/70">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#005ce6] uppercase tracking-wider flex items-center gap-1.5">
+                        <QrCode size={16} /> GCash Payment
+                      </span>
+                      {branch.gcashQrCode ? (
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <CheckCircle2 size={11} /> Official QR
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                          Auto QR Active
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2.5">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Account</span>
+                        <span className="text-xs font-extrabold text-gray-900 truncate">
+                          {branch.gcashName || 'GRAPHIX MANAGEMENT'}
+                        </span>
+                        <span className="text-xs font-mono font-bold text-[#005ce6] mt-0.5">
+                          {branch.gcashNumber || '0967 123 4567'}
+                        </span>
+                      </div>
+
+                      <div className="w-12 h-12 rounded-xl bg-white border border-blue-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                        {branch.gcashQrCode ? (
+                          <img src={branch.gcashQrCode} alt="GCash QR" className="w-full h-full object-contain" />
+                        ) : (
+                          <QrCode size={26} className="text-[#005ce6]" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
+        /* Multi-Branch 3-Column Grid for Super Admin */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBranches.map((branch) => {
             const admins = branch.adminsCount || 0;
