@@ -7,10 +7,14 @@ export default async function Page() {
   
   let user = null;
   if (session?.userId) {
-    user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { name: true, image: true }
-    } as any);
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { name: true, image: true }
+      } as any);
+    } catch (err) {
+      console.warn("Database user fetch fallback in change-password:", err);
+    }
   }
 
   return <CustomerChangePassword user={user} />;

@@ -8,10 +8,14 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   
   let user = null;
   if (session?.userId) {
-    user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { name: true, image: true }
-    } as any);
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { name: true, image: true }
+      } as any);
+    } catch (err) {
+      console.warn("Database user fetch fallback in receipt-view:", err);
+    }
   }
 
   return <CustomerReceiptView user={user} orderId={resolvedParams.id} />;

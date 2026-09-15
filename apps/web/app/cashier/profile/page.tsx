@@ -9,20 +9,24 @@ export default async function Page() {
   
   let user = null;
   if (session?.userId) {
-    user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        image: true,
-        gender: true,
-        dateOfBirth: true,
-        role: true,
-        createdAt: true,
-      }
-    } as any);
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          image: true,
+          gender: true,
+          dateOfBirth: true,
+          role: true,
+          createdAt: true,
+        }
+      } as any);
+    } catch (err) {
+      console.warn("Database user fetch fallback in cashier profile:", err);
+    }
   }
 
   // Calculate System POS operational stats for display on cashier profile in parallel

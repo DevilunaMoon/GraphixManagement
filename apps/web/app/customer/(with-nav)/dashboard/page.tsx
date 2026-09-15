@@ -7,10 +7,14 @@ export default async function Page() {
   
   let user = null;
   if (session?.userId) {
-    user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { name: true, email: true }
-    } as any); // Using as any avoids strict type mismatch if schema changes
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { name: true, email: true }
+      } as any);
+    } catch (err) {
+      console.warn("Database user fetch fallback in customer dashboard:", err);
+    }
   }
 
   return <CustomerDashboard user={user ? { ...user, name: user.name || "Customer" } : null} />;
