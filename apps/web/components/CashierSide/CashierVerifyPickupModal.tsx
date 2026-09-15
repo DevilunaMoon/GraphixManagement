@@ -459,20 +459,31 @@ export default function CashierVerifyPickupModal({
                                 <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                                   VERIFIED
                                 </span>
-                              ) : resItem.isExpired ? (
-                                <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
-                                  EXPIRED
-                                </span>
-                              ) : (
+                              ) : !resItem.isExpired ? (
                                 <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
                                   PENDING
                                 </span>
-                              )}
+                              ) : null}
                             </div>
 
-                            {!isPaid && (
+                            {isPaid ? null : resItem.isExpired ? (
                               <button
                                 type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectOrder(resItem);
+                                }}
+                                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none cursor-pointer shadow-xs transition-all"
+                              >
+                                Expired
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectOrder(resItem);
+                                }}
                                 className="px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all"
                               >
                                 Verify
