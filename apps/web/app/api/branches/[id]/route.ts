@@ -14,7 +14,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     const { id } = await params;
     const body = await req.json();
-    const { name, address, phone, status, gcashName, gcashNumber, gcashQrCode } = body;
+    const { name, address, phone, email, status, gcashName, gcashNumber, gcashQrCode } = body;
 
     const existingBranch = await prisma.branch.findUnique({
       where: { id }
@@ -48,6 +48,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         name: trimmedName,
         address: address !== undefined ? (address ? address.trim() : null) : existingBranch.address,
         phone: phone !== undefined ? (phone ? phone.trim() : null) : existingBranch.phone,
+        email: email !== undefined ? (email ? email.trim() : null) : existingBranch.email,
         status: (session.role === 'SUPER_ADMIN' && status) ? status : existingBranch.status,
         gcashName: gcashName !== undefined ? (gcashName ? gcashName.trim() : null) : existingBranch.gcashName,
         gcashNumber: gcashNumber !== undefined ? (gcashNumber ? gcashNumber.trim() : null) : existingBranch.gcashNumber,

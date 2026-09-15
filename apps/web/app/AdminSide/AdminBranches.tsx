@@ -19,7 +19,8 @@ import {
   RefreshCw,
   QrCode,
   Upload,
-  ChevronLeft
+  ChevronLeft,
+  Mail
 } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
@@ -28,6 +29,7 @@ interface BranchMetricItem {
   name: string;
   address?: string | null;
   phone?: string | null;
+  email?: string | null;
   status: string;
   gcashName?: string | null;
   gcashNumber?: string | null;
@@ -53,6 +55,7 @@ export default function AdminBranches() {
   const [formName, setFormName] = useState('');
   const [formAddress, setFormAddress] = useState('');
   const [formPhone, setFormPhone] = useState('');
+  const [formEmail, setFormEmail] = useState('');
   const [formStatus, setFormStatus] = useState('Active');
   const [formGcashName, setFormGcashName] = useState('');
   const [formGcashNumber, setFormGcashNumber] = useState('');
@@ -91,6 +94,7 @@ export default function AdminBranches() {
     setFormName('');
     setFormAddress('');
     setFormPhone('');
+    setFormEmail('');
     setFormStatus('Active');
     setFormGcashName('GRAPHIX MANAGEMENT');
     setFormGcashNumber('0967 123 4567');
@@ -103,6 +107,7 @@ export default function AdminBranches() {
     setFormName(branch.name);
     setFormAddress(branch.address || '');
     setFormPhone(branch.phone || '');
+    setFormEmail(branch.email || '');
     setFormStatus(branch.status);
     setFormGcashName(branch.gcashName || 'GRAPHIX MANAGEMENT');
     setFormGcashNumber(branch.gcashNumber || '0967 123 4567');
@@ -157,6 +162,7 @@ export default function AdminBranches() {
           name: formName.trim(),
           address: formAddress.trim() || null,
           phone: formPhone.trim() || null,
+          email: formEmail.trim() || null,
           status: formStatus,
           gcashName: formGcashName.trim() || null,
           gcashNumber: formGcashNumber.trim() || null,
@@ -340,6 +346,12 @@ export default function AdminBranches() {
                           <span>{branch.phone}</span>
                         </div>
                       )}
+                      {branch.email && (
+                        <div className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-lg font-medium border border-purple-100">
+                          <Mail size={14} className="text-[#bd00ff] shrink-0" />
+                          <span>{branch.email}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -348,7 +360,7 @@ export default function AdminBranches() {
                       onClick={() => handleOpenEdit(branch)}
                       className="flex items-center gap-2 px-5 py-3 text-xs md:text-sm font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 rounded-xl transition-all cursor-pointer border-none shadow-xs"
                     >
-                      <Edit3 size={15} /> Edit GCash & Branch Details
+                      <Edit3 size={15} /> Edit Contact Us & Branch Details
                     </button>
                     {isSuperAdmin && (
                       <button
@@ -481,6 +493,12 @@ export default function AdminBranches() {
                         <span>{branch.phone}</span>
                       </div>
                     )}
+                    {branch.email && (
+                      <div className="flex items-center gap-1.5 text-xs text-purple-700 font-medium mt-1">
+                        <Mail size={14} className="text-[#bd00ff] flex-shrink-0" />
+                        <span className="truncate">{branch.email}</span>
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => handleToggleStatus(branch)}
@@ -578,7 +596,7 @@ export default function AdminBranches() {
                   onClick={() => handleOpenEdit(branch)}
                   className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors cursor-pointer border-none"
                 >
-                  <Edit3 size={14} /> Edit GCash & Branch Details
+                  <Edit3 size={14} /> Edit Contact Us & Details
                 </button>
                 {isSuperAdmin && (
                   <button
@@ -643,6 +661,44 @@ export default function AdminBranches() {
                   </div>
 
                   <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                      <span>Support Email (Customer Contact Us)</span>
+                      <span className="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded-full">
+                        customer side
+                      </span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="e.g., tagoloan@graphix.com"
+                      value={formEmail}
+                      onChange={(e) => setFormEmail(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all font-medium"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      Displayed under "Contact Us &gt; Email Support" on the customer side.
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                      <span>Contact Phone (Call Us)</span>
+                      <span className="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded-full">
+                        customer side
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., 0967 123 4567"
+                      value={formPhone}
+                      onChange={(e) => setFormPhone(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all font-mono"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1 block">
+                      Displayed under "Contact Us &gt; Call Us" on the customer side.
+                    </span>
+                  </div>
+
+                  <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Branch Address</label>
                     <input
                       type="text"
@@ -650,17 +706,6 @@ export default function AdminBranches() {
                       value={formAddress}
                       onChange={(e) => setFormAddress(e.target.value)}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Contact Phone</label>
-                    <input
-                      type="text"
-                      placeholder="e.g., 09123456789"
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#bd00ff] focus:bg-white transition-all font-mono"
                     />
                   </div>
 

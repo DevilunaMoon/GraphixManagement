@@ -254,6 +254,7 @@ model Branch {
   name        String   @unique
   address     String?
   phone       String?
+  email       String?
   status      String   @default("Active")
   gcashName   String?  @default("GRAPHIX MANAGEMENT")
   gcashNumber String?  @default("0967 123 4567")
