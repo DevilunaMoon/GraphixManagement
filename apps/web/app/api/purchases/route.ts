@@ -286,7 +286,8 @@ export async function POST(req: Request) {
     const purchase = await prisma.$transaction(async (tx) => {
       // Fetch target device to verify stock
       const device = await tx.device.findUnique({
-        where: { id: deviceId }
+        where: { id: deviceId },
+        include: { variations: true }
       });
 
       if (!device) {
@@ -294,16 +295,77 @@ export async function POST(req: Request) {
       }
 
       const reqQty = quantity || 1;
-      if (device.stock < reqQty) {
-        throw new Error(`Insufficient stock for "${device.name}". Only ${device.stock} left in stock.`);
+
+      // Extract variation if present
+      let parsedVars: any[] = [];
+      if (variations) {
+        try {
+          parsedVars = typeof variations === 'string' ? JSON.parse(variations) : variations;
+        } catch (e) {}
       }
 
-      // Decrement stock atomically
+      const firstVar = Array.isArray(parsedVars) && parsedVars.length > 0 ? parsedVars[0] : null;
+      const variationRecord = firstVar 
+        ? device.variations.find(v => v.id === firstVar.id || (v.name && firstVar.name && v.name.toLowerCase() === firstVar.name.toLowerCase()))
+        : null;
+      
+      const varId = variationRecord?.id || null;
+      const targetProdId = variationRecord?.productId || `${device.name}-STD`;
+      const targetName = variationRecord ? `${device.name} (${variationRecord.name})` : device.name;
+
+      // Locate branch stock
+      const branchStock = await tx.branchStock.findFirst({
+        where: {
+          deviceId: deviceId,
+          variationId: varId,
+          branch: operatingBranch
+        }
+      });
+
+      const currentBStock = branchStock ? branchStock.stock : (device.stock || 0);
+
+      if (currentBStock < reqQty) {
+        throw new Error(`Insufficient stock for "${targetName}" in ${operatingBranch} branch. Only ${currentBStock} left in stock.`);
+      }
+
+      // Decrement branch-specific stock atomically
+      let previousStockVal = currentBStock;
+      let newStockVal = Math.max(0, currentBStock - reqQty);
+
+      if (branchStock) {
+        await tx.branchStock.update({
+          where: { id: branchStock.id },
+          data: {
+            stock: { decrement: reqQty },
+            sold: { increment: reqQty }
+          }
+        });
+      }
+
+      // Also update aggregate device stock
       await tx.device.update({
         where: { id: deviceId },
         data: {
           stock: { decrement: reqQty },
           sold: { increment: reqQty }
+        }
+      });
+
+      // Record StockMovement audit log
+      await tx.stockMovement.create({
+        data: {
+          type: 'SALE',
+          deviceId,
+          variationId: varId,
+          productId: targetProdId,
+          productName: targetName,
+          branch: operatingBranch,
+          quantity: reqQty,
+          previousStock: previousStockVal,
+          newStock: newStockVal,
+          notes: `Purchase #${cleanRefId} (${source || 'In-Store POS'})`,
+          performedBy: session.name || session.email || 'Customer',
+          userRole: session.role
         }
       });
 
@@ -330,7 +392,7 @@ export async function POST(req: Request) {
           deviceId: deviceId,
           amount: dpAmt,
           quantity: reqQty,
-          variations: variations || null,
+          variations: variations ? (typeof variations === 'string' ? variations : JSON.stringify(variations)) : null,
           paymentType: isCashOrder ? 'Cash' : (paymentType || 'Full'),
           source: source || 'Online',
           branch: operatingBranch,

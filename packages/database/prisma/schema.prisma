@@ -67,6 +67,9 @@ model Device {
   purchases        Purchase[]
   variations       DeviceVariation[]
   cartItems        CartItem[]
+  branchStocks     BranchStock[]
+  deviceUnits      DeviceUnit[]
+  stockMovements   StockMovement[]
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -93,16 +96,21 @@ model Review {
 }
 
 model DeviceVariation {
-  id       String @id @default(cuid())
-  type     String
-  name     String
-  price    Float
-  cost     Float  @default(0)
-  stock    Int
-  deviceId String
-  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  productId   String?
+  type        String
+  name        String
+  price       Float
+  cost        Float    @default(0)
+  stock       Int      @default(0)
+  deviceId    String
+  device      Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  branchStocks BranchStock[]
+  deviceUnits  DeviceUnit[]
+  stockMovements StockMovement[]
 
   @@index([deviceId])
+  @@index([productId])
 }
 
 model RepairRequest {
@@ -278,3 +286,72 @@ model ActivityLog {
   @@index([action])
   @@index([createdAt])
 }
+
+model BranchStock {
+  id          String           @id @default(cuid())
+  branch      String           // "Tagoloan" | "Villanueva" | "Jasaan"
+  stock       Int              @default(0)
+  sold        Int              @default(0)
+  deviceId    String
+  device      Device           @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  variationId String?
+  variation   DeviceVariation? @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  productId   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([deviceId, variationId, branch])
+  @@index([branch])
+  @@index([productId])
+  @@index([deviceId])
+  @@index([variationId])
+}
+
+model StockMovement {
+  id            String           @id @default(cuid())
+  type          String           // "RESTOCK" | "TRANSFER" | "ADJUSTMENT" | "SALE"
+  deviceId      String?
+  device        Device?          @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  variationId   String?
+  variation     DeviceVariation? @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  productId     String?
+  productName   String
+  fromBranch    String?
+  toBranch      String?
+  branch        String
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  notes         String?
+  performedBy   String?
+  userRole      String?
+  createdAt     DateTime         @default(now())
+
+  @@index([branch])
+  @@index([type])
+  @@index([createdAt])
+  @@index([productId])
+}
+
+model DeviceUnit {
+  id          String           @id @default(cuid())
+  imei        String           @unique
+  deviceId    String
+  device      Device           @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  variationId String?
+  variation   DeviceVariation? @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  productId   String?
+  branch      String           @default("Tagoloan")
+  status      String           @default("Available") // "Available" | "Sold" | "Transferred"
+  purchaseId  String?
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([branch])
+  @@index([status])
+  @@index([deviceId])
+  @@index([variationId])
+  @@index([productId])
+}
+

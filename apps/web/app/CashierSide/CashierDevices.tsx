@@ -797,23 +797,41 @@ export default function CashierDevices() {
                       </span>
                     </td>
                     <td className="p-4 font-mono text-[0.9rem] text-gray-800 align-middle hidden sm:table-cell">
-                      <span className="bg-gray-200 px-3 py-1.5 rounded border border-gray-300 font-extrabold tracking-wider shadow-sm text-[0.95rem]">#{device.id ? String(device.id).slice(-6).toUpperCase() : 'UNKNOWN'}</span>
+                      <div className="flex flex-col gap-1">
+                        <span className="bg-purple-50 text-[#5c0099] border border-purple-200 px-2 py-1 rounded font-bold text-xs">
+                          {device.variations && device.variations.length > 0 ? `${device.variations.length} Variants` : `#${device.id ? String(device.id).slice(-6).toUpperCase() : 'STD'}`}
+                        </span>
+                        {device.variations && device.variations.length > 0 && (
+                          <span className="text-[10px] text-gray-500 font-mono">
+                            {device.variations[0]?.productId || 'VAR-ID'}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 align-middle">
-                      <div className="flex gap-4 justify-center items-center">
+                      <div className="flex gap-2 justify-center items-center">
+                        <button
+                          onClick={() => openPosModal(device)}
+                          disabled={(device.stock || 0) <= 0}
+                          className={`px-3 py-2 rounded-xl flex items-center gap-1.5 font-bold text-xs transition-all border-none cursor-pointer shadow-sm ${(device.stock || 0) > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-105' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                          title="Sell in POS"
+                        >
+                          <ShoppingCart size={15} />
+                          <span>{(device.stock || 0) > 0 ? 'POS Sale' : 'Out of Stock'}</span>
+                        </button>
                         <button
                           onClick={() => openEditModal(device)}
-                          className="w-11 h-11 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all border-none cursor-pointer shadow-md"
-                          title="Edit Device"
+                          className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#bd00ff]/10 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white transition-all border-none cursor-pointer"
+                          title="Edit Device Details"
                         >
-                          <Pencil size={18} />
+                          <Pencil size={15} />
                         </button>
                         <button
                           onClick={() => openDeleteModal(device)}
-                          className="w-11 h-11 rounded-full flex justify-center items-center bg-red-600 text-white hover:bg-red-700 hover:scale-110 transition-all border-none cursor-pointer shadow-md"
+                          className="w-9 h-9 rounded-xl flex justify-center items-center bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all border-none cursor-pointer"
                           title="Delete Device"
                         >
-                          <Trash size={18} />
+                          <Trash size={15} />
                         </button>
                       </div>
                     </td>
