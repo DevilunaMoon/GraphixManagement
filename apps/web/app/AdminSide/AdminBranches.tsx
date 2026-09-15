@@ -72,6 +72,8 @@ export default function AdminBranches() {
         const data = await res.json();
         if (Array.isArray(data.branches)) {
           setBranches(data.branches);
+        } else if (Array.isArray(data)) {
+          setBranches(data);
         }
       }
     } catch (err) {
@@ -298,7 +300,13 @@ export default function AdminBranches() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBranches.map((branch) => (
+          {filteredBranches.map((branch) => {
+            const admins = branch.adminsCount || 0;
+            const cashiers = branch.cashiersCount || 0;
+            const stock = branch.totalStock || 0;
+            const revenue = branch.totalRevenue || 0;
+
+            return (
             <div 
               key={branch.id} 
               className={`bg-white rounded-3xl p-6 shadow-sm border transition-all hover:shadow-md flex flex-col justify-between gap-5 ${
@@ -342,10 +350,10 @@ export default function AdminBranches() {
                       <Users size={14} /> Staff Members
                     </div>
                     <span className="text-lg font-black text-gray-900">
-                      {branch.adminsCount + branch.cashiersCount}
+                      {admins + cashiers}
                     </span>
                     <span className="text-[11px] text-gray-500">
-                      {branch.adminsCount} Admins • {branch.cashiersCount} Cashiers
+                      {admins} Admins • {cashiers} Cashiers
                     </span>
                   </div>
 
@@ -354,7 +362,7 @@ export default function AdminBranches() {
                       <Package size={14} /> Available Stock
                     </div>
                     <span className="text-lg font-black text-gray-900">
-                      {branch.totalStock.toLocaleString()}
+                      {stock.toLocaleString()}
                     </span>
                     <span className="text-[11px] text-gray-500">Total units on inventory</span>
                   </div>
@@ -365,7 +373,7 @@ export default function AdminBranches() {
                         <TrendingUp size={14} /> Total Completed Sales
                       </span>
                       <span className="text-base font-black text-emerald-700">
-                        ₱{branch.totalRevenue.toLocaleString()}
+                        ₱{revenue.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -429,7 +437,8 @@ export default function AdminBranches() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

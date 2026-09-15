@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const session = await getSession();
-    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+    const isAdminUser = session?.role === 'SUPER_ADMIN' || session?.role === 'ADMIN';
 
-    // If caller is Super Admin, return detailed branch metrics
-    if (isSuperAdmin) {
+    // If caller is Admin or Super Admin, return detailed branch metrics
+    if (isAdminUser) {
       const branches = await prisma.branch.findMany({
         orderBy: { createdAt: 'asc' }
       });
@@ -34,8 +34,8 @@ export async function GET() {
 
           return {
             ...branch,
-            adminsCount,
-            cashiersCount,
+            adminsCount: adminsCount || 0,
+            cashiersCount: cashiersCount || 0,
             totalStock: devices._sum.stock || 0,
             totalRevenue: purchasesAgg._sum.amount || 0
           };
@@ -45,16 +45,24 @@ export async function GET() {
       return NextResponse.json({ branches: branchData });
     }
 
-    // For public / dropdowns / regular admins, return active branches
+    // For public / dropdowns / regular customer checkout, return active branches with safe numeric defaults
     const activeBranches = await prisma.branch.findMany({
       where: { status: 'Active' },
       orderBy: { name: 'asc' }
     });
 
-    return NextResponse.json({ branches: activeBranches });
+    const safeActiveBranches = activeBranches.map(b => ({
+      ...b,
+      adminsCount: 0,
+      cashiersCount: 0,
+      totalStock: 0,
+      totalRevenue: 0
+    }));
+
+    return NextResponse.json({ branches: safeActiveBranches });
   } catch (error) {
     console.error('Failed to fetch branches:', error);
-    return NextResponse.json({ error: 'Failed to fetch branches' }, { status: 500 });
+    return NextResponse.json({ branches: [], error: 'Failed to fetch branches' }, { status: 500 });
   }
 }
 

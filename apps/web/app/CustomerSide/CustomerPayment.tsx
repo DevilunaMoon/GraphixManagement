@@ -79,9 +79,10 @@ function CustomerPaymentContent() {
     fetch('/api/branches')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const active = data.filter((b: any) => b.isActive !== false);
-          setBranches(active.length > 0 ? active : data);
+        const branchList = Array.isArray(data) ? data : (Array.isArray(data?.branches) ? data.branches : []);
+        if (branchList.length > 0) {
+          const active = branchList.filter((b: any) => b.isActive !== false && b.status !== 'Inactive');
+          setBranches(active.length > 0 ? active : branchList);
         }
       })
       .catch(err => console.error('Failed to load branches:', err));
