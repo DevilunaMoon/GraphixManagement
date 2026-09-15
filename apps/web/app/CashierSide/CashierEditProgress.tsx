@@ -43,8 +43,17 @@ function CashierEditProgressContent() {
             setCause(data.cause || '');
             setTechnician(data.technician || '');
             setRepairCost(data.repairCost || '');
-            setDownpayment(data.downpayment || '');
-            setRepairHistory(data.repairHistory || '');
+            let rawHistory = data.repairHistory || '';
+            let cleanNotes = rawHistory;
+            if (rawHistory.trim().startsWith('{')) {
+              try {
+                const parsed = JSON.parse(rawHistory);
+                cleanNotes = parsed.notes || parsed.problemDescription || '';
+              } catch (e) {
+                console.error("Failed to parse repair history JSON:", e);
+              }
+            }
+            setRepairHistory(cleanNotes);
 
             let items: MaterialItem[] = [];
             let labor = '0';
@@ -98,6 +107,15 @@ function CashierEditProgressContent() {
     if (!id) return;
     setIsSaving(true);
     try {
+      let finalRepairHistory = repairHistory;
+      if (deviceData?.repairHistory && deviceData.repairHistory.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(deviceData.repairHistory);
+          parsed.notes = repairHistory;
+          finalRepairHistory = JSON.stringify(parsed);
+        } catch (e) {}
+      }
+
       const res = await fetch(`/api/monitoring/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -107,7 +125,7 @@ function CashierEditProgressContent() {
           technician,
           repairCost,
           downpayment,
-          repairHistory,
+          repairHistory: finalRepairHistory,
           materials: JSON.stringify({
             items: materials,
             laborCost: parseFloat(laborCost) || 0

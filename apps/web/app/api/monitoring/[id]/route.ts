@@ -91,6 +91,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const imageUrl = await uploadToCloudinary(buffer, 'proofs');
         updateData.proofImage = imageUrl;
       }
+
+      // Handle newly uploaded device photos if any
+      const photoCountStr = formData.get('photoCount') as string | null;
+      if (photoCountStr) {
+        const photoCount = parseInt(photoCountStr, 10);
+        const newUploadedPhotos: string[] = [];
+        for (let i = 0; i < photoCount; i++) {
+          const photoFile = formData.get(`photo_${i}`) as File | null;
+          if (photoFile && photoFile.name && photoFile.size > 0) {
+            const buffer = Buffer.from(await photoFile.arrayBuffer());
+            const url = await uploadToCloudinary(buffer, 'monitoring');
+            newUploadedPhotos.push(url);
+          }
+        }
+        if (newUploadedPhotos.length > 0 && updateData.repairHistory && updateData.repairHistory.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(updateData.repairHistory);
+            parsed.photos = [...(parsed.photos || []), ...newUploadedPhotos];
+            updateData.repairHistory = JSON.stringify(parsed);
+          } catch (e) {
+            console.error('Failed to update photos in repairHistory:', e);
+          }
+        }
+      }
     } else {
       const body = await req.json();
       const { status, cause, technician, repairCost, downpayment, materials, repairHistory, ownerName } = body;

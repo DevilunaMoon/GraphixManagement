@@ -184,12 +184,14 @@ export async function POST(req: Request) {
       }
     }
 
-    // Assemble structured repair history if customer request
+    // Assemble structured repair history
     let finalRepairHistory = repairHistoryRaw;
-    if (isCustomer && repairHistoryRaw) {
+    if (repairHistoryRaw && repairHistoryRaw.trim().startsWith('{')) {
       try {
         const parsed = JSON.parse(repairHistoryRaw);
-        parsed.photos = photoUrls;
+        if (photoUrls.length > 0) {
+          parsed.photos = photoUrls;
+        }
         finalRepairHistory = JSON.stringify(parsed);
       } catch (e) {
         console.error('Failed to augment repairHistory JSON:', e);

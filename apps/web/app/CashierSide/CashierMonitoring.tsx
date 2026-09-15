@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Upload, Receipt, Eye } from 'lucide-react';
+import { 
+  Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, 
+  ChevronDown, Upload, Wrench, Receipt, Building2, Eye, Smartphone, HelpCircle, 
+  X, Plus, Trash2, Camera, User, Phone, Mail, Check, ShieldAlert, Cpu
+} from 'lucide-react';
 import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
 import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
+import { useBranch } from '../../context/BranchContext';
 
 interface DeviceProgress {
   id: string;
@@ -22,19 +27,93 @@ interface DeviceProgress {
   materials?: string | null;
   branch?: string;
   repairHistory: string | null;
+  createdAt?: string;
 }
 
 interface UserData {
   id: string;
   name: string | null;
   email: string;
+  phone?: string | null;
+  role?: string;
+  branch?: string | null;
 }
 
+const BRAND_OPTIONS = [
+  'Apple',
+  'Samsung',
+  'Vivo',
+  'Xiaomi',
+  'Oppo',
+  'Realme',
+  'Infinix',
+  'Huawei',
+  'Lenovo',
+  'Asus',
+  'Other'
+];
 
+const DEVICE_TYPES = [
+  'Smartphone',
+  'Tablet',
+  'Laptop',
+  'Other'
+];
+
+const PROBLEM_OPTIONS = [
+  'Broken LCD/Screen',
+  'Battery Problem',
+  'Charging Problem',
+  'Cannot Turn On',
+  'Camera Problem',
+  'Speaker/Microphone Problem',
+  'Software Problem',
+  'Water/Liquid Damage',
+  'Physical Damage',
+  'Other'
+];
+
+const BRANCH_OPTIONS = [
+  'Tagoloan',
+  'Villanueva',
+  'Jasaan'
+];
+
+interface StructuredRepairDetails {
+  brand?: string;
+  deviceType?: string;
+  imei?: string | null;
+  problem?: string;
+  problemDescription?: string;
+  isWorking?: string;
+  hasPhysicalDamage?: string;
+  branch?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  notes?: string;
+  photos?: string[];
+  submittedAt?: string;
+}
+
+const parseRepairDetails = (repairHistoryStr?: string | null): { parsed: StructuredRepairDetails | null; cleanNotes: string } => {
+  if (!repairHistoryStr) return { parsed: null, cleanNotes: '' };
+  const trimmed = repairHistoryStr.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed) as StructuredRepairDetails;
+      return { parsed, cleanNotes: parsed.notes || '' };
+    } catch (e) {
+      return { parsed: null, cleanNotes: repairHistoryStr };
+    }
+  }
+  return { parsed: null, cleanNotes: repairHistoryStr };
+};
 
 export default function CashierMonitoring() {
   const router = useRouter();
   const navigate = router.push;
+  const { selectedBranch } = useBranch();
   const [searchQuery, setSearchQuery] = useState('');
   const [devices, setDevices] = useState<DeviceProgress[]>([]);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
@@ -43,22 +122,35 @@ export default function CashierMonitoring() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
-
-
   const [isLoading, setIsLoading] = useState(true);
 
   // Add Modal State
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addBrand, setAddBrand] = useState('Apple');
+  const [addCustomBrand, setAddCustomBrand] = useState('');
+  const [addDeviceType, setAddDeviceType] = useState('Smartphone');
+  const [addCustomDeviceType, setAddCustomDeviceType] = useState('');
   const [addDeviceName, setAddDeviceName] = useState('');
+  const [addImei, setAddImei] = useState('');
+  const [addProblem, setAddProblem] = useState('Broken LCD/Screen');
+  const [addCustomProblem, setAddCustomProblem] = useState('');
+  const [addProblemDescription, setAddProblemDescription] = useState('');
+  const [addIsWorking, setAddIsWorking] = useState('Yes');
+  const [addHasPhysicalDamage, setAddHasPhysicalDamage] = useState('No');
+  const [addBranch, setAddBranch] = useState<string>('Tagoloan');
   const [addOwnerName, setAddOwnerName] = useState('');
+  const [addCustomerPhone, setAddCustomerPhone] = useState('');
+  const [addCustomerEmail, setAddCustomerEmail] = useState('');
+  const [addUserId, setAddUserId] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
   const [addProgress, setAddProgress] = useState('Diagnostic');
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
   const [addRepairCost, setAddRepairCost] = useState('');
   const [addDownpayment, setAddDownpayment] = useState('');
   const [addRepairHistory, setAddRepairHistory] = useState('');
-  const [addImage, setAddImage] = useState<File | null>(null);
-  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [addPhotos, setAddPhotos] = useState<File[]>([]);
+  const [addPhotoPreviews, setAddPhotoPreviews] = useState<string[]>([]);
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
   const [addMaterials, setAddMaterials] = useState<MaterialItem[]>([]);
   const [addLaborCost, setAddLaborCost] = useState<string>('0');
@@ -69,14 +161,25 @@ export default function CashierMonitoring() {
 
   // Account Linking States
   const [users, setUsers] = useState<UserData[]>([]);
-  const [addCustomerEmail, setAddCustomerEmail] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [addUserId, setAddUserId] = useState<string | null>(null);
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
+  const [editBrand, setEditBrand] = useState('Apple');
+  const [editCustomBrand, setEditCustomBrand] = useState('');
+  const [editDeviceType, setEditDeviceType] = useState('Smartphone');
+  const [editCustomDeviceType, setEditCustomDeviceType] = useState('');
+  const [editDeviceName, setEditDeviceName] = useState('');
+  const [editImei, setEditImei] = useState('');
+  const [editProblem, setEditProblem] = useState('Broken LCD/Screen');
+  const [editCustomProblem, setEditCustomProblem] = useState('');
+  const [editProblemDescription, setEditProblemDescription] = useState('');
+  const [editIsWorking, setEditIsWorking] = useState('Yes');
+  const [editHasPhysicalDamage, setEditHasPhysicalDamage] = useState('No');
+  const [editBranch, setEditBranch] = useState('Tagoloan');
   const [editOwnerName, setEditOwnerName] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
+  const [editCustomerEmail, setEditCustomerEmail] = useState('');
   const [editProgress, setEditProgress] = useState('Diagnostic');
   const [initialEditProgress, setInitialEditProgress] = useState('Diagnostic');
   const [editCause, setEditCause] = useState('');
@@ -84,6 +187,9 @@ export default function CashierMonitoring() {
   const [editRepairCost, setEditRepairCost] = useState('');
   const [editDownpayment, setEditDownpayment] = useState('');
   const [editRepairHistory, setEditRepairHistory] = useState('');
+  const [editExistingPhotos, setEditExistingPhotos] = useState<string[]>([]);
+  const [editNewPhotos, setEditNewPhotos] = useState<File[]>([]);
+  const [editNewPhotoPreviews, setEditNewPhotoPreviews] = useState<string[]>([]);
   const [editImage, setEditImage] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -235,7 +341,82 @@ export default function CashierMonitoring() {
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
     setEditDownpayment(device.downpayment || '');
-    setEditRepairHistory(device.repairHistory || '');
+    setEditBranch(device.branch || selectedBranch || 'Tagoloan');
+    setEditDeviceName(device.deviceName || '');
+
+    // Parse repairHistory for structured details
+    const { parsed, cleanNotes } = parseRepairDetails(device.repairHistory);
+    setEditRepairHistory(cleanNotes);
+
+    if (parsed) {
+      if (parsed.brand && BRAND_OPTIONS.includes(parsed.brand)) {
+        setEditBrand(parsed.brand);
+        setEditCustomBrand('');
+      } else if (parsed.brand) {
+        setEditBrand('Other');
+        setEditCustomBrand(parsed.brand);
+      } else {
+        setEditBrand('Apple');
+        setEditCustomBrand('');
+      }
+
+      if (parsed.deviceType && DEVICE_TYPES.includes(parsed.deviceType)) {
+        setEditDeviceType(parsed.deviceType);
+        setEditCustomDeviceType('');
+      } else if (parsed.deviceType) {
+        setEditDeviceType('Other');
+        setEditCustomDeviceType(parsed.deviceType);
+      } else {
+        setEditDeviceType('Smartphone');
+        setEditCustomDeviceType('');
+      }
+
+      setEditImei(parsed.imei || '');
+
+      if (parsed.problem && PROBLEM_OPTIONS.includes(parsed.problem)) {
+        setEditProblem(parsed.problem);
+        setEditCustomProblem('');
+      } else if (parsed.problem) {
+        setEditProblem('Other');
+        setEditCustomProblem(parsed.problem);
+      } else {
+        setEditProblem('Broken LCD/Screen');
+        setEditCustomProblem('');
+      }
+
+      setEditProblemDescription(parsed.problemDescription || '');
+      setEditIsWorking(parsed.isWorking || 'Yes');
+      setEditHasPhysicalDamage(parsed.hasPhysicalDamage || 'No');
+      setEditCustomerPhone(parsed.customerPhone || '');
+      setEditCustomerEmail(parsed.customerEmail || '');
+      if (parsed.branch) setEditBranch(parsed.branch);
+
+      const photosList: string[] = [];
+      if (Array.isArray(parsed.photos)) {
+        photosList.push(...parsed.photos);
+      }
+      if (device.image && !photosList.includes(device.image)) {
+        photosList.unshift(device.image);
+      }
+      setEditExistingPhotos(photosList);
+    } else {
+      setEditBrand('Apple');
+      setEditCustomBrand('');
+      setEditDeviceType('Smartphone');
+      setEditCustomDeviceType('');
+      setEditImei('');
+      setEditProblem('Broken LCD/Screen');
+      setEditCustomProblem('');
+      setEditProblemDescription(device.cause || '');
+      setEditIsWorking('Yes');
+      setEditHasPhysicalDamage('No');
+      setEditCustomerPhone('');
+      setEditCustomerEmail('');
+      setEditExistingPhotos(device.image ? [device.image] : []);
+    }
+
+    setEditNewPhotos([]);
+    setEditNewPhotoPreviews([]);
     setEditImage(null);
     setEditImagePreview(device.proofImage || null);
 
@@ -243,12 +424,12 @@ export default function CashierMonitoring() {
     let labor = '0';
     if (device.materials) {
       try {
-        const parsed = JSON.parse(device.materials);
-        if (Array.isArray(parsed)) {
-          items = parsed;
-        } else if (parsed && typeof parsed === 'object') {
-          items = parsed.items || [];
-          labor = String(parsed.laborCost ?? 0);
+        const parsedMats = JSON.parse(device.materials);
+        if (Array.isArray(parsedMats)) {
+          items = parsedMats;
+        } else if (parsedMats && typeof parsedMats === 'object') {
+          items = parsedMats.items || [];
+          labor = String(parsedMats.laborCost ?? 0);
         }
       } catch (e) {
         console.error("Failed to parse materials:", e);
@@ -261,44 +442,121 @@ export default function CashierMonitoring() {
     setEditModalOpen(true);
   };
 
-  const handleAddImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleAddPhotosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    for (const file of files) {
       try {
         const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
         const compressedFile = await imageCompression(file, options);
-        setAddImage(compressedFile);
+        setAddPhotos(prev => [...prev, compressedFile]);
         const reader = new FileReader();
-        reader.onloadend = () => setAddImagePreview(reader.result as string);
+        reader.onloadend = () => {
+          setAddPhotoPreviews(prev => [...prev, reader.result as string]);
+        };
         reader.readAsDataURL(compressedFile);
       } catch (error) {
         console.error("Compression error:", error);
-        setAddImage(file);
+        setAddPhotos(prev => [...prev, file]);
         const reader = new FileReader();
-        reader.onloadend = () => setAddImagePreview(reader.result as string);
+        reader.onloadend = () => {
+          setAddPhotoPreviews(prev => [...prev, reader.result as string]);
+        };
         reader.readAsDataURL(file);
       }
     }
   };
 
+  const removeAddPhoto = (index: number) => {
+    setAddPhotos(prev => prev.filter((_, i) => i !== index));
+    setAddPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditNewPhotosChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length === 0) return;
+
+    for (const file of files) {
+      try {
+        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
+        const compressedFile = await imageCompression(file, options);
+        setEditNewPhotos(prev => [...prev, compressedFile]);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setEditNewPhotoPreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        console.error("Compression error:", error);
+        setEditNewPhotos(prev => [...prev, file]);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setEditNewPhotoPreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const removeEditExistingPhoto = (index: number) => {
+    setEditExistingPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeEditNewPhoto = (index: number) => {
+    setEditNewPhotos(prev => prev.filter((_, i) => i !== index));
+    setEditNewPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAddSave = async () => {
-    if (!addDeviceName || !addProgress) {
-      alert("Device Name and Progress are required.");
+    const finalDeviceName = addDeviceName.trim();
+    if (!finalDeviceName || !addProgress) {
+      alert("Device Name/Model and Progress are required.");
       return;
     }
 
+    const finalBrand = addBrand === 'Other' ? addCustomBrand.trim() || 'Other' : addBrand;
+    const finalDeviceType = addDeviceType === 'Other' ? addCustomDeviceType.trim() || 'Other' : addDeviceType;
+    const finalProblem = addProblem === 'Other' ? addCustomProblem.trim() || 'Other' : addProblem;
+    const finalCause = addCause.trim() || `${finalProblem}${addProblemDescription.trim() ? ': ' + addProblemDescription.trim() : ''}`;
+
     setIsSubmittingAdd(true);
     const formData = new FormData();
-    formData.append('deviceName', addDeviceName);
+    formData.append('deviceName', finalDeviceName);
     if (addOwnerName) formData.append('ownerName', addOwnerName);
     formData.append('progress', addProgress);
-    if (addCause) formData.append('cause', addCause);
+    formData.append('cause', finalCause);
     if (addTechnician) formData.append('technician', addTechnician);
     if (addRepairCost) formData.append('repairCost', addRepairCost);
     if (addDownpayment) formData.append('downpayment', addDownpayment);
-    if (addRepairHistory) formData.append('repairHistory', addRepairHistory);
-    if (addImage) formData.append('image', addImage);
     if (addUserId) formData.append('userId', addUserId);
+    formData.append('branch', addBranch || selectedBranch || 'Tagoloan');
+
+    const structuredPayload: StructuredRepairDetails = {
+      brand: finalBrand,
+      deviceType: finalDeviceType,
+      imei: addImei.trim() || null,
+      problem: finalProblem,
+      problemDescription: addProblemDescription.trim(),
+      isWorking: addIsWorking,
+      hasPhysicalDamage: addHasPhysicalDamage,
+      branch: addBranch || selectedBranch || 'Tagoloan',
+      customerName: addOwnerName,
+      customerEmail: addCustomerEmail,
+      customerPhone: addCustomerPhone,
+      notes: addRepairHistory.trim(),
+      submittedAt: new Date().toISOString()
+    };
+
+    formData.append('repairHistory', JSON.stringify(structuredPayload));
+
+    if (addPhotos.length > 0) {
+      addPhotos.forEach((file, index) => {
+        formData.append(`photo_${index}`, file);
+      });
+      formData.append('photoCount', addPhotos.length.toString());
+      if (addPhotos[0]) formData.append('image', addPhotos[0]);
+    }
 
     formData.append('materials', JSON.stringify({
       items: addMaterials,
@@ -316,6 +574,9 @@ export default function CashierMonitoring() {
         fetchMonitoring();
         setAddDeviceName('');
         setAddOwnerName('');
+        setAddCustomerEmail('');
+        setAddCustomerPhone('');
+        setAddUserId(null);
         setAddProgress('Diagnostic');
         setAddCause('');
         setAddTechnician('');
@@ -324,10 +585,10 @@ export default function CashierMonitoring() {
         setAddDownpayment('');
         setAddMaterials([]);
         setAddLaborCost('0');
-        setAddImage(null);
-        setAddImagePreview(null);
-        setAddCustomerEmail('');
-        setAddUserId(null);
+        setAddPhotos([]);
+        setAddPhotoPreviews([]);
+        setAddImei('');
+        setAddProblemDescription('');
       } else {
         const errorData = await res.json();
         alert('Error: ' + errorData.error);
@@ -364,14 +625,45 @@ export default function CashierMonitoring() {
     if (!deviceToEdit) return;
     setIsSavingEdit(true);
 
+    const finalBrand = editBrand === 'Other' ? editCustomBrand.trim() || 'Other' : editBrand;
+    const finalDeviceType = editDeviceType === 'Other' ? editCustomDeviceType.trim() || 'Other' : editDeviceType;
+    const finalProblem = editProblem === 'Other' ? editCustomProblem.trim() || 'Other' : editProblem;
+    const finalCause = editCause.trim() || `${finalProblem}${editProblemDescription.trim() ? ': ' + editProblemDescription.trim() : ''}`;
+
     const formData = new FormData();
     formData.append('progress', editProgress);
     if (editOwnerName !== null) formData.append('ownerName', editOwnerName);
-    if (editCause !== null) formData.append('cause', editCause);
+    formData.append('cause', finalCause);
     if (editTechnician !== null) formData.append('technician', editTechnician);
     if (editRepairCost !== null) formData.append('repairCost', editRepairCost);
     if (editDownpayment !== null) formData.append('downpayment', editDownpayment);
-    formData.append('repairHistory', editRepairHistory);
+
+    const structuredPayload: StructuredRepairDetails = {
+      brand: finalBrand,
+      deviceType: finalDeviceType,
+      imei: editImei.trim() || null,
+      problem: finalProblem,
+      problemDescription: editProblemDescription.trim(),
+      isWorking: editIsWorking,
+      hasPhysicalDamage: editHasPhysicalDamage,
+      branch: editBranch,
+      customerName: editOwnerName,
+      customerEmail: editCustomerEmail,
+      customerPhone: editCustomerPhone,
+      notes: editRepairHistory.trim(),
+      photos: editExistingPhotos,
+      submittedAt: new Date().toISOString()
+    };
+
+    formData.append('repairHistory', JSON.stringify(structuredPayload));
+
+    if (editNewPhotos.length > 0) {
+      editNewPhotos.forEach((file, index) => {
+        formData.append(`photo_${index}`, file);
+      });
+      formData.append('photoCount', editNewPhotos.length.toString());
+    }
+
     if (editImage) formData.append('proofImage', editImage);
 
     formData.append('materials', JSON.stringify({
@@ -397,7 +689,8 @@ export default function CashierMonitoring() {
           downpayment: updatedDevice.downpayment,
           materials: updatedDevice.materials,
           proofImage: updatedDevice.proofImage,
-          repairHistory: updatedDevice.repairHistory
+          repairHistory: updatedDevice.repairHistory,
+          image: updatedDevice.image || d.image
         } : d));
         setEditModalOpen(false);
       } else {
@@ -671,208 +964,480 @@ export default function CashierMonitoring() {
         </div>
       )}
 
-
-
-      {/* Edit Progress Modal */}
+      {/* Edit Progress Modal */}
       {editModalOpen && deviceToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h2 className="text-xl font-bold text-black border-none">Edit Device Progress</h2>
-              <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#bd00ff]/10 flex items-center justify-center text-[#bd00ff]">
+                  <Pencil size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-black m-0">Edit Device Progress & Intake</h2>
+                  <p className="text-xs text-gray-500 m-0">Update repair status, diagnostic problem, and device details</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditModalOpen(false)} 
+                className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none p-1"
+              >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
-              
-              {/* Internal Image Display */}
-              <div className="flex flex-col items-center gap-4 mt-2">
-                <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-white flex justify-center items-center overflow-hidden p-2">
-                  {deviceToEdit.image ? (
-                    <img src={deviceToEdit.image} alt={deviceToEdit.deviceName} className="w-full h-full object-contain" />
-                  ) : (
-                    <span className="text-gray-400 font-bold">No Image</span>
-                  )}
+            <div className="flex flex-col gap-6">
+
+              {/* 1. Customer Information Section */}
+              <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/80 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                    <User size={16} className="text-[#bd00ff]" />
+                    Customer Information (Auto-retrieved)
+                  </h3>
+                  <span className="text-xs text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full font-semibold border border-purple-200">
+                    Auto-linked Account
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Full Name</label>
+                    <input 
+                      type="text" 
+                      value={editOwnerName} 
+                      onChange={(e) => setEditOwnerName(e.target.value)} 
+                      placeholder="e.g. Juan Dela Cruz" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Phone Number</label>
+                    <input 
+                      type="text" 
+                      value={editCustomerPhone} 
+                      onChange={(e) => setEditCustomerPhone(e.target.value)} 
+                      placeholder="e.g. 09123456789" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Email Address</label>
+                    <input 
+                      type="email" 
+                      value={editCustomerEmail} 
+                      onChange={(e) => setEditCustomerEmail(e.target.value)} 
+                      placeholder="customer@example.com" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Dynamic Form Fields */}
-              <div className="flex flex-col gap-4">
-                
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Device Name</label>
-                  <input type="text" value={deviceToEdit.deviceName} readOnly className="h-10 border-2 border-gray-200 bg-gray-50 rounded-xl px-4 text-gray-500 outline-none cursor-not-allowed" />
-                </div>
+              {/* 2. Branch & Device Info Section */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                  <Smartphone size={16} className="text-[#bd00ff]" />
+                  Device & Branch Information
+                </h3>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Customer Name</label>
-                  <input 
-                    type="text" 
-                    value={editOwnerName} 
-                    onChange={(e) => setEditOwnerName(e.target.value)} 
-                    placeholder="e.g. Marga Picardal" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Progress</label>
-                  <div className="relative">
-                    <select 
-                      value={editProgress}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === 'Cancelled') {
-                          handleCancelDevice();
-                        } else {
-                          setEditProgress(val);
-                        }
-                      }}
-                      className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Preferred Branch */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700 flex items-center gap-1">
+                      <Building2 size={13} className="text-[#bd00ff]" />
+                      Preferred Branch
+                    </label>
+                    <select
+                      value={editBranch}
+                      onChange={(e) => setEditBranch(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
                     >
-                      <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-red-500 font-semibold">Diagnostic</option>
-                      <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
-                      <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
-                      <option value="Cancelled" className="text-red-500 font-semibold">Cancelled</option>
+                      {BRANCH_OPTIONS.map(b => (
+                        <option key={b} value={b}>{b} Branch</option>
+                      ))}
                     </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown size={20} className="text-gray-500" />
-                    </div>
+                  </div>
+
+                  {/* Brand */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Brand</label>
+                    <select
+                      value={editBrand}
+                      onChange={(e) => setEditBrand(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {BRAND_OPTIONS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                    {editBrand === 'Other' && (
+                      <input 
+                        type="text"
+                        value={editCustomBrand}
+                        onChange={(e) => setEditCustomBrand(e.target.value)}
+                        placeholder="Specify brand..."
+                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                      />
+                    )}
+                  </div>
+
+                  {/* Device Type */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Device Type</label>
+                    <select
+                      value={editDeviceType}
+                      onChange={(e) => setEditDeviceType(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {DEVICE_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    {editDeviceType === 'Other' && (
+                      <input 
+                        type="text"
+                        value={editCustomDeviceType}
+                        onChange={(e) => setEditCustomDeviceType(e.target.value)}
+                        placeholder="Specify type..."
+                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                      />
+                    )}
+                  </div>
+
+                  {/* Device Name / Model */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Device Model / Name</label>
+                    <input 
+                      type="text" 
+                      value={editDeviceName} 
+                      onChange={(e) => setEditDeviceName(e.target.value)} 
+                      placeholder="e.g. iPhone 11 Pro" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors font-semibold" 
+                    />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Cause of the problem</label>
-                  <input 
-                    type="text" 
-                    value={editCause}
-                    onChange={(e) => setEditCause(e.target.value)}
-                    placeholder="e.g. Broken LCD" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* IMEI / Serial Number */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">IMEI / Serial Number (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={editImei} 
+                      onChange={(e) => setEditImei(e.target.value)} 
+                      placeholder="e.g. 356948112345678" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors font-mono" 
+                    />
+                  </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Repair History</label>
-                  <input 
-                    type="text" 
-                    value={editRepairHistory}
-                    onChange={(e) => setEditRepairHistory(e.target.value)}
-                    placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Technician</label>
-                  <input 
-                    type="text" 
-                    value={editTechnician}
-                    onChange={(e) => setEditTechnician(e.target.value)}
-                    placeholder="Technician Name" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                  />
-                </div>
-
-                {/* Itemized Materials Breakdown */}
-                <div className="pt-2 border-t border-gray-200">
-                  <MaterialBreakdownEditor
-                    items={editMaterials}
-                    onItemsChange={setEditMaterials}
-                    laborCost={editLaborCost}
-                    onLaborCostChange={setEditLaborCost}
-                    downpayment={editDownpayment}
-                    onDownpaymentChange={setEditDownpayment}
-                    onTotalCostCalculated={(total) => setEditRepairCost(total.toString())}
-                    deviceName={deviceToEdit.deviceName}
-                    customerName={editOwnerName || deviceToEdit.ownerName || 'Customer'}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2 mt-2">
-                  <label className="font-semibold text-base text-black">Proof of Repair</label>
-                  <div className="flex flex-col items-start gap-4">
-                    <div className="w-full max-w-[200px] aspect-video rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex justify-center items-center overflow-hidden relative group">
-                      {editImagePreview ? (
-                        <img src={editImagePreview} alt="Proof" className="w-full h-full object-contain bg-white" />
-                      ) : (
-                        <span className="text-gray-400 font-semibold text-sm">No Proof Image</span>
-                      )}
-                      <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                        <span className="text-white font-bold flex items-center gap-2 bg-[#bd00ff] px-4 py-2 rounded-lg">
-                          <Upload size={16} />
-                          Upload
-                        </span>
-                        <input type="file" accept="image/*" onChange={handleEditImageChange} className="hidden" />
-                      </label>
+                  {/* Progress Status */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Repair Progress</label>
+                    <div className="relative">
+                      <select 
+                        value={editProgress}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Cancelled') {
+                            handleCancelDevice();
+                          } else {
+                            setEditProgress(val);
+                          }
+                        }}
+                        className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
+                      >
+                        <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-blue-500 font-semibold">Diagnostic</option>
+                        <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
+                        <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
+                        <option value="Cancelled" className="text-red-500 font-semibold">Cancelled</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        <ChevronDown size={18} className="text-gray-500" />
+                      </div>
                     </div>
                   </div>
                 </div>
-
               </div>
+
+              {/* 3. Problem & Description Section */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                  <ShieldAlert size={16} className="text-[#bd00ff]" />
+                  Problem & Issue Description
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Problem / Issue Category</label>
+                    <select
+                      value={editProblem}
+                      onChange={(e) => setEditProblem(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {PROBLEM_OPTIONS.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                    {editProblem === 'Other' && (
+                      <input 
+                        type="text"
+                        value={editCustomProblem}
+                        onChange={(e) => setEditCustomProblem(e.target.value)}
+                        placeholder="Specify problem..."
+                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Assigned Technician</label>
+                    <input 
+                      type="text" 
+                      value={editTechnician} 
+                      onChange={(e) => setEditTechnician(e.target.value)} 
+                      placeholder="Technician Name" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-semibold text-xs text-gray-700">Describe the Problem</label>
+                  <textarea 
+                    rows={3}
+                    value={editProblemDescription}
+                    onChange={(e) => setEditProblemDescription(e.target.value)}
+                    placeholder="Provide details of the problem..."
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Device Condition & Photos Section */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                  <Camera size={16} className="text-[#bd00ff]" />
+                  Device Condition & Photos
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Is Working */}
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-xs text-gray-700">Is the device still turning on / working?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Yes', 'No', 'Partially'].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setEditIsWorking(opt)}
+                          className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                            editIsWorking === opt 
+                              ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff]' 
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Physical Damage */}
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-xs text-gray-700">Visible physical / screen damage?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Yes', 'No'].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setEditHasPhysicalDamage(opt)}
+                          className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                            editHasPhysicalDamage === opt 
+                              ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff]' 
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Uploaded Device Photos Gallery */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-xs text-gray-700">Upload Device Photos</label>
+                    <label className="text-xs font-bold text-[#bd00ff] hover:underline cursor-pointer flex items-center gap-1">
+                      <Plus size={14} />
+                      Add More Photos
+                      <input type="file" multiple accept="image/*" onChange={handleEditNewPhotosChange} className="hidden" />
+                    </label>
+                  </div>
+
+                  {/* Photo Thumbnails */}
+                  <div className="flex flex-wrap gap-3 items-center">
+                    {/* Existing Photos */}
+                    {editExistingPhotos.map((url, idx) => (
+                      <div key={`existing-${idx}`} className="relative w-20 h-20 rounded-xl border border-gray-200 overflow-hidden group bg-gray-50 shadow-sm">
+                        <img src={url} alt={`Photo ${idx+1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeEditExistingPhoto(idx)}
+                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none shadow"
+                          title="Remove photo"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* New Upload Previews */}
+                    {editNewPhotoPreviews.map((preview, idx) => (
+                      <div key={`new-${idx}`} className="relative w-20 h-20 rounded-xl border-2 border-[#bd00ff] overflow-hidden group bg-purple-50 shadow-sm">
+                        <img src={preview} alt={`New upload ${idx+1}`} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-0 inset-x-0 bg-[#bd00ff] text-white text-[9px] font-bold text-center py-0.5">NEW</span>
+                        <button
+                          type="button"
+                          onClick={() => removeEditNewPhoto(idx)}
+                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none shadow"
+                          title="Remove photo"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {editExistingPhotos.length === 0 && editNewPhotoPreviews.length === 0 && (
+                      <div className="w-full py-4 text-center border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400">
+                        No photos attached. Click &quot;Add More Photos&quot; to upload device images.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Repair History Clean Text */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100">
+                  <label className="font-semibold text-xs text-gray-700 flex items-center gap-1.5">
+                    <FileText size={14} className="text-[#bd00ff]" />
+                    Repair History & Background Notes
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editRepairHistory} 
+                    onChange={(e) => setEditRepairHistory(e.target.value)} 
+                    placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
+                    className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                  />
+                  <span className="text-[11px] text-gray-400">Clean notes regarding prior repairs (never displays raw JSON).</span>
+                </div>
+              </div>
+
+              {/* 5. Itemized Materials Breakdown */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100">
+                <MaterialBreakdownEditor
+                  items={editMaterials}
+                  onItemsChange={setEditMaterials}
+                  laborCost={editLaborCost}
+                  onLaborCostChange={setEditLaborCost}
+                  downpayment={editDownpayment}
+                  onDownpaymentChange={setEditDownpayment}
+                  onTotalCostCalculated={(total) => setEditRepairCost(total.toString())}
+                  deviceName={editDeviceName || deviceToEdit.deviceName}
+                  customerName={editOwnerName || deviceToEdit.ownerName || 'Customer'}
+                />
+              </div>
+
+              {/* 6. Proof of Repair Image */}
+              <div className="bg-gray-50/70 p-5 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
+                <label className="font-semibold text-xs text-gray-700 uppercase tracking-wider">Proof of Repair (Diagnostic / Final Receipt / Finished Device)</label>
+                <div className="flex flex-col items-start gap-3">
+                  <div className="w-full max-w-[220px] aspect-video rounded-xl border-2 border-dashed border-gray-300 bg-white flex justify-center items-center overflow-hidden relative group shadow-sm">
+                    {editImagePreview ? (
+                      <img src={editImagePreview} alt="Proof" className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <span className="text-gray-400 font-semibold text-xs">No Proof Image</span>
+                    )}
+                    <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                      <span className="text-white font-bold text-xs flex items-center gap-1.5 bg-[#bd00ff] px-3.5 py-1.5 rounded-lg shadow">
+                        <Upload size={14} />
+                        Upload
+                      </span>
+                      <input type="file" accept="image/*" onChange={handleEditImageChange} className="hidden" />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-4 mt-2">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                <button 
                  onClick={() => setEditModalOpen(false)}
-                 className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                 className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-white"
                >
                  Cancel
                </button>
                <button 
                  onClick={handleEditSave}
                  disabled={isSavingEdit}
-                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50"
+                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50 cursor-pointer border-none shadow-md shadow-purple-200"
                >
-                 {isSavingEdit ? "Saving..." : "Save and Send Notifications"}
+                 {isSavingEdit ? "Saving Changes..." : "Save Changes"}
                </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Progress Modal */}
+      {/* Add Device Request Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h2 className="text-xl font-bold text-black border-none">Add Device Request</h2>
-              <button onClick={() => setAddModalOpen(false)} className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#bd00ff]/10 flex items-center justify-center text-[#bd00ff]">
+                  <Plus size={22} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-black m-0">Add Device Request Form</h2>
+                  <p className="text-xs text-gray-500 m-0">Create new repair intake with auto-retrieved customer info and device diagnosis</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setAddModalOpen(false)} 
+                className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none p-1"
+              >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6">
-              
-              {/* Internal Image Display */}
-              <div className="flex flex-col items-center gap-4 mt-2">
-                <div className="w-[140px] h-[140px] rounded-2xl border-2 border-[#bd00ff] bg-[#f4f5f7] flex justify-center items-center text-gray-400 overflow-hidden relative">
-                  {addImagePreview ? (
-                    <img src={addImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-gray-400 font-bold text-center text-sm">No Image<br/>(Optional)</span>
+            <div className="flex flex-col gap-6">
+
+              {/* 1. Customer Information & Account Linking */}
+              <div className="bg-gray-50/80 p-5 rounded-2xl border border-gray-200/80 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                    <User size={16} className="text-[#bd00ff]" />
+                    Customer Information (Auto-retrieved)
+                  </h3>
+                  {addUserId && (
+                    <span className="text-xs text-green-700 bg-green-50 px-2.5 py-1 rounded-full font-semibold border border-green-200 flex items-center gap-1">
+                      <Check size={13} /> Account Linked
+                    </span>
                   )}
                 </div>
-                <label className="flex items-center gap-2 text-black font-semibold cursor-pointer hover:text-[#bd00ff] transition-colors text-sm">
-                  Upload image
-                  <input type="file" accept="image/*" onChange={handleAddImageChange} className="hidden" />
-                </label>
-              </div>
 
-              {/* Dynamic Form Fields */}
-              <div className="flex flex-col gap-4">
-                
-                <div className="flex flex-col gap-2 relative">
-                  <label className="font-semibold text-base text-black flex justify-between">
-                    <span>Link Customer Account (Optional)</span>
-                    {addUserId && <span className="text-green-600 text-sm">Account Linked ✓</span>}
-                  </label>
+                <div className="relative">
+                  <label className="font-semibold text-xs text-gray-700 mb-1 block">Link Customer Account (Search Email / Name)</label>
                   <input 
                     type="text" 
                     value={addCustomerEmail} 
@@ -882,132 +1447,369 @@ export default function CashierMonitoring() {
                       if (addUserId) setAddUserId(null);
                     }}
                     onFocus={() => setShowDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                    placeholder="Search by email..."
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" 
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 250)}
+                    placeholder="Search registered user email or name..."
+                    className="w-full h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm" 
                   />
                   {showDropdown && addCustomerEmail && (
-                    <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border border-[#bd00ff] rounded-xl shadow-lg z-50 max-h-40 overflow-y-auto">
+                    <div className="absolute top-[100%] left-0 w-full mt-1 bg-white border-2 border-[#bd00ff] rounded-2xl shadow-xl z-50 max-h-48 overflow-y-auto p-1">
                       {filteredUsers.length > 0 ? (
                         filteredUsers.map(user => (
                           <div 
                             key={user.id} 
-                            className="px-4 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-none"
-                            onClick={() => {
+                            className="px-4 py-2.5 hover:bg-purple-50 rounded-xl cursor-pointer border-b border-gray-50 last:border-none flex justify-between items-center transition-colors"
+                            onMouseDown={() => {
                               setAddCustomerEmail(user.email);
                               setAddUserId(user.id);
+                              if (user.name) setAddOwnerName(user.name);
+                              if (user.phone) setAddCustomerPhone(user.phone);
                               setShowDropdown(false);
                             }}
                           >
-                            <p className="text-black font-semibold m-0">{user.email}</p>
-                            <p className="text-gray-500 text-xs m-0">{user.name || 'No Name'}</p>
+                            <div>
+                              <p className="text-black font-bold text-sm m-0">{user.name || 'Registered Customer'}</p>
+                              <p className="text-gray-500 text-xs m-0">{user.email}</p>
+                            </div>
+                            {user.phone && (
+                              <span className="text-xs font-mono text-purple-700 bg-purple-100 px-2 py-0.5 rounded-lg">{user.phone}</span>
+                            )}
                           </div>
                         ))
                       ) : (
-                        <div className="px-4 py-2 text-gray-500 text-sm">No accounts found</div>
+                        <div className="px-4 py-3 text-gray-400 text-xs text-center">No matching accounts found (Manual input allowed below)</div>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Customer Name</label>
-                  <input 
-                    type="text" 
-                    value={addOwnerName} 
-                    onChange={(e) => setAddOwnerName(e.target.value)} 
-                    placeholder="e.g. Marga Picardal" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Customer Full Name</label>
+                    <input 
+                      type="text" 
+                      value={addOwnerName} 
+                      onChange={(e) => setAddOwnerName(e.target.value)} 
+                      placeholder="e.g. Marga Picardal" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Customer Phone Number</label>
+                    <input 
+                      type="text" 
+                      value={addCustomerPhone} 
+                      onChange={(e) => setAddCustomerPhone(e.target.value)} 
+                      placeholder="e.g. 09171234567" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Branch & Device Info */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                  <Smartphone size={16} className="text-[#bd00ff]" />
+                  Device & Branch Selection
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Preferred Branch */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700 flex items-center gap-1">
+                      <Building2 size={13} className="text-[#bd00ff]" />
+                      Preferred Repair Branch
+                    </label>
+                    <select
+                      value={addBranch}
+                      onChange={(e) => setAddBranch(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {BRANCH_OPTIONS.map(b => (
+                        <option key={b} value={b}>{b} Branch</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Brand */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Brand</label>
+                    <select
+                      value={addBrand}
+                      onChange={(e) => setAddBrand(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {BRAND_OPTIONS.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                    {addBrand === 'Other' && (
+                      <input 
+                        type="text"
+                        value={addCustomBrand}
+                        onChange={(e) => setAddCustomBrand(e.target.value)}
+                        placeholder="Enter brand name..."
+                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                      />
+                    )}
+                  </div>
+
+                  {/* Device Type */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Device Type</label>
+                    <select
+                      value={addDeviceType}
+                      onChange={(e) => setAddDeviceType(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {DEVICE_TYPES.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    {addDeviceType === 'Other' && (
+                      <input 
+                        type="text"
+                        value={addCustomDeviceType}
+                        onChange={(e) => setAddCustomDeviceType(e.target.value)}
+                        placeholder="Enter device type..."
+                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                      />
+                    )}
+                  </div>
+
+                  {/* Device Name / Model */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Device Name / Model *</label>
+                    <input 
+                      type="text" 
+                      value={addDeviceName} 
+                      onChange={(e) => setAddDeviceName(e.target.value)} 
+                      placeholder="e.g. iPhone 11" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm font-semibold" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* IMEI / Serial */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">IMEI / Serial Number (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={addImei} 
+                      onChange={(e) => setAddImei(e.target.value)} 
+                      placeholder="e.g. 867543029182736" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm font-mono" 
+                    />
+                  </div>
+
+                  {/* Initial Progress */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Initial Progress</label>
+                    <div className="relative">
+                      <select 
+                        value={addProgress}
+                        onChange={(e) => setAddProgress(e.target.value)}
+                        className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
+                      >
+                        <option value="Diagnostic" className="text-blue-500 font-semibold">Diagnostic</option>
+                        <option value="Repairing" className="text-yellow-500 font-semibold">Repairing</option>
+                        <option value="Completed" className="text-green-600 font-semibold">Completed</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        <ChevronDown size={18} className="text-gray-500" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Problem & Description */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                  <ShieldAlert size={16} className="text-[#bd00ff]" />
+                  Repair Problem & Description
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Problem / Issue Category</label>
+                    <select
+                      value={addProblem}
+                      onChange={(e) => setAddProblem(e.target.value)}
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                    >
+                      {PROBLEM_OPTIONS.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                    {addProblem === 'Other' && (
+                      <input 
+                        type="text"
+                        value={addCustomProblem}
+                        onChange={(e) => setAddCustomProblem(e.target.value)}
+                        placeholder="Enter problem category..."
+                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Assigned Technician</label>
+                    <input 
+                      type="text" 
+                      value={addTechnician} 
+                      onChange={(e) => setAddTechnician(e.target.value)} 
+                      placeholder="Technician Name" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-semibold text-xs text-gray-700">Describe the Problem</label>
+                  <textarea 
+                    rows={3}
+                    value={addProblemDescription} 
+                    onChange={(e) => setAddProblemDescription(e.target.value)} 
+                    placeholder="e.g. The screen is cracked after a fall, touch is not responding on the top half." 
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none" 
                   />
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Device Name</label>
-                  <input type="text" value={addDeviceName} onChange={(e) => setAddDeviceName(e.target.value)} placeholder="e.g. iPhone 11" className="h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors text-black" />
-                </div>
+              {/* 4. Device Condition & Multi-Photo Upload */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-black uppercase tracking-wider flex items-center gap-2 m-0">
+                  <Camera size={16} className="text-[#bd00ff]" />
+                  Device Condition & Photos
+                </h3>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Progress</label>
-                  <div className="relative">
-                    <select 
-                      value={addProgress}
-                      onChange={(e) => setAddProgress(e.target.value)}
-                      className={`w-full h-10 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
-                    >
-                      <option value="" disabled className="text-gray-400">Select Progress</option>
-                      <option value="Diagnostic" className="text-red-500 font-semibold">Diagnostic</option>
-                      <option value="Repairing" className="text-yellow-500 font-semibold">Repairing</option>
-                      <option value="Completed" className="text-green-600 font-semibold">Completed</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      <ChevronDown size={20} className="text-gray-500" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Is Working */}
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-xs text-gray-700">Is the device still turning on / working?</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Yes', 'No', 'Partially'].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setAddIsWorking(opt)}
+                          className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                            addIsWorking === opt 
+                              ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff]' 
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Physical Damage */}
+                  <div className="flex flex-col gap-2">
+                    <label className="font-semibold text-xs text-gray-700">Visible physical / screen damage?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Yes', 'No'].map(opt => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setAddHasPhysicalDamage(opt)}
+                          className={`py-2 px-3 rounded-xl border-2 text-xs font-bold transition-all cursor-pointer ${
+                            addHasPhysicalDamage === opt 
+                              ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff]' 
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Cause of the problem</label>
-                  <input 
-                    type="text" 
-                    value={addCause}
-                    onChange={(e) => setAddCause(e.target.value)}
-                    placeholder="e.g. Broken LCD" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                  />
+                {/* Upload Device Photos */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-xs text-gray-700">Upload Device Photos (Multi-select)</label>
+                    <label className="text-xs font-bold text-[#bd00ff] hover:underline cursor-pointer flex items-center gap-1">
+                      <Upload size={14} />
+                      Choose Photos
+                      <input type="file" multiple accept="image/*" onChange={handleAddPhotosChange} className="hidden" />
+                    </label>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 items-center">
+                    {addPhotoPreviews.map((preview, idx) => (
+                      <div key={idx} className="relative w-20 h-20 rounded-xl border-2 border-[#bd00ff] overflow-hidden group bg-purple-50 shadow-sm">
+                        <img src={preview} alt={`Upload ${idx+1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeAddPhoto(idx)}
+                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-none shadow"
+                          title="Remove photo"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {addPhotoPreviews.length === 0 && (
+                      <div className="w-full py-4 text-center border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-400">
+                        No photos selected. Click &quot;Choose Photos&quot; to upload device condition images.
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Repair History</label>
+                {/* Clean Repair History */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100">
+                  <label className="font-semibold text-xs text-gray-700 flex items-center gap-1.5">
+                    <FileText size={14} className="text-[#bd00ff]" />
+                    Repair History & Background Notes
+                  </label>
                   <input 
                     type="text" 
-                    value={addRepairHistory}
-                    onChange={(e) => setAddRepairHistory(e.target.value)}
+                    value={addRepairHistory} 
+                    onChange={(e) => setAddRepairHistory(e.target.value)} 
                     placeholder="Where was this first repaired from? (e.g. First time repaired / Original Shop)" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
+                    className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
                   />
+                  <span className="text-[11px] text-gray-400">Clean text notes regarding prior repairs (never raw JSON).</span>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-semibold text-base text-black">Technician</label>
-                  <input 
-                    type="text" 
-                    value={addTechnician} 
-                    onChange={(e) => setAddTechnician(e.target.value)} 
-                    placeholder="Technician Name" 
-                    className="h-10 border-2 border-gray-300 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors" 
-                  />
-                </div>
-
-                {/* Itemized Materials Breakdown */}
-                <div className="pt-2 border-t border-gray-200">
-                  <MaterialBreakdownEditor
-                    items={addMaterials}
-                    onItemsChange={setAddMaterials}
-                    laborCost={addLaborCost}
-                    onLaborCostChange={setAddLaborCost}
-                    downpayment={addDownpayment}
-                    onDownpaymentChange={setAddDownpayment}
-                    onTotalCostCalculated={(total) => setAddRepairCost(total.toString())}
-                    deviceName={addDeviceName || 'Device'}
-                    customerName={addOwnerName || addCustomerEmail || 'Customer'}
-                  />
-                </div>
-
               </div>
+
+              {/* 5. Itemized Materials Breakdown */}
+              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100">
+                <MaterialBreakdownEditor
+                  items={addMaterials}
+                  onItemsChange={setAddMaterials}
+                  laborCost={addLaborCost}
+                  onLaborCostChange={setAddLaborCost}
+                  downpayment={addDownpayment}
+                  onDownpaymentChange={setAddDownpayment}
+                  onTotalCostCalculated={(total) => setAddRepairCost(total.toString())}
+                  deviceName={addDeviceName || 'Device'}
+                  customerName={addOwnerName || addCustomerEmail || 'Customer'}
+                />
+              </div>
+
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-4 mt-2">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                <button 
                  onClick={() => setAddModalOpen(false)}
-                 className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-white"
+                 className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-white"
                >
                  Cancel
                </button>
                <button 
                  onClick={handleAddSave}
                  disabled={isSubmittingAdd}
-                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50 cursor-pointer border-none"
+                 className="px-6 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors disabled:opacity-50 cursor-pointer border-none shadow-md shadow-purple-200"
                >
                  {isSubmittingAdd ? "Saving..." : "Save and Send Notifications"}
                </button>
@@ -1015,7 +1817,6 @@ export default function CashierMonitoring() {
           </div>
         </div>
       )}
-
 
       {/* View Intake & Material Breakdown Modal */}
       {viewDetailsOpen && deviceToView && (() => {
@@ -1034,17 +1835,29 @@ export default function CashierMonitoring() {
             console.error(e);
           }
         }
+
+        const { parsed, cleanNotes } = parseRepairDetails(deviceToView.repairHistory);
+        const photosList: string[] = [];
+        if (parsed?.photos && Array.isArray(parsed.photos)) {
+          photosList.push(...parsed.photos);
+        }
+        if (deviceToView.image && !photosList.includes(deviceToView.image)) {
+          photosList.unshift(deviceToView.image);
+        }
+
         return (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-3xl w-full flex flex-col gap-5 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
                     <Receipt size={22} />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-black m-0">Device Repair Intake Sheet</h2>
-                    <p className="text-xs text-gray-500 m-0">Line-item replacement parts breakdown & payment details</p>
+                    <p className="text-xs text-gray-500 m-0">Complete device inspection, customer information & line-item parts breakdown</p>
                   </div>
                 </div>
                 <button 
@@ -1055,8 +1868,8 @@ export default function CashierMonitoring() {
                 </button>
               </div>
 
-              {/* Summary Card */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Device</span>
                   <span className="text-sm font-bold text-black block truncate">{deviceToView.deviceName}</span>
@@ -1067,7 +1880,7 @@ export default function CashierMonitoring() {
                 </div>
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Branch</span>
-                  <span className="text-sm font-bold text-black block">{deviceToView.branch || 'Current Branch'}</span>
+                  <span className="text-sm font-bold text-black block">{deviceToView.branch || 'Tagoloan'}</span>
                 </div>
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Status</span>
@@ -1077,17 +1890,71 @@ export default function CashierMonitoring() {
                 </div>
               </div>
 
-              {(deviceToView.cause || deviceToView.technician || deviceToView.repairHistory) && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl">
-                  {deviceToView.cause && (
-                    <div><strong className="text-black">Reported Issue:</strong> {deviceToView.cause}</div>
-                  )}
-                  {deviceToView.technician && (
-                    <div><strong className="text-black">Assigned Tech:</strong> {deviceToView.technician}</div>
-                  )}
-                  {deviceToView.repairHistory && (
-                    <div><strong className="text-black">Repair History:</strong> {deviceToView.repairHistory}</div>
-                  )}
+              {/* Customer Contact & Account Info */}
+              {(parsed?.customerEmail || parsed?.customerPhone || deviceToView.ownerName) && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                    <User size={14} className="text-[#bd00ff]" />
+                    Customer Information (Auto-retrieved)
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-700">
+                    <div><strong className="text-black">Full Name:</strong> {deviceToView.ownerName || parsed?.customerName || 'Walk-in Customer'}</div>
+                    <div><strong className="text-black">Email:</strong> {parsed?.customerEmail || 'Not provided'}</div>
+                    <div><strong className="text-black">Phone:</strong> {parsed?.customerPhone || 'Not provided'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Structured Device Details */}
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
+                <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                  <Smartphone size={14} className="text-[#bd00ff]" />
+                  Device & Diagnostic Details
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-700">
+                  <div><strong className="text-black">Brand:</strong> {parsed?.brand || 'Apple'}</div>
+                  <div><strong className="text-black">Device Type:</strong> {parsed?.deviceType || 'Smartphone'}</div>
+                  <div><strong className="text-black">IMEI/Serial:</strong> {parsed?.imei || 'N/A'}</div>
+                  <div><strong className="text-black">Assigned Tech:</strong> {deviceToView.technician || 'Pending'}</div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700 pt-2 border-t border-gray-200">
+                  <div><strong className="text-black">Working Condition:</strong> {parsed?.isWorking || 'Yes'}</div>
+                  <div><strong className="text-black">Visible Damage:</strong> {parsed?.hasPhysicalDamage || 'No'}</div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                  <div><strong className="text-black">Reported Issue:</strong> {parsed?.problem ? `${parsed.problem} - ${parsed.problemDescription || ''}` : (deviceToView.cause || 'Diagnostic required')}</div>
+                </div>
+
+                {cleanNotes && (
+                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                    <div><strong className="text-black">Repair History Notes:</strong> {cleanNotes}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Photos Gallery */}
+              {photosList.length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                    <Camera size={14} className="text-[#bd00ff]" />
+                    Uploaded Device Photos ({photosList.length})
+                  </span>
+                  <div className="flex flex-wrap gap-3 items-center pt-1">
+                    {photosList.map((photo, idx) => (
+                      <a 
+                        key={idx} 
+                        href={photo} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="w-24 h-24 rounded-2xl border-2 border-purple-200 overflow-hidden hover:scale-105 transition-transform bg-white shadow-sm flex items-center justify-center p-1"
+                        title="Click to view full image"
+                      >
+                        <img src={photo} alt={`Device photo ${idx+1}`} className="w-full h-full object-contain" />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 
