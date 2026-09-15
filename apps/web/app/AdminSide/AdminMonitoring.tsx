@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Upload, Wrench, Receipt, Building2 } from 'lucide-react';
+import { Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, ChevronDown, Upload, Wrench, Receipt, Building2, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
 import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
+import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
 import { useBranch } from '../../context/BranchContext';
 
 interface DeviceProgress {
@@ -157,6 +158,9 @@ export default function AdminMonitoring() {
   const activeDevices = devices.filter(d => d.status !== 'Completed');
   const paginatedDevices = devices;
 
+  const [reviewRequestModalOpen, setReviewRequestModalOpen] = useState(false);
+  const [requestToReview, setRequestToReview] = useState<DeviceProgress | null>(null);
+
   const getProgressColor = (progress: string) => {
     const prog = (progress || '').toLowerCase();
     switch (prog) {
@@ -171,6 +175,12 @@ export default function AdminMonitoring() {
       case 'diagnosis':
       case '25%':
       case '0%': 
+        return 'text-blue-500';
+      case 'accepted':
+        return 'text-blue-600';
+      case 'pending':
+        return 'text-amber-500';
+      case 'rejected':
       case 'cancelled':
         return 'text-red-500';
       default: 
@@ -183,6 +193,9 @@ export default function AdminMonitoring() {
     if (prog === 'completed' || prog === '100%') return 'Completed';
     if (prog === 'repairing' || prog === '50%' || prog === '75%') return 'Repairing';
     if (prog === 'diagnostic' || prog === 'diagnosis' || prog === '25%' || prog === '0%') return 'Diagnostic';
+    if (prog === 'accepted') return 'Accepted';
+    if (prog === 'pending') return 'Pending';
+    if (prog === 'rejected') return 'Rejected';
     if (prog === 'cancelled') return 'Cancelled';
     return progress;
   };
@@ -571,23 +584,36 @@ export default function AdminMonitoring() {
                         <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{formatProgress(device.progress)}</span>
                       </td>
                       <td className="p-4 align-middle">
-                        <div className="flex gap-3 justify-center items-center">
+                        <div className="flex gap-2 justify-center items-center">
+                          {device.progress?.toLowerCase() === 'pending' && (
+                            <button 
+                              onClick={() => {
+                                setRequestToReview(device);
+                                setReviewRequestModalOpen(true);
+                              }}
+                              className="px-3 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl font-bold text-xs shadow-sm flex items-center gap-1 cursor-pointer border-none"
+                              title="Review Customer Repair Request"
+                            >
+                              <Eye size={13} />
+                              <span>Review</span>
+                            </button>
+                          )}
                           <button 
                             onClick={() => {
                               setDeviceToView(device);
                               setViewDetailsOpen(true);
                             }}
-                            className="w-10 h-10 rounded-full flex justify-center items-center bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white transition-all shadow-sm border border-[#bd00ff]/30 cursor-pointer"
+                            className="w-9 h-9 rounded-full flex justify-center items-center bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white transition-all shadow-sm border border-[#bd00ff]/30 cursor-pointer"
                             title="View Intake & Material Breakdown"
                           >
-                            <Receipt size={18} />
+                            <Receipt size={16} />
                           </button>
                           <button 
                             onClick={() => openEditModal(device)}
-                            className="w-10 h-10 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md cursor-pointer border-none"
+                            className="w-9 h-9 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-105 transition-all shadow-sm cursor-pointer border-none"
                             title="Edit Progress"
                           >
-                            <Pencil size={18} />
+                            <Pencil size={16} />
                           </button>
                         </div>
                       </td>
@@ -1162,6 +1188,19 @@ export default function AdminMonitoring() {
           </div>
         );
       })()}
+
+      {/* Repair Request Review Modal */}
+      <RepairRequestReviewModal
+        isOpen={reviewRequestModalOpen}
+        onClose={() => {
+          setReviewRequestModalOpen(false);
+          setRequestToReview(null);
+        }}
+        request={requestToReview as any}
+        onStatusChange={() => {
+          fetchMonitoring();
+        }}
+      />
 
     </main>
   );

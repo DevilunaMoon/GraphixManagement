@@ -28,9 +28,9 @@ export async function GET(req: Request) {
       userId: session.userId,
     };
 
-    // For Super Admin & Admin, filter to stock alert notifications
+    // For Super Admin & Admin, include stock alerts, repair requests, and system notifications
     if (isSuperAdmin || isAdmin) {
-      whereClause.type = { in: ['STOCK_OUT', 'STOCK_LOW'] };
+      whereClause.type = { in: ['STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER'] };
     }
 
     // Branch filtering for Super Admin / Admin

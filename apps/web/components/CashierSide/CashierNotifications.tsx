@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, Wrench } from 'lucide-react';
 import Link from 'next/link';
+import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
 
 interface Notification {
   id: string;
@@ -30,6 +31,8 @@ export default function CashierNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [selectedRepairRequest, setSelectedRepairRequest] = useState<any>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Update clock every 30 seconds for live 8-hour countdown and auto-expiration
   useEffect(() => {
@@ -108,8 +111,32 @@ export default function CashierNotifications() {
     }
   };
 
+  const openRepairRequest = async (notif: Notification) => {
+    try {
+      handleAction(notif.id, 'READ');
+      const res = await fetch(`/api/monitoring?limit=30&branch=all`);
+      const data = await res.json();
+      const reqList = Array.isArray(data) ? data : (data?.requests || []);
+      
+      const matched = reqList.find((r: any) => 
+        (r.ownerName && notif.message.includes(r.ownerName)) || 
+        (r.deviceName && notif.message.includes(r.deviceName))
+      ) || reqList[0];
+
+      if (matched) {
+        setSelectedRepairRequest(matched);
+        setIsReviewModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Error opening repair request from cashier notification:', err);
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
+      case 'REPAIR_REQUEST':
+      case 'REPAIR':
+        return <Wrench size={20} className="text-white" />;
       case 'STOCK_OUT':
         return <AlertTriangle size={20} className="text-white" />;
       case 'STOCK_LOW':
@@ -191,19 +218,25 @@ export default function CashierNotifications() {
               const remainingHrs = Math.floor(diffMs / (1000 * 60 * 60));
               const remainingMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
+              const isRepairRequest = notification.type === 'REPAIR_REQUEST';
               let iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-300';
-              if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
-              if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
-              if (isCashReservation) {
-                if (isPaid) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
-                else if (isStockReleased) iconBg = 'bg-gray-400';
+              if (isRepairRequest) {
+                iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
+              } else if (isStockOut) {
+                iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
+              } else if (isStockLow) {
+                iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
+              } else if (isCashReservation) {
+                if (isPaid) iconBg = !notification.isRead ? 'bg-green-600' : 'bg-gray-400';
+                else if (isStockReleased) iconBg = !notification.isRead ? 'bg-gray-500' : 'bg-gray-400';
                 else if (is8HoursPassed) iconBg = !notification.isRead ? 'bg-red-600' : 'bg-gray-400';
                 else iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
               }
 
               let cardBg = 'hover:bg-gray-50';
               if (!notification.isRead) {
-                if (isStockOut) cardBg = 'bg-rose-50/40 hover:bg-rose-50/60';
+                if (isRepairRequest) cardBg = 'bg-purple-50/70 hover:bg-purple-100/50';
+                else if (isStockOut) cardBg = 'bg-rose-50/40 hover:bg-rose-50/60';
                 else if (isStockLow) cardBg = 'bg-amber-50/40 hover:bg-amber-50/60';
                 else if (isCashReservation) {
                   if (is8HoursPassed && !isPaid && !isStockReleased) cardBg = 'bg-red-50/40 hover:bg-red-50/60';
@@ -216,7 +249,10 @@ export default function CashierNotifications() {
               return (
                 <div 
                   key={notification.id} 
-                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${cardBg}`}
+                  onClick={() => {
+                    if (isRepairRequest) openRepairRequest(notification);
+                  }}
+                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isRepairRequest ? 'cursor-pointer' : ''} ${cardBg}`}
                 >
                   <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${iconBg}`}>
                     {getIcon(notification.type)}
@@ -227,6 +263,11 @@ export default function CashierNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isRepairRequest && (
+                        <span className="shrink-0 bg-purple-100 text-[#bd00ff] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-200">
+                          REPAIR REQUEST
+                        </span>
+                      )}
                       {isStockOut && (
                         <span className="shrink-0 bg-rose-100 text-rose-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-rose-200">
                           OUT OF STOCK
@@ -300,79 +341,96 @@ export default function CashierNotifications() {
                   </div>
 
                   {/* Actions */}
-                  {isStockAlert ? (
-                    <div className="flex items-center gap-2 sm:self-center">
-                      <Link 
-                        href="/cashier/devices"
-                        className="shrink-0 px-3.5 py-2 bg-purple-100 text-purple-800 hover:bg-purple-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
+                  <div className="flex items-center gap-2 sm:self-center" onClick={e => e.stopPropagation()}>
+                    {isRepairRequest ? (
+                      <button 
+                        onClick={() => openRepairRequest(notification)}
+                        className="shrink-0 px-3.5 py-2 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer border-none"
                       >
-                        <Package size={14} /> Restock
-                      </Link>
-                      {!notification.isRead && (
-                        <button 
-                          onClick={() => handleAction(notification.id, 'READ')}
-                          className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer border-none"
+                        <Wrench size={14} /> Review Request
+                      </button>
+                    ) : isStockAlert ? (
+                      <>
+                        <Link 
+                          href="/cashier/devices"
+                          className="shrink-0 px-3.5 py-2 bg-purple-100 text-purple-800 hover:bg-purple-200 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
                         >
-                          <Check size={14} /> Read
-                        </button>
-                      )}
-                    </div>
-                  ) : isCashReservation ? (
-                    !isPaid && !isStockReleased && (
-                      <div className="flex items-center gap-2 sm:self-center">
-                        {is8HoursPassed ? (
-                          // Automatically expired: Cashier only needs the "Release Stock" button to return stock to store
+                          <Package size={14} /> Restock
+                        </Link>
+                        {!notification.isRead && (
                           <button 
-                            onClick={() => handleAction(notification.id, 'RELEASE_STOCK')}
-                            className="shrink-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer border-none"
-                            title="Release reserved stock back to store inventory"
+                            onClick={() => handleAction(notification.id, 'READ')}
+                            className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer border-none"
                           >
-                            <RotateCcw size={15} strokeWidth={2.5} /> Release Stock
+                            <Check size={14} /> Read
                           </button>
-                        ) : (
-                          // Within 8 hours: Cashier can confirm payment or release early
-                          <>
-                            <button 
-                              onClick={() => handleAction(notification.id, 'PAID')}
-                              className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                            >
-                              <Check size={16} strokeWidth={3} /> Paid
-                            </button>
+                        )}
+                      </>
+                    ) : isCashReservation ? (
+                      !isPaid && !isStockReleased && (
+                        <>
+                          {is8HoursPassed ? (
                             <button 
                               onClick={() => handleAction(notification.id, 'RELEASE_STOCK')}
-                              className="shrink-0 px-3.5 py-2 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-                              title="Cancel reservation and return stock to inventory"
+                              className="shrink-0 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer border-none"
+                              title="Release reserved stock back to store inventory"
                             >
-                              <RotateCcw size={14} strokeWidth={2.5} /> Release Stock
+                              <RotateCcw size={15} strokeWidth={2.5} /> Release Stock
                             </button>
-                          </>
-                        )}
-                      </div>
-                    )
-                  ) : (
-                    !(notification.title.toLowerCase().includes('paid') || notification.title.toLowerCase().includes('unpaid')) && (
-                      <div className="flex items-center gap-2 sm:self-center">
-                        <button 
-                          onClick={() => handleAction(notification.id, 'PAID')}
-                          className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                        >
-                          <Check size={16} strokeWidth={3} /> Paid
-                        </button>
-                        <button 
-                          onClick={() => handleAction(notification.id, 'UNPAID')}
-                          className="shrink-0 px-4 py-2 bg-red-50 border border-red-200 text-red-700 font-bold text-sm rounded-lg hover:bg-red-100 hover:border-red-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                        >
-                          <X size={16} strokeWidth={3} /> Unpaid
-                        </button>
-                      </div>
-                    )
-                  )}
+                          ) : (
+                            <>
+                              <button 
+                                onClick={() => handleAction(notification.id, 'PAID')}
+                                className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                              >
+                                <Check size={16} strokeWidth={3} /> Paid
+                              </button>
+                              <button 
+                                onClick={() => handleAction(notification.id, 'RELEASE_STOCK')}
+                                className="shrink-0 px-3.5 py-2 bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                                title="Cancel reservation and return stock to inventory"
+                              >
+                                <RotateCcw size={14} strokeWidth={2.5} /> Release Stock
+                              </button>
+                            </>
+                          )}
+                        </>
+                      )
+                    ) : (
+                      !(notification.title.toLowerCase().includes('paid') || notification.title.toLowerCase().includes('unpaid')) && (
+                        <>
+                          <button 
+                            onClick={() => handleAction(notification.id, 'PAID')}
+                            className="shrink-0 px-4 py-2 bg-green-50 border border-green-200 text-green-700 font-bold text-sm rounded-lg hover:bg-green-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                          >
+                            <Check size={16} strokeWidth={3} /> Paid
+                          </button>
+                          <button 
+                            onClick={() => handleAction(notification.id, 'UNPAID')}
+                            className="shrink-0 px-4 py-2 bg-red-50 border border-red-200 text-red-700 font-bold text-sm rounded-lg hover:bg-red-100 hover:border-red-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                          >
+                            <X size={16} strokeWidth={3} /> Unpaid
+                          </button>
+                        </>
+                      )
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Repair Request Review Modal */}
+      <RepairRequestReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        request={selectedRepairRequest}
+        onStatusChange={() => {
+          fetchNotifications(page);
+        }}
+      />
 
       {/* Pagination Controls */}
       {totalPages > 1 && (

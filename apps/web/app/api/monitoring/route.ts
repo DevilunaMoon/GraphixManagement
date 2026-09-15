@@ -118,37 +118,82 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN' && session.role !== 'CASHIER')) {
+    if (!session || !session.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const isCustomer = session.role === 'CUSTOMER';
     const formData = await req.formData();
     
     const deviceName = formData.get('deviceName') as string;
-    const ownerName = (formData.get('ownerName') as string) || '';
-    const progress = formData.get('progress') as string;
+    let ownerName = (formData.get('ownerName') as string) || '';
+    const progress = (formData.get('progress') as string) || (isCustomer ? 'Pending' : 'Diagnostic');
     const cause = formData.get('cause') as string;
-    const technician = formData.get('technician') as string;
-    const repairCost = formData.get('repairCost') as string;
-    const downpayment = formData.get('downpayment') as string;
+    const technician = formData.get('technician') as string | null;
+    const repairCost = formData.get('repairCost') as string | null;
+    const downpayment = formData.get('downpayment') as string | null;
     const materials = formData.get('materials') as string | null;
-    const image = formData.get('image') as File | null;
-    const userId = formData.get('userId') as string | null;
-    const repairHistory = formData.get('repairHistory') as string | null;
+    const repairHistoryRaw = formData.get('repairHistory') as string | null;
     const branchParam = formData.get('branch') as string | null;
+    let targetUserId = (formData.get('userId') as string | null) || (isCustomer ? session.userId : null);
 
-    if (!deviceName || !progress) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!deviceName) {
+      return NextResponse.json({ error: 'Device name is required' }, { status: 400 });
     }
 
-    const operatingBranch = (session.role === 'SUPER_ADMIN' && branchParam)
-      ? branchParam
-      : (session.branch || 'Tagoloan');
+    // Determine operating branch
+    let operatingBranch = 'Tagoloan';
+    if (isCustomer) {
+      operatingBranch = branchParam || session.branch || 'Tagoloan';
+    } else if (session.role === 'SUPER_ADMIN') {
+      operatingBranch = branchParam || 'Tagoloan';
+    } else {
+      operatingBranch = session.branch || 'Tagoloan';
+    }
 
-    let imageUrl = null;
-    if (image && image.name && image.size > 0) {
-      const buffer = Buffer.from(await image.arrayBuffer());
-      imageUrl = await uploadToCloudinary(buffer, 'monitoring');
+    // Ensure customer user details if customer
+    if (isCustomer && !ownerName) {
+      const user = await prisma.user.findUnique({ where: { id: session.userId } });
+      if (user) {
+        ownerName = user.name || 'Customer';
+      }
+    }
+
+    // Process photo uploads
+    const photoUrls: string[] = [];
+    
+    // Single image file (from admin or standard upload)
+    const singleImage = formData.get('image') as File | null;
+    if (singleImage && singleImage.name && singleImage.size > 0) {
+      const buffer = Buffer.from(await singleImage.arrayBuffer());
+      const url = await uploadToCloudinary(buffer, 'monitoring');
+      photoUrls.push(url);
+    }
+
+    // Multi-photo upload (photo_0, photo_1, ...)
+    const photoCountStr = formData.get('photoCount') as string | null;
+    const photoCount = photoCountStr ? parseInt(photoCountStr, 10) : 5;
+    for (let i = 0; i < photoCount; i++) {
+      const photoFile = formData.get(`photo_${i}`) as File | null;
+      if (photoFile && photoFile.name && photoFile.size > 0) {
+        const buffer = Buffer.from(await photoFile.arrayBuffer());
+        const url = await uploadToCloudinary(buffer, 'monitoring');
+        if (!photoUrls.includes(url)) {
+          photoUrls.push(url);
+        }
+      }
+    }
+
+    // Assemble structured repair history if customer request
+    let finalRepairHistory = repairHistoryRaw;
+    if (isCustomer && repairHistoryRaw) {
+      try {
+        const parsed = JSON.parse(repairHistoryRaw);
+        parsed.photos = photoUrls;
+        finalRepairHistory = JSON.stringify(parsed);
+      } catch (e) {
+        console.error('Failed to augment repairHistory JSON:', e);
+      }
     }
 
     const request = await prisma.repairRequest.create({
@@ -162,9 +207,11 @@ export async function POST(req: Request) {
         downpayment: downpayment || null,
         materials: materials || null,
         branch: operatingBranch,
-        image: imageUrl,
-        userId: userId || null,
-        repairHistory: repairHistory || null,
+        image: photoUrls[0] || null,
+        proofImage: photoUrls[1] || null,
+        userId: targetUserId || null,
+        repairHistory: finalRepairHistory || null,
+        status: isCustomer ? 'Active' : 'Active',
       } as any
     });
 
@@ -173,8 +220,45 @@ export async function POST(req: Request) {
     const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const baseUrl = `${protocol}://${host}`;
 
-    if (userId) {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
+    // If customer submitted a new repair request, notify Branch Admin, Cashier, and Super Admin
+    if (isCustomer) {
+      try {
+        // Find admins and cashiers assigned to this branch
+        const branchStaff = await prisma.user.findMany({
+          where: {
+            OR: [
+              {
+                role: { in: ['ADMIN', 'CASHIER'] },
+                branch: { equals: operatingBranch, mode: 'insensitive' }
+              },
+              {
+                role: 'SUPER_ADMIN'
+              }
+            ]
+          },
+          select: { id: true, role: true, branch: true }
+        });
+
+        const notifPromises = branchStaff.map(staff => 
+          prisma.notification.create({
+            data: {
+              userId: staff.id,
+              title: 'New Repair Request',
+              message: `Customer ${ownerName || 'Customer'} submitted a new repair request for ${deviceName} at ${operatingBranch} branch.`,
+              type: 'REPAIR_REQUEST',
+              branch: operatingBranch,
+              isRead: false
+            }
+          })
+        );
+
+        await Promise.all(notifPromises);
+      } catch (notifErr) {
+        console.error('Error creating staff notifications for repair request:', notifErr);
+      }
+    } else if (targetUserId) {
+      // Staff created device intake for customer, send email notification
+      const user = await prisma.user.findUnique({ where: { id: targetUserId } });
       if (user && user.email) {
         await sendNotificationEmail(user.email, deviceName, progress, true, baseUrl);
       }

@@ -192,25 +192,119 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                   </div>
 
                   {/* Info Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8 pt-2">
-                    <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Device Name</span>
-                      <span className="text-lg font-semibold text-gray-900">{device.deviceName}</span>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6 pt-2">
+                    {/* Parse structured repair request if available */}
+                    {(() => {
+                      let parsed: any = null;
+                      if (device.repairHistory && typeof device.repairHistory === 'string' && device.repairHistory.trim().startsWith('{')) {
+                        try {
+                          parsed = JSON.parse(device.repairHistory);
+                        } catch (e) {}
+                      }
 
-                    <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cause of Problem</span>
-                      <div className="bg-white border border-gray-100 rounded-xl p-4 mt-1 shadow-sm">
-                        <span className="text-base text-gray-700 leading-relaxed">{device.cause || 'No specific cause recorded.'}</span>
-                      </div>
-                    </div>
+                      const photosList: string[] = [];
+                      if (parsed?.photos && Array.isArray(parsed.photos)) {
+                        parsed.photos.forEach((p: string) => {
+                          if (p && !photosList.includes(p)) photosList.push(p);
+                        });
+                      }
+                      if (device.image && !photosList.includes(device.image)) {
+                        photosList.unshift(device.image);
+                      }
 
-                    <div className="flex flex-col gap-1.5 sm:col-span-2">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Repair History</span>
-                      <div className="bg-white border border-gray-100 rounded-xl p-4 mt-1 shadow-sm">
-                        <span className="text-base text-gray-700 leading-relaxed">{device.repairHistory || 'No previous repair history recorded.'}</span>
-                      </div>
-                    </div>
+                      return (
+                        <>
+                          <div className="flex flex-col gap-1 sm:col-span-2">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Device Model & Details</span>
+                            <span className="text-lg font-bold text-gray-900">{device.deviceName}</span>
+                            {parsed && (
+                              <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                                <span className="bg-purple-100 text-[#bd00ff] font-bold px-2.5 py-1 rounded-lg">
+                                  {parsed.brand || 'Device'}
+                                </span>
+                                <span className="bg-gray-100 text-gray-700 font-semibold px-2.5 py-1 rounded-lg">
+                                  {parsed.deviceType || 'Smartphone'}
+                                </span>
+                                {parsed.imei && (
+                                  <span className="bg-gray-100 text-gray-700 font-mono px-2.5 py-1 rounded-lg">
+                                    IMEI: {parsed.imei}
+                                  </span>
+                                )}
+                                {parsed.branch && (
+                                  <span className="bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-lg">
+                                    Branch: {parsed.branch}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Reported Problem & Description */}
+                          <div className="flex flex-col gap-1 sm:col-span-2">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reported Issue / Problem</span>
+                            <div className="bg-white border border-gray-200/70 rounded-xl p-4 mt-1 shadow-sm">
+                              {parsed ? (
+                                <div className="flex flex-col gap-1.5">
+                                  <span className="font-bold text-purple-900 text-sm">{parsed.problem}</span>
+                                  <p className="text-sm text-gray-700 leading-relaxed m-0">{parsed.problemDescription}</p>
+                                </div>
+                              ) : (
+                                <span className="text-base text-gray-700 leading-relaxed">{device.cause || 'No specific cause recorded.'}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Device Condition if parsed */}
+                          {parsed && (
+                            <div className="flex flex-col gap-1 sm:col-span-2">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Device Condition (At Intake)</span>
+                              <div className="grid grid-cols-2 gap-3 mt-1">
+                                <div className="bg-white border border-gray-200/70 rounded-xl p-3 text-xs">
+                                  <span className="text-gray-400 font-medium block">Is Device Working</span>
+                                  <span className="font-bold text-gray-900 text-sm mt-0.5 block">{parsed.isWorking || 'Yes'}</span>
+                                </div>
+                                <div className="bg-white border border-gray-200/70 rounded-xl p-3 text-xs">
+                                  <span className="text-gray-400 font-medium block">Visible Damage</span>
+                                  <span className="font-bold text-gray-900 text-sm mt-0.5 block">{parsed.hasPhysicalDamage || 'No'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Uploaded Photos Gallery */}
+                          {photosList.length > 1 && (
+                            <div className="flex flex-col gap-2 sm:col-span-2">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                Uploaded Device Photos ({photosList.length})
+                              </span>
+                              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                {photosList.map((photo, i) => (
+                                  <a
+                                    key={i}
+                                    href={photo}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="aspect-square rounded-xl overflow-hidden border border-gray-200 bg-white hover:border-[#bd00ff] transition-all block group"
+                                  >
+                                    <img src={photo} alt={`Photo ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Unparsed repair history fallback */}
+                          {!parsed && device.repairHistory && (
+                            <div className="flex flex-col gap-1.5 sm:col-span-2">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Repair History</span>
+                              <div className="bg-white border border-gray-100 rounded-xl p-4 mt-1 shadow-sm">
+                                <span className="text-base text-gray-700 leading-relaxed">{device.repairHistory}</span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
                       <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Assigned Technician</span>

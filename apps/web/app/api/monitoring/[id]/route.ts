@@ -60,6 +60,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     
     let updateData: any = {};
     let progress: string | undefined;
+    let action: string | undefined;
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
@@ -73,6 +74,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const ownerName = formData.get('ownerName') as string | null;
       const proofImage = formData.get('proofImage') as File | null;
       const repairHistory = formData.get('repairHistory') as string | null;
+      action = (formData.get('action') as string) || undefined;
 
       if (status !== null) updateData.status = status;
       if (progress !== undefined && progress !== null) updateData.progress = progress;
@@ -93,6 +95,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const body = await req.json();
       const { status, cause, technician, repairCost, downpayment, materials, repairHistory, ownerName } = body;
       progress = body.progress;
+      action = body.action;
 
       if (status !== undefined) updateData.status = status;
       if (progress !== undefined) updateData.progress = progress;
@@ -103,6 +106,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (materials !== undefined) updateData.materials = materials;
       if (ownerName !== undefined) updateData.ownerName = ownerName;
       if (repairHistory !== undefined) updateData.repairHistory = repairHistory;
+    }
+
+    if (action === 'ACCEPT') {
+      updateData.progress = 'Accepted';
+      updateData.status = 'Active';
+    } else if (action === 'REJECT') {
+      updateData.progress = 'Rejected';
+      updateData.status = 'Cancelled';
     }
 
     if (updateData.progress === '100%') {
@@ -119,6 +130,37 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         user: true
       }
     });
+
+    // Notify customer on acceptance or rejection
+    if (request.userId) {
+      try {
+        if (action === 'ACCEPT' || updateData.progress === 'Accepted') {
+          await prisma.notification.create({
+            data: {
+              userId: request.userId,
+              title: 'Repair Request Accepted',
+              message: `Your repair request for ${request.deviceName} has been accepted by the ${request.branch || 'Tagoloan'} branch.`,
+              type: 'REPAIR',
+              branch: request.branch || 'Tagoloan',
+              isRead: false
+            }
+          });
+        } else if (action === 'REJECT' || updateData.progress === 'Rejected') {
+          await prisma.notification.create({
+            data: {
+              userId: request.userId,
+              title: 'Repair Request Rejected',
+              message: `Your repair request for ${request.deviceName} could not be accepted at this time.`,
+              type: 'REPAIR',
+              branch: request.branch || 'Tagoloan',
+              isRead: false
+            }
+          });
+        }
+      } catch (notifErr) {
+        console.error('Error sending customer notification on repair request update:', notifErr);
+      }
+    }
 
     let host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3001";
     if (host.includes("0.0.0.0")) host = host.replace("0.0.0.0", "localhost");

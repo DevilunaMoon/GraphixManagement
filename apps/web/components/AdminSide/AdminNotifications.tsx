@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2 } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
+import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
 
 interface Notification {
   id: string;
@@ -103,8 +104,36 @@ export default function AdminNotifications() {
     }
   };
 
+  const [selectedRepairRequest, setSelectedRepairRequest] = useState<any>(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const openRepairRequest = async (notif: Notification) => {
+    try {
+      handleAction(notif.id, 'READ');
+      const branchParam = isSuperAdmin ? (selectedBranch || 'all') : 'all';
+      const res = await fetch(`/api/monitoring?limit=30&branch=${encodeURIComponent(branchParam)}`);
+      const data = await res.json();
+      const reqList = Array.isArray(data) ? data : (data?.requests || []);
+      
+      const matched = reqList.find((r: any) => 
+        (r.ownerName && notif.message.includes(r.ownerName)) || 
+        (r.deviceName && notif.message.includes(r.deviceName))
+      ) || reqList[0];
+
+      if (matched) {
+        setSelectedRepairRequest(matched);
+        setIsReviewModalOpen(true);
+      }
+    } catch (err) {
+      console.error('Error opening repair request from notification:', err);
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
+      case 'REPAIR_REQUEST':
+      case 'REPAIR':
+        return <Wrench size={20} className="text-white" />;
       case 'STOCK_OUT':
         return <AlertTriangle size={20} className="text-white" />;
       case 'STOCK_LOW':
@@ -180,20 +209,27 @@ export default function AdminNotifications() {
         ) : (
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
+              const isRepairRequest = notification.type === 'REPAIR_REQUEST';
               const isStockOut = notification.type === 'STOCK_OUT';
               const isStockLow = notification.type === 'STOCK_LOW';
               const isStockAlert = isStockOut || isStockLow;
 
               let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
+              if (isRepairRequest) iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
               if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
               if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
 
               return (
                 <div 
                   key={notification.id} 
-                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${
+                  onClick={() => {
+                    if (isRepairRequest) openRepairRequest(notification);
+                  }}
+                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isRepairRequest ? 'cursor-pointer' : ''} ${
                     !notification.isRead 
-                      ? isStockOut 
+                      ? isRepairRequest
+                        ? 'bg-purple-50/70 hover:bg-purple-100/50'
+                        : isStockOut 
                         ? 'bg-rose-50/40 hover:bg-rose-50/60' 
                         : isStockLow 
                           ? 'bg-amber-50/40 hover:bg-amber-50/60' 
@@ -210,6 +246,11 @@ export default function AdminNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isRepairRequest && (
+                        <span className="shrink-0 bg-purple-100 text-[#bd00ff] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-200">
+                          REPAIR REQUEST
+                        </span>
+                      )}
                       {isStockOut && (
                         <span className="shrink-0 bg-rose-100 text-rose-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-rose-200">
                           OUT OF STOCK
@@ -239,7 +280,15 @@ export default function AdminNotifications() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 sm:self-center">
+                  <div className="flex items-center gap-2 sm:self-center" onClick={e => e.stopPropagation()}>
+                    {isRepairRequest && (
+                      <button 
+                        onClick={() => openRepairRequest(notification)}
+                        className="shrink-0 px-3.5 py-2 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer border-none"
+                      >
+                        <Wrench size={14} /> Review Request
+                      </button>
+                    )}
                     {isStockAlert && (
                       <Link 
                         href="/admin/inventory"
@@ -263,6 +312,16 @@ export default function AdminNotifications() {
           </div>
         )}
       </div>
+
+      {/* Repair Request Review Modal */}
+      <RepairRequestReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        request={selectedRepairRequest}
+        onStatusChange={() => {
+          fetchNotifications(page);
+        }}
+      />
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
