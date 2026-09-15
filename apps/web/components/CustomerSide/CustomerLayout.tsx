@@ -231,7 +231,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                 <div className="relative flex items-center justify-center">
                   <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
                   {isCollapsed && item.label === 'Notifications' && unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border border-purple-800 animate-pulse">
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border border-purple-800">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -240,7 +240,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                   <div className="flex items-center justify-between flex-1">
                     <span>{item.label}</span>
                     {item.label === 'Notifications' && unreadCount > 0 && (
-                      <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-extrabold rounded-full shadow-sm animate-pulse mr-2">
+                      <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-extrabold rounded-full shadow-sm mr-2">
                         {unreadCount}
                       </span>
                     )}

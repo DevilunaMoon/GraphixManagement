@@ -110,7 +110,7 @@ export default function CustomerNotifications() {
                         {notif.title}
                       </h4>
                       {!notif.isRead && (
-                        <span className="bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm animate-pulse"></span>
+                        <span className="bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm"></span>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
