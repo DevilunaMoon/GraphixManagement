@@ -332,7 +332,10 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                           <span className="font-extrabold text-[#bd00ff] text-sm">
                             ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
                           </span>
-                          {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                            <span className={`w-1.5 h-1.5 rounded-full ${tx.paymentType === 'Cash' ? 'bg-emerald-500' : tx.paymentType === 'GCash' ? 'bg-blue-500' : tx.paymentType === 'Split' ? 'bg-purple-500' : 'bg-gray-400'}`}></span>
+                            {tx.paymentType || 'Full'}
+                          </span>
                         </div>
                       )}
                     </td>
@@ -763,14 +766,45 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                     <span>Total</span>
                     <span>Php {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Cash</span>
-                    <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span>Change</span>
-                    <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
+
+                  {tx.paymentType === 'GCash' ? (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Method</span>
+                        <span>GCash</span>
+                      </div>
+                      {tx.referenceId && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px" }}>
+                          <span>GCash Ref</span>
+                          <span>{tx.referenceId}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : tx.paymentType === 'Split' ? (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Method</span>
+                        <span>Split (Cash + GCash)</span>
+                      </div>
+                      {tx.referenceId && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px" }}>
+                          <span>GCash Ref</span>
+                          <span>{tx.referenceId}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Cash</span>
+                        <span>{cashPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Change</span>
+                        <span>{changeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    </>
+                  )}
 
                   <div style={{ textAlign: "center", margin: "8px 0", fontWeight: "bold" }}>
                     *** {tx.quantity} ITEM(S) ***

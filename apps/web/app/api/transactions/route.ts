@@ -31,7 +31,7 @@ export async function GET(req: Request) {
     if (type === 'downpayment') {
       whereClause.paymentType = 'Downpayment';
     } else if (type === 'full') {
-      whereClause.paymentType = 'Full';
+      whereClause.paymentType = { in: ['Full', 'Cash', 'GCash', 'Split', 'Online', 'Buy Now (Full Payment)'] };
     }
 
     if (search) {
