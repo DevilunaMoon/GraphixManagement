@@ -228,6 +228,90 @@ export default function AdminInventory() {
       .catch(err => console.error("Error fetching categories:", err));
   };
 
+  const [brandSearchTerm, setBrandSearchTerm] = useState('');
+
+  const handleCatImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      try {
+        const compressed = await imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 800, useWebWorker: true });
+        setNewCatImage(compressed);
+        setNewCatImagePreview(URL.createObjectURL(compressed));
+      } catch (err) {
+        console.error("Compression error:", err);
+        setNewCatImage(file);
+        setNewCatImagePreview(URL.createObjectURL(file));
+      }
+    }
+  };
+
+  const handleAddCategory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newCatName.trim()) {
+      alert('Please enter a brand name.');
+      return;
+    }
+    setIsAddingCat(true);
+    const formData = new FormData();
+    formData.append('categoryName', newCatName.trim());
+    if (newCatImage) formData.append('categoryImage', newCatImage);
+
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const createdCat = await res.json();
+        setNewCatName('');
+        setNewCatImage(null);
+        setNewCatImagePreview(null);
+        fetchCategories();
+        if (isAddModalOpen) {
+          setNewDeviceCategory(createdCat.id);
+        }
+        setSuccessModalContent({ title: 'Brand Added', message: `Brand "${createdCat.name}" was added successfully.` });
+        setSuccessModalOpen(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to add brand');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Network error while adding brand');
+    } finally {
+      setIsAddingCat(false);
+    }
+  };
+
+  const handleDeleteCategory = async (catId: string, catName: string) => {
+    if (!confirm(`Are you sure you want to delete brand "${catName}"?`)) return;
+    setIsDeletingCats(true);
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [catId] })
+      });
+      if (res.ok) {
+        fetchCategories();
+        if (selectedCategory === catId) {
+          setSelectedCategory('All');
+        }
+        setSuccessModalContent({ title: 'Brand Deleted', message: `Brand "${catName}" has been removed.` });
+        setSuccessModalOpen(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete brand. It may be assigned to existing products.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Network error while deleting brand');
+    } finally {
+      setIsDeletingCats(false);
+    }
+  };
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchProducts();
@@ -879,6 +963,14 @@ export default function AdminInventory() {
                     {cat.name}
                   </button>
                 ))}
+                <div className="border-t border-purple-100 mt-1 pt-1">
+                  <button 
+                    onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
+                    className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Plus size={14} /> + Add / Manage Brands
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -904,6 +996,16 @@ export default function AdminInventory() {
           </button>
           <button onClick={downloadExcel} className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
             <FileText size={14} /> Excel
+          </button>
+
+          {/* Add Brand Button */}
+          <button 
+            onClick={() => setCategoriesModalOpen(true)} 
+            className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-4 py-2 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
+            title="Add & Manage Brands"
+          >
+            <Plus size={16} />
+            <span>Add Brand</span>
           </button>
 
           {/* Add Device Button */}
@@ -1716,7 +1818,16 @@ export default function AdminInventory() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Brand / Category *</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block">Brand / Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => setCategoriesModalOpen(true)}
+                      className="text-[11px] font-bold text-[#5c0099] hover:underline flex items-center gap-0.5 bg-transparent border-none cursor-pointer p-0"
+                    >
+                      <Plus size={12} /> Add Brand
+                    </button>
+                  </div>
                   <select
                     value={newDeviceCategory}
                     onChange={(e) => setNewDeviceCategory(e.target.value)}
@@ -2163,6 +2274,199 @@ export default function AdminInventory() {
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================== */}
+      {/* BRAND MANAGEMENT MODAL                                    */}
+      {/* ========================================================== */}
+      {categoriesModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="p-5 bg-gradient-to-r from-[#5c0099] to-[#3a0066] text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white border border-white/20 shadow-inner">
+                  <Layers size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg m-0">Brand Management</h3>
+                  <p className="text-xs text-white/80 m-0 mt-0.5">Add new device brands to your catalog or manage existing brands</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setCategoriesModalOpen(false);
+                  setNewCatName('');
+                  setNewCatImage(null);
+                  setNewCatImagePreview(null);
+                }} 
+                className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all border-none cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+              
+              {/* Form: Add New Brand */}
+              <div className="bg-purple-50/60 p-5 rounded-2xl border border-purple-200 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-extrabold text-purple-900 m-0 uppercase tracking-wider flex items-center gap-2">
+                    <Plus size={16} className="text-[#5c0099]" /> Add New Brand
+                  </h4>
+                  <span className="text-[11px] text-purple-700 font-semibold">Instantly available in product forms</span>
+                </div>
+
+                <form onSubmit={handleAddCategory} className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                        Brand Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Apple, Samsung, Honor, Vivo..."
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                        Brand Logo / Icon <span className="text-gray-400 font-normal">(Optional)</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCatImageChange}
+                        className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer bg-white border border-gray-300 rounded-xl p-1"
+                      />
+                    </div>
+                  </div>
+
+                  {newCatImagePreview && (
+                    <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-purple-200 w-fit">
+                      <img src={newCatImagePreview} alt="Logo preview" className="w-10 h-10 object-contain rounded-lg bg-gray-50 p-1 border border-gray-100" />
+                      <div className="text-xs">
+                        <span className="font-bold text-gray-800 block">Logo Selected</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewCatImage(null);
+                            setNewCatImagePreview(null);
+                          }}
+                          className="text-[11px] text-red-600 hover:underline font-semibold bg-transparent border-none p-0 cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="submit"
+                      disabled={isAddingCat || !newCatName.trim()}
+                      className="px-6 py-2.5 bg-[#5c0099] hover:bg-[#470077] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus size={16} />
+                      {isAddingCat ? 'Adding Brand...' : 'Save & Register Brand'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Existing Brands Catalog */}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-extrabold text-gray-900 m-0 uppercase tracking-wider">
+                      Existing Brands Catalog
+                    </h4>
+                    <span className="bg-purple-100 text-purple-800 text-xs font-bold px-2 py-0.5 rounded-full">
+                      {categories.length}
+                    </span>
+                  </div>
+
+                  <div className="relative w-full sm:w-56">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                    <input
+                      type="text"
+                      placeholder="Search registered brands..."
+                      value={brandSearchTerm}
+                      onChange={(e) => setBrandSearchTerm(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {categories.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                    <Layers size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-xs font-bold text-gray-600 m-0">No brands created yet</p>
+                    <p className="text-[11px] text-gray-400 m-0 mt-0.5">Use the form above to add your first device brand.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
+                    {categories
+                      .filter(c => !brandSearchTerm.trim() || c.name.toLowerCase().includes(brandSearchTerm.toLowerCase()))
+                      .map((cat) => (
+                        <div
+                          key={cat.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 hover:bg-purple-50/50 rounded-xl border border-gray-200 hover:border-purple-200 transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {cat.logoUrl ? (
+                              <img src={cat.logoUrl} alt={cat.name} className="w-8 h-8 object-contain rounded-lg bg-white p-1 border border-gray-200 shrink-0" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center border border-purple-200 shrink-0 uppercase">
+                                {cat.name.slice(0, 2)}
+                              </div>
+                            )}
+                            <div className="truncate">
+                              <span className="font-bold text-xs text-gray-900 block truncate">{cat.name}</span>
+                              <span className="text-[10px] text-gray-400 font-mono">ID: {cat.id.slice(-6)}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            disabled={isDeletingCats}
+                            className="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors bg-transparent border-none cursor-pointer"
+                            title={`Delete brand ${cat.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoriesModalOpen(false);
+                  setNewCatName('');
+                  setNewCatImage(null);
+                  setNewCatImagePreview(null);
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors shadow-2xs"
+              >
+                Done
+              </button>
+            </div>
+
           </div>
         </div>
       )}
