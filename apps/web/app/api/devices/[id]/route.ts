@@ -158,21 +158,41 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       } catch (e) { }
     }
 
+    const existingImagesStr = formData.get('existingImages') as string | null;
+    let existingImages: string[] = [];
+    if (existingImagesStr) {
+      try {
+        const parsed = JSON.parse(existingImagesStr);
+        if (Array.isArray(parsed)) {
+          existingImages = parsed.filter(url => typeof url === 'string' && url.trim().length > 0);
+        }
+      } catch (e) {
+        existingImages = [];
+      }
+    }
+
     const filesToUpload = imagesForm.length > 0 ? imagesForm : (singleImage ? [singleImage] : []);
-    let imageUrls: string[] = [];
+    let newImageUrls: string[] = [];
 
     if (filesToUpload.length > 0) {
       for (const file of filesToUpload) {
         if (file && file.name && file.size > 0) {
           const buffer = Buffer.from(await file.arrayBuffer());
           const imageUrl = await uploadToCloudinary(buffer, 'devices');
-          imageUrls.push(imageUrl);
+          newImageUrls.push(imageUrl);
         }
       }
     }
 
-    const imageUrl = imageUrls.length > 0 ? imageUrls[0] : undefined;
-    const updateImages = imageUrls.length > 0 ? imageUrls : undefined;
+    // Combine existing images with newly uploaded images, limited to 5
+    let finalImages: string[] | undefined = undefined;
+    if (existingImagesStr !== null || filesToUpload.length > 0) {
+      finalImages = [...existingImages, ...newImageUrls].slice(0, 5);
+    }
+
+    const primaryImage = finalImages !== undefined
+      ? (finalImages.length > 0 ? finalImages[0] : null)
+      : undefined;
 
     let downpaymentImageUrl = undefined;
     if (downpaymentFormImage && downpaymentFormImage.name && downpaymentFormImage.size > 0) {
@@ -206,8 +226,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
           ...(asLowAs !== null && { asLowAs: asLowAs || null }),
           ...(warranty !== null && { warranty: warranty || null }),
           ...(downpayment !== null && { downpayment: downpayment || null }),
-          ...(imageUrl && { image: imageUrl }),
-          ...(updateImages && { images: updateImages }),
+          ...(primaryImage !== undefined && { image: primaryImage }),
+          ...(finalImages !== undefined && { images: finalImages }),
           ...(downpaymentImageUrl && { downpaymentImage: downpaymentImageUrl }),
         }
       });

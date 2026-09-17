@@ -281,34 +281,44 @@ function CustomerProductInfoContent() {
                     <button 
                       onClick={handlePrevImage}
                       className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/95 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#bd00ff] transition-all opacity-0 group-hover/gallery:opacity-100 border border-gray-100 cursor-pointer z-10 hover:scale-105 active:scale-95"
+                      title="Previous Image"
                     >
                       <ChevronLeft size={24} strokeWidth={2.5} />
                     </button>
                     <button 
                       onClick={handleNextImage}
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/95 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#bd00ff] transition-all opacity-0 group-hover/gallery:opacity-100 border border-gray-100 cursor-pointer z-10 hover:scale-105 active:scale-95"
+                      title="Next Image"
                     >
                       <ChevronRight size={24} strokeWidth={2.5} />
                     </button>
                   </>
                 )}
                 {product.images && product.images.length > 0 ? (
-                  <img src={product.images[activeImageIndex]} alt={product.name} className="w-full h-full object-contain mix-blend-multiply transition-all duration-300 group-hover/gallery:scale-[1.03]" />
+                  <img 
+                    src={product.images[activeImageIndex] || product.images[0] || product.image} 
+                    alt={product.name} 
+                    className="w-full h-full object-contain mix-blend-multiply transition-all duration-300 group-hover/gallery:scale-[1.03]" 
+                  />
                 ) : product.image ? (
-                  <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover/gallery:scale-[1.03] transition-all duration-300" />
+                  <img 
+                    src={product.image} 
+                    alt={product.name} 
+                    className="w-full h-full object-contain mix-blend-multiply group-hover/gallery:scale-[1.03] transition-all duration-300" 
+                  />
                 ) : (
                   <div className="w-full h-full bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400 font-extrabold">No Image Provided</div>
                 )}
               </div>
-              {product.images && product.images.length > 1 && (
+              {product.images && product.images.filter(Boolean).length > 1 && (
                 <div className="flex gap-3 overflow-x-auto py-1 scrollbar-thin justify-center w-full">
-                  {product.images.map((img: string, idx: number) => (
+                  {product.images.filter(Boolean).map((img: string, idx: number) => (
                     <button 
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
                       className={`shrink-0 w-20 h-20 rounded-2xl border-2 overflow-hidden bg-white ${activeImageIndex === idx ? 'border-[#bd00ff] shadow-md shadow-purple-500/10 scale-95' : 'border-gray-200/80 opacity-70'} transition-all hover:border-[#bd00ff] hover:opacity-100 p-1.5 cursor-pointer hover:scale-95`}
                     >
-                      <img src={img} alt={`Preview ${idx}`} className="w-full h-full object-contain mix-blend-multiply" />
+                      <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-contain mix-blend-multiply" />
                     </button>
                   ))}
                 </div>

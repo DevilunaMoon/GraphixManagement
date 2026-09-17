@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { 
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
-  ArrowRightLeft, History, Smartphone, Building2, Package, Layers, ShieldCheck
+  ArrowRightLeft, History, Smartphone, Building2, Package, Layers, ShieldCheck,
+  Image as ImageIcon, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
@@ -130,6 +131,56 @@ export default function AdminInventory() {
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
   const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
 
+  // Helpers for Add Product Images (1 to 5)
+  const handleAddProductImages = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const validFiles = fileArray.filter(f => {
+      const isImg = f.type.startsWith('image/');
+      const isValidSize = f.size <= 10 * 1024 * 1024;
+      if (!isImg) alert(`${f.name} is not a valid image format (JPG, PNG, WEBP).`);
+      else if (!isValidSize) alert(`${f.name} exceeds the 10MB file size limit.`);
+      return isImg && isValidSize;
+    });
+
+    if (validFiles.length === 0) return;
+
+    const remainingSlots = 5 - newDeviceImages.length;
+    if (remainingSlots <= 0) {
+      alert('You have already added the maximum limit of 5 product images.');
+      return;
+    }
+
+    const filesToAdd = validFiles.slice(0, remainingSlots);
+    if (validFiles.length > remainingSlots) {
+      alert(`Only ${remainingSlots} more image(s) could be added. Maximum 5 images allowed per product.`);
+    }
+
+    const newPreviews = filesToAdd.map(f => URL.createObjectURL(f));
+    setNewDeviceImages(prev => [...prev, ...filesToAdd]);
+    setNewDeviceImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleRemoveAddProductImage = (idx: number) => {
+    setNewDeviceImages(prev => prev.filter((_, i) => i !== idx));
+    setNewDeviceImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleMoveAddProductImage = (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= newDeviceImages.length) return;
+    setNewDeviceImages(prev => {
+      const updated = [...prev];
+      const [item] = updated.splice(fromIdx, 1);
+      if (item) updated.splice(toIdx, 0, item);
+      return updated;
+    });
+    setNewDeviceImagePreviews(prev => {
+      const updated = [...prev];
+      const [item] = updated.splice(fromIdx, 1);
+      if (item) updated.splice(toIdx, 0, item);
+      return updated;
+    });
+  };
+
   // Dynamic Variants for Add Product (Storage Variants with Product IDs & Branch Stocks)
   const [newDeviceBranch, setNewDeviceBranch] = useState<string>('Tagoloan');
   const [addVariants, setAddVariants] = useState<{
@@ -165,8 +216,57 @@ export default function AdminInventory() {
   const [editDeviceAsLowAs, setEditDeviceAsLowAs] = useState('');
   const [editDeviceWarranty, setEditDeviceWarranty] = useState('');
   const [editDeviceDownpayment, setEditDeviceDownpayment] = useState('');
-  const [editDeviceImages, setEditDeviceImages] = useState<File[]>([]);
-  const [editDeviceImagePreviews, setEditDeviceImagePreviews] = useState<string[]>([]);
+  
+  // Unified Edit Product Images (1 to 5)
+  const [editImages, setEditImages] = useState<{ id: string; type: 'existing' | 'new'; url: string; file?: File }[]>([]);
+
+  const handleAddEditImages = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const validFiles = fileArray.filter(f => {
+      const isImg = f.type.startsWith('image/');
+      const isValidSize = f.size <= 10 * 1024 * 1024;
+      if (!isImg) alert(`${f.name} is not a valid image format (JPG, PNG, WEBP).`);
+      else if (!isValidSize) alert(`${f.name} exceeds 10MB.`);
+      return isImg && isValidSize;
+    });
+
+    if (validFiles.length === 0) return;
+
+    const remainingSlots = 5 - editImages.length;
+    if (remainingSlots <= 0) {
+      alert('You have already added the maximum limit of 5 product images.');
+      return;
+    }
+
+    const filesToAdd = validFiles.slice(0, remainingSlots);
+    if (validFiles.length > remainingSlots) {
+      alert(`Only ${remainingSlots} more image(s) could be added. Maximum 5 images allowed.`);
+    }
+
+    const newItems = filesToAdd.map(file => ({
+      id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      type: 'new' as const,
+      url: URL.createObjectURL(file),
+      file
+    }));
+
+    setEditImages(prev => [...prev, ...newItems]);
+  };
+
+  const handleRemoveEditImage = (idx: number) => {
+    setEditImages(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleMoveEditImage = (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= editImages.length) return;
+    setEditImages(prev => {
+      const updated = [...prev];
+      const [item] = updated.splice(fromIdx, 1);
+      if (item) updated.splice(toIdx, 0, item);
+      return updated;
+    });
+  };
+
   const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
   const [editDeviceDownpaymentImagePreview, setEditDeviceDownpaymentImagePreview] = useState<string | null>(null);
   const [editVariants, setEditVariants] = useState<any[]>([]);
@@ -497,6 +597,11 @@ export default function AdminInventory() {
       return;
     }
 
+    if (newDeviceImages.length === 0) {
+      alert("Please upload at least 1 product image (1 to 5 images required).");
+      return;
+    }
+
     setIsAdding(true);
     const formData = new FormData();
     formData.append('deviceName', newDeviceName);
@@ -599,8 +704,18 @@ export default function AdminInventory() {
     setEditDeviceAsLowAs(prod.asLowAs || '');
     setEditDeviceWarranty(prod.warranty || '');
     setEditDeviceDownpayment(prod.downpayment || '');
-    setEditDeviceImagePreviews(prod.images?.length > 0 ? prod.images : (prod.image ? [prod.image] : []));
-    setEditDeviceImages([]);
+
+    // Initialize edit images (1 to 5)
+    const initialImages: { id: string; type: 'existing' | 'new'; url: string; file?: File }[] = [];
+    if (Array.isArray(prod.images) && prod.images.length > 0) {
+      prod.images.forEach((imgUrl: string, idx: number) => {
+        if (imgUrl) initialImages.push({ id: `existing-${idx}-${Date.now()}`, type: 'existing', url: imgUrl });
+      });
+    } else if (prod.image) {
+      initialImages.push({ id: `existing-0-${Date.now()}`, type: 'existing', url: prod.image });
+    }
+    setEditImages(initialImages);
+
     setEditDeviceDownpaymentImagePreview(prod.downpaymentImage);
     setEditDeviceDownpaymentImage(null);
 
@@ -628,6 +743,12 @@ export default function AdminInventory() {
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!productToEdit) return;
+
+    if (editImages.length === 0) {
+      alert("Product must have at least 1 image (maximum 5). Please upload an image before saving.");
+      return;
+    }
+
     setIsEditing(true);
 
     const formData = new FormData();
@@ -644,6 +765,13 @@ export default function AdminInventory() {
     formData.append('deviceAsLowAs', editDeviceAsLowAs);
     formData.append('deviceWarranty', editDeviceWarranty);
     formData.append('deviceDownpayment', editDeviceDownpayment);
+
+    // Existing preserved images & new images (max 5)
+    const existingUrls = editImages.filter(item => item.type === 'existing').map(item => item.url);
+    formData.append('existingImages', JSON.stringify(existingUrls));
+
+    const newImageFiles = editImages.filter(item => item.type === 'new' && item.file).map(item => item.file!);
+    newImageFiles.forEach(img => formData.append('deviceImages', img));
 
     let totalStock = 0;
     if (editVariants.length > 0) {
@@ -673,7 +801,6 @@ export default function AdminInventory() {
       formData.append('deviceStocks', totalStock.toString());
     }
 
-    editDeviceImages.forEach(img => formData.append('deviceImages', img));
     if (editDeviceDownpaymentImage) {
       formData.append('deviceDownpaymentImage', editDeviceDownpaymentImage);
     }
@@ -2034,7 +2161,125 @@ export default function AdminInventory() {
                 </div>
               </div>
 
-              {/* Specs and Images */}
+              {/* Product Images (1 to 5 Images) */}
+              <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon size={18} className="text-[#5c0099]" />
+                    <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">
+                      Product Images * <span className="text-xs font-normal text-gray-500 normal-case">({newDeviceImages.length}/5 uploaded, 1 required)</span>
+                    </h4>
+                  </div>
+                  {newDeviceImages.length < 5 && (
+                    <label className="cursor-pointer text-xs font-bold text-[#5c0099] hover:text-[#450073] flex items-center gap-1.5 bg-white border border-purple-300 hover:border-[#5c0099] px-3 py-1.5 rounded-xl shadow-xs transition-all">
+                      <Plus size={14} /> Add Images
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files) handleAddProductImages(e.target.files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {newDeviceImages.length === 0 ? (
+                  <label className="border-2 border-dashed border-purple-300 hover:border-[#5c0099] bg-white rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors group">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 group-hover:bg-purple-100 text-[#5c0099] flex items-center justify-center transition-colors">
+                      <Upload size={22} />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm font-bold text-[#5c0099] group-hover:underline">Click or drag images to upload</span>
+                      <p className="text-xs text-gray-500 mt-0.5">Upload 1 to 5 product images (JPG, PNG, WEBP, max 10MB each). Image 1 will be the primary cover.</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) handleAddProductImages(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {newDeviceImagePreviews.map((previewUrl, idx) => (
+                        <div 
+                          key={idx}
+                          className="group relative bg-white rounded-2xl border-2 border-purple-200 hover:border-[#5c0099] overflow-hidden flex flex-col shadow-xs transition-all"
+                        >
+                          {/* Header Badge */}
+                          <div className="p-1.5 flex items-center justify-between bg-purple-50/80 border-b border-purple-100">
+                            {idx === 0 ? (
+                              <span className="inline-flex items-center gap-1 bg-[#5c0099] text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                                <Sparkles size={10} /> Cover / Main
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center bg-gray-200 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                Image {idx + 1}
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAddProductImage(idx)}
+                              className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-md transition-colors"
+                              title="Remove Image"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+
+                          {/* Thumbnail Image */}
+                          <div className="aspect-square w-full p-2 bg-gray-50/50 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={previewUrl} 
+                              alt={`Product Preview ${idx + 1}`} 
+                              className="w-full h-full object-contain mix-blend-multiply" 
+                            />
+                          </div>
+
+                          {/* Reorder Buttons Footer */}
+                          <div className="p-1.5 flex items-center justify-between bg-white border-t border-gray-100">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveAddProductImage(idx, idx - 1)}
+                              className="p-1 text-gray-500 hover:text-[#5c0099] hover:bg-purple-50 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-500 cursor-pointer"
+                              title="Move Left (Earlier in Gallery)"
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <span className="text-[10px] font-bold text-gray-400">#{idx + 1}</span>
+                            <button
+                              type="button"
+                              disabled={idx === newDeviceImages.length - 1}
+                              onClick={() => handleMoveAddProductImage(idx, idx + 1)}
+                              className="p-1 text-gray-500 hover:text-[#5c0099] hover:bg-purple-50 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-500 cursor-pointer"
+                              title="Move Right (Later in Gallery)"
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="text-[11px] text-gray-500 italic">
+                      💡 <strong className="text-gray-700">Display Order:</strong> Image 1 is the main product cover. Use the &larr; &rarr; arrows to reorder gallery images.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Specs */}
               <div>
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Specifications</label>
                 <textarea
@@ -2090,7 +2335,7 @@ export default function AdminInventory() {
                   <input
                     type="text"
                     value={editDeviceName}
-                    onChange={(e) => setNewDeviceName(e.target.value)}
+                    onChange={(e) => setEditDeviceName(e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
@@ -2207,6 +2452,136 @@ export default function AdminInventory() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Product Images (1 to 5 Images) */}
+              <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon size={18} className="text-[#5c0099]" />
+                    <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">
+                      Product Images * <span className="text-xs font-normal text-gray-500 normal-case">({editImages.length}/5 uploaded, 1 required)</span>
+                    </h4>
+                  </div>
+                  {editImages.length < 5 && (
+                    <label className="cursor-pointer text-xs font-bold text-[#5c0099] hover:text-[#450073] flex items-center gap-1.5 bg-white border border-purple-300 hover:border-[#5c0099] px-3 py-1.5 rounded-xl shadow-xs transition-all">
+                      <Plus size={14} /> Add Images
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files) handleAddEditImages(e.target.files);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {editImages.length === 0 ? (
+                  <label className="border-2 border-dashed border-purple-300 hover:border-[#5c0099] bg-white rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors group">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 group-hover:bg-purple-100 text-[#5c0099] flex items-center justify-center transition-colors">
+                      <Upload size={22} />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-sm font-bold text-[#5c0099] group-hover:underline">Click or drag images to upload</span>
+                      <p className="text-xs text-gray-500 mt-0.5">Upload 1 to 5 product images (JPG, PNG, WEBP, max 10MB each). Image 1 will be the main cover.</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) handleAddEditImages(e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {editImages.map((img, idx) => (
+                        <div 
+                          key={img.id || idx}
+                          className="group relative bg-white rounded-2xl border-2 border-purple-200 hover:border-[#5c0099] overflow-hidden flex flex-col shadow-xs transition-all"
+                        >
+                          {/* Header Badge */}
+                          <div className="p-1.5 flex items-center justify-between bg-purple-50/80 border-b border-purple-100">
+                            {idx === 0 ? (
+                              <span className="inline-flex items-center gap-1 bg-[#5c0099] text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
+                                <Sparkles size={10} /> Cover / Main
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center bg-gray-200 text-gray-700 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                                Image {idx + 1}
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEditImage(idx)}
+                              className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-md transition-colors"
+                              title="Remove Image"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+
+                          {/* Thumbnail Image */}
+                          <div className="aspect-square w-full p-2 bg-gray-50/50 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={img.url} 
+                              alt={`Product Preview ${idx + 1}`} 
+                              className="w-full h-full object-contain mix-blend-multiply" 
+                            />
+                          </div>
+
+                          {/* Reorder Buttons Footer */}
+                          <div className="p-1.5 flex items-center justify-between bg-white border-t border-gray-100">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveEditImage(idx, idx - 1)}
+                              className="p-1 text-gray-500 hover:text-[#5c0099] hover:bg-purple-50 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-500 cursor-pointer"
+                              title="Move Left (Earlier in Gallery)"
+                            >
+                              <ChevronLeft size={14} />
+                            </button>
+                            <span className="text-[10px] font-bold text-gray-400">#{idx + 1}</span>
+                            <button
+                              type="button"
+                              disabled={idx === editImages.length - 1}
+                              onClick={() => handleMoveEditImage(idx, idx + 1)}
+                              className="p-1 text-gray-500 hover:text-[#5c0099] hover:bg-purple-50 rounded disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-gray-500 cursor-pointer"
+                              title="Move Right (Later in Gallery)"
+                            >
+                              <ChevronRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="text-[11px] text-gray-500 italic">
+                      💡 <strong className="text-gray-700">Display Order:</strong> Image 1 is the main product cover. Use the &larr; &rarr; arrows to reorder gallery images.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Specs in Edit Modal */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Specifications</label>
+                <textarea
+                  rows={2}
+                  placeholder="Processor, Screen, RAM, Battery details..."
+                  value={editDeviceSpecs}
+                  onChange={(e) => setEditDeviceSpecs(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">

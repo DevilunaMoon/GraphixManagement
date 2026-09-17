@@ -321,7 +321,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const filesToUpload = imagesForm.length > 0 ? imagesForm : (singleImage ? [singleImage] : []);
+    const filesToUpload = (imagesForm.length > 0 ? imagesForm : (singleImage ? [singleImage] : [])).slice(0, 5);
     let imageUrls: string[] = [];
 
     if (filesToUpload.length > 0) {
