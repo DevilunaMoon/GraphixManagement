@@ -40,7 +40,7 @@ export default function AdminSettings() {
                 </span>
               </div>
             }
-            label="Customer's Feedback"
+            label="Customer Feedback"
             sublabel="Review reviews, ratings, and customer comments"
             onClick={() => navigate('/admin/feedback')}
           />
