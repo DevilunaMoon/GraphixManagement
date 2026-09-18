@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2 } from 'lucide-react';
+import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare } from 'lucide-react';
 
 export default function AdminSettings() {
   const router = useRouter();
@@ -43,6 +43,20 @@ export default function AdminSettings() {
             label="Customer Feedback"
             sublabel="Review reviews, ratings, and customer comments"
             onClick={() => navigate('/admin/feedback')}
+          />
+
+          <SettingsItem 
+            icon={
+              <div className="relative inline-block">
+                <MessageSquare className="text-[#BF00FF] w-7 h-7" />
+                <span className="absolute -bottom-0.5 -right-1 bg-[#6B21A8] text-white text-[0.6rem] font-bold border-2 border-white rounded-full w-4 h-4 flex items-center justify-center">
+                  !
+                </span>
+              </div>
+            }
+            label="Repair Feedback"
+            sublabel="View customer feedback, ratings, and comments about completed repairs"
+            onClick={() => navigate('/admin/repair-feedback')}
           />
 
           <SettingsItem 
