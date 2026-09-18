@@ -14,8 +14,8 @@ function CashierEditProgressContent() {
   const id = searchParams.get('id');
 
   const [deviceData, setDeviceData] = useState<any>(null);
-  const [progress, setProgress] = useState('Diagnostic');
-  const [initialProgress, setInitialProgress] = useState('Diagnostic');
+  const [progress, setProgress] = useState('Accepted');
+  const [initialProgress, setInitialProgress] = useState('Accepted');
   const [cause, setCause] = useState('');
   const [technician, setTechnician] = useState('');
   const [repairCost, setRepairCost] = useState('');
@@ -27,7 +27,7 @@ function CashierEditProgressContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const progressLevels = ['Diagnostic', 'Repairing', 'Completed'];
+  const progressLevels = ['Accepted', 'Diagnostic', 'Repairing', 'Completed'];
   const initialProgressIndex = progressLevels.indexOf(initialProgress);
 
   useEffect(() => {
@@ -38,8 +38,8 @@ function CashierEditProgressContent() {
         .then(data => {
           if (data && !data.error) {
             setDeviceData(data);
-            setProgress(data.progress || 'Diagnostic');
-            setInitialProgress(data.progress || 'Diagnostic');
+            setProgress(data.progress || 'Accepted');
+            setInitialProgress(data.progress || 'Accepted');
             setCause(data.cause || '');
             setTechnician(data.technician || '');
             setRepairCost(data.repairCost || '');
@@ -97,6 +97,11 @@ function CashierEditProgressContent() {
       case 'diagnosis':
       case '25%':
       case '0%': 
+        return 'text-blue-500';
+      case 'accepted':
+        return 'text-purple-600';
+      case 'cancelled':
+      case 'rejected':
         return 'text-red-500';
       default: 
         return 'text-black';
@@ -203,9 +208,11 @@ function CashierEditProgressContent() {
                   onChange={(e) => setProgress(e.target.value)}
                   className={`w-full h-12 border-2 border-gray-300 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-semibold appearance-none bg-white cursor-pointer ${getProgressColor()}`}
                 >
-                  <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-red-500 font-semibold">Diagnostic</option>
+                  <option value="Accepted" disabled={progressLevels.indexOf('Accepted') < initialProgressIndex} className="text-purple-600 font-semibold">Accepted</option>
+                  <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-blue-500 font-semibold">Diagnostic</option>
                   <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
                   <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
+                  <option value="Cancelled" className="text-red-500 font-semibold">Cancelled</option>
                 </select>
                 <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                   <ChevronDown size={20} className="text-gray-500" />

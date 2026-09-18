@@ -88,22 +88,24 @@ export default function CustomerMonitoring() {
 
   const getSemanticStatus = (device: MonitoringDevice) => {
     const prog = (device.progress || '').toLowerCase();
-    if (prog === 'rejected' || prog === 'cancelled' || device.status?.toLowerCase() === 'cancelled') return 'Rejected';
+    if (prog === 'rejected' || prog === 'cancelled' || device.status?.toLowerCase() === 'cancelled') return 'Cancelled';
     if (device.status === 'Completed' || device.progress === '100%' || prog === 'completed') return 'Completed';
-    if (prog === 'pending') return 'Pending';
     if (prog === 'accepted') return 'Accepted';
-    if (device.progress === '0%' || device.progress === '25%' || prog === 'diagnostic' || prog === 'diagnosis') return 'Diagnosis';
+    if (device.progress === '0%' || device.progress === '25%' || prog === 'diagnostic' || prog === 'diagnosis') return 'Diagnostic';
     if (device.progress === '50%' || device.progress === '75%' || prog === 'repairing') return 'Repairing';
+    if (prog === 'pending') return 'Pending';
     return 'Pending';
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending': return 'text-amber-500';
-      case 'Accepted': return 'text-blue-600';
-      case 'Repairing': return 'text-orange-500';
+      case 'Accepted': return 'text-purple-600';
+      case 'Diagnostic':
       case 'Diagnosis': return 'text-blue-500';
+      case 'Repairing': return 'text-yellow-500';
       case 'Completed': return 'text-green-500';
+      case 'Cancelled':
       case 'Rejected': return 'text-red-500';
       default: return 'text-black';
     }

@@ -140,11 +140,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       updateData.status = 'Cancelled';
     }
 
-    if (updateData.progress === '100%') {
+    if (updateData.progress === '100%' || updateData.progress?.toLowerCase() === 'completed') {
       updateData.status = 'Completed';
+    } else if (updateData.progress?.toLowerCase() === 'cancelled' || updateData.progress?.toLowerCase() === 'rejected') {
+      updateData.status = 'Cancelled';
+    } else if (updateData.progress === 'Accepted' || updateData.progress === 'Diagnostic' || updateData.progress === 'Repairing') {
+      updateData.status = 'Active';
     }
-    if (updateData.status === 'Completed') {
-      updateData.progress = '100%';
+
+    if (updateData.status === 'Completed' && !updateData.progress) {
+      updateData.progress = 'Completed';
     }
 
     const request = await prisma.repairRequest.update({

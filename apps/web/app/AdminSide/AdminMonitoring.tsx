@@ -144,7 +144,7 @@ export default function AdminMonitoring() {
   const [addCustomerEmail, setAddCustomerEmail] = useState('');
   const [addUserId, setAddUserId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [addProgress, setAddProgress] = useState('Diagnostic');
+  const [addProgress, setAddProgress] = useState('Accepted');
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
   const [addRepairCost, setAddRepairCost] = useState('');
@@ -181,8 +181,8 @@ export default function AdminMonitoring() {
   const [editOwnerName, setEditOwnerName] = useState('');
   const [editCustomerPhone, setEditCustomerPhone] = useState('');
   const [editCustomerEmail, setEditCustomerEmail] = useState('');
-  const [editProgress, setEditProgress] = useState('Diagnostic');
-  const [initialEditProgress, setInitialEditProgress] = useState('Diagnostic');
+  const [editProgress, setEditProgress] = useState('Accepted');
+  const [initialEditProgress, setInitialEditProgress] = useState('Accepted');
   const [editCause, setEditCause] = useState('');
   const [editTechnician, setEditTechnician] = useState('');
   const [editRepairCost, setEditRepairCost] = useState('');
@@ -197,7 +197,7 @@ export default function AdminMonitoring() {
   const [editMaterials, setEditMaterials] = useState<MaterialItem[]>([]);
   const [editLaborCost, setEditLaborCost] = useState<string>('0');
 
-  const progressLevels = ['Diagnostic', 'Repairing', 'Completed'];
+  const progressLevels = ['Accepted', 'Diagnostic', 'Repairing', 'Completed'];
   const initialProgressIndex = progressLevels.indexOf(initialEditProgress);
 
   const ITEMS_PER_PAGE = 8;
@@ -339,8 +339,9 @@ export default function AdminMonitoring() {
   const openEditModal = (device: DeviceProgress) => {
     setDeviceToEdit(device);
     setEditOwnerName(device.ownerName || '');
-    setEditProgress(device.progress || 'Diagnostic');
-    setInitialEditProgress(device.progress || 'Diagnostic');
+    const currentProgress = formatProgress(device.progress) || 'Accepted';
+    setEditProgress(currentProgress);
+    setInitialEditProgress(currentProgress);
     setEditCause(device.cause || '');
     setEditTechnician(device.technician || '');
     setEditRepairCost(device.repairCost || '');
@@ -579,7 +580,7 @@ export default function AdminMonitoring() {
         setAddCustomerEmail('');
         setAddCustomerPhone('');
         setAddUserId(null);
-        setAddProgress('Diagnostic');
+        setAddProgress('Accepted');
         setAddCause('');
         setAddTechnician('');
         setAddRepairCost('');
@@ -1160,6 +1161,7 @@ export default function AdminMonitoring() {
                         }}
                         className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
                       >
+                        <option value="Accepted" disabled={progressLevels.indexOf('Accepted') < initialProgressIndex} className="text-purple-600 font-semibold">Accepted</option>
                         <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-blue-500 font-semibold">Diagnostic</option>
                         <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
                         <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
@@ -1622,6 +1624,7 @@ export default function AdminMonitoring() {
                         onChange={(e) => setAddProgress(e.target.value)}
                         className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
                       >
+                        <option value="Accepted" className="text-purple-600 font-semibold">Accepted</option>
                         <option value="Diagnostic" className="text-blue-500 font-semibold">Diagnostic</option>
                         <option value="Repairing" className="text-yellow-500 font-semibold">Repairing</option>
                         <option value="Completed" className="text-green-600 font-semibold">Completed</option>

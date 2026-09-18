@@ -127,7 +127,7 @@ export async function POST(req: Request) {
     
     const deviceName = formData.get('deviceName') as string;
     let ownerName = (formData.get('ownerName') as string) || '';
-    const progress = (formData.get('progress') as string) || (isCustomer ? 'Pending' : 'Diagnostic');
+    const progress = (formData.get('progress') as string) || (isCustomer ? 'Pending' : 'Accepted');
     const cause = formData.get('cause') as string;
     const technician = formData.get('technician') as string | null;
     const repairCost = formData.get('repairCost') as string | null;

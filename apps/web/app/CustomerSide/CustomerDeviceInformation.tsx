@@ -167,15 +167,27 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                       <span className={`inline-flex font-bold px-4 py-1.5 rounded-full text-sm mt-1 w-fit ${
                         (device.status === 'Completed' || device.progress === '100%' || device.progress?.toLowerCase() === 'completed') 
                           ? 'bg-green-100 text-green-700' 
-                          : (device.progress?.toLowerCase() === 'cancelled' || device.status?.toLowerCase() === 'cancelled')
+                          : (device.progress?.toLowerCase() === 'cancelled' || device.status?.toLowerCase() === 'cancelled' || device.progress?.toLowerCase() === 'rejected')
                             ? 'bg-red-100 text-red-700'
-                            : 'bg-orange-100 text-orange-700'
+                            : (device.progress?.toLowerCase() === 'accepted')
+                              ? 'bg-purple-100 text-purple-700'
+                              : (device.progress?.toLowerCase() === 'diagnostic' || device.progress?.toLowerCase() === 'diagnosis')
+                                ? 'bg-blue-100 text-blue-700'
+                                : (device.progress?.toLowerCase() === 'repairing')
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-orange-100 text-orange-700'
                       }`}>
                         {(device.status === 'Completed' || device.progress === '100%' || device.progress?.toLowerCase() === 'completed') 
                           ? 'Completed' 
-                          : (device.progress?.toLowerCase() === 'cancelled' || device.status?.toLowerCase() === 'cancelled')
+                          : (device.progress?.toLowerCase() === 'cancelled' || device.status?.toLowerCase() === 'cancelled' || device.progress?.toLowerCase() === 'rejected')
                             ? 'Cancelled'
-                            : device.status}
+                            : (device.progress?.toLowerCase() === 'accepted')
+                              ? 'Accepted'
+                              : (device.progress?.toLowerCase() === 'diagnostic' || device.progress?.toLowerCase() === 'diagnosis')
+                                ? 'Diagnostic'
+                                : (device.progress?.toLowerCase() === 'repairing')
+                                  ? 'Repairing'
+                                  : (device.progress || device.status)}
                       </span>
                     </div>
                     <div className="flex flex-col items-end gap-1 text-right">
