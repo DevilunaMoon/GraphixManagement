@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Bell, CheckCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Bell, CheckCheck, MessageSquare, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Notification {
   id: string;
   title: string;
   message: string;
+  type?: string;
   isRead: boolean;
   createdAt: string;
 }
@@ -20,6 +22,7 @@ const formatDateTime = (dateStr: string) => {
 };
 
 export default function CustomerNotifications() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,6 +65,29 @@ export default function CustomerNotifications() {
     }
   };
 
+  const handleNotificationClick = async (notif: Notification) => {
+    if (!notif.isRead) {
+      try {
+        await fetch('/api/notifications/mark-read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: notif.id })
+        });
+        setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+        window.dispatchEvent(new Event('notificationsUpdated'));
+      } catch (e) {
+        console.error('Failed to mark notification as read:', e);
+      }
+    }
+
+    // Extract product link if present
+    const linkMatch = notif.message.match(/\[ProductLink:\s*([^\]]+)\]/i);
+    if (linkMatch?.[1]) {
+      const targetUrl = linkMatch[1].includes('#') ? linkMatch[1] : `${linkMatch[1]}#reviews`;
+      router.push(targetUrl);
+    }
+  };
+
   return (
     <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center overflow-y-auto w-full">
       <div className="w-full max-w-7xl flex flex-col gap-6">
@@ -95,34 +121,54 @@ export default function CustomerNotifications() {
                 <p className="text-lg font-medium">No notifications yet. You're all caught up!</p>
               </div>
             ) : (
-              notifications.map((notif) => (
-                <div 
-                  key={notif.id} 
-                  className={`p-4 sm:p-6 rounded-2xl border transition-all md:hover:translate-x-1 ${
-                    !notif.isRead 
-                      ? 'bg-gradient-to-r from-purple-50/70 to-white border-l-4 border-[#bd00ff] border-y-purple-100 border-r-purple-100 shadow-sm' 
-                      : 'bg-white border-gray-200 hover:border-purple-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2 flex-wrap justify-between">
-                    <div className="flex items-center gap-2">
-                      <h4 className={`text-base sm:text-lg m-0 border-none ${!notif.isRead ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>
-                        {notif.title}
-                      </h4>
-                      {!notif.isRead && (
-                        <span className="bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm"></span>
-                      )}
+              notifications.map((notif) => {
+                const linkMatch = notif.message.match(/\[ProductLink:\s*([^\]]+)\]/i);
+                const hasLink = Boolean(linkMatch?.[1]);
+                const cleanMessage = notif.message.replace(/\[ProductLink:\s*[^\]]+\]/gi, '').trim();
+
+                return (
+                  <div 
+                    key={notif.id} 
+                    onClick={() => handleNotificationClick(notif)}
+                    className={`p-4 sm:p-6 rounded-2xl border transition-all cursor-pointer ${
+                      hasLink ? 'hover:shadow-md hover:border-[#bd00ff]' : ''
+                    } ${
+                      !notif.isRead 
+                        ? 'bg-gradient-to-r from-purple-50/70 to-white border-l-4 border-[#bd00ff] border-y-purple-100 border-r-purple-100 shadow-sm' 
+                        : 'bg-white border-gray-200 hover:border-purple-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2 flex-wrap justify-between">
+                      <div className="flex items-center gap-2">
+                        {notif.type === 'REVIEW_REPLY' ? (
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#bd00ff] flex items-center justify-center shrink-0">
+                            <MessageSquare size={15} />
+                          </div>
+                        ) : null}
+                        <h4 className={`text-base sm:text-lg m-0 border-none ${!notif.isRead ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>
+                          {notif.title}
+                        </h4>
+                        {!notif.isRead && (
+                          <span className="bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm"></span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
+                        <Clock size={12} className="text-[#bd00ff]" />
+                        <span>{formatDateTime(notif.createdAt)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
-                      <Clock size={12} className="text-[#bd00ff]" />
-                      <span>{formatDateTime(notif.createdAt)}</span>
-                    </div>
+                    <p className={`m-0 leading-relaxed text-sm sm:text-base ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
+                      {cleanMessage}
+                    </p>
+                    {hasLink && (
+                      <div className="mt-2 text-xs font-bold text-[#bd00ff] hover:underline flex items-center gap-1">
+                        <span>View Product Reviews</span>
+                        <ExternalLink size={12} />
+                      </div>
+                    )}
                   </div>
-                  <p className={`m-0 leading-relaxed text-sm sm:text-base ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
-                    {notif.message}
-                  </p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

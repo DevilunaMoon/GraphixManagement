@@ -24,6 +24,8 @@ import DatePicker from '../../components/ui/DatePicker';
 
 interface FeedbackItem {
   id: string;
+  userId?: string;
+  deviceId?: string;
   customerName: string;
   customerEmail: string;
   customerImage: string | null;
@@ -31,6 +33,10 @@ interface FeedbackItem {
   productImage: string | null;
   productPrice: number;
   feedbackText: string;
+  adminReply?: string | null;
+  adminReplyBy?: string | null;
+  adminReplyRole?: string | null;
+  adminReplyDate?: string | null;
   branch: string;
   rawBranch: string;
   createdAt: string;
@@ -55,6 +61,8 @@ export default function AdminFeedback() {
   const [modalState, setModalState] = useState<'none' | 'reply' | 'success' | 'error'>('none');
   const [activeFeedback, setActiveFeedback] = useState<FeedbackItem | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const ITEMS_PER_PAGE = 8;
 
@@ -102,16 +110,50 @@ export default function AdminFeedback() {
   // Handle opening reply dialog
   const handleOpenReply = (item: FeedbackItem) => {
     setActiveFeedback(item);
-    setReplyMessage('');
+    setReplyMessage(item.adminReply || '');
+    setErrorMessage('');
     setModalState('reply');
   };
 
-  const handleSendReply = () => {
-    if (!replyMessage.trim()) {
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !activeFeedback) {
+      setErrorMessage('Please enter a reply message before sending.');
       setModalState('error');
       return;
     }
-    setModalState('success');
+
+    setIsSubmittingReply(true);
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewId: activeFeedback.id,
+          reply: replyMessage.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setFeedbacks(prev => prev.map(f => f.id === activeFeedback.id ? {
+          ...f,
+          adminReply: data.review.adminReply,
+          adminReplyBy: data.review.adminReplyBy,
+          adminReplyRole: data.review.adminReplyRole,
+          adminReplyDate: data.review.adminReplyDate,
+        } : f));
+        setModalState('success');
+      } else {
+        setErrorMessage(data.error || 'Failed to send reply.');
+        setModalState('error');
+      }
+    } catch (err: any) {
+      console.error('Error sending reply:', err);
+      setErrorMessage(err.message || 'An error occurred while sending reply.');
+      setModalState('error');
+    } finally {
+      setIsSubmittingReply(false);
+    }
   };
 
   const handleClearFilters = () => {
@@ -339,10 +381,34 @@ export default function AdminFeedback() {
                   {/* Feedback quotation */}
                   <div className="relative bg-white/80 rounded-xl p-4 border border-purple-100/80 text-gray-700 text-sm md:text-[0.95rem] leading-relaxed shadow-xs">
                     <Quote className="absolute -top-2.5 -left-2 text-[#BF00FF]/30 w-6 h-6 fill-current" />
-                    <p className="whitespace-pre-wrap relative z-10 font-normal">
+                    <p className="whitespace-pre-wrap relative z-10 font-normal m-0">
                       {fb.feedbackText || <span className="italic text-gray-400">No written feedback provided.</span>}
                     </p>
                   </div>
+
+                  {/* Existing Admin / Super Admin Response if present */}
+                  {fb.adminReply && (
+                    <div className="mt-1 p-3.5 bg-gradient-to-r from-purple-50/90 to-fuchsia-50/50 rounded-xl border-l-4 border-[#BF00FF] border-y border-r border-purple-100/80 flex flex-col gap-1.5 shadow-xs">
+                      <div className="flex items-center justify-between flex-wrap gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#BF00FF] text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            {fb.adminReplyRole || 'Admin'}
+                          </span>
+                          <span className="text-xs font-black text-gray-900">
+                            Graphix {fb.adminReplyRole || 'Admin'} Response
+                          </span>
+                        </div>
+                        {fb.adminReplyDate && (
+                          <span className="text-[11px] text-gray-400 font-semibold">
+                            {new Date(fb.adminReplyDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs md:text-sm text-gray-700 font-medium leading-relaxed whitespace-pre-wrap m-0">
+                        {fb.adminReply}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right: Date Submitted & Action */}
@@ -354,10 +420,10 @@ export default function AdminFeedback() {
 
                   <button 
                     onClick={() => handleOpenReply(fb)}
-                    className="mt-2 text-xs md:text-sm font-bold text-[#BF00FF] hover:text-[#7A00B8] hover:underline flex items-center gap-1 transition-colors"
+                    className="mt-2 text-xs md:text-sm font-bold text-[#BF00FF] hover:text-[#7A00B8] hover:underline flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <MessageSquare size={14} />
-                    <span>Reply</span>
+                    <span>{fb.adminReply ? 'Edit Reply' : 'Reply'}</span>
                   </button>
                 </div>
               </div>
@@ -378,7 +444,7 @@ export default function AdminFeedback() {
             {(searchTerm || filterDate || (isSuperAdmin && selectedBranchFilter !== 'all')) && (
               <button
                 onClick={handleClearFilters}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white rounded-xl text-sm font-bold shadow-md hover:opacity-95 transition-opacity"
+                className="px-5 py-2.5 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white rounded-xl text-sm font-bold shadow-md hover:opacity-95 transition-opacity cursor-pointer"
               >
                 Clear All Filters
               </button>
@@ -397,7 +463,7 @@ export default function AdminFeedback() {
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-xl border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-xl border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -407,7 +473,7 @@ export default function AdminFeedback() {
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-xl border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all"
+                className="p-2 rounded-xl border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronRight size={18} />
               </button>
@@ -429,11 +495,13 @@ export default function AdminFeedback() {
                   <div className="w-9 h-9 rounded-xl bg-purple-100 text-[#BF00FF] flex items-center justify-center font-bold">
                     <MessageSquare size={18} />
                   </div>
-                  <h3 className="text-xl font-black text-gray-900">Reply to Customer</h3>
+                  <h3 className="text-xl font-black text-gray-900">
+                    {activeFeedback.adminReply ? 'Edit Reply to Customer' : 'Reply to Customer'}
+                  </h3>
                 </div>
                 <button 
                   onClick={() => setModalState('none')} 
-                  className="text-gray-400 hover:text-black p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="text-gray-400 hover:text-black p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border-none bg-transparent"
                 >
                   <X size={18} />
                 </button>
@@ -466,15 +534,24 @@ export default function AdminFeedback() {
               <div className="flex gap-3 justify-end">
                 <button 
                   onClick={() => setModalState('none')} 
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm transition-colors"
+                  disabled={isSubmittingReply}
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold text-sm transition-colors cursor-pointer border-none"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSendReply} 
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white rounded-xl hover:opacity-90 font-bold text-sm shadow-md transition-opacity"
+                  disabled={isSubmittingReply}
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white rounded-xl hover:opacity-90 font-bold text-sm shadow-md transition-opacity cursor-pointer border-none disabled:opacity-50 flex items-center gap-2"
                 >
-                  Send Reply
+                  {isSubmittingReply ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <span>Send Reply</span>
+                  )}
                 </button>
               </div>
             </div>
@@ -488,11 +565,11 @@ export default function AdminFeedback() {
               </div>
               <h3 className="text-2xl font-black text-gray-900 mb-2">Reply Sent!</h3>
               <p className="text-gray-500 text-sm mb-6">
-                Your message has been sent to <strong className="text-gray-900">{activeFeedback.customerName}</strong>.
+                Your response has been saved and a notification was sent to <strong className="text-gray-900">{activeFeedback.customerName}</strong>.
               </p>
               <button 
                 onClick={() => setModalState('none')} 
-                className="px-8 py-3 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white rounded-xl hover:opacity-90 font-bold text-sm shadow-md transition-opacity w-full"
+                className="px-8 py-3 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white rounded-xl hover:opacity-90 font-bold text-sm shadow-md transition-opacity w-full cursor-pointer border-none"
               >
                 Okay
               </button>
@@ -505,11 +582,13 @@ export default function AdminFeedback() {
               <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
                 <AlertCircle size={36} />
               </div>
-              <h3 className="text-2xl font-black text-gray-900 mb-2">Message Required</h3>
-              <p className="text-gray-500 text-sm mb-6">Please enter a reply message before sending.</p>
+              <h3 className="text-2xl font-black text-gray-900 mb-2">Action Failed</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                {errorMessage || 'Please enter a reply message before sending.'}
+              </p>
               <button 
                 onClick={() => setModalState('reply')} 
-                className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold text-sm transition-colors w-full"
+                className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold text-sm transition-colors w-full cursor-pointer border-none"
               >
                 Go Back
               </button>

@@ -104,6 +104,8 @@ export async function GET(req: Request) {
 
       return {
         id: r.id,
+        userId: r.userId,
+        deviceId: r.deviceId,
         customerName: r.user?.name || r.user?.email || 'Anonymous Customer',
         customerEmail: r.user?.email || '',
         customerImage: r.user?.image || null,
@@ -111,6 +113,10 @@ export async function GET(req: Request) {
         productImage: deviceImage,
         productPrice: r.device?.price || 0,
         feedbackText: r.text || '',
+        adminReply: r.adminReply || null,
+        adminReplyBy: r.adminReplyBy || null,
+        adminReplyRole: r.adminReplyRole || null,
+        adminReplyDate: r.adminReplyDate ? r.adminReplyDate.toISOString() : null,
         branch: `${resolvedBranch} Branch`,
         rawBranch: resolvedBranch,
         createdAt: r.createdAt.toISOString(),
@@ -123,13 +129,14 @@ export async function GET(req: Request) {
       filtered = filtered.filter(f => f.rawBranch.toLowerCase() === branchFilter.toLowerCase());
     }
 
-    // 6. Filter by Search Query (customer name, email, product name, feedback text)
+    // 6. Filter by Search Query (customer name, email, product name, feedback text, admin reply)
     if (search) {
       filtered = filtered.filter(f => 
         f.customerName.toLowerCase().includes(search) ||
         f.customerEmail.toLowerCase().includes(search) ||
         f.productName.toLowerCase().includes(search) ||
         f.feedbackText.toLowerCase().includes(search) ||
+        (f.adminReply && f.adminReply.toLowerCase().includes(search)) ||
         f.branch.toLowerCase().includes(search)
       );
     }
@@ -158,7 +165,134 @@ export async function GET(req: Request) {
       totalPages: Math.ceil(total / limit) || 1,
     });
   } catch (error) {
-    console.error('Error in /api/feedback:', error);
+    console.error('Error in GET /api/feedback:', error);
     return NextResponse.json({ error: 'Failed to fetch customer feedback' }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await getSession();
+    if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { reviewId, reply } = body;
+
+    if (!reviewId || !reply || !reply.trim()) {
+      return NextResponse.json({ error: 'Review ID and reply message are required.' }, { status: 400 });
+    }
+
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+      include: {
+        user: true,
+        device: true,
+      }
+    });
+
+    if (!review) {
+      return NextResponse.json({ error: 'Review not found.' }, { status: 404 });
+    }
+
+    // Resolve branch for this review to enforce permissions
+    const purchase = await prisma.purchase.findFirst({
+      where: {
+        userId: review.userId,
+        deviceId: review.deviceId,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { branch: true }
+    });
+
+    const resolvedBranch = cleanBranchName(purchase?.branch || review.device?.branch || 'Tagoloan');
+
+    // If Admin (not Super Admin), ensure review belongs to their branch
+    if (session.role === 'ADMIN') {
+      const adminBranch = cleanBranchName(session.branch || 'Tagoloan');
+      if (adminBranch.toLowerCase() !== resolvedBranch.toLowerCase()) {
+        return NextResponse.json({ error: 'You are only authorized to reply to reviews from your assigned branch.' }, { status: 403 });
+      }
+    }
+
+    const responderRole = session.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin';
+    const responderName = session.name || responderRole;
+    const replyDate = new Date();
+
+    const updatedReview = await prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        adminReply: reply.trim(),
+        adminReplyBy: responderName,
+        adminReplyRole: responderRole,
+        adminReplyDate: replyDate,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        device: { select: { id: true, name: true } },
+      }
+    });
+
+    // Notify the Customer in real-time
+    if (review.userId) {
+      try {
+        const productName = review.device?.name || 'Product';
+        const replyPreview = reply.trim().length > 100 
+          ? `${reply.trim().substring(0, 97)}...` 
+          : reply.trim();
+
+        await prisma.notification.create({
+          data: {
+            userId: review.userId,
+            title: `${responderRole} replied to your review`,
+            message: `${responderRole} replied regarding "${productName}": "${replyPreview}" [ProductLink:/customer/product-info?id=${review.deviceId}]`,
+            type: 'REVIEW_REPLY',
+            branch: resolvedBranch,
+            isRead: false,
+          }
+        });
+      } catch (notifErr) {
+        console.error('Failed to create customer notification for review reply:', notifErr);
+      }
+    }
+
+    // Record Activity Log
+    try {
+      await prisma.activityLog.create({
+        data: {
+          action: 'REVIEW_REPLY',
+          description: `${responderRole} replied to customer review on "${review.device?.name || 'Device'}"`,
+          details: JSON.stringify({
+            reviewId: review.id,
+            customerId: review.userId,
+            customerName: review.user?.name || review.user?.email,
+            productName: review.device?.name,
+            reply: reply.trim()
+          }),
+          branch: resolvedBranch,
+          userId: session.userId,
+          userName: session.name || responderRole,
+          userRole: session.role,
+        }
+      });
+    } catch (logErr) {
+      console.warn('Failed to write activity log for review reply:', logErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      review: {
+        id: updatedReview.id,
+        adminReply: updatedReview.adminReply,
+        adminReplyBy: updatedReview.adminReplyBy,
+        adminReplyRole: updatedReview.adminReplyRole,
+        adminReplyDate: updatedReview.adminReplyDate?.toISOString(),
+      }
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Error in POST /api/feedback:', error);
+    return NextResponse.json({ error: 'Failed to submit reply.' }, { status: 500 });
   }
 }

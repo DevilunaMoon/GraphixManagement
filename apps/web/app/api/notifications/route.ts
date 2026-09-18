@@ -30,7 +30,7 @@ export async function GET(req: Request) {
 
     // For Super Admin & Admin, include stock alerts, repair requests, and system notifications
     if (isSuperAdmin || isAdmin) {
-      whereClause.type = { in: ['STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER'] };
+      whereClause.type = { in: ['STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'REVIEW_REPLY'] };
     }
 
     // Branch filtering for Super Admin / Admin

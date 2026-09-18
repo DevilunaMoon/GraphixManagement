@@ -9,6 +9,10 @@ interface Comment {
   user: { name: string | null; image?: string | null };
   createdAt: string;
   text: string;
+  adminReply?: string | null;
+  adminReplyBy?: string | null;
+  adminReplyRole?: string | null;
+  adminReplyDate?: string | null;
 }
 
 import { Suspense } from 'react';
@@ -539,7 +543,7 @@ function CustomerProductInfoContent() {
         </section>
 
         {/* Customer Reviews Section */}
-        <section className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-gray-100 mt-2">
+        <section id="reviews" className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-gray-100 mt-2">
           <h3 className="text-2xl font-black text-gray-900 border-none m-0 mb-6 tracking-tight">Customer Reviews ({comments.length})</h3>
           
           <div className="flex items-start gap-4 mb-8">
@@ -570,19 +574,46 @@ function CustomerProductInfoContent() {
 
           <div className="flex flex-col gap-5">
             {comments.map(comment => (
-              <div key={comment.id} className="flex items-start gap-4 p-5 bg-gray-50/50 rounded-2xl border border-gray-100">
-                {comment.user?.image ? (
-                  <img src={comment.user.image} alt={comment.user?.name || 'User'} className="w-11 h-11 rounded-full object-cover shrink-0 border border-gray-200" />
-                ) : (
-                  <UserCircle2 size={44} className="text-gray-400 shrink-0" />
-                )}
-                <div className="flex flex-col gap-1.5 w-full">
-                  <div className="flex justify-between items-center">
-                    <span className="font-extrabold text-gray-900 text-base">{comment.user?.name || 'Anonymous'}</span>
-                    <span className="text-gray-400 text-xs font-bold bg-white px-2.5 py-0.5 rounded-full border border-gray-100">{new Date(comment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              <div key={comment.id} className="flex flex-col gap-3 p-5 bg-gray-50/60 rounded-2xl border border-gray-100 shadow-xs">
+                {/* Customer Review Section */}
+                <div className="flex items-start gap-4">
+                  {comment.user?.image ? (
+                    <img src={comment.user.image} alt={comment.user?.name || 'User'} className="w-11 h-11 rounded-full object-cover shrink-0 border border-gray-200" />
+                  ) : (
+                    <UserCircle2 size={44} className="text-gray-400 shrink-0" />
+                  )}
+                  <div className="flex flex-col gap-1.5 w-full">
+                    <div className="flex justify-between items-center">
+                      <span className="font-extrabold text-gray-900 text-base">{comment.user?.name || 'Anonymous'}</span>
+                      <span className="text-gray-400 text-xs font-bold bg-white px-2.5 py-0.5 rounded-full border border-gray-100">{new Date(comment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <p className="text-gray-600 font-medium leading-relaxed m-0 text-sm whitespace-pre-wrap">{comment.text}</p>
                   </div>
-                  <p className="text-gray-600 font-medium leading-relaxed m-0 text-sm whitespace-pre-wrap">{comment.text}</p>
                 </div>
+
+                {/* Graphix Admin / Super Admin Response */}
+                {comment.adminReply && (
+                  <div className="mt-1 ml-4 sm:ml-12 p-4 bg-gradient-to-r from-purple-50/90 to-fuchsia-50/40 rounded-2xl border-l-4 border-[#bd00ff] border-y border-r border-purple-100 shadow-xs flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-gradient-to-r from-purple-600 to-[#bd00ff] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+                          {comment.adminReplyRole || 'Admin'}
+                        </span>
+                        <span className="font-extrabold text-gray-900 text-xs sm:text-sm">
+                          Graphix {comment.adminReplyRole || 'Admin'} Response
+                        </span>
+                      </div>
+                      {comment.adminReplyDate && (
+                        <span className="text-gray-400 text-[11px] font-semibold bg-white/80 px-2 py-0.5 rounded-full border border-purple-100/60">
+                          {new Date(comment.adminReplyDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-700 font-medium leading-relaxed m-0 text-xs sm:text-sm whitespace-pre-wrap">
+                      {comment.adminReply}
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
