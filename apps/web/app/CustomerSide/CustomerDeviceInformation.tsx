@@ -68,10 +68,11 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerName: device.ownerName || 'Customer', 
+          customerName: device.ownerName || userProfile?.name || 'Customer', 
           technicianName: device.technician || 'Unassigned', 
           feedbackText: feedback,
-          sentiment: sentiment
+          sentiment: sentiment,
+          branch: device.branch || 'Tagoloan'
         })
       });
 
@@ -80,7 +81,8 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 3000);
       } else {
-        alert('Failed to save feedback');
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || 'Failed to save feedback');
       }
     } catch (error) {
       console.error(error);

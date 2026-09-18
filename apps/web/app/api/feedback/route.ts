@@ -173,12 +173,29 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await getSession();
+    const body = await req.json();
+    const { reviewId, reply, feedbackText, customerName, technicianName, sentiment, branch } = body;
+
+    // Case 1: Customer submitting Technician Feedback
+    if (feedbackText && !reviewId) {
+      const resolvedBranch = cleanBranchName(branch || session?.branch || 'Tagoloan');
+      const createdFeedback = await prisma.technicianFeedback.create({
+        data: {
+          customerName: customerName || session?.name || 'Customer',
+          technicianName: technicianName || 'Unassigned',
+          feedbackText: feedbackText.trim(),
+          sentiment: sentiment || 'Positive',
+          branch: resolvedBranch,
+        }
+      });
+
+      return NextResponse.json({ success: true, feedback: createdFeedback }, { status: 201 });
+    }
+
+    // Case 2: Admin / Super Admin replying to a Customer Product Review
     if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const body = await req.json();
-    const { reviewId, reply } = body;
 
     if (!reviewId || !reply || !reply.trim()) {
       return NextResponse.json({ error: 'Review ID and reply message are required.' }, { status: 400 });
