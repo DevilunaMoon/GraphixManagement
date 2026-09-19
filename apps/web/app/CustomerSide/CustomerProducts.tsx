@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Flame, Percent } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import CountdownTimer from '../../components/Common/CountdownTimer';
 
 import { Suspense } from 'react';
 
@@ -266,6 +267,144 @@ function CustomerProductsContent() {
           </div>
         </div>
 
+        {/* ========================================================== */}
+        {/* DEDICATED SEPARATE DISCOUNTED PRODUCTS CONTAINER           */}
+        {/* ========================================================== */}
+        {(() => {
+          const now = new Date();
+          const activeDiscountedProducts = products.filter(p => Boolean(
+            p.discount && 
+            p.discount > 0 &&
+            (!p.discountStartDate || new Date(p.discountStartDate) <= now) &&
+            (!p.discountEndDate || new Date(p.discountEndDate) >= now)
+          ));
+
+          if (activeDiscountedProducts.length === 0) return null;
+
+          return (
+            <section className="bg-gradient-to-br from-purple-950 via-indigo-950 to-black rounded-3xl p-5 md:p-8 shadow-2xl border-2 border-[#bd00ff] flex flex-col gap-6 w-full text-white relative overflow-hidden">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-purple-800/60 pb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">🔥</span>
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#01f0ff] via-pink-400 to-[#bd00ff] uppercase tracking-wide m-0">
+                      DISCOUNTED PRODUCTS
+                    </h2>
+                    <p className="text-xs sm:text-sm text-purple-200 m-0 font-medium">Limited-time offers</p>
+                  </div>
+                </div>
+                <span className="bg-rose-600 text-white text-xs font-black px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-md animate-pulse">
+                  {activeDiscountedProducts.length} Flash Deals Active
+                </span>
+              </div>
+
+              {/* Discounted Product Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+                {activeDiscountedProducts.map((product) => {
+                  const discountedPrice = Math.round(product.price * (1 - product.discount / 100));
+                  const branchName = product.branch ? (product.branch.includes('Branch') ? product.branch : `${product.branch} Branch`) : 'Tagoloan Branch';
+                  const conditionText = product.isPreOwned ? 'Pre-Owned' : 'New';
+
+                  return (
+                    <div 
+                      key={product.id}
+                      onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
+                      className="bg-white rounded-2xl p-4 shadow-xl hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col justify-between gap-3 border-2 border-purple-400/40 hover:border-[#01f0ff] group relative text-gray-900"
+                    >
+                      {/* Product Image & Badges */}
+                      <div className="aspect-square w-full bg-gray-50 rounded-xl flex justify-center items-center overflow-hidden relative p-2">
+                        {/* Condition Badge */}
+                        <span className={`absolute top-2 left-2 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border ${
+                          product.isPreOwned 
+                            ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                            : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                        }`}>
+                          {conditionText}
+                        </span>
+
+                        {/* Discount Badge */}
+                        <span className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 animate-pulse">
+                          {Math.round(product.discount)}% OFF
+                        </span>
+
+                        {product.image ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-300" 
+                          />
+                        ) : (
+                          <div className="h-full w-full bg-gray-100 rounded-lg" />
+                        )}
+                      </div>
+
+                      {/* Product Name & Brand */}
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[11px] text-gray-500 font-bold uppercase truncate">
+                          {product.category?.name || product.type || 'Smartphone'}
+                        </span>
+                        <h4 className="text-gray-950 font-black text-sm leading-snug line-clamp-2 h-10 m-0">
+                          {product.name}
+                        </h4>
+                      </div>
+
+                      {/* Pricing Breakdown */}
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-gray-400 line-through text-xs font-semibold">
+                          ₱ {Number(product.price || 0).toLocaleString()}
+                        </span>
+                        <div className="flex items-baseline gap-1.5 flex-wrap">
+                          <span className="text-[#bd00ff] font-black text-xl leading-none">
+                            ₱ {discountedPrice.toLocaleString()}
+                          </span>
+                          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.2 rounded">
+                            Save ₱ {(product.price - discountedPrice).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Available Branch & Stock */}
+                      <div className="flex flex-col gap-0.5 text-xs text-gray-600 border-t border-gray-100 pt-2 font-semibold">
+                        <span className="text-purple-700 truncate font-bold text-[11px]">
+                          Available at: {branchName}
+                        </span>
+                        <span className="text-gray-500 text-[10px]">
+                          Available stock: <strong className="text-gray-900">{product.stock || 0} pcs</strong>
+                        </span>
+                      </div>
+
+                      {/* Real-time Countdown Timer */}
+                      {product.discountEndDate && (
+                        <div className="bg-purple-50/80 rounded-xl p-2 border border-purple-200">
+                          <span className="text-[10px] text-purple-900 font-extrabold uppercase block mb-0.5 flex items-center gap-1">
+                            <Clock size={11} className="text-purple-700" /> Ends in:
+                          </span>
+                          <CountdownTimer 
+                            targetDate={product.discountEndDate} 
+                            format="short" 
+                            className="text-xs text-rose-700 font-bold" 
+                          />
+                        </div>
+                      )}
+
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/customer/product-info?id=${product.id}`);
+                        }}
+                        className="w-full mt-1 py-2.5 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-xl group-hover:brightness-110 transition-all text-xs shadow-md border-none cursor-pointer"
+                      >
+                        View Deal &rarr;
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
+
         {/* Categories Section */}
         <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full relative group/cats">
           <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Brands</h2>
@@ -327,86 +466,94 @@ function CustomerProductsContent() {
           </div>
         </section>
 
-        {/* Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-6">
-          {isLoading ? (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4">
-              <div className="w-12 h-12 border-4 border-purple-100 border-t-[#5c0099] rounded-full animate-spin"></div>
-              <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
-            </div>
-          ) : sortedProducts.length > 0 ? (
-            sortedProducts.map(product => {
-              const now = new Date();
-              const isDiscountActive = Boolean(
-                product.discount && 
-                product.discount > 0 &&
-                (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
-                (!product.discountEndDate || new Date(product.discountEndDate) >= now)
-              );
+        {/* ========================================================== */}
+        {/* ALL PRODUCTS SECTION                                       */}
+        {/* ========================================================== */}
+        <section className="flex flex-col gap-4 w-full">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-wide m-0">
+              ALL PRODUCTS
+            </h2>
+            <span className="text-xs font-bold text-gray-500">
+              Showing {sortedProducts.length} items
+            </span>
+          </div>
 
-              return (
-                <div 
-                  key={product.id} 
-                  onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
-                  className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group"
-                >
-                  <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
-                    {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                      <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
-                        PRE-OWNED
-                      </span>
-                    )}
-                    {isDiscountActive && (
-                      <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
-                        {product.discount}% OFF
-                      </span>
-                    )}
-                    {isDiscountActive && product.discountEndDate && (
-                      <span className="absolute bottom-1 left-1 bg-black/80 backdrop-blur-xs text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow z-10">
-                        Ends {new Date(product.discountEndDate).toLocaleDateString()}
-                      </span>
-                    )}
-                    {product.image ? (
-                      <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
-                    ) : (
-                      <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
-                    )}
-                  </div>
-                  <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                  <div className="flex justify-between items-end w-full">
-                    <div className="flex flex-col">
-                      {isDiscountActive ? (
-                        <>
-                          <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
-                          <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
-                            ₱ {(product.price * (1 - product.discount / 100)).toLocaleString()}
-                          </p>
-                        </>
+          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-6">
+            {isLoading ? (
+              <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4">
+                <div className="w-12 h-12 border-4 border-purple-100 border-t-[#5c0099] rounded-full animate-spin"></div>
+                <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
+              </div>
+            ) : sortedProducts.length > 0 ? (
+              sortedProducts.map(product => {
+                const now = new Date();
+                const isDiscountActive = Boolean(
+                  product.discount && 
+                  product.discount > 0 &&
+                  (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
+                  (!product.discountEndDate || new Date(product.discountEndDate) >= now)
+                );
+
+                return (
+                  <div 
+                    key={product.id} 
+                    onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
+                    className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group"
+                  >
+                    <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                      {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                        <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
+                          PRE-OWNED
+                        </span>
+                      )}
+                      {isDiscountActive && (
+                        <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
+                          {Math.round(product.discount)}% OFF
+                        </span>
+                      )}
+                      {product.image ? (
+                        <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                       ) : (
-                        <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                        <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
                       )}
                     </div>
-                    <div className="flex flex-col items-end">
-                      <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
-                      <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+                    <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
+                    <div className="flex justify-between items-end w-full">
+                      <div className="flex flex-col">
+                        {isDiscountActive ? (
+                          <>
+                            <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+                            <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
+                              ₱ {Math.round(product.price * (1 - product.discount / 100)).toLocaleString()}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
+                        <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
+                      </div>
                     </div>
-                  </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/customer/product-info?id=${product.id}`);
-                  }}
-                  className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
-                >
-                  View Product
-                </button>
-              </div>
-            );
-          })
-        ) : (
-            <div className="col-span-full py-10 text-center text-gray-500 font-bold">No products available.</div>
-          )}
-        </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/customer/product-info?id=${product.id}`);
+                    }}
+                    className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
+                  >
+                    View Product
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+              <div className="col-span-full py-10 text-center text-gray-500 font-bold">No products available.</div>
+            )}
+          </div>
+        </section>
 
         {/* Pagination */}
         <div className="flex justify-center mt-6">

@@ -5,11 +5,12 @@ import {
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, History, Smartphone, Building2, Package, Layers, ShieldCheck,
-  Image as ImageIcon, Sparkles
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
+import CountdownTimer from '../../components/Common/CountdownTimer';
 
 type VariantData = {
   id?: string;
@@ -109,6 +110,28 @@ export default function AdminInventory() {
   const [newImeiBranch, setNewImeiBranch] = useState('Tagoloan');
   const [isRegisteringImei, setIsRegisteringImei] = useState(false);
   const [imeiError, setImeiError] = useState<string | null>(null);
+
+  // Discount Product Feature States
+  const [discountModalOpen, setDiscountModalOpen] = useState(false);
+  const [discountDeviceId, setDiscountDeviceId] = useState('');
+  const [discountVariantId, setDiscountVariantId] = useState('');
+  const [discountBrandFilter, setDiscountBrandFilter] = useState('ALL');
+  const [discountBranch, setDiscountBranch] = useState('Tagoloan');
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE');
+  const [discountValue, setDiscountValue] = useState('');
+  const [discountStartDate, setDiscountStartDate] = useState(getTodayDateString());
+  const [discountStartTime, setDiscountStartTime] = useState('00:00');
+  const [discountEndDate, setDiscountEndDate] = useState('');
+  const [discountEndTime, setDiscountEndTime] = useState('23:59');
+  const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Active / Expired Discounts Manager Modal State
+  const [discountsListModalOpen, setDiscountsListModalOpen] = useState(false);
+  const [discountsList, setDiscountsList] = useState<any[]>([]);
+  const [isDiscountsLoading, setIsDiscountsLoading] = useState(false);
+  const [discountFilterStatus, setDiscountFilterStatus] = useState<'ALL' | 'ACTIVE' | 'SCHEDULED' | 'EXPIRED'>('ALL');
+  const [allEligibleProducts, setAllEligibleProducts] = useState<any[]>([]);
 
   // Add Product State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -299,6 +322,200 @@ export default function AdminInventory() {
       .replace(/^-|-$/g, '');
     return `${cleanModel}-${cleanVar}`;
   }
+
+  function getCurrentTimeString() {
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function getDefaultEndDateTime() {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  // Discount Product Handlers
+  const handleOpenAddDiscount = async (preselectedProduct?: any) => {
+    setDiscountError(null);
+    setDiscountType('PERCENTAGE');
+    setDiscountValue('');
+    setDiscountStartDate(getTodayDateString());
+    setDiscountStartTime(getCurrentTimeString());
+    setDiscountEndDate(getDefaultEndDateTime());
+    setDiscountEndTime('23:59');
+    setDiscountVariantId('');
+
+    const initialBranch = isSuperAdmin ? (selectedBranch === 'all' ? 'Tagoloan' : (selectedBranch || 'Tagoloan')) : (userBranch || 'Tagoloan');
+    setDiscountBranch(initialBranch);
+
+    try {
+      const activeBranchParam = isSuperAdmin ? '' : userBranch;
+      const res = await fetch(`/api/devices?limit=250&branch=${encodeURIComponent(activeBranchParam || '')}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
+        setAllEligibleProducts(list);
+
+        if (preselectedProduct) {
+          setDiscountDeviceId(preselectedProduct.id);
+          setDiscountBrandFilter(preselectedProduct.category?.id || preselectedProduct.categoryId || 'ALL');
+          if (preselectedProduct.discount && preselectedProduct.discount > 0) {
+            setDiscountValue(String(preselectedProduct.discount));
+            if (preselectedProduct.discountStartDate) {
+              const start = new Date(preselectedProduct.discountStartDate);
+              setDiscountStartDate(formatDateForInput(preselectedProduct.discountStartDate));
+              const pad = (n: number) => n.toString().padStart(2, '0');
+              setDiscountStartTime(`${pad(start.getHours())}:${pad(start.getMinutes())}`);
+            }
+            if (preselectedProduct.discountEndDate) {
+              const end = new Date(preselectedProduct.discountEndDate);
+              setDiscountEndDate(formatDateForInput(preselectedProduct.discountEndDate));
+              const pad = (n: number) => n.toString().padStart(2, '0');
+              setDiscountEndTime(`${pad(end.getHours())}:${pad(end.getMinutes())}`);
+            }
+          }
+        } else if (list.length > 0) {
+          setDiscountDeviceId(list[0].id);
+          setDiscountBrandFilter('ALL');
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load eligible products for discount:', e);
+      if (preselectedProduct) {
+        setDiscountDeviceId(preselectedProduct.id);
+      } else if (products.length > 0) {
+        setDiscountDeviceId(products[0].id);
+      }
+    }
+
+    setDiscountModalOpen(true);
+  };
+
+  const handleSaveDiscount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDiscountError(null);
+
+    if (!discountDeviceId) {
+      setDiscountError('Please select a product to apply the discount.');
+      return;
+    }
+
+    const numVal = parseFloat(discountValue);
+    if (isNaN(numVal) || numVal <= 0) {
+      setDiscountError('Please enter a valid positive discount value.');
+      return;
+    }
+
+    if (discountType === 'FIXED' && numVal >= 2000) {
+      setDiscountError('For fixed discounts, the discount amount must be LESS THAN ₱2,000.');
+      return;
+    }
+
+    if (discountType === 'PERCENTAGE' && (numVal <= 0 || numVal >= 100)) {
+      setDiscountError('Discount percentage must be between 1% and 99%.');
+      return;
+    }
+
+    if (!discountStartDate || !discountEndDate) {
+      setDiscountError('Please provide both start and end dates.');
+      return;
+    }
+
+    const startIso = new Date(`${discountStartDate}T${discountStartTime || '00:00'}:00`);
+    const endIso = new Date(`${discountEndDate}T${discountEndTime || '23:59'}:00`);
+
+    if (isNaN(startIso.getTime()) || isNaN(endIso.getTime())) {
+      setDiscountError('Invalid date or time entered.');
+      return;
+    }
+
+    if (startIso >= endIso) {
+      setDiscountError('Discount start date and time must be earlier than the end date and time.');
+      return;
+    }
+
+    setIsSavingDiscount(true);
+    try {
+      const res = await fetch('/api/inventory/discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: discountDeviceId,
+          variantId: discountVariantId || undefined,
+          branch: discountBranch,
+          discountType,
+          discountValue: numVal,
+          discountStartDate: startIso.toISOString(),
+          discountEndDate: endIso.toISOString()
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setDiscountError(data.error || 'Failed to save discount.');
+        return;
+      }
+
+      setDiscountModalOpen(false);
+      fetchProducts();
+      fetchDiscountsList();
+      setSuccessModalContent({
+        title: 'Discount Applied Successfully!',
+        message: data.message || `Discount has been configured for the selected product and is now live.`
+      });
+      setSuccessModalOpen(true);
+    } catch (err: any) {
+      console.error('Error saving discount:', err);
+      setDiscountError(err.message || 'An unexpected error occurred while saving the discount.');
+    } finally {
+      setIsSavingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = async (deviceId: string) => {
+    if (!confirm('Are you sure you want to remove this discount? The product will revert to its original price immediately.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/inventory/discount?deviceId=${deviceId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchProducts();
+        fetchDiscountsList();
+        setSuccessModalContent({
+          title: 'Discount Removed',
+          message: 'The discount was removed and the original product price has been restored.'
+        });
+        setSuccessModalOpen(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to remove discount.');
+      }
+    } catch (err) {
+      console.error('Error removing discount:', err);
+      alert('Error removing discount.');
+    }
+  };
+
+  const fetchDiscountsList = async () => {
+    setIsDiscountsLoading(true);
+    try {
+      const branchParam = isSuperAdmin ? (selectedBranch === 'all' ? '' : selectedBranch) : userBranch;
+      const res = await fetch(`/api/inventory/discount?branch=${encodeURIComponent(branchParam || '')}&t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDiscountsList(Array.isArray(data.discounts) ? data.discounts : []);
+      }
+    } catch (err) {
+      console.error('Failed to load discounts list:', err);
+    } finally {
+      setIsDiscountsLoading(false);
+    }
+  };
 
   // Fetch Products
   const fetchProducts = () => {
@@ -1018,6 +1235,19 @@ export default function AdminInventory() {
             <Smartphone size={16} className="text-purple-600" />
             <span>Unit IMEIs</span>
           </button>
+
+          {/* Active Discounts Management Button */}
+          <button
+            onClick={() => {
+              fetchDiscountsList();
+              setDiscountsListModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-rose-200 cursor-pointer shadow-xs"
+            title="View and manage active, scheduled, and expired discounts"
+          >
+            <Percent size={16} className="text-rose-600" />
+            <span>Discounts</span>
+          </button>
         </div>
       </div>
 
@@ -1155,6 +1385,16 @@ export default function AdminInventory() {
             <Plus size={18} />
             <span>Add Product</span>
           </button>
+
+          {/* Add Discount Product Button - Directly Beside Add Product */}
+          <button 
+            onClick={() => handleOpenAddDiscount()} 
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer border border-purple-400/40"
+            title="Apply discount to an existing product and variant"
+          >
+            <Percent size={17} className="text-amber-300" />
+            <span>+ Add Discount Product</span>
+          </button>
         </div>
       </div>
 
@@ -1193,92 +1433,147 @@ export default function AdminInventory() {
                   return (
                     <React.Fragment key={prod.id}>
                       {/* Parent Model Row */}
-                      <tr 
-                        onClick={() => setExpandedModelId(isExpanded ? null : prod.id)}
-                        className={`hover:bg-purple-50/40 transition-colors cursor-pointer ${isExpanded ? 'bg-purple-50/60 font-semibold' : ''}`}
-                      >
-                        <td className="py-4 px-6">
-                          <div className="flex items-center gap-3.5">
-                            <button className="text-purple-700 bg-purple-100 hover:bg-purple-200 p-1.5 rounded-lg transition-transform">
-                              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
-                            <img 
-                              src={prod.image || '/Images/Aula.jpg'} 
-                              alt={prod.name} 
-                              className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" 
-                            />
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-bold text-gray-900 text-[0.95rem] hover:text-[#5c0099] transition-colors">
-                                  {prod.name}
-                                </span>
-                                {prod.isPreOwned && (
-                                  <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
-                                    PRE-OWNED
+                      {(() => {
+                        const now = new Date();
+                        const isDiscountActive = Boolean(
+                          prod.discount && prod.discount > 0 &&
+                          (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
+                          (!prod.discountEndDate || new Date(prod.discountEndDate) >= now)
+                        );
+                        const isDiscountScheduled = Boolean(
+                          prod.discount && prod.discount > 0 &&
+                          prod.discountStartDate && new Date(prod.discountStartDate) > now
+                        );
+                        const isDiscountExpired = Boolean(
+                          prod.discount && prod.discount > 0 &&
+                          prod.discountEndDate && new Date(prod.discountEndDate) < now
+                        );
+
+                        return (
+                          <tr 
+                            onClick={() => setExpandedModelId(isExpanded ? null : prod.id)}
+                            className={`hover:bg-purple-50/40 transition-colors cursor-pointer ${isExpanded ? 'bg-purple-50/60 font-semibold' : ''}`}
+                          >
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-3.5">
+                                <button className="text-purple-700 bg-purple-100 hover:bg-purple-200 p-1.5 rounded-lg transition-transform">
+                                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </button>
+                                <img 
+                                  src={prod.image || '/Images/Aula.jpg'} 
+                                  alt={prod.name} 
+                                  className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" 
+                                />
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-gray-900 text-[0.95rem] hover:text-[#5c0099] transition-colors">
+                                      {prod.name}
+                                    </span>
+                                    {prod.isPreOwned && (
+                                      <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
+                                        PRE-OWNED
+                                      </span>
+                                    )}
+                                    {isDiscountActive && (
+                                      <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider flex items-center gap-0.5 animate-pulse">
+                                        <Percent size={10} /> DISCOUNT ({Math.round(prod.discount)}% OFF)
+                                      </span>
+                                    )}
+                                    {isDiscountScheduled && (
+                                      <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-300 uppercase tracking-wider">
+                                        SCHEDULED DISCOUNT
+                                      </span>
+                                    )}
+                                    {isDiscountExpired && (
+                                      <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-gray-300 uppercase tracking-wider">
+                                        EXPIRED DISCOUNT
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">
+                                      {prod.category?.name || prod.type || 'Smartphone'}
+                                    </span>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${prod.isPreOwned ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`}>
+                                      {prod.isPreOwned ? 'Pre-Owned' : 'New'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200">
+                                <Layers size={13} className="text-purple-600" />
+                                {variants.length > 0 ? `${variants.length} Variants` : 'Standard'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                {prod.tagoloanStock > 0 ? `${prod.tagoloanStock} pcs` : 'Out of Stock'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                {prod.villanuevaStock > 0 ? `${prod.villanuevaStock} pcs` : 'Out of Stock'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                {prod.jasaanStock > 0 ? `${prod.jasaanStock} pcs` : 'Out of Stock'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center font-bold">
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${prod.stock > 0 ? (prod.stock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
+                                {prod.stock > 0 ? `${prod.stock} pcs` : 'Out of Stock'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center font-bold text-gray-900">
+                              {isDiscountActive ? (
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[11px] text-gray-400 line-through">₱ {Number(prod.price || 0).toLocaleString()}</span>
+                                  <span className="text-[#bd00ff] font-black text-sm">
+                                    ₱ {Math.round(prod.price * (1 - prod.discount / 100)).toLocaleString()}
                                   </span>
+                                  {prod.discountEndDate && (
+                                    <span className="text-[10px] text-rose-600 font-bold flex items-center gap-0.5">
+                                      <Clock size={10} /> Ends {new Date(prod.discountEndDate).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span>₱ {Number(prod.price || 0).toLocaleString()}</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-2">
+                                <button 
+                                  onClick={() => handleOpenAddDiscount(prod)} 
+                                  className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Manage Discount"
+                                >
+                                  <Percent size={18} />
+                                </button>
+                                <button 
+                                  onClick={() => handleEditClick(prod)} 
+                                  className="text-purple-600 hover:text-purple-800 p-2 hover:bg-purple-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Model & Variants"
+                                >
+                                  <Pencil size={18} />
+                                </button>
+                                {isSuperAdmin && (
+                                  <button 
+                                    onClick={() => { setProductToDelete(prod.id); setDeleteModalOpen(true); }} 
+                                    className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                                    title="Delete Product"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">
-                                  {prod.category?.name || prod.type || 'Smartphone'}
-                                </span>
-                                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${prod.isPreOwned ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`}>
-                                  {prod.isPreOwned ? 'Pre-Owned' : 'New'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200">
-                            <Layers size={13} className="text-purple-600" />
-                            {variants.length > 0 ? `${variants.length} Variants` : 'Standard'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                            {prod.tagoloanStock > 0 ? `${prod.tagoloanStock} pcs` : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                            {prod.villanuevaStock > 0 ? `${prod.villanuevaStock} pcs` : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                            {prod.jasaanStock > 0 ? `${prod.jasaanStock} pcs` : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center font-bold">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${prod.stock > 0 ? (prod.stock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
-                            {prod.stock > 0 ? `${prod.stock} pcs` : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center font-bold text-gray-900">
-                          ₱ {Number(prod.price || 0).toLocaleString()}
-                        </td>
-                        <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-2">
-                            <button 
-                              onClick={() => handleEditClick(prod)} 
-                              className="text-purple-600 hover:text-purple-800 p-2 hover:bg-purple-100 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Model & Variants"
-                            >
-                              <Pencil size={18} />
-                            </button>
-                            {isSuperAdmin && (
-                              <button 
-                                onClick={() => { setProductToDelete(prod.id); setDeleteModalOpen(true); }} 
-                                className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
-                                title="Delete Product"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                            </td>
+                          </tr>
+                        );
+                      })()}
 
                       {/* Expandable Storage Variants Sub-Table */}
                       {isExpanded && (
@@ -2896,6 +3191,596 @@ export default function AdminInventory() {
                 className="px-5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors shadow-2xs"
               >
                 Done
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* ADD / EDIT DISCOUNT PRODUCT MODAL                           */}
+      {/* ========================================================== */}
+      {discountModalOpen && (() => {
+        const pool = allEligibleProducts.length > 0 ? allEligibleProducts : products;
+        const brandFiltered = discountBrandFilter === 'ALL' 
+          ? pool 
+          : pool.filter(p => (p.categoryId === discountBrandFilter || p.category?.id === discountBrandFilter || (p.category?.name || '').toLowerCase() === discountBrandFilter.toLowerCase()));
+        
+        const selectedProd = pool.find(p => p.id === discountDeviceId) || brandFiltered[0] || pool[0];
+        const variantsList: VariantData[] = selectedProd?.variations || [];
+        const selectedVar = variantsList.find(v => v.id === discountVariantId);
+        
+        const originalBasePrice = Number(selectedVar?.price && Number(selectedVar.price) > 0 ? selectedVar.price : (selectedProd?.price || 0));
+        const numDiscount = parseFloat(discountValue) || 0;
+        
+        let calculatedDiscountAmount = 0;
+        let calculatedFinalPrice = originalBasePrice;
+        
+        if (discountType === 'FIXED') {
+          calculatedDiscountAmount = Math.min(numDiscount, originalBasePrice);
+          calculatedFinalPrice = Math.max(0, originalBasePrice - numDiscount);
+        } else {
+          calculatedDiscountAmount = (originalBasePrice * numDiscount) / 100;
+          calculatedFinalPrice = Math.max(0, originalBasePrice - calculatedDiscountAmount);
+        }
+
+        const previewEndIso = (discountEndDate && discountEndTime) 
+          ? `${discountEndDate}T${discountEndTime}:00` 
+          : discountEndDate 
+            ? `${discountEndDate}T23:59:00` 
+            : null;
+
+        return (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+              
+              {/* Modal Header */}
+              <div className="p-5 bg-gradient-to-r from-[#5c0099] via-purple-800 to-indigo-900 text-white flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-amber-300 border border-white/20 shadow-inner">
+                    <Percent size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg m-0 flex items-center gap-2">
+                      <span>Add Discount Product</span>
+                      <span className="bg-amber-400/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full border border-amber-300/30 uppercase tracking-widest font-extrabold">
+                        Limited Time Offer
+                      </span>
+                    </h3>
+                    <p className="text-xs text-white/80 m-0 mt-0.5">
+                      Apply a discount to an existing product and variant without duplicating products.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setDiscountModalOpen(false)} 
+                  className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all border-none cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body Form */}
+              <form onSubmit={handleSaveDiscount} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+                
+                {discountError && (
+                  <div className="bg-rose-50 border-2 border-rose-200 p-3 rounded-2xl flex items-center gap-2.5 text-rose-700 text-xs font-bold animate-shake">
+                    <AlertCircle size={18} className="shrink-0 text-rose-600" />
+                    <span>{discountError}</span>
+                  </div>
+                )}
+
+                {/* 1. Brand & Product Selection */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Filter by Brand */}
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                      Filter Brand
+                    </label>
+                    <select
+                      value={discountBrandFilter}
+                      onChange={(e) => {
+                        const newBrand = e.target.value;
+                        setDiscountBrandFilter(newBrand);
+                        const match = newBrand === 'ALL' 
+                          ? pool[0] 
+                          : pool.find(p => p.categoryId === newBrand || p.category?.id === newBrand || (p.category?.name || '').toLowerCase() === newBrand.toLowerCase());
+                        if (match) {
+                          setDiscountDeviceId(match.id);
+                          setDiscountVariantId('');
+                        }
+                      }}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                      <option value="ALL">All Brands ({pool.length})</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Select Product */}
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                      Select Existing Product <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={discountDeviceId}
+                      onChange={(e) => {
+                        setDiscountDeviceId(e.target.value);
+                        setDiscountVariantId('');
+                      }}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      required
+                    >
+                      {brandFiltered.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} [{p.isPreOwned ? 'PRE-OWNED' : 'NEW'}] – ₱{Number(p.price || 0).toLocaleString()} ({p.category?.name || p.type || 'Device'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 2. Storage / Variant & Branch */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Select Storage/Variant */}
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                      Storage / Variant <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <select
+                      value={discountVariantId}
+                      onChange={(e) => setDiscountVariantId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    >
+                      <option value="">Base Device (All Variants) – ₱{Number(selectedProd?.price || 0).toLocaleString()}</option>
+                      {variantsList.map(v => (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.productId || 'Variant'}) – ₱{Number(v.price || selectedProd?.price || 0).toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Branch Assignment */}
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                      Branch Application <span className="text-rose-500">*</span>
+                    </label>
+                    {isSuperAdmin ? (
+                      <select
+                        value={discountBranch}
+                        onChange={(e) => setDiscountBranch(e.target.value)}
+                        className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      >
+                        <option value="Tagoloan">Tagoloan Branch</option>
+                        <option value="Villanueva">Villanueva Branch</option>
+                        <option value="Jasaan">Jasaan Branch</option>
+                        <option value="all">All Branches (Global)</option>
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={`${userBranch || 'Tagoloan'} Branch (Assigned)`}
+                        disabled
+                        className="w-full border border-gray-200 rounded-xl p-2.5 text-xs font-bold text-gray-600 bg-gray-100 cursor-not-allowed"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Discount Type & Value */}
+                <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200/80 flex flex-col gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    <div>
+                      <label className="text-xs font-bold text-gray-800 uppercase tracking-wide block mb-1">
+                        Discount Type
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 bg-white p-1 rounded-xl border border-purple-200 shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setDiscountType('PERCENTAGE')}
+                          className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            discountType === 'PERCENTAGE'
+                              ? 'bg-[#5c0099] text-white shadow-sm'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Percent size={14} /> Percentage (%)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDiscountType('FIXED')}
+                          className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            discountType === 'FIXED'
+                              ? 'bg-[#5c0099] text-white shadow-sm'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          <span>₱</span> Fixed Amount (₱)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-gray-800 uppercase tracking-wide block mb-1">
+                        Discount Value {discountType === 'FIXED' ? '(₱)' : '(%)'} <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-gray-400 text-sm">
+                          {discountType === 'FIXED' ? '₱' : '%'}
+                        </span>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0.01"
+                          max={discountType === 'FIXED' ? '1999.99' : '99'}
+                          placeholder={discountType === 'FIXED' ? 'e.g. 1500 (Max ₱1,999.99)' : 'e.g. 5 for 5% off'}
+                          value={discountValue}
+                          onChange={(e) => setDiscountValue(e.target.value)}
+                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-xl text-sm font-extrabold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                          required
+                        />
+                      </div>
+                      {discountType === 'FIXED' && (
+                        <span className="text-[10px] text-amber-700 font-bold block mt-1">
+                          ⚠️ For fixed discounts, the discount amount must be LESS THAN ₱2,000.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Live Price Breakdown Card */}
+                  <div className="bg-white rounded-xl p-3.5 border border-purple-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                      <span className="text-[11px] text-gray-400 font-bold uppercase">Original Price</span>
+                      <span className="text-sm font-bold text-gray-700 line-through">
+                        ₱ {originalBasePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-purple-600 font-black text-sm">
+                      &minus;
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[11px] text-rose-500 font-bold uppercase">Discount Amount</span>
+                      <span className="text-sm font-black text-rose-600">
+                        ₱ {calculatedDiscountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {discountType === 'FIXED' && originalBasePrice > 0 && (
+                          <span className="text-[10px] text-gray-400 font-normal ml-1">
+                            ({((calculatedDiscountAmount / originalBasePrice) * 100).toFixed(1)}%)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center text-purple-600 font-black text-sm">
+                      &rarr;
+                    </div>
+
+                    <div className="flex flex-col items-end bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
+                      <span className="text-[10px] text-purple-800 font-extrabold uppercase tracking-wide">Final Discounted Price</span>
+                      <span className="text-base font-black text-[#5c0099]">
+                        ₱ {calculatedFinalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Schedule Start & End Dates / Times */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Start Date & Time */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Discount Start <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="date"
+                        value={discountStartDate}
+                        onChange={(e) => setDiscountStartDate(e.target.value)}
+                        className="col-span-2 border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        required
+                      />
+                      <input
+                        type="time"
+                        value={discountStartTime}
+                        onChange={(e) => setDiscountStartTime(e.target.value)}
+                        className="border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* End Date & Time */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                      Discount End <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="date"
+                        value={discountEndDate}
+                        onChange={(e) => setDiscountEndDate(e.target.value)}
+                        className="col-span-2 border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        required
+                      />
+                      <input
+                        type="time"
+                        value={discountEndTime}
+                        onChange={(e) => setDiscountEndTime(e.target.value)}
+                        className="border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Live Real-Time Countdown Preview */}
+                <div className="bg-gradient-to-r from-gray-900 to-purple-950 text-white p-3.5 rounded-2xl border border-purple-500/30 flex items-center justify-between gap-3 shadow-inner">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
+                      <Clock size={16} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-purple-300 font-bold uppercase tracking-wider block">
+                        Live Countdown Preview
+                      </span>
+                      <span className="text-xs text-white/90 font-medium">
+                        Automatic expiration and restoration
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    {previewEndIso ? (
+                      <CountdownTimer 
+                        targetDate={previewEndIso} 
+                        format="full" 
+                        className="text-amber-300 bg-black/40 px-3 py-1.5 rounded-xl border border-amber-400/30" 
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400 font-mono">Select end date &amp; time</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Form Action Buttons */}
+                <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setDiscountModalOpen(false)}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingDiscount}
+                    className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#5c0099] to-indigo-700 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center gap-2 border-none"
+                  >
+                    <Percent size={16} />
+                    {isSavingDiscount ? 'Saving Discount...' : 'Save & Activate Discount'}
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ========================================================== */}
+      {/* ACTIVE & EXPIRED DISCOUNTS MANAGER MODAL                   */}
+      {/* ========================================================== */}
+      {discountsListModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            
+            {/* Header */}
+            <div className="p-5 bg-gradient-to-r from-[#5c0099] to-[#3a0066] text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-amber-300 border border-white/20 shadow-inner">
+                  <Percent size={20} />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg m-0 flex items-center gap-2">
+                    <span>Discounts Management</span>
+                    <span className="bg-amber-400 text-black text-[10px] font-black px-2 py-0.5 rounded-full">
+                      {discountsList.length} Total
+                    </span>
+                  </h3>
+                  <p className="text-xs text-white/80 m-0 mt-0.5">
+                    {isSuperAdmin ? 'View and manage all active, scheduled, and expired product discounts across all branches' : `Managing discounts for ${userBranch} Branch`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setDiscountsListModalOpen(false);
+                    handleOpenAddDiscount();
+                  }}
+                  className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-black text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer border-none"
+                >
+                  <Plus size={14} /> + New Discount
+                </button>
+                <button 
+                  onClick={() => setDiscountsListModalOpen(false)} 
+                  className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all border-none cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="px-6 pt-4 pb-2 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+                {(['ALL', 'ACTIVE', 'SCHEDULED', 'EXPIRED'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setDiscountFilterStatus(tab)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                      discountFilterStatus === tab
+                        ? 'bg-[#5c0099] text-white shadow-xs'
+                        : 'text-gray-600 hover:bg-white/60'
+                    }`}
+                  >
+                    {tab === 'ALL' ? 'All Discounts' : tab === 'ACTIVE' ? '🔥 Active' : tab === 'SCHEDULED' ? '⏱ Scheduled' : 'Expired'}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={fetchDiscountsList}
+                className="text-xs font-bold text-purple-700 hover:underline bg-transparent border-none cursor-pointer"
+              >
+                🔄 Refresh Discounts
+              </button>
+            </div>
+
+            {/* Discounts List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {isDiscountsLoading ? (
+                <div className="py-16 text-center flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-3 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-500 font-bold">Loading discount records...</span>
+                </div>
+              ) : discountsList.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center gap-3">
+                  <Percent size={36} className="text-gray-300" />
+                  <div>
+                    <h4 className="font-bold text-gray-700 text-sm m-0">No Discounted Products Found</h4>
+                    <p className="text-xs text-gray-400 m-0 mt-1">Click "+ Add Discount Product" in the toolbar to create limited-time promotional deals.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setDiscountsListModalOpen(false);
+                      handleOpenAddDiscount();
+                    }}
+                    className="mt-2 px-4 py-2 bg-[#5c0099] text-white text-xs font-bold rounded-xl hover:bg-[#470077] cursor-pointer border-none"
+                  >
+                    + Add First Discount
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {discountsList
+                    .filter(d => {
+                      if (discountFilterStatus === 'ACTIVE') return d.isActive;
+                      if (discountFilterStatus === 'SCHEDULED') return d.isScheduled;
+                      if (discountFilterStatus === 'EXPIRED') return d.isExpired;
+                      return true;
+                    })
+                    .map((d) => (
+                      <div 
+                        key={d.id}
+                        className="bg-white rounded-2xl p-4 border border-purple-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-3 relative overflow-hidden"
+                      >
+                        <div className="flex items-start gap-3">
+                          <img 
+                            src={d.image || '/Images/Aula.jpg'} 
+                            alt={d.deviceName} 
+                            className="w-14 h-14 object-cover rounded-xl border border-gray-200 shrink-0 bg-gray-50"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="font-black text-sm text-gray-900 truncate m-0">{d.deviceName}</h4>
+                              {d.isPreOwned && (
+                                <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-amber-300 uppercase">
+                                  PRE-OWNED
+                                </span>
+                              )}
+                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                d.isActive 
+                                  ? 'bg-rose-600 text-white animate-pulse' 
+                                  : d.isScheduled 
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                                    : 'bg-gray-100 text-gray-600 border border-gray-300'
+                              }`}>
+                                {d.status}
+                              </span>
+                            </div>
+
+                            <span className="text-[11px] text-gray-500 font-medium block mt-0.5">
+                              {d.brand} &bull; {d.branch || 'All Branches'}
+                            </span>
+
+                            <div className="flex items-baseline gap-2 mt-1.5">
+                              <span className="text-xs text-gray-400 line-through">
+                                ₱ {Number(d.originalPrice || 0).toLocaleString()}
+                              </span>
+                              <span className="text-base font-black text-[#bd00ff]">
+                                ₱ {Number(d.discountedPrice || 0).toLocaleString()}
+                              </span>
+                              <span className="text-[11px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded">
+                                {Math.round(d.discountPercent)}% OFF (&minus;₱{Number(d.discountAmount || 0).toLocaleString()})
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Live Countdown Row */}
+                        <div className="bg-gray-50 rounded-xl p-2.5 border border-gray-100 flex items-center justify-between text-xs">
+                          <span className="text-gray-500 font-semibold text-[11px]">
+                            {d.isScheduled ? 'Starts in:' : d.isExpired ? 'Status:' : 'Live Countdown:'}
+                          </span>
+                          {d.endDate && (
+                            <CountdownTimer 
+                              targetDate={d.endDate} 
+                              format="short" 
+                              badgeStyle={true}
+                              className="text-xs" 
+                            />
+                          )}
+                        </div>
+
+                        {/* Dates info & Action Buttons */}
+                        <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-[10px] text-gray-400">
+                          <span>
+                            {d.startDate ? new Date(d.startDate).toLocaleDateString() : 'Start'} &rarr; {d.endDate ? new Date(d.endDate).toLocaleDateString() : 'End'}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setDiscountsListModalOpen(false);
+                                const poolItems = allEligibleProducts.length > 0 ? allEligibleProducts : products;
+                                const found = poolItems.find(p => p.id === d.deviceId);
+                                handleOpenAddDiscount(found || { id: d.deviceId, name: d.deviceName, price: d.originalPrice, discount: d.discountPercent, isPreOwned: d.isPreOwned });
+                              }}
+                              className="text-purple-700 hover:underline font-bold bg-transparent border-none cursor-pointer text-xs"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleRemoveDiscount(d.deviceId)}
+                              className="text-rose-600 hover:text-rose-800 font-bold bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 cursor-pointer transition-colors text-xs"
+                              title="Remove discount and restore price"
+                            >
+                              Remove / Restore
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setDiscountsListModalOpen(false)}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors shadow-2xs"
+              >
+                Close
               </button>
             </div>
 

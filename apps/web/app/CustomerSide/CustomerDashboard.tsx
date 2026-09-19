@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CountdownTimer from '../../components/Common/CountdownTimer';
 
 const optimizeCloudinaryUrl = (url: string, width = 1200) => {
   if (!url || !url.includes('cloudinary.com')) return url;
@@ -274,15 +275,15 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
         if (activeDiscountedProducts.length === 0) return null;
 
         return (
-          <section className="bg-gradient-to-br from-purple-900 via-indigo-950 to-black rounded-2xl p-5 md:p-8 shadow-xl border-2 border-[#bd00ff] flex flex-col gap-6 w-full max-w-7xl mx-auto text-white relative overflow-hidden">
+          <section className="bg-gradient-to-br from-purple-900 via-indigo-950 to-black rounded-3xl p-5 md:p-8 shadow-xl border-2 border-[#bd00ff] flex flex-col gap-6 w-full max-w-7xl mx-auto text-white relative overflow-hidden">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-purple-800/50 pb-4">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">🔥</span>
+                <span className="text-3xl">🔥</span>
                 <div>
                   <h2 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#01f0ff] via-pink-400 to-[#bd00ff] uppercase tracking-wide m-0">
-                    Exclusive Deals & Discounts
+                    DISCOUNTED PRODUCTS
                   </h2>
-                  <p className="text-xs sm:text-sm text-purple-200 m-0 font-medium">Limited-time discounted prices on selected devices</p>
+                  <p className="text-xs sm:text-sm text-purple-200 m-0 font-medium">Limited-time offers</p>
                 </div>
               </div>
               <button 
@@ -295,52 +296,76 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-6">
               {activeDiscountedProducts.slice(0, 5).map(product => {
-                const discountedPrice = product.price * (1 - product.discount / 100);
+                const discountedPrice = Math.round(product.price * (1 - product.discount / 100));
+                const branchName = product.branch ? (product.branch.includes('Branch') ? product.branch : `${product.branch} Branch`) : 'Tagoloan Branch';
+                const conditionText = product.isPreOwned ? 'Pre-Owned' : 'New';
+
                 return (
                   <div 
                     key={product.id} 
                     onClick={() => navigate(`/customer/product-info?id=${product.id}`)} 
-                    className="bg-white rounded-xl p-2 sm:p-4 shadow-lg hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col gap-2 border-2 border-purple-400/30 hover:border-[#01f0ff] group relative"
+                    className="bg-white rounded-2xl p-2.5 sm:p-4 shadow-lg hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col justify-between gap-2.5 border-2 border-purple-400/30 hover:border-[#01f0ff] group relative text-gray-900"
                   >
-                    <div className="aspect-square w-full md:h-36 bg-gray-50 rounded-lg flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
-                      {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                        <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
-                          PRE-OWNED
-                        </span>
-                      )}
-                      <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 animate-pulse">
-                        {product.discount}% OFF
+                    <div className="aspect-square w-full md:h-36 bg-gray-50 rounded-xl flex justify-center items-center overflow-hidden relative">
+                      <span className={`absolute top-1.5 left-1.5 text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border ${
+                        product.isPreOwned 
+                          ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                          : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      }`}>
+                        {conditionText}
                       </span>
-                      {product.discountEndDate && (
-                        <span className="absolute bottom-1 left-1 bg-black/80 backdrop-blur-xs text-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded shadow z-10">
-                          Ends {new Date(product.discountEndDate).toLocaleDateString()}
-                        </span>
-                      )}
+                      <span className="absolute top-1.5 right-1.5 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 animate-pulse">
+                        {Math.round(product.discount)}% OFF
+                      </span>
                       {product.image ? (
                         <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
                       ) : (
                         <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
                       )}
                     </div>
-                    <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                    <div className="flex justify-between items-end w-full">
-                      <div className="flex flex-col">
-                        <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase truncate">
+                        {product.category?.name || product.type || 'Smartphone'}
+                      </span>
+                      <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10 m-0">{product.name}</p>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
+                      <div className="flex items-baseline gap-1.5 flex-wrap">
                         <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
                           ₱ {discountedPrice.toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end">
-                        <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
-                        <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
-                      </div>
                     </div>
+
+                    <div className="flex flex-col gap-0.5 text-[10px] text-gray-500 font-semibold border-t border-gray-100 pt-1.5">
+                      <span className="text-purple-700 truncate font-bold">
+                        Available at: {branchName}
+                      </span>
+                      <span className="text-gray-400">Stock: {product.stock || 0} pcs</span>
+                    </div>
+
+                    {product.discountEndDate && (
+                      <div className="bg-purple-50 rounded-lg p-1.5 border border-purple-200">
+                        <span className="text-[9px] text-purple-900 font-extrabold uppercase block mb-0.5 flex items-center gap-0.5">
+                          <Clock size={10} className="text-purple-700" /> Ends in:
+                        </span>
+                        <CountdownTimer 
+                          targetDate={product.discountEndDate} 
+                          format="short" 
+                          className="text-[11px] text-rose-700 font-bold" 
+                        />
+                      </div>
+                    )}
+
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/customer/product-info?id=${product.id}`);
                       }}
-                      className="w-full mt-2 py-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-lg group-hover:brightness-110 transition-all text-xs sm:text-sm shadow-sm hidden md:block border-none cursor-pointer"
+                      className="w-full mt-1 py-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-lg group-hover:brightness-110 transition-all text-xs shadow-sm border-none cursor-pointer"
                     >
                       View Deal
                     </button>

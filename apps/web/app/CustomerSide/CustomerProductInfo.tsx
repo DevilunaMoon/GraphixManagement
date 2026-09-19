@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle, Star, ChevronDown, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, X, ShoppingCart, CheckCircle, Star, ChevronDown, MapPin, Clock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import CountdownTimer from '../../components/Common/CountdownTimer';
 
 interface Comment {
   id: string;
@@ -438,11 +439,15 @@ function CustomerProductInfoContent() {
                       )}
                     </div>
                     {isDiscountActive && discountEndDate && (
-                      <div className="mt-1 pt-1.5 border-t border-purple-100/80 flex items-center gap-1.5 text-xs text-amber-800 font-bold">
-                        <span>⏰ Sale duration:</span>
-                        <span className="bg-amber-100/80 px-2 py-0.5 rounded text-[11px]">
-                          Ends {new Date(discountEndDate).toLocaleDateString()} at {new Date(discountEndDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                      <div className="mt-2 pt-2 border-t border-purple-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-900 font-bold bg-amber-50/60 p-2.5 rounded-2xl border border-amber-200/60">
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={14} className="text-amber-700 shrink-0" />
+                          <span>Sale Ends {new Date(discountEndDate).toLocaleDateString()} at {new Date(discountEndDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-purple-900 font-extrabold">Ends in:</span>
+                          <CountdownTimer targetDate={discountEndDate} format="short" className="text-rose-700 font-black" />
+                        </div>
                       </div>
                     )}
                   </div>
