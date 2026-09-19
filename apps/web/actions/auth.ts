@@ -18,9 +18,19 @@ export async function register(formData: FormData) {
   const email = formData.get("email") as string;
   const phone = formData.get("phone") as string;
   const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+  const acceptTerms = formData.get("acceptTerms");
 
   if (!email || !password || !name) {
     return { error: "Missing required fields" };
+  }
+
+  if (confirmPassword !== undefined && confirmPassword !== null && password !== confirmPassword) {
+    return { error: "Passwords do not match." };
+  }
+
+  if (acceptTerms !== undefined && acceptTerms !== null && acceptTerms !== "true" && acceptTerms !== "on") {
+    return { error: "Please agree to the Terms and Conditions and Privacy Policy before creating your account." };
   }
 
   try {
