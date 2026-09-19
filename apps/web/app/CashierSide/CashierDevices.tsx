@@ -1,396 +1,351 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, Pencil, Trash, ChevronRight, AlertCircle, CheckCircle2, Search, Upload, Plus, X, ShoppingCart, ReceiptText, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef, Fragment } from 'react';
+import { 
+  Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
+  X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
+  History, Smartphone, Building2, Package, Layers,
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, ShoppingCart, ReceiptText
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import imageCompression from 'browser-image-compression';
+import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
+import imageCompression from 'browser-image-compression';
+import CountdownTimer from '../../components/Common/CountdownTimer';
 
-interface Device {
-  id: string;
+type VariantData = {
+  id?: string;
+  type: string;
   name: string;
-  image: string | null;
-  images?: string[];
-  downpaymentImage?: string | null;
-  asLowAs?: string | null;
-  warranty?: string | null;
-  downpayment?: string | null;
-  discount?: number;
-  discountStartDate?: string | null;
-  discountEndDate?: string | null;
-  cost: number;
-  price: number;
+  productId?: string;
+  price: number | string;
+  cost: number | string;
   stock: number;
-  categoryId: string | null;
-  specs: string | null;
-  isPreOwned?: boolean;
-  variations?: any[];
-}
+  totalStock?: number;
+  branchStocks?: Record<string, number>;
+  tagoloanStock?: number;
+  villanuevaStock?: number;
+  jasaanStock?: number;
+  isOutOfStock?: boolean;
+  isLowStock?: boolean;
+};
 
 export default function CashierDevices() {
   const router = useRouter();
-  const navigate = router.push;
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { styles } = useTheme();
+  const { userBranch: contextBranch, userRole } = useBranch();
+  const userBranch = contextBranch || 'Tagoloan';
 
+  // Search, Filter & Pagination
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('all');
+  const [selectedCondition, setSelectedCondition] = useState<'all' | 'new' | 'pre-owned'>('all');
+  const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'low' | 'out'>('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 8;
 
+  // Products Data
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
+
+  // Categories / Brands
+  const [categories, setCategories] = useState<{ id: string, name: string, logoUrl?: string }[]>([]);
+  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatImage, setNewCatImage] = useState<File | null>(null);
+  const [newCatImagePreview, setNewCatImagePreview] = useState<string | null>(null);
+  const [isAddingCat, setIsAddingCat] = useState(false);
+  const [isDeleteCatMode, setIsDeleteCatMode] = useState(false);
+  const [selectedCatsToDelete, setSelectedCatsToDelete] = useState<string[]>([]);
+  const [isDeletingCats, setIsDeletingCats] = useState(false);
+
+  // Modals & Feedback
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successModalContent, setSuccessModalContent] = useState({ title: '', message: '' });
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorModalContent, setErrorModalContent] = useState({ title: '', message: '' });
-  const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
 
-  // POS In-Store Sale Modal State
+  // POS Sale Modal State
   const [posModalOpen, setPosModalOpen] = useState(false);
-  const [posDevice, setPosDevice] = useState<Device | null>(null);
+  const [posDevice, setPosDevice] = useState<any | null>(null);
+  const [posVariant, setPosVariant] = useState<VariantData | null>(null);
   const [posPaymentType, setPosPaymentType] = useState<'Full' | 'Downpayment'>('Full');
   const [posQuantity, setPosQuantity] = useState(1);
   const [posDownpaymentAmt, setPosDownpaymentAmt] = useState<number>(0);
-  const [posCustomerEmail, setPosCustomerEmail] = useState('');
   const [posCustomerPhone, setPosCustomerPhone] = useState('');
+  const [posCustomerNotes, setPosCustomerNotes] = useState('');
   const [posSubmitting, setPosSubmitting] = useState(false);
 
-  // Edit Device Modal State
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editDeviceId, setEditDeviceId] = useState('');
-  const [editDeviceName, setEditDeviceName] = useState('');
-  const [editDeviceCost, setEditDeviceCost] = useState('');
-  const [editDevicePrice, setEditDevicePrice] = useState('');
-  const [editDeviceStocks, setEditDeviceStocks] = useState('');
-  const [editDeviceCategory, setEditDeviceCategory] = useState('');
-  const [editDeviceSpecs, setEditDeviceSpecs] = useState('');
-  const [editDeviceIsPreOwned, setEditDeviceIsPreOwned] = useState(false);
-  const [editDeviceImages, setEditDeviceImages] = useState<File[]>([]);
-  const [editDeviceImagePreviews, setEditDeviceImagePreviews] = useState<string[]>([]);
-  const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
-  const [editDeviceDownpaymentImagePreview, setEditDeviceDownpaymentImagePreview] = useState<string | null>(null);
-  const [editDeviceAsLowAs, setEditDeviceAsLowAs] = useState('');
-  const [editDeviceWarranty, setEditDeviceWarranty] = useState('');
-  const [editDeviceDownpayment, setEditDeviceDownpayment] = useState('');
-  const [editDeviceType, setEditDeviceType] = useState('Smartphone');
-  const [isEditingDevice, setIsEditingDevice] = useState(false);
-  const [editDeviceError, setEditDeviceError] = useState<string | null>(null);
-  const [editVariationGroups, setEditVariationGroups] = useState<{ section: string, variations: { name: string, price: string, cost: string, stock: string }[] }[]>([]);
+  // Quick Stock Adjustment Modal State
+  const [adjustModalOpen, setAdjustModalOpen] = useState(false);
+  const [adjustItem, setAdjustItem] = useState<{ device: any, variant?: VariantData } | null>(null);
+  const [adjustStockVal, setAdjustStockVal] = useState('');
+  const [adjustType, setAdjustType] = useState<'SET' | 'ADD'>('SET');
+  const [adjustNotes, setAdjustNotes] = useState('');
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const [adjustError, setAdjustError] = useState<string | null>(null);
 
-  // Add Device Modal State
-  const [addDeviceModalOpen, setAddDeviceModalOpen] = useState(false);
+  // History / Movements Modal State
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [movements, setMovements] = useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyTypeFilter, setHistoryTypeFilter] = useState('ALL');
+
+  // Physical Units / IMEI Modal State
+  const [unitsModalOpen, setUnitsModalOpen] = useState(false);
+  const [deviceUnits, setDeviceUnits] = useState<any[]>([]);
+  const [isUnitsLoading, setIsUnitsLoading] = useState(false);
+  const [unitsSearch, setUnitsSearch] = useState('');
+  const [unitsStatusFilter, setUnitsStatusFilter] = useState('ALL');
+  const [newImeiInput, setNewImeiInput] = useState('');
+  const [newImeiDeviceId, setNewImeiDeviceId] = useState('');
+  const [newImeiVariantId, setNewImeiVariantId] = useState('');
+  const [isRegisteringImei, setIsRegisteringImei] = useState(false);
+  const [imeiError, setImeiError] = useState<string | null>(null);
+
+  // Discount Product Feature States
+  const [discountModalOpen, setDiscountModalOpen] = useState(false);
+  const [discountDeviceId, setDiscountDeviceId] = useState('');
+  const [discountVariantId, setDiscountVariantId] = useState('');
+  const [discountBrandFilter, setDiscountBrandFilter] = useState('ALL');
+  const [discountType, setDiscountType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE');
+  const [discountValue, setDiscountValue] = useState('');
+  const [discountStartDate, setDiscountStartDate] = useState(getTodayDateString());
+  const [discountStartTime, setDiscountStartTime] = useState('00:00');
+  const [discountEndDate, setDiscountEndDate] = useState('');
+  const [discountEndTime, setDiscountEndTime] = useState('23:59');
+  const [isSavingDiscount, setIsSavingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+
+  // Active / Expired Discounts Manager Modal State
+  const [discountsListModalOpen, setDiscountsListModalOpen] = useState(false);
+  const [discountsList, setDiscountsList] = useState<any[]>([]);
+  const [isDiscountsLoading, setIsDiscountsLoading] = useState(false);
+  const [discountFilterStatus, setDiscountFilterStatus] = useState<'ALL' | 'ACTIVE' | 'SCHEDULED' | 'EXPIRED'>('ALL');
+  const [allEligibleProducts, setAllEligibleProducts] = useState<any[]>([]);
+
+  // Add Product State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceCost, setNewDeviceCost] = useState('');
   const [newDevicePrice, setNewDevicePrice] = useState('');
-  const [newDeviceStocks, setNewDeviceStocks] = useState('');
-  const [newDeviceType, setNewDeviceType] = useState('Smartphone');
+  const [newDeviceDiscount, setNewDeviceDiscount] = useState('');
+  const [newDeviceDiscountStartDate, setNewDeviceDiscountStartDate] = useState(getTodayDateString());
+  const [newDeviceDiscountEndDate, setNewDeviceDiscountEndDate] = useState('');
+  const [newDeviceStocks, setNewDeviceStocks] = useState('0');
   const [newDeviceCategory, setNewDeviceCategory] = useState('');
+  const [newDeviceType, setNewDeviceType] = useState('Smartphone');
   const [newDeviceSpecs, setNewDeviceSpecs] = useState('');
+  const [newDeviceAsLowAs, setNewDeviceAsLowAs] = useState('');
+  const [newDeviceWarranty, setNewDeviceWarranty] = useState('');
+  const [newDeviceDownpayment, setNewDeviceDownpayment] = useState('');
   const [newDeviceIsPreOwned, setNewDeviceIsPreOwned] = useState(false);
   const [newDeviceImages, setNewDeviceImages] = useState<File[]>([]);
   const [newDeviceImagePreviews, setNewDeviceImagePreviews] = useState<string[]>([]);
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
   const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
-  const [newDeviceAsLowAs, setNewDeviceAsLowAs] = useState('');
-  const [newDeviceWarranty, setNewDeviceWarranty] = useState('');
-  const [newDeviceDownpayment, setNewDeviceDownpayment] = useState('');
-  const [variationGroups, setVariationGroups] = useState<{ section: string, variations: { name: string, price: string, cost: string, stock: string }[] }[]>([]);
-  const [isAddingDevice, setIsAddingDevice] = useState(false);
-  const [addDeviceError, setAddDeviceError] = useState<string | null>(null);
 
-  const [totalPages, setTotalPages] = useState(1);
+  const [addVariants, setAddVariants] = useState<{
+    type: string;
+    name: string;
+    productId: string;
+    price: string;
+    cost: string;
+    tagoloanStock: string;
+    villanuevaStock: string;
+    jasaanStock: string;
+  }[]>([
+    { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+  ]);
 
-  const downloadPDF = async () => {
-    try {
-      const activeBranch = userBranch || 'Tagoloan';
-      const res = await fetch(`/api/devices?branch=${encodeURIComponent(activeBranch)}`);
-      const allDevices: any[] = await res.json();
-      
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-      
-      // Load logo image
-      let logoImg: HTMLImageElement | null = null;
-      try {
-        logoImg = await new Promise<HTMLImageElement>((resolve, reject) => {
-          const img = new Image();
-          img.src = '/icon.jpg';
-          img.onload = () => resolve(img);
-          img.onerror = (e) => reject(e);
-        });
-      } catch (e) {
-        console.error("Failed to load logo", e);
-      }
-      
-      // Title and Logo header
-      if (logoImg) {
-        doc.addImage(logoImg, 'JPEG', 14, 12, 13, 13);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
-        doc.text("GRAPHIX MANAGEMENT - INVENTORY REPORT", 30, 19);
-        
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, 30, 24);
-      } else {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
-        doc.text("GRAPHIX MANAGEMENT - INVENTORY REPORT", 14, 20);
-        
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 26);
-      }
-      
-      // Headers
-      let y = 40;
-      doc.setFont("helvetica", "bold");
-      doc.setFillColor(92, 0, 153); // Brand color: #5c0099
-      doc.rect(14, y - 6, 182, 8, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.text("ID", 16, y - 1);
-      doc.text("Device Name", 40, y - 1);
-      doc.text("Brand", 100, y - 1);
-      doc.text("Cost", 130, y - 1);
-      doc.text("Price", 155, y - 1);
-      doc.text("Qty", 180, y - 1);
-      
-      y += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "normal");
-      
-      allDevices.forEach((d, idx) => {
-        // Page break check
-        if (y > 275) {
-          doc.addPage();
-          y = 25;
-          // Re-draw headers on new page
-          doc.setFont("helvetica", "bold");
-          doc.setFillColor(92, 0, 153);
-          doc.rect(14, y - 6, 182, 8, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.text("ID", 16, y - 1);
-          doc.text("Device Name", 40, y - 1);
-          doc.text("Brand", 100, y - 1);
-          doc.text("Cost", 130, y - 1);
-          doc.text("Price", 155, y - 1);
-          doc.text("Qty", 180, y - 1);
-          y += 8;
-          doc.setTextColor(0, 0, 0);
-          doc.setFont("helvetica", "normal");
-        }
-        
-        const id = d.id ? `#${String(d.id).slice(-6).toUpperCase()}` : 'N/A';
-        const name = d.name ? (d.name.length > 30 ? d.name.substring(0, 27) + '...' : d.name) : 'Unnamed';
-        const brand = d.category?.name || 'N/A';
-        const cost = d.cost ? `PHP ${Number(d.cost).toLocaleString()}` : 'PHP 0.00';
-        const price = d.price ? `PHP ${Number(d.price).toLocaleString()}` : 'PHP 0.00';
-        const qty = String(d.stock || 0);
-        
-        // Draw line separator
-        doc.setDrawColor(230, 230, 230);
-        doc.line(14, y - 5, 196, y - 5);
-        
-        doc.text(id, 16, y);
-        doc.text(name, 40, y);
-        doc.text(brand, 100, y);
-        doc.text(cost, 130, y);
-        doc.text(price, 155, y);
-        doc.text(qty, 180, y);
-        
-        y += 8;
-      });
-      
-      doc.save("Inventory_Report.pdf");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to export PDF file");
-    }
-  };
+  // Edit Product State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<any | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDeviceName, setEditDeviceName] = useState('');
+  const [editDeviceCost, setEditDeviceCost] = useState('');
+  const [editDevicePrice, setEditDevicePrice] = useState('');
+  const [editDeviceDiscount, setEditDeviceDiscount] = useState('0');
+  const [editDeviceDiscountStartDate, setEditDeviceDiscountStartDate] = useState(getTodayDateString());
+  const [editDeviceDiscountEndDate, setEditDeviceDiscountEndDate] = useState('');
+  const [editDeviceCategory, setEditDeviceCategory] = useState('');
+  const [editDeviceType, setEditDeviceType] = useState('Smartphone');
+  const [editDeviceSpecs, setEditDeviceSpecs] = useState('');
+  const [editDeviceIsPreOwned, setEditDeviceIsPreOwned] = useState(false);
+  const [editDeviceAsLowAs, setEditDeviceAsLowAs] = useState('');
+  const [editDeviceWarranty, setEditDeviceWarranty] = useState('');
+  const [editDeviceDownpayment, setEditDeviceDownpayment] = useState('');
+  const [editImages, setEditImages] = useState<{ id: string; type: 'existing' | 'new'; url: string; file?: File }[]>([]);
+  const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
+  const [editDeviceDownpaymentImagePreview, setEditDeviceDownpaymentImagePreview] = useState<string | null>(null);
+  const [editVariants, setEditVariants] = useState<any[]>([]);
 
-  const downloadExcel = async () => {
-    try {
-      const activeBranch = userBranch || 'Tagoloan';
-      const res = await fetch(`/api/devices?branch=${encodeURIComponent(activeBranch)}`);
-      const allDevices: any[] = await res.json();
-      
-      // CSV headers
-      let csvContent = "Device ID,Device Name,Category/Brand,Cost,Price,Stocks,Specs\n";
-      
-      allDevices.forEach(d => {
-        const id = d.id ? `#${String(d.id).slice(-8).toUpperCase()}` : '';
-        const name = `"${(d.name || '').replace(/"/g, '""')}"`;
-        const brand = `"${(d.category?.name || '').replace(/"/g, '""')}"`;
-        const cost = d.cost || 0;
-        const price = d.price || 0;
-        const stock = d.stock || 0;
-        const specs = `"${(d.specs || '').replace(/"/g, '""')}"`;
-        csvContent += `${id},${name},${brand},${cost},${price},${stock},${specs}\n`;
-      });
-      
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "Inventory_Report.csv");
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error(error);
-      alert("Failed to export Excel file");
-    }
-  };
+  function getTodayDateString() {
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
 
-  const { userBranch } = useBranch();
-  const fetchDevices = () => {
+  function formatDateForInput(dateStr?: string | null) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function generateAutoProductId(modelName: string, variantName: string) {
+    const cleanModel = (modelName || 'DEVICE')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    const cleanVar = (variantName || 'STD')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `${cleanModel}-${cleanVar}`;
+  }
+
+  function getCurrentTimeString() {
+    const d = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function getDefaultEndDateTime() {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  // Fetch Inventory
+  const fetchProducts = () => {
     setIsLoading(true);
-    const activeBranch = userBranch || 'Tagoloan';
-    fetch(`/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&branch=${encodeURIComponent(activeBranch)}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-      })
+    const url = `/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&categoryId=${selectedCategory}&type=${selectedDeviceType}&condition=${selectedCondition}&branch=${encodeURIComponent(userBranch)}&stockStatus=${stockStatusFilter}`;
+
+    fetch(url)
+      .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.devices)) {
-          setDevices(data.devices);
           setTotalPages(data.totalPages || 1);
-        } else {
-          console.error('Expected devices array, got:', data);
+          setProducts(data.devices);
+        } else if (Array.isArray(data)) {
+          setProducts(data);
         }
       })
-      .catch(console.error)
+      .catch(err => console.error("Error fetching cashier inventory:", err))
       .finally(() => setIsLoading(false));
   };
 
-  const handleDeviceImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-      const compressedFiles = await Promise.all(files.map(file => imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }).catch(() => file)));
-      setNewDeviceImages(prev => [...prev, ...compressedFiles]);
-      const newPreviews = compressedFiles.map(file => URL.createObjectURL(file));
-      setNewDeviceImagePreviews(prev => [...prev, ...newPreviews]);
-    }
+  const fetchCategories = () => {
+    fetch('/api/categories?t=' + Date.now())
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCategories(data);
+      })
+      .catch(err => console.error("Error fetching categories:", err));
   };
 
-  const removeNewDeviceImage = (index: number) => {
-    setNewDeviceImages(prev => prev.filter((_, i) => i !== index));
-    setNewDeviceImagePreviews(prev => prev.filter((_, i) => i !== index));
+  // Fetch Stock History
+  const fetchHistory = () => {
+    setIsHistoryLoading(true);
+    fetch(`/api/inventory/history?branch=${encodeURIComponent(userBranch)}&type=${historyTypeFilter}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.movements)) {
+          setMovements(data.movements);
+        }
+      })
+      .catch(err => console.error("Failed to load inventory history:", err))
+      .finally(() => setIsHistoryLoading(false));
   };
 
-  const handleNewDownpaymentImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      try {
-        const compressed = await imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true });
-        setNewDeviceDownpaymentImage(compressed);
-        setNewDeviceDownpaymentImagePreview(URL.createObjectURL(compressed));
-      } catch(err) {
-        setNewDeviceDownpaymentImage(file);
-        setNewDeviceDownpaymentImagePreview(URL.createObjectURL(file));
-      }
-    }
+  // Fetch Physical Units (IMEIs)
+  const fetchUnits = () => {
+    setIsUnitsLoading(true);
+    fetch(`/api/inventory/units?branch=${encodeURIComponent(userBranch)}&status=${unitsStatusFilter}&search=${encodeURIComponent(unitsSearch)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.units)) {
+          setDeviceUnits(data.units);
+        }
+      })
+      .catch(err => console.error("Failed to load device units:", err))
+      .finally(() => setIsUnitsLoading(false));
   };
 
-  const handleAddDevice = async () => {
-    setAddDeviceError(null);
-    if (!newDeviceName) return setAddDeviceError('Device Name is required.');
-    if (!newDeviceCost) return setAddDeviceError('Cost is required.');
-    if (!newDevicePrice) return setAddDeviceError('Selling Price is required.');
-    if (!newDeviceStocks) return setAddDeviceError('Stocks are required.');
-    if (!newDeviceCategory) return setAddDeviceError('Please assign this device a Category.');
-
-    setIsAddingDevice(true);
-    const formData = new FormData();
-    formData.append('deviceName', newDeviceName);
-    formData.append('deviceCost', newDeviceCost);
-    formData.append('devicePrice', newDevicePrice);
-    formData.append('deviceStocks', newDeviceStocks);
-    formData.append('deviceCategory', newDeviceCategory);
-    formData.append('deviceType', newDeviceType);
-    formData.append('isPreOwned', newDeviceIsPreOwned ? 'true' : 'false');
-    formData.append('deviceSpecs', newDeviceSpecs);
-    if (newDeviceImages.length > 0) {
-      newDeviceImages.forEach(file => {
-        formData.append('deviceImages', file);
-      });
-    }
-    if (newDeviceDownpaymentImage) {
-      formData.append('deviceDownpaymentImage', newDeviceDownpaymentImage);
-    }
-    if (newDeviceAsLowAs) formData.append('deviceAsLowAs', newDeviceAsLowAs);
-    if (newDeviceWarranty) formData.append('deviceWarranty', newDeviceWarranty);
-    if (newDeviceDownpayment) formData.append('deviceDownpayment', newDeviceDownpayment);
-    if (variationGroups.length > 0) {
-      const flattened = variationGroups.flatMap(group =>
-        group.variations.map(v => ({
-          type: group.section,
-          name: v.name,
-          price: v.price,
-          cost: v.cost,
-          stock: v.stock
-        }))
-      );
-      formData.append('variations', JSON.stringify(flattened));
-    }
-
+  // Fetch Discounts
+  const fetchDiscountsList = async () => {
+    setIsDiscountsLoading(true);
     try {
-      const res = await fetch('/api/devices', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
+      const res = await fetch(`/api/inventory/discount?branch=${encodeURIComponent(userBranch)}&t=${Date.now()}`);
+      if (res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to add device');
+        setDiscountsList(Array.isArray(data.discounts) ? data.discounts : []);
       }
-
-      setAddDeviceModalOpen(false);
-
-      setNewDeviceName('');
-      setNewDeviceCost('');
-      setNewDevicePrice('');
-      setNewDeviceStocks('');
-      setNewDeviceType('Smartphone');
-      setNewDeviceCategory('');
-      setNewDeviceIsPreOwned(false);
-      setNewDeviceSpecs('');
-      setNewDeviceImages([]);
-      setNewDeviceImagePreviews([]);
-      setNewDeviceDownpaymentImage(null);
-      setNewDeviceDownpaymentImagePreview(null);
-      setNewDeviceAsLowAs('');
-      setNewDeviceWarranty('');
-      setNewDeviceDownpayment('');
-      setVariationGroups([]);
-
-      setSuccessModalContent({ title: 'Success!', message: 'The device has been successfully added to the inventory.' });
-      setSuccessModalOpen(true);
-      fetchDevices();
-
-    } catch (err: any) {
-      setAddDeviceError(err.message);
+    } catch (err) {
+      console.error('Failed to load discounts list:', err);
     } finally {
-      setIsAddingDevice(false);
+      setIsDiscountsLoading(false);
     }
   };
 
-  const openPosModal = (device: Device) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchProducts();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentPage, searchQuery, selectedCategory, selectedDeviceType, selectedCondition, userBranch, stockStatusFilter]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    if (historyModalOpen) fetchHistory();
+  }, [historyModalOpen, historyTypeFilter, userBranch]);
+
+  useEffect(() => {
+    if (unitsModalOpen) fetchUnits();
+  }, [unitsModalOpen, unitsStatusFilter, unitsSearch, userBranch]);
+
+  // POS Sale Handlers
+  const openPosModal = (device: any, variant?: VariantData) => {
     setPosDevice(device);
+    setPosVariant(variant || null);
     setPosPaymentType('Full');
     setPosQuantity(1);
-    const initialDp = device.downpayment ? parseFloat(device.downpayment) : Math.round(device.price * 0.3);
+    const basePrice = variant ? Number(variant.price || device.price) : Number(device.price || 0);
+    const effectivePrice = device.discount && device.discount > 0 ? Math.round(basePrice * (1 - device.discount / 100)) : basePrice;
+    const initialDp = device.downpayment ? parseFloat(device.downpayment) : Math.round(effectivePrice * 0.3);
     setPosDownpaymentAmt(initialDp || 0);
-    setPosCustomerEmail('');
     setPosCustomerPhone('');
+    setPosCustomerNotes('');
     setPosModalOpen(true);
   };
 
-  const handlePosSubmit = async () => {
+  const handlePosSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!posDevice) return;
     setPosSubmitting(true);
     try {
-      const totalPrice = posDevice.price * posQuantity;
+      const itemBasePrice = posVariant ? Number(posVariant.price || posDevice.price) : Number(posDevice.price || 0);
+      const effectiveUnitPrice = posDevice.discount && posDevice.discount > 0 ? Math.round(itemBasePrice * (1 - posDevice.discount / 100)) : itemBasePrice;
+      const totalPrice = effectiveUnitPrice * posQuantity;
       const dpAmount = posPaymentType === 'Downpayment' ? posDownpaymentAmt : totalPrice;
       const remBal = posPaymentType === 'Downpayment' ? Math.max(0, totalPrice - posDownpaymentAmt) : 0;
       const isSettled = posPaymentType === 'Full' || remBal === 0;
@@ -400,31 +355,34 @@ export default function CashierDevices() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           deviceId: posDevice.id,
+          variationId: posVariant?.id || undefined,
           amount: dpAmount,
           quantity: posQuantity,
           paymentType: posPaymentType,
           source: 'POS',
+          branch: userBranch,
           downpaymentAmount: posPaymentType === 'Downpayment' ? dpAmount : 0,
           remainingBalance: remBal,
           isSettled: isSettled,
-          phoneNumber: posCustomerPhone
+          phoneNumber: posCustomerPhone,
+          notes: posCustomerNotes
         })
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to complete POS transaction');
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to complete POS sale');
       }
 
       setPosModalOpen(false);
       setSuccessModalContent({
         title: 'POS Checkout Complete!',
         message: posPaymentType === 'Downpayment'
-          ? `In-Store Downpayment of ₱${dpAmount.toLocaleString()} recorded for "${posDevice.name}". Remaining balance: ₱${remBal.toLocaleString()}.`
-          : `Full payment sale of ₱${totalPrice.toLocaleString()} recorded for "${posDevice.name}".`
+          ? `In-Store Downpayment of ₱${dpAmount.toLocaleString()} recorded for "${posDevice.name}${posVariant ? ` (${posVariant.name})` : ''}". Remaining balance: ₱${remBal.toLocaleString()}.`
+          : `Full payment sale of ₱${totalPrice.toLocaleString()} completed for "${posDevice.name}${posVariant ? ` (${posVariant.name})` : ''}".`
       });
       setSuccessModalOpen(true);
-      fetchDevices();
+      fetchProducts();
     } catch (err: any) {
       setErrorModalContent({ title: 'POS Checkout Error', message: err.message || 'Transaction failed' });
       setErrorModalOpen(true);
@@ -433,172 +391,230 @@ export default function CashierDevices() {
     }
   };
 
-  const handleEditDeviceImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
-      const compressedFiles = await Promise.all(files.map(file => imageCompression(file, { maxSizeMB: 0.5, maxWidthOrHeight: 1024, useWebWorker: true }).catch(() => file)));
-      setEditDeviceImages(prev => [...prev, ...compressedFiles]);
-      const newPreviews = compressedFiles.map(file => URL.createObjectURL(file));
-      setEditDeviceImagePreviews(prev => [...prev, ...newPreviews]);
-    }
-  };
-
-  const removeEditDeviceImage = (index: number) => {
-    setEditDeviceImages(prev => prev.filter((_, i) => i !== index));
-    setEditDeviceImagePreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleEditDownpaymentImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setEditDeviceDownpaymentImage(file);
-      setEditDeviceDownpaymentImagePreview(URL.createObjectURL(file));
-    }
-  };
-
-  const openEditModal = (device: Device) => {
-    setEditDeviceId(device.id);
-    setEditDeviceName(device.name);
-    setEditDeviceCost(device.cost.toString());
-    setEditDevicePrice(device.price.toString());
-    setEditDeviceStocks(device.stock.toString());
-    setEditDeviceType((device as any).type || 'Smartphone');
-    setEditDeviceCategory(device.categoryId || '');
-    setEditDeviceIsPreOwned(device.isPreOwned || false);
-    setEditDeviceSpecs(device.specs || '');
-    setEditDeviceImagePreviews(device.images && device.images.length > 0 ? device.images : (device.image ? [device.image] : []));
-    setEditDeviceImages([]);
-    setEditDeviceDownpaymentImagePreview(device.downpaymentImage || null);
-    setEditDeviceDownpaymentImage(null);
-    setEditDeviceAsLowAs(device.asLowAs || '');
-    setEditDeviceWarranty(device.warranty || '');
-    setEditDeviceDownpayment(device.downpayment || '');
-    setEditDeviceError(null);
-    setEditVariationGroups(device.variations ? Object.values(device.variations.reduce((acc: any, v: any) => {
-      if (!acc[v.type]) acc[v.type] = { section: v.type, variations: [] };
-      acc[v.type].variations.push({ name: v.name, price: v.price?.toString() || '0', cost: v.cost?.toString() || '0', stock: v.stock?.toString() || '0' });
-      return acc;
-    }, {})) : []);
-    setEditModalOpen(true);
-  };
-
-  const handleEditDevice = async () => {
-    setEditDeviceError(null);
-    if (!editDeviceName) return setEditDeviceError('Device Name is required.');
-    if (!editDeviceCost) return setEditDeviceError('Cost is required.');
-    if (!editDevicePrice) return setEditDeviceError('Selling Price is required.');
-    if (!editDeviceStocks) return setEditDeviceError('Stocks are required.');
-    if (!editDeviceCategory) return setEditDeviceError('Please assign this device a Category.');
-
-    setIsEditingDevice(true);
-    const formData = new FormData();
-    formData.append('deviceName', editDeviceName);
-    formData.append('deviceCost', editDeviceCost);
-    formData.append('devicePrice', editDevicePrice);
-    formData.append('deviceStocks', editDeviceStocks);
-    formData.append('deviceType', editDeviceType);
-    formData.append('deviceCategory', editDeviceCategory);
-    formData.append('isPreOwned', editDeviceIsPreOwned ? 'true' : 'false');
-    formData.append('deviceSpecs', editDeviceSpecs);
-    if (editDeviceImages.length > 0) {
-      editDeviceImages.forEach(file => {
-        formData.append('deviceImages', file);
-      });
-    }
-    if (editDeviceDownpaymentImage) {
-      formData.append('deviceDownpaymentImage', editDeviceDownpaymentImage);
-    }
-    formData.append('deviceAsLowAs', editDeviceAsLowAs);
-    formData.append('deviceWarranty', editDeviceWarranty);
-    formData.append('deviceDownpayment', editDeviceDownpayment);
-    if (editVariationGroups.length > 0) {
-      const flattened = editVariationGroups.flatMap(group =>
-        group.variations.map(v => ({
-          type: group.section,
-          name: v.name,
-          price: v.price,
-          cost: v.cost,
-          stock: v.stock
-        }))
-      );
-      formData.append('variations', JSON.stringify(flattened));
-    }
+  // Discount Product Handlers
+  const handleOpenAddDiscount = async (preselectedProduct?: any) => {
+    setDiscountError(null);
+    setDiscountType('PERCENTAGE');
+    setDiscountValue('');
+    setDiscountStartDate(getTodayDateString());
+    setDiscountStartTime(getCurrentTimeString());
+    setDiscountEndDate(getDefaultEndDateTime());
+    setDiscountEndTime('23:59');
+    setDiscountVariantId('');
 
     try {
-      const res = await fetch(`/api/devices/${editDeviceId}`, {
-        method: 'PUT',
-        body: formData,
-      });
-
-      if (!res.ok) {
+      const res = await fetch(`/api/devices?limit=250&branch=${encodeURIComponent(userBranch)}`);
+      if (res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to update device');
+        const list = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
+        setAllEligibleProducts(list);
+
+        if (preselectedProduct) {
+          setDiscountDeviceId(preselectedProduct.id);
+          setDiscountBrandFilter(preselectedProduct.category?.id || preselectedProduct.categoryId || 'ALL');
+          if (preselectedProduct.discount && preselectedProduct.discount > 0) {
+            setDiscountValue(String(preselectedProduct.discount));
+            if (preselectedProduct.discountStartDate) {
+              setDiscountStartDate(formatDateForInput(preselectedProduct.discountStartDate));
+            }
+            if (preselectedProduct.discountEndDate) {
+              setDiscountEndDate(formatDateForInput(preselectedProduct.discountEndDate));
+            }
+          }
+        } else if (list.length > 0) {
+          setDiscountDeviceId(list[0].id);
+          setDiscountBrandFilter('ALL');
+        }
       }
+    } catch (e) {
+      console.error('Failed to load eligible products for discount:', e);
+      if (preselectedProduct) setDiscountDeviceId(preselectedProduct.id);
+    }
 
-      setEditModalOpen(false);
-      setSuccessModalContent({ title: 'Success!', message: 'The device has been successfully updated.' });
-      setSuccessModalOpen(true);
-      fetchDevices();
+    setDiscountModalOpen(true);
+  };
 
+  const handleSaveDiscount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDiscountError(null);
+
+    if (!discountDeviceId) {
+      setDiscountError('Please select a product to apply the discount.');
+      return;
+    }
+
+    const numVal = parseFloat(discountValue);
+    if (isNaN(numVal) || numVal <= 0) {
+      setDiscountError('Please enter a valid positive discount value.');
+      return;
+    }
+
+    if (discountType === 'FIXED' && numVal >= 2000) {
+      setDiscountError('For fixed discounts, the discount amount must be LESS THAN ₱2,000.');
+      return;
+    }
+
+    if (discountType === 'PERCENTAGE' && (numVal <= 0 || numVal >= 100)) {
+      setDiscountError('Discount percentage must be between 1% and 99%.');
+      return;
+    }
+
+    if (!discountStartDate || !discountEndDate) {
+      setDiscountError('Please provide both start and end dates.');
+      return;
+    }
+
+    const startIso = new Date(`${discountStartDate}T${discountStartTime || '00:00'}:00`);
+    const endIso = new Date(`${discountEndDate}T${discountEndTime || '23:59'}:00`);
+
+    if (isNaN(startIso.getTime()) || isNaN(endIso.getTime())) {
+      setDiscountError('Invalid date or time entered.');
+      return;
+    }
+
+    if (startIso >= endIso) {
+      setDiscountError('Discount start date and time must be earlier than the end date and time.');
+      return;
+    }
+
+    setIsSavingDiscount(true);
+    try {
+      const res = await fetch('/api/inventory/discount', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: discountDeviceId,
+          variantId: discountVariantId || undefined,
+          branch: userBranch,
+          discountType,
+          discountValue: numVal,
+          discountStartDate: startIso.toISOString(),
+          discountEndDate: endIso.toISOString()
+        })
+      });
+
+      if (res.ok) {
+        setDiscountModalOpen(false);
+        setSuccessModalContent({
+          title: 'Discount Applied!',
+          message: `Product discount successfully configured and applied for ${userBranch} branch.`
+        });
+        setSuccessModalOpen(true);
+        fetchProducts();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setDiscountError(data.error || 'Failed to save discount settings.');
+      }
     } catch (err: any) {
-      setEditDeviceError(err.message);
+      setDiscountError(err.message || 'Error occurred while saving discount.');
     } finally {
-      setIsEditingDevice(false);
+      setIsSavingDiscount(false);
     }
   };
 
-  // Category Management State
-  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatImage, setNewCatImage] = useState<File | null>(null);
-  const [newCatImagePreview, setNewCatImagePreview] = useState<string | null>(null);
-  const [isAddingCat, setIsAddingCat] = useState(false);
-
-  // Category Deletion State
-  const [isDeleteCatMode, setIsDeleteCatMode] = useState(false);
-  const [selectedCatsToDelete, setSelectedCatsToDelete] = useState<string[]>([]);
-  const [isDeletingCats, setIsDeletingCats] = useState(false);
-
-  const handleDeleteSelectedCategories = async () => {
-    if (selectedCatsToDelete.length === 0) return;
-    setIsDeletingCats(true);
+  const handleRemoveDiscount = async (discountId: string, deviceName: string) => {
+    if (!confirm(`Are you sure you want to remove the active discount on "${deviceName}"?`)) return;
     try {
-      const res = await fetch('/api/categories', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: selectedCatsToDelete })
+      const res = await fetch(`/api/inventory/discount?id=${encodeURIComponent(discountId)}`, {
+        method: 'DELETE'
       });
       if (res.ok) {
-        setIsDeleteCatMode(false);
-        setSelectedCatsToDelete([]);
-        fetchCategories();
-        setSuccessModalContent({ title: 'Success', message: 'Selected categories deleted successfully.' });
-        setSuccessModalOpen(true);
+        fetchDiscountsList();
+        fetchProducts();
+        alert('Discount removed successfully.');
       } else {
-        const data = await res.json();
-        setErrorModalContent({ title: 'Error', message: data.error || 'Failed to delete categories' });
-        setErrorModalOpen(true);
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to remove discount.');
       }
-    } catch (err: any) {
-      setErrorModalContent({ title: 'Error', message: 'Network error: ' + (err.message || '') });
-      setErrorModalOpen(true);
-    } finally {
-      setIsDeletingCats(false);
+    } catch (e) {
+      console.error(e);
+      alert('Error removing discount.');
     }
   };
 
-  const fetchCategories = () => {
-    fetch('/api/categories?t=' + Date.now())
-      .then(res => res.json())
-      .then(data => setCategories(Array.isArray(data) ? data : []))
-      .catch(console.error);
+  // Quick Stock Adjust / Restock
+  const handleAdjustSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustItem || !adjustStockVal) return;
+
+    setIsAdjusting(true);
+    setAdjustError(null);
+
+    try {
+      const res = await fetch('/api/inventory/adjust', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: adjustItem.device.id,
+          variationId: adjustItem.variant?.id,
+          productId: adjustItem.variant?.productId,
+          branch: userBranch,
+          newStock: parseInt(adjustStockVal, 10),
+          adjustmentType: adjustType,
+          notes: adjustNotes
+        })
+      });
+
+      if (res.ok) {
+        setAdjustModalOpen(false);
+        setAdjustStockVal('');
+        setAdjustNotes('');
+        setSuccessModalContent({
+          title: 'Stock Updated!',
+          message: `Stock for ${adjustItem.variant?.productId || adjustItem.device.name} in ${userBranch} has been successfully updated.`
+        });
+        setSuccessModalOpen(true);
+        fetchProducts();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setAdjustError(errData.error || 'Failed to update stock');
+      }
+    } catch (err: any) {
+      setAdjustError(err.message || 'Error occurred during stock update');
+    } finally {
+      setIsAdjusting(false);
+    }
   };
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  // Register New Physical IMEI Unit
+  const handleRegisterImei = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newImeiInput || !newImeiDeviceId) {
+      setImeiError('Please provide a valid device and 15-digit IMEI.');
+      return;
+    }
 
+    setIsRegisteringImei(true);
+    setImeiError(null);
+
+    try {
+      const res = await fetch('/api/inventory/units', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imei: newImeiInput.trim(),
+          deviceId: newImeiDeviceId,
+          variationId: newImeiVariantId || undefined,
+          branch: userBranch
+        })
+      });
+
+      if (res.ok) {
+        setNewImeiInput('');
+        fetchUnits();
+        alert('IMEI unit registered successfully!');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setImeiError(data.error || 'Failed to register IMEI unit');
+      }
+    } catch (err: any) {
+      setImeiError(err.message || 'Failed to register IMEI unit');
+    } finally {
+      setIsRegisteringImei(false);
+    }
+  };
+
+  // Category / Brand Handlers
   const handleCatImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -607,18 +623,21 @@ export default function CashierDevices() {
         setNewCatImage(compressed);
         setNewCatImagePreview(URL.createObjectURL(compressed));
       } catch (err) {
-        console.error("Compression error:", err);
         setNewCatImage(file);
         setNewCatImagePreview(URL.createObjectURL(file));
       }
     }
   };
 
-  const handleAddCategory = async () => {
-    if (!newCatName) return;
+  const handleAddCategory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newCatName.trim()) {
+      alert('Please enter a brand name.');
+      return;
+    }
     setIsAddingCat(true);
     const formData = new FormData();
-    formData.append('categoryName', newCatName);
+    formData.append('categoryName', newCatName.trim());
     if (newCatImage) formData.append('categoryImage', newCatImage);
 
     try {
@@ -627,1064 +646,2312 @@ export default function CashierDevices() {
         body: formData,
       });
       if (res.ok) {
+        const createdCat = await res.json();
         setNewCatName('');
         setNewCatImage(null);
         setNewCatImagePreview(null);
         fetchCategories();
-        setSuccessModalContent({ title: 'Success', message: 'Category added successfully.' });
+        if (isAddModalOpen) {
+          setNewDeviceCategory(createdCat.id);
+        }
+        setSuccessModalContent({ title: 'Brand Added', message: `Brand "${createdCat.name}" was added successfully.` });
         setSuccessModalOpen(true);
       } else {
-        const text = await res.text();
-        let errMsg = text;
-        try { errMsg = JSON.parse(text).error || errMsg; } catch(e){}
-        setErrorModalContent({ title: 'Error', message: errMsg.slice(0, 150) });
-        setErrorModalOpen(true);
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to add brand');
       }
     } catch (err: any) {
       console.error(err);
-      setErrorModalContent({ title: 'Error', message: 'Network error: ' + (err.message || '') });
-      setErrorModalOpen(true);
+      alert('Network error while adding brand');
     } finally {
       setIsAddingCat(false);
     }
   };
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      fetchDevices();
-    }, 300);
-    return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery, userBranch]);
-
-  const openDeleteModal = (device: Device) => {
-    setDeviceToDelete(device);
-    setDeleteModalOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (deviceToDelete) {
-      try {
-        await fetch(`/api/devices/${deviceToDelete.id}`, { method: 'DELETE' });
-        setDevices(prev => prev.filter(d => d.id !== deviceToDelete.id));
-        setDeleteModalOpen(false);
-        setSuccessModalContent({ title: 'Deleted Successfully', message: `The device ${deviceToDelete?.name || 'this device'} has been removed from the list.` });
+  const handleDeleteCategory = async (catId: string, catName: string) => {
+    if (!confirm(`Are you sure you want to delete brand "${catName}"?`)) return;
+    setIsDeletingCats(true);
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [catId] })
+      });
+      if (res.ok) {
+        fetchCategories();
+        if (selectedCategory === catId) setSelectedCategory('All');
+        setSuccessModalContent({ title: 'Brand Deleted', message: `Brand "${catName}" has been removed.` });
         setSuccessModalOpen(true);
-      } catch (err) {
-        console.error('Failed to delete', err);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to delete brand. It may be assigned to existing products.');
       }
+    } catch (err: any) {
+      console.error(err);
+      alert('Network error while deleting brand');
+    } finally {
+      setIsDeletingCats(false);
     }
   };
 
-  const paginatedDevices = devices;
+  // Add Product Handlers
+  const handleAddProductImages = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const validFiles = fileArray.filter(f => {
+      const isImg = f.type.startsWith('image/');
+      const isValidSize = f.size <= 10 * 1024 * 1024;
+      if (!isImg) alert(`${f.name} is not a valid image format (JPG, PNG, WEBP).`);
+      else if (!isValidSize) alert(`${f.name} exceeds the 10MB limit.`);
+      return isImg && isValidSize;
+    });
 
-  const prevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
-  const nextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
+    if (validFiles.length === 0) return;
+    const remainingSlots = 5 - newDeviceImages.length;
+    if (remainingSlots <= 0) {
+      alert('You have already added the maximum limit of 5 product images.');
+      return;
+    }
+    const filesToAdd = validFiles.slice(0, remainingSlots);
+    const newPreviews = filesToAdd.map(f => URL.createObjectURL(f));
+    setNewDeviceImages(prev => [...prev, ...filesToAdd]);
+    setNewDeviceImagePreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!newDeviceName || !newDeviceCost || !newDevicePrice || !newDeviceCategory) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+    if (newDeviceImages.length === 0) {
+      alert("Please upload at least 1 product image (1 to 5 images required).");
+      return;
+    }
+
+    setIsAdding(true);
+    const formData = new FormData();
+    formData.append('deviceName', newDeviceName);
+    formData.append('deviceCost', newDeviceCost);
+    formData.append('devicePrice', newDevicePrice);
+    formData.append('deviceDiscount', newDeviceDiscount || '0');
+    formData.append('discountStartDate', newDeviceDiscountStartDate ? new Date(`${newDeviceDiscountStartDate}T00:00:00`).toISOString() : '');
+    formData.append('discountEndDate', newDeviceDiscountEndDate ? new Date(`${newDeviceDiscountEndDate}T23:59:59`).toISOString() : '');
+    formData.append('deviceCategory', newDeviceCategory);
+    formData.append('deviceType', newDeviceType);
+    formData.append('isPreOwned', newDeviceIsPreOwned ? 'true' : 'false');
+    formData.append('deviceSpecs', newDeviceSpecs);
+    formData.append('deviceAsLowAs', newDeviceAsLowAs);
+    formData.append('deviceWarranty', newDeviceWarranty);
+    formData.append('deviceDownpayment', newDeviceDownpayment);
+    formData.append('branch', userBranch);
+
+    let totalComputedStock = 0;
+    if (addVariants.length > 0) {
+      const processedVariants = addVariants.map(v => {
+        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, v.name);
+        const tagStock = userBranch === 'Tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0;
+        const vilStock = userBranch === 'Villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0;
+        const jasStock = userBranch === 'Jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0;
+        const varTotal = parseInt(v.tagoloanStock || '0', 10) + parseInt(v.villanuevaStock || '0', 10) + parseInt(v.jasaanStock || '0', 10);
+        totalComputedStock += varTotal;
+
+        return {
+          type: v.type || 'Storage',
+          name: v.name,
+          productId: autoProdId,
+          price: v.price || newDevicePrice,
+          cost: v.cost || newDeviceCost,
+          stock: varTotal,
+          tagoloanStock: parseInt(v.tagoloanStock || '0', 10),
+          villanuevaStock: parseInt(v.villanuevaStock || '0', 10),
+          jasaanStock: parseInt(v.jasaanStock || '0', 10)
+        };
+      });
+
+      formData.append('variations', JSON.stringify(processedVariants));
+      formData.append('deviceStocks', totalComputedStock.toString());
+    } else {
+      formData.append('deviceStocks', newDeviceStocks || '0');
+    }
+
+    newDeviceImages.forEach(img => formData.append('deviceImages', img));
+    if (newDeviceDownpaymentImage) {
+      formData.append('deviceDownpaymentImage', newDeviceDownpaymentImage);
+    }
+
+    try {
+      const res = await fetch('/api/devices', { method: 'POST', body: formData });
+      if (res.ok) {
+        fetchProducts();
+        setIsAddModalOpen(false);
+        setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice(''); setNewDeviceDiscount('');
+        setNewDeviceDiscountStartDate(getTodayDateString()); setNewDeviceDiscountEndDate('');
+        setNewDeviceCategory(''); setNewDeviceType('Smartphone'); setNewDeviceSpecs('');
+        setNewDeviceIsPreOwned(false); setNewDeviceAsLowAs(''); setNewDeviceWarranty(''); setNewDeviceDownpayment('');
+        setNewDeviceImages([]); setNewDeviceImagePreviews([]);
+        setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
+        setAddVariants([
+          { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+        ]);
+        setSuccessModalContent({ title: 'Success!', message: `The product has been successfully added to ${userBranch} inventory.` });
+        setSuccessModalOpen(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to add product');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while adding the product');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  // Edit Product Handlers
+  const handleEditClick = (prod: any) => {
+    setProductToEdit(prod);
+    setEditDeviceName(prod.name);
+    setEditDeviceCost(prod.cost?.toString() || '');
+    setEditDevicePrice(prod.price?.toString() || '');
+    setEditDeviceDiscount(prod.discount !== undefined && prod.discount !== null ? String(prod.discount) : '0');
+    setEditDeviceDiscountStartDate(formatDateForInput(prod.discountStartDate) || getTodayDateString());
+    setEditDeviceDiscountEndDate(formatDateForInput(prod.discountEndDate));
+    setEditDeviceCategory(prod.categoryId || '');
+    setEditDeviceType(prod.type || 'Smartphone');
+    setEditDeviceIsPreOwned(prod.isPreOwned || false);
+    setEditDeviceSpecs(prod.specs || '');
+    setEditDeviceAsLowAs(prod.asLowAs || '');
+    setEditDeviceWarranty(prod.warranty || '');
+    setEditDeviceDownpayment(prod.downpayment || '');
+
+    const initialImages: { id: string; type: 'existing' | 'new'; url: string; file?: File }[] = [];
+    if (Array.isArray(prod.images) && prod.images.length > 0) {
+      prod.images.forEach((imgUrl: string, idx: number) => {
+        if (imgUrl) initialImages.push({ id: `existing-${idx}-${Date.now()}`, type: 'existing', url: imgUrl });
+      });
+    } else if (prod.image) {
+      initialImages.push({ id: `existing-0-${Date.now()}`, type: 'existing', url: prod.image });
+    }
+    setEditImages(initialImages);
+
+    setEditDeviceDownpaymentImagePreview(prod.downpaymentImage);
+    setEditDeviceDownpaymentImage(null);
+
+    if (prod.variations && prod.variations.length > 0) {
+      setEditVariants(prod.variations.map((v: any) => ({
+        id: v.id,
+        type: v.type || 'Storage',
+        name: v.name,
+        productId: v.productId || generateAutoProductId(prod.name, v.name),
+        price: v.price?.toString() || prod.price?.toString() || '',
+        cost: v.cost?.toString() || prod.cost?.toString() || '',
+        tagoloanStock: (v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0).toString(),
+        villanuevaStock: (v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0).toString(),
+        jasaanStock: (v.jasaanStock ?? v.branchStocks?.Jasaan ?? 0).toString()
+      })));
+    } else {
+      setEditVariants([]);
+    }
+
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!productToEdit) return;
+
+    if (editImages.length === 0) {
+      alert("Please keep or upload at least 1 image for the product (1 to 5 images required).");
+      return;
+    }
+
+    setIsEditing(true);
+    const formData = new FormData();
+    formData.append('deviceName', editDeviceName);
+    formData.append('deviceCost', editDeviceCost);
+    formData.append('devicePrice', editDevicePrice);
+    formData.append('deviceDiscount', editDeviceDiscount || '0');
+    formData.append('discountStartDate', editDeviceDiscountStartDate ? new Date(`${editDeviceDiscountStartDate}T00:00:00`).toISOString() : '');
+    formData.append('discountEndDate', editDeviceDiscountEndDate ? new Date(`${editDeviceDiscountEndDate}T23:59:59`).toISOString() : '');
+    formData.append('deviceCategory', editDeviceCategory);
+    formData.append('deviceType', editDeviceType);
+    formData.append('isPreOwned', editDeviceIsPreOwned ? 'true' : 'false');
+    formData.append('deviceSpecs', editDeviceSpecs);
+    formData.append('deviceAsLowAs', editDeviceAsLowAs);
+    formData.append('deviceWarranty', editDeviceWarranty);
+    formData.append('deviceDownpayment', editDeviceDownpayment);
+
+    const existingImageUrls = editImages.filter(img => img.type === 'existing').map(img => img.url);
+    formData.append('existingImages', JSON.stringify(existingImageUrls));
+
+    editImages.filter(img => img.type === 'new' && img.file).forEach(img => {
+      formData.append('deviceImages', img.file!);
+    });
+
+    if (editDeviceDownpaymentImage) {
+      formData.append('deviceDownpaymentImage', editDeviceDownpaymentImage);
+    }
+
+    let totalComputedStock = 0;
+    if (editVariants.length > 0) {
+      const processedVariants = editVariants.map(v => {
+        const autoProdId = v.productId?.trim() || generateAutoProductId(editDeviceName, v.name);
+        const tagStock = parseInt(v.tagoloanStock || '0', 10);
+        const vilStock = parseInt(v.villanuevaStock || '0', 10);
+        const jasStock = parseInt(v.jasaanStock || '0', 10);
+        const varTotal = tagStock + vilStock + jasStock;
+        totalComputedStock += varTotal;
+
+        return {
+          id: v.id,
+          type: v.type || 'Storage',
+          name: v.name,
+          productId: autoProdId,
+          price: v.price || editDevicePrice,
+          cost: v.cost || editDeviceCost,
+          stock: varTotal,
+          tagoloanStock: tagStock,
+          villanuevaStock: vilStock,
+          jasaanStock: jasStock
+        };
+      });
+
+      formData.append('variations', JSON.stringify(processedVariants));
+      formData.append('deviceStocks', totalComputedStock.toString());
+    }
+
+    try {
+      const res = await fetch(`/api/devices/${productToEdit.id}`, { method: 'PUT', body: formData });
+      if (res.ok) {
+        fetchProducts();
+        setIsEditModalOpen(false);
+        setSuccessModalContent({ title: 'Product Updated', message: `Product "${editDeviceName}" has been successfully updated.` });
+        setSuccessModalOpen(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to update product');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while updating the product');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  // Delete Product
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/devices/${productToDelete}`, { method: 'DELETE' });
+      if (res.ok) {
+        setDeleteModalOpen(false);
+        setProductToDelete(null);
+        fetchProducts();
+        setSuccessModalContent({ title: 'Product Deleted', message: 'The product and its associated variants have been removed.' });
+        setSuccessModalOpen(true);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to delete product');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error deleting product');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // PDF Export
+  const downloadPDF = async () => {
+    try {
+      const res = await fetch(`/api/devices?branch=${encodeURIComponent(userBranch)}&limit=1000`);
+      const data = await res.json();
+      const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
+
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text(`GRAPHIX MANAGEMENT - INVENTORY REPORT (${userBranch.toUpperCase()} BRANCH)`, 14, 20);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Generated on: ${new Date().toLocaleString()} | Cashier View`, 14, 26);
+
+      let y = 36;
+      doc.setFont("helvetica", "bold");
+      doc.setFillColor(92, 0, 153);
+      doc.rect(14, y - 6, 182, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.text("Product Model", 16, y - 1);
+      doc.text("Brand/Category", 75, y - 1);
+      doc.text("Condition", 115, y - 1);
+      doc.text("Stock (Branch)", 140, y - 1);
+      doc.text("Price", 175, y - 1);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      y += 6;
+
+      allDevices.forEach((d: any) => {
+        if (y > 275) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(String(d.name || '').slice(0, 32), 16, y);
+        doc.text(String(d.category?.name || d.type || 'Standard').slice(0, 20), 75, y);
+        doc.text(d.isPreOwned ? 'Pre-Owned' : 'New', 115, y);
+        doc.text(`${d.stock || 0} pcs`, 140, y);
+        doc.text(`₱ ${Number(d.price || 0).toLocaleString()}`, 175, y);
+        y += 7;
+      });
+
+      doc.save(`Graphix_${userBranch}_Inventory_Report.pdf`);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to export PDF");
+    }
+  };
+
+  // Excel / CSV Export
+  const downloadExcel = async () => {
+    try {
+      const res = await fetch(`/api/devices?branch=${encodeURIComponent(userBranch)}&limit=1000`);
+      const data = await res.json();
+      const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
+
+      let csvContent = `Product Name,Brand,Type,Condition,Branch Stock,Base Price,Discount %,Cost\n`;
+
+      allDevices.forEach((d: any) => {
+        const name = `"${(d.name || '').replace(/"/g, '""')}"`;
+        const brand = `"${(d.category?.name || '').replace(/"/g, '""')}"`;
+        const type = `"${(d.type || 'Smartphone').replace(/"/g, '""')}"`;
+        const condition = d.isPreOwned ? 'Pre-Owned' : 'New';
+        const stock = d.stock || 0;
+        const price = d.price || 0;
+        const discount = d.discount || 0;
+        const cost = d.cost || 0;
+        csvContent += `${name},${brand},${type},${condition},${stock},${price},${discount},${cost}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Graphix_${userBranch}_Inventory_Report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to export CSV");
+    }
+  };
 
   return (
-    <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.back()} className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer">
-            <ChevronLeft size={32} />
-          </button>
-          <h2 className="text-2xl font-bold text-black">Devices</h2>
-
-          <button
-            onClick={() => setAddDeviceModalOpen(true)}
-            className="ml-2 px-4 py-2 bg-[#bd00ff] text-white font-bold rounded-lg hover:bg-[#9c00d6] transition-colors border-none cursor-pointer text-sm whitespace-nowrap flex items-center gap-2"
-          >
-            <Plus size={18} /> Add Device
-          </button>
-          <button
-            onClick={() => setCategoriesModalOpen(true)}
-            className="px-4 py-2 bg-purple-100 text-[#bd00ff] font-bold rounded-lg hover:bg-purple-200 transition-colors border-none cursor-pointer text-sm whitespace-nowrap"
-          >
-            Manage Categories
-          </button>
-          <button
-            onClick={downloadPDF}
-            className="px-4 py-2 bg-red-100 text-red-700 font-bold rounded-lg hover:bg-red-200 transition-colors border-none cursor-pointer text-sm whitespace-nowrap flex items-center gap-1.5"
-          >
-            <FileText size={16} /> PDF
-          </button>
-          <button
-            onClick={downloadExcel}
-            className="px-4 py-2 bg-green-100 text-green-700 font-bold rounded-lg hover:bg-green-200 transition-colors border-none cursor-pointer text-sm whitespace-nowrap flex items-center gap-1.5"
-          >
-            <FileText size={16} /> Excel
-          </button>
+    <div className="flex flex-col gap-6 font-['Inter']">
+      {/* Top Header & Assigned Branch Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-4 bg-white/95 backdrop-blur-md p-5 rounded-2xl border-2 border-purple-500/20 shadow-sm">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[1.6rem] font-bold text-[#111] tracking-tight">Multi-Branch Inventory</h2>
+            <span className="bg-blue-100 text-blue-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider border border-blue-200 flex items-center gap-1.5">
+              <Building2 size={14} /> {userBranch.toUpperCase()} BRANCH CASHIER
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Organized by Product Name/Model with variant Product IDs and live stock tracking for {userBranch} branch.
+          </p>
         </div>
 
-        <div className="relative w-full sm:w-80">
-          <input
-            type="text"
-            placeholder="Search by device name or ID..."
-            value={searchQuery}
+        {/* Action Buttons Bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-xl px-4 py-2 text-sm font-bold text-gray-700">
+            <Building2 size={18} className="text-blue-600" />
+            <span>Assigned Branch: <strong className="text-blue-700">{userBranch}</strong></span>
+          </div>
+
+          {/* Stock Movement History Button */}
+          <button
+            onClick={() => setHistoryModalOpen(true)}
+            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-gray-300 cursor-pointer"
+            title="View stock movement history for assigned branch"
+          >
+            <History size={16} className="text-purple-600" />
+            <span>Stock History</span>
+          </button>
+
+          {/* Physical Units / IMEI Button */}
+          <button
+            onClick={() => setUnitsModalOpen(true)}
+            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-gray-300 cursor-pointer"
+            title="View physical IMEI unit records for assigned branch"
+          >
+            <Smartphone size={16} className="text-purple-600" />
+            <span>Unit IMEIs</span>
+          </button>
+
+          {/* Active Discounts Management Button */}
+          <button
+            onClick={() => {
+              fetchDiscountsList();
+              setDiscountsListModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-rose-200 cursor-pointer shadow-xs"
+            title="View active, scheduled, and expired discounts"
+          >
+            <Percent size={16} className="text-rose-600" />
+            <span>Discounts</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Filter & Action Controls Bar */}
+      <div className="flex flex-wrap justify-between items-center gap-3 w-full">
+        {/* Search */}
+        <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2.5 w-full sm:w-auto sm:min-w-[260px] shadow-sm`}>
+          <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
+          <input 
+            type="text" 
+            placeholder="Search Model, Product ID, Specs..." 
+            value={searchQuery} 
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
-            }}
-            className="w-full h-11 pl-11 pr-4 border-2 border-[#bd00ff] rounded-xl focus:ring-4 focus:ring-[#bd00ff]/20 outline-none transition-all text-black font-semibold placeholder:text-gray-400 placeholder:font-normal shadow-sm"
+            }} 
+            className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400 font-medium" 
           />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#bd00ff] font-bold" size={20} />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black">
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Stock Status Filter Pills */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1">
+          <button
+            onClick={() => { setStockStatusFilter('all'); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            All Stock
+          </button>
+          <button
+            onClick={() => { setStockStatusFilter('low'); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
+          </button>
+          <button
+            onClick={() => { setStockStatusFilter('out'); setCurrentPage(1); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
+          </button>
+        </div>
+
+        {/* Brand, Type, Condition Filters + Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Brand Dropdown */}
+          <div className="relative">
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)} 
+              className={`flex items-center gap-2 bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 font-semibold text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
+            >
+              <Filter size={16} />
+              <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
+              <ChevronDown size={16} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isFilterOpen && (
+              <div className="absolute top-[115%] right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
+                <button 
+                  onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); setCurrentPage(1); }} 
+                  className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
+                >
+                  All Brands
+                </button>
+                {categories.map(cat => (
+                  <button 
+                    key={cat.id} 
+                    onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); setCurrentPage(1); }} 
+                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+                <div className="border-t border-purple-100 mt-1 pt-1">
+                  <button 
+                    onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
+                    className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Plus size={14} /> + Add / Manage Brands
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Type Dropdown */}
+          <select 
+            value={selectedDeviceType} 
+            onChange={(e) => { setSelectedDeviceType(e.target.value); setCurrentPage(1); }} 
+            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+          >
+            <option value="all">All Types</option>
+            <option value="smartphone">Smartphones</option>
+            <option value="laptop">Laptops</option>
+            <option value="ipad">iPads/Tablets</option>
+            <option value="tv">TVs</option>
+            <option value="speaker">Speakers</option>
+            <option value="phone accessories">Accessories</option>
+          </select>
+
+          {/* Condition Filter Dropdown */}
+          <select
+            value={selectedCondition}
+            onChange={(e) => { setSelectedCondition(e.target.value as any); setCurrentPage(1); }}
+            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+          >
+            <option value="all">All Conditions</option>
+            <option value="new">New</option>
+            <option value="pre-owned">Pre-Owned</option>
+          </select>
+
+          {/* Export Buttons */}
+          <button onClick={downloadPDF} className="flex items-center gap-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3.5 py-2 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
+            <FileText size={14} /> PDF
+          </button>
+          <button onClick={downloadExcel} className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
+            <FileText size={14} /> Excel
+          </button>
+
+          {/* Add Brand Button */}
+          <button 
+            onClick={() => setCategoriesModalOpen(true)} 
+            className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-4 py-2 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
+            title="Add & Manage Brands"
+          >
+            <Plus size={16} />
+            <span>Add Brand</span>
+          </button>
+
+          {/* Add Product Button */}
+          <button 
+            onClick={() => setIsAddModalOpen(true)} 
+            className="flex items-center gap-2 bg-[#5c0099] hover:bg-[#470077] text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer"
+          >
+            <Plus size={18} />
+            <span>Add Product</span>
+          </button>
+
+          {/* Add Discount Product Button - Directly Beside Add Product */}
+          <button 
+            onClick={() => handleOpenAddDiscount()} 
+            className="flex items-center gap-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer border border-purple-400/40"
+            title="Apply discount to an existing product and variant"
+          >
+            <Percent size={17} className="text-amber-300" />
+            <span>+ Add Discount Product</span>
+          </button>
         </div>
       </div>
 
-      {/* Devices Table */}
-      <div className="w-full mt-2">
-        {isLoading ? (
-          <div className="w-full py-20 flex flex-col items-center justify-center gap-4 border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm">
-            <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
-            <p className="text-[#666] font-semibold animate-pulse text-lg">Loading devices...</p>
-          </div>
-        ) : paginatedDevices.length > 0 ? (
-          <div className="overflow-x-auto w-full border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm">
-            <table className="w-full text-left border-collapse min-w-[500px]">
-              <thead>
-                <tr className="bg-gray-50 border-b border-[#bd00ff]/20 text-gray-700 whitespace-nowrap">
-                  <th className="p-4 font-bold text-[1.05rem]">Device Name</th>
-                  <th className="p-4 font-bold text-[1.05rem]">Cost</th>
-                  <th className="p-4 font-bold text-[1.05rem]">Price</th>
-                  <th className="p-4 font-bold text-center text-[1.05rem]">Quantity</th>
-                  <th className="p-4 font-bold text-[1.05rem] w-32 hidden sm:table-cell">Device ID</th>
-                  <th className="p-4 font-bold text-center w-40 text-[1.05rem]">Actions</th>
+      {/* Main Model-Based Inventory Table with Expandable Storage Variants */}
+      <div className={`bg-white/95 backdrop-blur-md border-2 ${styles.borderMain} rounded-2xl overflow-hidden shadow-sm flex flex-col`}>
+        <div className="w-full overflow-x-auto">
+          <table className="w-full border-collapse text-left min-w-[750px]">
+            <thead>
+              <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
+                <th className="py-4 px-6">Product Model</th>
+                <th className="py-4 px-4 text-center">Variants Count</th>
+                <th className="py-4 px-4 text-center">Tagoloan Stock</th>
+                <th className="py-4 px-4 text-center">Villanueva Stock</th>
+                <th className="py-4 px-4 text-center">Jasaan Stock</th>
+                <th className="py-4 px-4 text-center">Active Branch Stock</th>
+                <th className="py-4 px-4 text-center">Base Price</th>
+                <th className="py-4 px-6 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+                      <span className="text-gray-500 font-semibold animate-pulse">Loading cashier inventory...</span>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {paginatedDevices.map(device => (
-                  <tr key={device.id} className="border-b border-gray-100/80 hover:bg-purple-50/50 transition-colors group">
-                    <td className="p-4 font-bold text-[1.1rem] text-black align-middle">
-                      <div className="flex items-center gap-2">
-                        <span>{device.name || 'Unnamed'}</span>
-                        {device.isPreOwned && (
-                          <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
-                            PRE-OWNED
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 font-bold text-[1.05rem] text-gray-600 align-middle">
-                      ₱{device.cost ? Number(device.cost).toFixed(2) : '0.00'}
-                    </td>
-                    <td className="p-4 font-bold text-[1.05rem] text-[#bd00ff] align-middle">
-                      {(() => {
-                        const now = new Date();
-                        const hasDiscount = (device.discount || 0) > 0;
-                        const isScheduled = hasDiscount && device.discountStartDate && new Date(device.discountStartDate) > now;
-                        const isExpired = hasDiscount && device.discountEndDate && new Date(device.discountEndDate) < now;
-                        const isActive = hasDiscount && !isScheduled && !isExpired;
+              ) : products.length > 0 ? (
+                products.map((prod) => {
+                  const isExpanded = expandedModelId === prod.id;
+                  const variants: VariantData[] = prod.variations || [];
+                  const now = new Date();
+                  const isDiscountActive = Boolean(
+                    prod.discount && prod.discount > 0 &&
+                    (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
+                    (!prod.discountEndDate || new Date(prod.discountEndDate) >= now)
+                  );
+                  const isDiscountScheduled = Boolean(
+                    prod.discount && prod.discount > 0 &&
+                    prod.discountStartDate && new Date(prod.discountStartDate) > now
+                  );
+                  const isDiscountExpired = Boolean(
+                    prod.discount && prod.discount > 0 &&
+                    prod.discountEndDate && new Date(prod.discountEndDate) < now
+                  );
 
-                        if (isActive) {
-                          return (
+                  return (
+                    <React.Fragment key={prod.id}>
+                      {/* Parent Model Row */}
+                      <tr 
+                        onClick={() => setExpandedModelId(isExpanded ? null : prod.id)}
+                        className={`hover:bg-purple-50/40 transition-colors cursor-pointer ${isExpanded ? 'bg-purple-50/60 font-semibold' : ''}`}
+                      >
+                        <td className="py-4 px-6">
+                          <div className="flex items-center gap-3">
+                            <button className="text-purple-700 hover:text-purple-900 transition-transform">
+                              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            </button>
+                            <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                              {prod.image || (prod.images && prod.images[0]) ? (
+                                <img src={prod.image || prod.images[0]} alt={prod.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <ImageIcon size={20} className="text-gray-400" />
+                              )}
+                            </div>
                             <div className="flex flex-col">
-                              <div className="flex items-center gap-1.5">
-                                <span>₱{(device.price * (1 - (device.discount || 0) / 100)).toFixed(2)}</span>
-                                <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded border border-rose-200">{device.discount}% OFF</span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-gray-900 text-sm md:text-base">{prod.name}</span>
+                                {isDiscountActive && (
+                                  <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-300 flex items-center gap-1 uppercase tracking-wider animate-pulse">
+                                    <Percent size={11} /> DISCOUNT ({prod.discount}% OFF)
+                                  </span>
+                                )}
+                                {isDiscountScheduled && (
+                                  <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-300 uppercase tracking-wider">
+                                    SCHEDULED DISCOUNT
+                                  </span>
+                                )}
+                                {isDiscountExpired && (
+                                  <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-gray-300 uppercase tracking-wider">
+                                    EXPIRED DISCOUNT
+                                  </span>
+                                )}
                               </div>
-                              <span className="text-xs text-gray-400 line-through">₱{Number(device.price).toFixed(2)}</span>
-                              {device.discountEndDate && (
-                                <span className="text-[10px] text-amber-700 font-bold">
-                                  Ends {new Date(device.discountEndDate).toLocaleDateString()}
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-gray-500">
+                                  {prod.category?.name || prod.type || 'Smartphone'}
+                                </span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${prod.isPreOwned ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`}>
+                                  {prod.isPreOwned ? 'Pre-Owned' : 'New'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200">
+                            <Layers size={13} className="text-purple-600" />
+                            {variants.length > 0 ? `${variants.length} Variants` : 'Standard'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                            {prod.tagoloanStock > 0 ? `${prod.tagoloanStock} pcs` : 'Out of Stock'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                            {prod.villanuevaStock > 0 ? `${prod.villanuevaStock} pcs` : 'Out of Stock'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center">
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                            {prod.jasaanStock > 0 ? `${prod.jasaanStock} pcs` : 'Out of Stock'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center font-bold">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${prod.stock > 0 ? (prod.stock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
+                            {prod.stock > 0 ? `${prod.stock} pcs` : 'Out of Stock'}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-center font-bold text-gray-900">
+                          {isDiscountActive ? (
+                            <div className="flex flex-col items-center">
+                              <span className="text-[11px] text-gray-400 line-through">₱ {Number(prod.price || 0).toLocaleString()}</span>
+                              <span className="text-[#bd00ff] font-black text-sm">
+                                ₱ {Math.round(prod.price * (1 - prod.discount / 100)).toLocaleString()}
+                              </span>
+                              {prod.discountEndDate && (
+                                <span className="text-[10px] text-rose-600 font-bold flex items-center gap-0.5">
+                                  <Clock size={10} /> Ends {new Date(prod.discountEndDate).toLocaleDateString()}
                                 </span>
                               )}
                             </div>
-                          );
-                        }
+                          ) : (
+                            <span>₱ {Number(prod.price || 0).toLocaleString()}</span>
+                          )}
+                        </td>
+                        <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* POS Sale Button */}
+                            <button
+                              onClick={() => openPosModal(prod)}
+                              disabled={(prod.stock || 0) <= 0}
+                              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold text-xs transition-all border-none cursor-pointer shadow-xs ${(prod.stock || 0) > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                              title="Sell in POS"
+                            >
+                              <ShoppingCart size={14} />
+                              <span>POS Sale</span>
+                            </button>
+                            <button 
+                              onClick={() => handleOpenAddDiscount(prod)} 
+                              className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Manage Discount"
+                            >
+                              <Percent size={17} />
+                            </button>
+                            <button 
+                              onClick={() => handleEditClick(prod)} 
+                              className="text-purple-600 hover:text-purple-800 p-2 hover:bg-purple-100 rounded-lg transition-colors cursor-pointer"
+                              title="Edit Model & Variants"
+                            >
+                              <Pencil size={17} />
+                            </button>
+                            <button 
+                              onClick={() => { setProductToDelete(prod.id); setDeleteModalOpen(true); }} 
+                              className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
+                              title="Delete Product"
+                            >
+                              <Trash2 size={17} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
 
-                        if (isScheduled) {
-                          return (
-                            <div className="flex flex-col">
-                              <span>₱{Number(device.price).toFixed(2)}</span>
-                              <span className="text-[10px] text-amber-700 font-bold">Scheduled ({device.discount}% OFF)</span>
+                      {/* Expandable Storage Variants Sub-Table */}
+                      {isExpanded && (
+                        <tr className="bg-purple-50/30 border-b-2 border-purple-200/40">
+                          <td colSpan={8} className="p-4 sm:p-6">
+                            <div className="bg-white rounded-xl border border-purple-200 p-4 shadow-sm flex flex-col gap-3">
+                              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                <div className="flex items-center gap-2">
+                                  <Package size={18} className="text-[#5c0099]" />
+                                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2 flex-wrap">
+                                    <span>{prod.name} – Storage Variants & Branch Inventory</span>
+                                    {prod.isPreOwned && (
+                                      <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
+                                        PRE-OWNED
+                                      </span>
+                                    )}
+                                  </h4>
+                                </div>
+                                <span className="text-xs text-gray-500">Quickly adjust stock or sell variant in POS</span>
+                              </div>
+
+                              {variants.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-xs text-left">
+                                    <thead>
+                                      <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                                        <th className="py-2.5 px-3">Variant (Capacity)</th>
+                                        <th className="py-2.5 px-3">Product ID</th>
+                                        <th className="py-2.5 px-3 text-center">Tagoloan</th>
+                                        <th className="py-2.5 px-3 text-center">Villanueva</th>
+                                        <th className="py-2.5 px-3 text-center">Jasaan</th>
+                                        <th className="py-2.5 px-3 text-center">Total Stock</th>
+                                        <th className="py-2.5 px-3 text-right">Price</th>
+                                        <th className="py-2.5 px-3 text-right">Actions</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100 font-medium">
+                                      {variants.map((v, vIdx) => {
+                                        const branchStock = (v as any)[`${userBranch.toLowerCase()}Stock`] || 0;
+                                        return (
+                                          <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
+                                            <td className="py-3 px-3 font-bold text-gray-900">
+                                              {prod.name} – {v.name}
+                                            </td>
+                                            <td className="py-3 px-3">
+                                              <code className="bg-purple-100 text-purple-800 font-mono font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
+                                                {v.productId}
+                                              </code>
+                                            </td>
+                                            <td className="py-3 px-3 text-center">
+                                              <span className={`px-2 py-0.5 rounded font-bold ${v.tagoloanStock && v.tagoloanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                {v.tagoloanStock && v.tagoloanStock > 0 ? `${v.tagoloanStock} pcs` : 'Out of Stock'}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-center">
+                                              <span className={`px-2 py-0.5 rounded font-bold ${v.villanuevaStock && v.villanuevaStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                {v.villanuevaStock && v.villanuevaStock > 0 ? `${v.villanuevaStock} pcs` : 'Out of Stock'}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-center">
+                                              <span className={`px-2 py-0.5 rounded font-bold ${v.jasaanStock && v.jasaanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                {v.jasaanStock && v.jasaanStock > 0 ? `${v.jasaanStock} pcs` : 'Out of Stock'}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-3 text-center font-bold text-gray-800">
+                                              {v.totalStock || ((v.tagoloanStock || 0) + (v.villanuevaStock || 0) + (v.jasaanStock || 0))} pcs
+                                            </td>
+                                            <td className="py-3 px-3 text-right font-bold text-[#5c0099]">
+                                              ₱ {Number(v.price || prod.price).toLocaleString()}
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                              <div className="flex items-center justify-end gap-1.5">
+                                                <button
+                                                  onClick={() => openPosModal(prod, v)}
+                                                  disabled={branchStock <= 0}
+                                                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${branchStock > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                                                  title="Sell variant in POS"
+                                                >
+                                                  <ShoppingCart size={12} /> Sell
+                                                </button>
+                                                <button
+                                                  onClick={() => {
+                                                    setAdjustItem({ device: prod, variant: v });
+                                                    setAdjustStockVal(String(branchStock));
+                                                    setAdjustModalOpen(true);
+                                                  }}
+                                                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer"
+                                                  title="Quick Adjust Stock"
+                                                >
+                                                  Adjust Stock
+                                                </button>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ) : (
+                                <p className="text-gray-500 text-xs italic py-2">No individual variants created. This item uses standard single inventory.</p>
+                              )}
                             </div>
-                          );
-                        }
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <AlertCircle className="text-gray-400 w-12 h-12" />
+                      <span className="text-gray-600 font-bold text-base">No inventory products found</span>
+                      <span className="text-gray-400 text-xs">Try adjusting your search or filters.</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                        return `₱${device.price ? Number(device.price).toFixed(2) : '0.00'}`;
-                      })()}
-                    </td>
-                    <td className="p-4 text-center align-middle">
-                      <span className={`font-bold text-[1.1rem] ${(device.stock || 0) === 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                        {device.stock || 0} <span className="text-[0.8rem] font-bold opacity-50 tracking-wider ml-1">PCS</span>
+        {/* Pagination Bar */}
+        <div className="flex flex-wrap items-center justify-between p-4 bg-gray-50/80 border-t border-gray-100 gap-3">
+          <span className="text-xs font-semibold text-gray-500">
+            Showing Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs font-bold text-gray-700 px-2">{currentPage} / {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================== */}
+      {/* 1. POS IN-STORE SALE MODAL                                */}
+      {/* ========================================================== */}
+      {posModalOpen && posDevice && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <ShoppingCart size={22} />
+                <h3 className="font-bold text-lg">POS In-Store Sale</h3>
+              </div>
+              <button onClick={() => setPosModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePosSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 text-left">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center gap-3">
+                <div className="w-12 h-12 bg-white rounded-lg border border-emerald-200 flex items-center justify-center overflow-hidden shrink-0">
+                  {posDevice.image || (posDevice.images && posDevice.images[0]) ? (
+                    <img src={posDevice.image || posDevice.images[0]} alt={posDevice.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Smartphone size={20} className="text-emerald-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 text-sm">{posDevice.name}</h4>
+                  {posVariant && <span className="text-xs text-emerald-800 font-semibold">{posVariant.name} ({posVariant.productId})</span>}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-500 font-medium">Branch: <strong className="text-emerald-700">{userBranch}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Type */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1.5">Payment Option *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPosPaymentType('Full')}
+                    className={`py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer border ${posPaymentType === 'Full' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                  >
+                    Full Payment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPosPaymentType('Downpayment')}
+                    className={`py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer border ${posPaymentType === 'Downpayment' ? 'bg-cyan-600 text-white border-cyan-600 shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                  >
+                    Downpayment
+                  </button>
+                </div>
+              </div>
+
+              {/* Quantity */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Quantity *</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={posVariant ? ((posVariant as any)[`${userBranch.toLowerCase()}Stock`] || 99) : (posDevice.stock || 99)}
+                  value={posQuantity}
+                  onChange={(e) => setPosQuantity(Math.max(1, parseInt(e.target.value || '1', 10)))}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+
+              {/* Downpayment Amount if selected */}
+              {posPaymentType === 'Downpayment' && (
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Downpayment Amount (₱) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={posDownpaymentAmt}
+                    onChange={(e) => setPosDownpaymentAmt(parseFloat(e.target.value) || 0)}
+                    className="w-full border border-cyan-300 rounded-xl p-2.5 text-sm font-bold text-cyan-800 outline-none focus:ring-2 focus:ring-cyan-500"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Customer Contact */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Customer Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="09123456789"
+                  value={posCustomerPhone}
+                  onChange={(e) => setPosCustomerPhone(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Transaction Summary Box */}
+              {(() => {
+                const itemPrice = posVariant ? Number(posVariant.price || posDevice.price) : Number(posDevice.price || 0);
+                const effectivePrice = posDevice.discount && posDevice.discount > 0 ? Math.round(itemPrice * (1 - posDevice.discount / 100)) : itemPrice;
+                const total = effectivePrice * posQuantity;
+                const balance = posPaymentType === 'Downpayment' ? Math.max(0, total - posDownpaymentAmt) : 0;
+
+                return (
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 flex flex-col gap-1.5 text-xs">
+                    <div className="flex justify-between text-gray-600">
+                      <span>Unit Price:</span>
+                      <span className="font-semibold">₱{effectivePrice.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600">
+                      <span>Total Price:</span>
+                      <span className="font-bold text-gray-900">₱{total.toLocaleString()}</span>
+                    </div>
+                    {posPaymentType === 'Downpayment' && (
+                      <>
+                        <div className="flex justify-between text-cyan-700 font-bold">
+                          <span>Amount Due Now:</span>
+                          <span>₱{posDownpaymentAmt.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-rose-600 font-bold">
+                          <span>Remaining Balance:</span>
+                          <span>₱{balance.toLocaleString()}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setPosModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={posSubmitting}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {posSubmitting ? 'Processing...' : 'Confirm POS Sale'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 2. ADD DISCOUNT PRODUCT MODAL                             */}
+      {/* ========================================================== */}
+      {discountModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 via-indigo-800 to-purple-900 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-white/10 rounded-xl">
+                  <Percent size={20} className="text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Apply Product Discount</h3>
+                  <p className="text-xs text-purple-200">Configure discounts for {userBranch} branch</p>
+                </div>
+              </div>
+              <button onClick={() => setDiscountModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDiscount} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
+              {discountError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span>{discountError}</span>
+                </div>
+              )}
+
+              {/* Product Selection */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Select Product *</label>
+                <select
+                  value={discountDeviceId}
+                  onChange={(e) => {
+                    setDiscountDeviceId(e.target.value);
+                    setDiscountVariantId('');
+                  }}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-gray-800 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  required
+                >
+                  {allEligibleProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.category?.name || p.type || 'Device'}) — ₱{Number(p.price || 0).toLocaleString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Storage Variant Target (Optional) */}
+              {(() => {
+                const selectedProd = allEligibleProducts.find(p => p.id === discountDeviceId);
+                const vars = selectedProd?.variations || [];
+                if (vars.length === 0) return null;
+                return (
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Target Storage Variant (Optional)</label>
+                    <select
+                      value={discountVariantId}
+                      onChange={(e) => setDiscountVariantId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    >
+                      <option value="">All Storage Variants (Base Model)</option>
+                      {vars.map((v: any) => (
+                        <option key={v.id} value={v.id}>
+                          {v.name} ({v.productId || 'Variant'}) — ₱{Number(v.price || selectedProd.price).toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })()}
+
+              {/* Discount Type & Value */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Discount Type *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDiscountType('PERCENTAGE')}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${discountType === 'PERCENTAGE' ? 'bg-[#5c0099] text-white border-[#5c0099] shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                    >
+                      Percentage (%)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDiscountType('FIXED')}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${discountType === 'FIXED' ? 'bg-[#5c0099] text-white border-[#5c0099] shadow-sm' : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100'}`}
+                    >
+                      Fixed Amount (₱)
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                    {discountType === 'PERCENTAGE' ? 'Discount Percentage (%) *' : 'Discount Amount (₱ < 2,000) *'}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={discountType === 'PERCENTAGE' ? 99 : 1999}
+                    step={discountType === 'PERCENTAGE' ? '1' : '0.01'}
+                    placeholder={discountType === 'PERCENTAGE' ? 'e.g. 50' : 'e.g. 500'}
+                    value={discountValue}
+                    onChange={(e) => setDiscountValue(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Start & End Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Start Date & Time *</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={discountStartDate}
+                      onChange={(e) => setDiscountStartDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                    <input
+                      type="time"
+                      value={discountStartTime}
+                      onChange={(e) => setDiscountStartTime(e.target.value)}
+                      className="border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">End Date & Time *</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={discountEndDate}
+                      onChange={(e) => setDiscountEndDate(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      required
+                    />
+                    <input
+                      type="time"
+                      value={discountEndTime}
+                      onChange={(e) => setDiscountEndTime(e.target.value)}
+                      className="border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Preview Box */}
+              {(() => {
+                const selectedProd = allEligibleProducts.find(p => p.id === discountDeviceId);
+                if (!selectedProd) return null;
+                const basePrice = Number(selectedProd.price || 0);
+                const numVal = parseFloat(discountValue) || 0;
+                let discountedPrice = basePrice;
+                if (discountType === 'PERCENTAGE' && numVal > 0) {
+                  discountedPrice = Math.max(0, Math.round(basePrice * (1 - numVal / 100)));
+                } else if (discountType === 'FIXED' && numVal > 0) {
+                  discountedPrice = Math.max(0, Math.round(basePrice - numVal));
+                }
+
+                return (
+                  <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-4 flex flex-col gap-2">
+                    <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">Live Discount Preview</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-xs text-gray-500 line-through">₱ {basePrice.toLocaleString()}</span>
+                        <div className="text-lg font-black text-[#5c0099]">
+                          ₱ {discountedPrice.toLocaleString()}
+                        </div>
+                      </div>
+                      <span className="bg-rose-100 text-rose-700 text-xs font-black px-3 py-1 rounded-full border border-rose-300">
+                        {discountType === 'PERCENTAGE' ? `${numVal}% OFF` : `₱${numVal} OFF`}
                       </span>
-                    </td>
-                    <td className="p-4 font-mono text-[0.9rem] text-gray-800 align-middle hidden sm:table-cell">
-                      <div className="flex flex-col gap-1">
-                        <span className="bg-purple-50 text-[#5c0099] border border-purple-200 px-2 py-1 rounded font-bold text-xs">
-                          {device.variations && device.variations.length > 0 ? `${device.variations.length} Variants` : `#${device.id ? String(device.id).slice(-6).toUpperCase() : 'STD'}`}
-                        </span>
-                        {device.variations && device.variations.length > 0 && (
-                          <span className="text-[10px] text-gray-500 font-mono">
-                            {device.variations[0]?.productId || 'VAR-ID'}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">
-                      <div className="flex gap-2 justify-center items-center">
-                        <button
-                          onClick={() => openPosModal(device)}
-                          disabled={(device.stock || 0) <= 0}
-                          className={`px-3 py-2 rounded-xl flex items-center gap-1.5 font-bold text-xs transition-all border-none cursor-pointer shadow-sm ${(device.stock || 0) > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-105' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                          title="Sell in POS"
-                        >
-                          <ShoppingCart size={15} />
-                          <span>{(device.stock || 0) > 0 ? 'POS Sale' : 'Out of Stock'}</span>
-                        </button>
-                        <button
-                          onClick={() => openEditModal(device)}
-                          className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#bd00ff]/10 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white transition-all border-none cursor-pointer"
-                          title="Edit Device Details"
-                        >
-                          <Pencil size={15} />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(device)}
-                          className="w-9 h-9 rounded-xl flex justify-center items-center bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all border-none cursor-pointer"
-                          title="Delete Device"
-                        >
-                          <Trash size={15} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="w-full py-12 text-center flex flex-col items-center justify-center border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm gap-2">
-            <AlertCircle className="text-gray-400 w-12 h-12 mb-2" />
-            <span className="text-gray-500 font-bold text-lg">No devices found in inventory.</span>
-            <span className="text-gray-400 text-sm">Add a new device to see it here.</span>
-          </div>
-        )}
-      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center gap-4 mt-6">
-        <button
-          onClick={prevPage}
-          disabled={currentPage === 1}
-          className={`text-black transition-transform bg-transparent border-none flex items-center justify-center ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:scale-125 cursor-pointer'}`}
-        >
-          <ChevronLeft size={28} />
-        </button>
-        <span className="font-bold text-lg text-black min-w-[3rem] text-center">{currentPage}/{totalPages}</span>
-        <button
-          onClick={nextPage}
-          disabled={currentPage === totalPages}
-          className={`text-black transition-transform bg-transparent border-none flex items-center justify-center ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : 'hover:scale-125 cursor-pointer'}`}
-        >
-          <ChevronRight size={28} />
-        </button>
-      </div>
-      {/* Delete Confirmation Modal */}
+              <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setDiscountModalOpen(false)}
+                  className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingDiscount}
+                  className="px-6 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingDiscount ? 'Applying...' : 'Save & Apply Discount'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 3. ACTIVE DISCOUNTS MANAGER MODAL                         */}
+      {/* ========================================================== */}
+      {discountsListModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 via-indigo-800 to-purple-900 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Percent size={22} className="text-amber-300" />
+                <div>
+                  <h3 className="font-bold text-lg leading-tight">Branch Discounts</h3>
+                  <p className="text-xs text-purple-200">Active, Scheduled, and Expired promotions for {userBranch}</p>
+                </div>
+              </div>
+              <button onClick={() => setDiscountsListModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-full p-1 shadow-sm">
+                <button
+                  onClick={() => setDiscountFilterStatus('ALL')}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${discountFilterStatus === 'ALL' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  All ({discountsList.length})
+                </button>
+                <button
+                  onClick={() => setDiscountFilterStatus('ACTIVE')}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${discountFilterStatus === 'ACTIVE' ? 'bg-emerald-600 text-white' : 'text-emerald-700 hover:bg-emerald-50'}`}
+                >
+                  Active
+                </button>
+                <button
+                  onClick={() => setDiscountFilterStatus('SCHEDULED')}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${discountFilterStatus === 'SCHEDULED' ? 'bg-blue-600 text-white' : 'text-blue-700 hover:bg-blue-50'}`}
+                >
+                  Scheduled
+                </button>
+                <button
+                  onClick={() => setDiscountFilterStatus('EXPIRED')}
+                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${discountFilterStatus === 'EXPIRED' ? 'bg-gray-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                  Expired
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setDiscountsListModalOpen(false);
+                  handleOpenAddDiscount();
+                }}
+                className="flex items-center gap-1.5 bg-[#5c0099] hover:bg-[#470077] text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
+              >
+                <Plus size={15} /> Add Discount
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {isDiscountsLoading ? (
+                <div className="py-16 text-center text-gray-500 font-semibold">Loading discounts...</div>
+              ) : discountsList.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {discountsList
+                    .filter(d => {
+                      if (discountFilterStatus === 'ALL') return true;
+                      return d.status === discountFilterStatus;
+                    })
+                    .map((item) => (
+                      <div key={item.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex flex-col justify-between gap-3 hover:border-purple-300 transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {item.device?.image ? (
+                                <img src={item.device.image} alt={item.device?.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <Smartphone size={20} className="text-purple-600" />
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 text-sm">{item.device?.name || 'Device'}</h4>
+                              {item.variant && (
+                                <span className="text-xs text-gray-500 font-medium">Variant: {item.variant.name} ({item.variant.productId})</span>
+                              )}
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${item.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : item.status === 'SCHEDULED' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-600 border border-gray-300'}`}>
+                                  {item.status}
+                                </span>
+                                <span className="bg-rose-100 text-rose-700 text-xs font-black px-2 py-0.5 rounded-md">
+                                  {item.discountType === 'PERCENTAGE' ? `${item.discountValue}% OFF` : `₱${item.discountValue} OFF`}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleRemoveDiscount(item.id, item.device?.name || 'Device')}
+                            className="text-rose-500 hover:text-rose-700 p-1.5 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            title="Remove Discount"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-2 flex flex-col gap-1 text-xs text-gray-600">
+                          <div className="flex justify-between">
+                            <span>Base Price:</span>
+                            <span className="line-through text-gray-400">₱{Number(item.device?.price || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between font-bold text-gray-900">
+                            <span>Discounted Price:</span>
+                            <span className="text-[#5c0099]">
+                              ₱{Math.round(item.device?.price * (1 - (item.discountValue || 0) / 100)).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-gray-500 mt-1">
+                            <span>Duration:</span>
+                            <span>{new Date(item.startDate).toLocaleDateString()} – {new Date(item.endDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="py-16 text-center text-gray-500 font-semibold">
+                  No discounts found for {userBranch} branch.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 4. STOCK MOVEMENT HISTORY MODAL                           */}
+      {/* ========================================================== */}
+      {historyModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <History size={22} />
+                <h3 className="font-bold text-lg">Stock Movement History ({userBranch} Branch)</h3>
+              </div>
+              <button onClick={() => setHistoryModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-600">Type:</span>
+                <select
+                  value={historyTypeFilter}
+                  onChange={(e) => setHistoryTypeFilter(e.target.value)}
+                  className="bg-white border border-gray-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-800 outline-none cursor-pointer"
+                >
+                  <option value="ALL">All Movements</option>
+                  <option value="TRANSFER_IN">Transfer In</option>
+                  <option value="TRANSFER_OUT">Transfer Out</option>
+                  <option value="ADJUSTMENT">Adjustments</option>
+                  <option value="SALE">Sales / Deductions</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {isHistoryLoading ? (
+                <div className="py-16 text-center text-gray-500 font-semibold">Loading stock history...</div>
+              ) : movements.length > 0 ? (
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 uppercase">
+                      <th className="py-3 px-3">Date</th>
+                      <th className="py-3 px-3">Type</th>
+                      <th className="py-3 px-3">Product / Variant</th>
+                      <th className="py-3 px-3 text-center">Change</th>
+                      <th className="py-3 px-3">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 font-medium">
+                    {movements.map((m) => (
+                      <tr key={m.id} className="hover:bg-gray-50">
+                        <td className="py-3 px-3 text-gray-500 whitespace-nowrap">
+                          {new Date(m.createdAt).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${m.type.includes('IN') || m.type === 'RESTOCK' ? 'bg-emerald-100 text-emerald-800' : m.type.includes('OUT') || m.type === 'SALE' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'}`}>
+                            {m.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-bold text-gray-900">
+                          {m.device?.name || 'Device'} {m.variation?.name ? `(${m.variation.name})` : ''}
+                        </td>
+                        <td className="py-3 px-3 text-center font-bold">
+                          <span className={m.quantityChange > 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                            {m.quantityChange > 0 ? `+${m.quantityChange}` : m.quantityChange}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-gray-600">{m.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-16 text-center text-gray-500 font-semibold">No stock movements recorded.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 5. PHYSICAL UNITS / IMEI MODAL                            */}
+      {/* ========================================================== */}
+      {unitsModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Smartphone size={22} />
+                <h3 className="font-bold text-lg">Unit IMEIs & Physical Records ({userBranch})</h3>
+              </div>
+              <button onClick={() => setUnitsModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Register IMEI Form */}
+            <form onSubmit={handleRegisterImei} className="p-4 bg-purple-50/70 border-b border-purple-200 flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <input
+                  type="text"
+                  placeholder="Enter 15-Digit IMEI Number..."
+                  value={newImeiInput}
+                  onChange={(e) => setNewImeiInput(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  required
+                />
+              </div>
+
+              <select
+                value={newImeiDeviceId}
+                onChange={(e) => setNewImeiDeviceId(e.target.value)}
+                className="border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
+                required
+              >
+                <option value="">Select Product...</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+
+              <button
+                type="submit"
+                disabled={isRegisteringImei}
+                className="bg-[#5c0099] hover:bg-[#470077] text-white px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isRegisteringImei ? 'Registering...' : '+ Register IMEI'}
+              </button>
+            </form>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              {isUnitsLoading ? (
+                <div className="py-16 text-center text-gray-500 font-semibold">Loading IMEI records...</div>
+              ) : deviceUnits.length > 0 ? (
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 uppercase">
+                      <th className="py-3 px-3">IMEI</th>
+                      <th className="py-3 px-3">Product Name</th>
+                      <th className="py-3 px-3">Condition</th>
+                      <th className="py-3 px-3">Product ID</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3">Date Added</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 font-medium">
+                    {deviceUnits.map((u) => (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="py-3 px-3 font-mono font-bold text-purple-700">{u.imei}</td>
+                        <td className="py-3 px-3 font-bold text-gray-900">{u.device?.name || 'Device'}</td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${u.device?.isPreOwned ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                            {u.device?.isPreOwned ? 'Pre-Owned' : 'New'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-gray-600">{u.productId || u.variation?.productId || '—'}</td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${u.status === 'Available' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
+                            {u.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-16 text-center text-gray-500 font-semibold">No IMEI records found for {userBranch} branch.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 6. QUICK STOCK ADJUSTMENT MODAL                           */}
+      {/* ========================================================== */}
+      {adjustModalOpen && adjustItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
+              <h3 className="font-bold text-lg">Adjust Branch Stock</h3>
+              <button onClick={() => setAdjustModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAdjustSubmit} className="p-6 flex flex-col gap-4 text-left">
+              <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs text-purple-900 font-medium">
+                Adjusting stock for <strong>{adjustItem.device.name}</strong> {adjustItem.variant ? `(${adjustItem.variant.name})` : ''} at <strong>{userBranch} Branch</strong>.
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Adjustment Action *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustType('SET')}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${adjustType === 'SET' ? 'bg-[#5c0099] text-white border-[#5c0099]' : 'bg-gray-50 text-gray-700 border-gray-300'}`}
+                  >
+                    Set Exact Stock
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdjustType('ADD')}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${adjustType === 'ADD' ? 'bg-[#5c0099] text-white border-[#5c0099]' : 'bg-gray-50 text-gray-700 border-gray-300'}`}
+                  >
+                    Add / Restock
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                  {adjustType === 'SET' ? 'New Total Quantity' : 'Quantity to Add'} *
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={adjustStockVal}
+                  onChange={(e) => setAdjustStockVal(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Notes / Reason (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Stock shipment received"
+                  value={adjustNotes}
+                  onChange={(e) => setAdjustNotes(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setAdjustModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAdjusting}
+                  className="px-5 py-2 bg-[#5c0099] hover:bg-[#470077] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {isAdjusting ? 'Saving...' : 'Save Stock'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 7. ADD PRODUCT MODAL                                      */}
+      {/* ========================================================== */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Plus size={22} />
+                <h3 className="font-bold text-lg">Add New Product & Storage Variants</h3>
+              </div>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddProduct} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
+              {/* Basic Details */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Name / Model *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. iPhone 13 Pro Max"
+                    value={newDeviceName}
+                    onChange={(e) => setNewDeviceName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Condition *</label>
+                  <select
+                    value={newDeviceIsPreOwned ? 'pre-owned' : 'new'}
+                    onChange={(e) => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
+                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="new">New</option>
+                    <option value="pre-owned">Pre-Owned</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block">Brand / Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => setCategoriesModalOpen(true)}
+                      className="text-[11px] font-bold text-[#5c0099] hover:underline flex items-center gap-0.5 bg-transparent border-none cursor-pointer p-0"
+                    >
+                      <Plus size={12} /> Add Brand
+                    </button>
+                  </div>
+                  <select
+                    value={newDeviceCategory}
+                    onChange={(e) => setNewDeviceCategory(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    required
+                  >
+                    <option value="">Select Brand...</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Branch</label>
+                  <div className="w-full bg-gray-100 border border-gray-200 rounded-xl p-2.5 text-sm font-bold text-gray-700">
+                    {userBranch} Branch
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Cost (₱) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="4500"
+                    value={newDeviceCost}
+                    onChange={(e) => setNewDeviceCost(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Price (₱) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="5999"
+                    value={newDevicePrice}
+                    onChange={(e) => setNewDevicePrice(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Device Type</label>
+                  <select
+                    value={newDeviceType}
+                    onChange={(e) => setNewDeviceType(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="Smartphone">Smartphone</option>
+                    <option value="Laptop">Laptop</option>
+                    <option value="iPad">iPad / Tablet</option>
+                    <option value="TV">TV</option>
+                    <option value="Speaker">Speaker</option>
+                    <option value="Accessories">Accessories</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Storage Variants Table */}
+              <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers size={18} className="text-[#5c0099]" />
+                    <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">
+                      Storage Variants & Branch Stock
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAddVariants(prev => [
+                        ...prev,
+                        { type: 'Storage', name: '512 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+                      ]);
+                    }}
+                    className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus size={14} /> Add Variant
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
+                    <thead>
+                      <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
+                        <th className="py-2.5 px-3">Variant (Capacity)</th>
+                        <th className="py-2.5 px-3">Product ID (Auto/Custom)</th>
+                        <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
+                        <th className="py-2.5 px-3 text-right">Price (₱)</th>
+                        <th className="py-2.5 px-2 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {addVariants.map((v, idx) => (
+                        <tr key={idx}>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.name}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.name = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                              placeholder="64 GB"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.productId}
+                              placeholder={generateAutoProductId(newDeviceName, v.name)}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.productId = e.target.value.toUpperCase();
+                                setAddVariants(updated);
+                              }}
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold w-36 outline-none"
+                            />
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={userBranch === 'Tagoloan' ? v.tagoloanStock : (userBranch === 'Villanueva' ? v.villanuevaStock : v.jasaanStock)}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                if (userBranch === 'Tagoloan') updated[idx]!.tagoloanStock = e.target.value;
+                                else if (userBranch === 'Villanueva') updated[idx]!.villanuevaStock = e.target.value;
+                                else updated[idx]!.jasaanStock = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none"
+                            />
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder={newDevicePrice || "5999"}
+                              value={v.price}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.price = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none"
+                            />
+                          </td>
+                          <td className="py-2 px-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setAddVariants(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                            >
+                              <X size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Product Photos Upload (1 to 5) */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block">
+                  Product Photos (1 to 5 Images) *
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {newDeviceImagePreviews.map((prevUrl, idx) => (
+                    <div key={idx} className="relative w-20 h-20 rounded-xl border-2 border-purple-200 overflow-hidden group">
+                      <img src={prevUrl} alt="preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewDeviceImages(prev => prev.filter((_, i) => i !== idx));
+                          setNewDeviceImagePreviews(prev => prev.filter((_, i) => i !== idx));
+                        }}
+                        className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {newDeviceImages.length < 5 && (
+                    <label className="w-20 h-20 rounded-xl border-2 border-dashed border-purple-300 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-purple-50 text-purple-600 transition-colors">
+                      <Upload size={20} />
+                      <span className="text-[10px] font-bold">Add Photo</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleAddProductImages(e.target.files)}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Description / Specs */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Specs / Description</label>
+                <textarea
+                  rows={3}
+                  placeholder="Technical specifications, included items, warranty notes..."
+                  value={newDeviceSpecs}
+                  onChange={(e) => setNewDeviceSpecs(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAdding}
+                  className="px-6 py-2.5 bg-[#5c0099] hover:bg-[#470077] text-white rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isAdding ? 'Adding Product...' : 'Save Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 8. EDIT PRODUCT MODAL                                     */}
+      {/* ========================================================== */}
+      {isEditModalOpen && productToEdit && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Pencil size={22} />
+                <h3 className="font-bold text-lg">Edit Product: {productToEdit.name}</h3>
+              </div>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditProductSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Name / Model *</label>
+                  <input
+                    type="text"
+                    value={editDeviceName}
+                    onChange={(e) => setEditDeviceName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Condition *</label>
+                  <select
+                    value={editDeviceIsPreOwned ? 'pre-owned' : 'new'}
+                    onChange={(e) => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
+                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="new">New</option>
+                    <option value="pre-owned">Pre-Owned</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Brand / Category *</label>
+                  <select
+                    value={editDeviceCategory}
+                    onChange={(e) => setEditDeviceCategory(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    required
+                  >
+                    <option value="">Select Brand...</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Cost (₱) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editDeviceCost}
+                    onChange={(e) => setEditDeviceCost(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Price (₱) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editDevicePrice}
+                    onChange={(e) => setEditDevicePrice(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Device Type</label>
+                  <select
+                    value={editDeviceType}
+                    onChange={(e) => setEditDeviceType(e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="Smartphone">Smartphone</option>
+                    <option value="Laptop">Laptop</option>
+                    <option value="iPad">iPad / Tablet</option>
+                    <option value="TV">TV</option>
+                    <option value="Speaker">Speaker</option>
+                    <option value="Accessories">Accessories</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Photos Edit */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block">
+                  Product Photos (1 to 5 Images) *
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {editImages.map((item, idx) => (
+                    <div key={item.id} className="relative w-20 h-20 rounded-xl border-2 border-purple-200 overflow-hidden group">
+                      <img src={item.url} alt="product photo" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {editImages.length < 5 && (
+                    <label className="w-20 h-20 rounded-xl border-2 border-dashed border-purple-300 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-purple-50 text-purple-600 transition-colors">
+                      <Upload size={20} />
+                      <span className="text-[10px] font-bold">Add Photo</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            const files = Array.from(e.target.files);
+                            const remaining = 5 - editImages.length;
+                            const toAdd = files.slice(0, remaining).map(file => ({
+                              id: `new-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                              type: 'new' as const,
+                              url: URL.createObjectURL(file),
+                              file
+                            }));
+                            setEditImages(prev => [...prev, ...toAdd]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Specs / Description</label>
+                <textarea
+                  rows={3}
+                  value={editDeviceSpecs}
+                  onChange={(e) => setEditDeviceSpecs(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditing}
+                  className="px-6 py-2.5 bg-[#5c0099] hover:bg-[#470077] text-white rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isEditing ? 'Updating...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 9. MANAGE BRANDS MODAL                                    */}
+      {/* ========================================================== */}
+      {categoriesModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <Tag size={22} />
+                <h3 className="font-bold text-lg">Manage Brands / Categories</h3>
+              </div>
+              <button onClick={() => setCategoriesModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-6 overflow-y-auto flex-1">
+              {/* Add New Brand */}
+              <form onSubmit={handleAddCategory} className="bg-purple-50/70 p-4 rounded-xl border border-purple-200 flex flex-col gap-3">
+                <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">Add New Brand</span>
+                <div className="flex items-center gap-3">
+                  <label className="w-12 h-12 rounded-xl border-2 border-dashed border-purple-300 flex items-center justify-center cursor-pointer hover:bg-purple-100 text-purple-600 shrink-0 overflow-hidden relative">
+                    {newCatImagePreview ? (
+                      <img src={newCatImagePreview} alt="Logo preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <Upload size={18} />
+                    )}
+                    <input type="file" accept="image/*" onChange={handleCatImageChange} className="hidden" />
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Brand name (e.g. Apple, Samsung, Vivo)..."
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isAddingCat || !newCatName.trim()}
+                    className="bg-[#5c0099] hover:bg-[#470077] text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isAddingCat ? 'Adding...' : '+ Add'}
+                  </button>
+                </div>
+              </form>
+
+              {/* Brands List */}
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Existing Brands ({categories.length})</span>
+                <div className="grid grid-cols-2 gap-2.5 max-h-60 overflow-y-auto pr-1">
+                  {categories.map((cat) => (
+                    <div key={cat.id} className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:border-purple-200 transition-colors">
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0 overflow-hidden">
+                          {cat.logoUrl ? (
+                            <img src={cat.logoUrl} alt={cat.name} className="w-full h-full object-contain" />
+                          ) : (
+                            <span className="text-[10px] font-black text-gray-400">{cat.name.slice(0, 2).toUpperCase()}</span>
+                          )}
+                        </div>
+                        <span className="text-xs font-bold text-gray-800 truncate">{cat.name}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                        className="text-rose-500 hover:text-rose-700 p-1 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                        title="Delete Brand"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 10. DELETE CONFIRMATION MODAL                             */}
+      {/* ========================================================== */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
-            <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
-            <h3 className="text-xl font-bold mb-3 text-black">Delete Device?</h3>
-            <p className="text-gray-600 mb-8">
-              Are you sure you want to delete <strong className="text-black">{deviceToDelete?.name || 'this device'}</strong>? This action cannot be undone.
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 flex flex-col items-center text-center shadow-2xl border border-rose-100 animate-in zoom-in-95">
+            <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Product?</h3>
+            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+              Are you sure you want to delete this product? All corresponding storage variants and stock tracking records will be permanently removed.
             </p>
-            <div className="flex gap-4 w-full justify-center">
+            <div className="flex items-center justify-center gap-3 w-full">
               <button
                 onClick={() => setDeleteModalOpen(false)}
-                className="px-6 py-2.5 border border-gray-400 text-gray-600 rounded-lg font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-transparent"
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
               >
                 Cancel
               </button>
               <button
-                onClick={confirmDelete}
-                className="px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors cursor-pointer border-none"
+                onClick={handleDeleteProduct}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer disabled:opacity-50"
               >
-                Yes, Delete
+                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Error Modal */}
-      {errorModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
-            <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
-            <h3 className="text-xl font-bold mb-3 text-black">{errorModalContent.title}</h3>
-            <p className="text-gray-600 mb-8 font-medium">
-              {errorModalContent.message}
-            </p>
-            <button
-              onClick={() => setErrorModalOpen(false)}
-              className="px-8 py-2.5 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors cursor-pointer border-none w-full max-w-[200px]"
-            >
-              Okay
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
+      {/* ========================================================== */}
+      {/* 11. SUCCESS MODAL                                         */}
+      {/* ========================================================== */}
       {successModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
-            <CheckCircle2 className="text-green-500 w-16 h-16 mb-5" />
-            <h3 className="text-xl font-bold mb-3 text-black">{successModalContent.title}</h3>
-            <p className="text-gray-600 mb-8">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 flex flex-col items-center text-center shadow-2xl border border-emerald-100 animate-in zoom-in-95">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 size={30} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{successModalContent.title}</h3>
+            <p className="text-xs text-gray-600 mb-6 leading-relaxed">
               {successModalContent.message}
             </p>
             <button
               onClick={() => setSuccessModalOpen(false)}
-              className="px-8 py-2.5 bg-[#bd00ff] text-white rounded-lg font-medium hover:bg-[#9c00d6] transition-colors cursor-pointer border-none w-full max-w-[200px]"
+              className="w-full px-6 py-2.5 bg-[#5c0099] hover:bg-[#470077] text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
             >
-              Okay
+              Continue
             </button>
           </div>
         </div>
       )}
 
-      {/* Add Device Modal */}
-      {addDeviceModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]">
-
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50 shrink-0">
-              <h3 className="text-xl font-bold text-black m-0">Add New Device</h3>
-              <button onClick={() => setAddDeviceModalOpen(false)} className="text-gray-500 hover:text-black hover:bg-gray-200 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer">
-                <X size={24} />
-              </button>
+      {/* ========================================================== */}
+      {/* 12. ERROR MODAL                                           */}
+      {/* ========================================================== */}
+      {errorModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 flex flex-col items-center text-center shadow-2xl border border-rose-100 animate-in zoom-in-95">
+            <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle size={30} />
             </div>
-
-            <div className="overflow-y-auto p-6 flex flex-col gap-6">
-              {addDeviceError && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-semibold border border-red-200">{addDeviceError}</div>}
-
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Image Uploads */}
-                <div className="shrink-0 flex flex-col gap-6 w-full md:w-[200px]">
-
-                  <div className="flex flex-col gap-2">
-                    <label className="w-full h-[120px] rounded-xl border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#bd00ff] bg-white">
-                      <Upload size={24} />
-                      <span className="text-xs font-semibold text-center leading-tight">Upload Photos</span>
-                      <input type="file" multiple onChange={handleDeviceImageChange} accept="image/*" className="hidden" />
-                    </label>
-                    {newDeviceImagePreviews.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                        {newDeviceImagePreviews.map((preview, idx) => (
-                          <div key={idx} className="relative w-[60px] h-[60px] shrink-0 border border-gray-200 rounded-lg overflow-hidden group">
-                            <img src={preview} alt="preview" className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => removeNewDeviceImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"><X size={10} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  
-
-                </div>
-
-                {/* Main Inputs */}
-                <div className="flex-1 flex flex-col gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Device Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={newDeviceName} onChange={e => setNewDeviceName(e.target.value)} placeholder="e.g. iPhone 15 Pro" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Cost <span className="text-red-500">*</span></label>
-                      <input type="number" step="0.01" value={newDeviceCost} onChange={e => setNewDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Selling Price <span className="text-red-500">*</span></label>
-                      <input type="number" step="0.01" value={newDevicePrice} onChange={e => setNewDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Stocks <span className="text-red-500">*</span></label>
-                      <input type="number" value={newDeviceStocks} onChange={e => setNewDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Specifications and Category */}
-              <div className="flex flex-col gap-4">
-                {/* Device Type */}
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Type <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select
-                      value={newDeviceType}
-                      onChange={e => setNewDeviceType(e.target.value)}
-                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
-                    >
-                      <option value="Smartphone" className="font-medium text-black">Smartphone</option>
-                      <option value="Laptop" className="font-medium text-black">Laptop</option>
-                      <option value="iPads/Tablets" className="font-medium text-black">iPads/Tablets</option>
-                      <option value="TVs" className="font-medium text-black">TVs</option>
-                      <option value="Speakers" className="font-medium text-black">Speakers</option>
-                      <option value="Phone Accessories" className="font-medium text-black">Phone Accessories</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Brand <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select
-                      value={newDeviceCategory}
-                      onChange={e => setNewDeviceCategory(e.target.value)}
-                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
-                    >
-                      <option value="" disabled className="text-gray-400">Select a brand...</option>
-                      {categories.map((cat, idx) => (
-                        <option key={idx} value={cat.id} className="font-medium text-black">
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Product Condition <span className="text-red-500">*</span></label>
-                  <select
-                    value={newDeviceIsPreOwned ? 'pre-owned' : 'new'}
-                    onChange={e => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
-                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold bg-white cursor-pointer hover:border-gray-300"
-                  >
-                    <option value="new" className="font-medium text-black">New</option>
-                    <option value="pre-owned" className="font-medium text-black">Pre-Owned</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Specs / Description</label>
-                  <textarea value={newDeviceSpecs} onChange={e => setNewDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-medium resize-y min-h-[80px]" />
-                </div>
-
-                {/* Downpayment Section */}
-                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
-                  <h4 className="text-cyan-800 font-bold text-sm m-0">Downpayment Options</h4>
-                  
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* QR Uploader */}
-                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
-                      <label className="block text-xs font-bold text-gray-700">QR Code</label>
-                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
-                        {newDeviceDownpaymentImagePreview ? (
-                          <img src={newDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <>
-                            <Upload size={16} />
-                            <span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span>
-                          </>
-                        )}
-                        <input type="file" onChange={handleNewDownpaymentImageChange} accept="image/*" className="hidden" />
-                      </label>
-                    </div>
-
-                    {/* Text Fields */}
-                    <div className="flex-1 flex flex-col gap-3 justify-end">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-gray-700">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={newDeviceAsLowAs} onChange={e => setNewDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-black text-sm" />
-                        </div>
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-gray-700">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={newDeviceWarranty} onChange={e => setNewDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-black text-sm" />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="block text-xs font-bold text-gray-700">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                        <input type="text" value={newDeviceDownpayment} onChange={e => setNewDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-black text-sm" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Variations Section */}
-                <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-bold text-gray-700">Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setVariationGroups([...variationGroups, { section: '', variations: [{ name: '', price: newDevicePrice || '0', cost: newDeviceCost || '0', stock: '0' }] }])
-                      }}
-                      className="text-xs font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer flex items-center gap-1"
-                    >
-                      <Plus size={14} /> Add Section
-                    </button>
-                  </div>
-
-                  {variationGroups.length > 0 && (
-                    <div className="flex flex-col gap-4 mt-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {variationGroups.map((group, groupIdx) => (
-                        <div key={groupIdx} className="flex flex-col gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 relative">
-                          {/* Section Header */}
-                          <div className="flex items-center gap-3">
-                            <label className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Section</label>
-                            <input
-                              type="text"
-                              value={group.section}
-                              onChange={e => {
-                                const updated = [...variationGroups];
-                                if (updated[groupIdx]) updated[groupIdx].section = e.target.value;
-                                setVariationGroups(updated);
-                              }}
-                              className="h-9 border border-gray-300 rounded-lg px-3 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold flex-1 max-w-[200px]"
-                              placeholder="e.g. Color"
-                            />
-                            <div className="flex-1"></div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = variationGroups.filter((_, i) => i !== groupIdx);
-                                setVariationGroups(updated);
-                              }}
-                              className="h-8 w-8 flex items-center justify-center shrink-0 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-colors border-none cursor-pointer shadow-sm"
-                              title="Remove Section"
-                            >
-                              <Trash size={14} />
-                            </button>
-                          </div>
-
-                          {/* Variation Rows */}
-                          <div className="flex flex-col gap-2 pl-2 border-l-2 border-purple-200 ml-2">
-                            {group.variations.map((v, vIdx) => (
-                              <div key={vIdx} className="flex flex-col sm:flex-row gap-2 items-start sm:items-end relative group/var">
-                                <div className="w-full sm:w-1/3">
-                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variation Name</label>
-                                  <input type="text" value={v.name} onChange={e => {
-                                    const updated = [...variationGroups];
-                                    if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
-                                      updated[groupIdx].variations[vIdx].name = e.target.value;
-                                      setVariationGroups(updated);
-                                    }
-                                  }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="e.g. Red" />
-                                </div>
-                                <div className="flex gap-2 w-full sm:w-[50%]">
-                                  <div className="flex-1">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Price</label>
-                                    <input type="number" step="0.01" value={v.price} onChange={e => {
-                                      const updated = [...variationGroups];
-                                      if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
-                                        updated[groupIdx].variations[vIdx].price = e.target.value;
-                                        setVariationGroups(updated);
-                                      }
-                                    }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="Price" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Stock</label>
-                                    <input type="number" value={v.stock} onChange={e => {
-                                      const updated = [...variationGroups];
-                                      if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
-                                        updated[groupIdx].variations[vIdx].stock = e.target.value;
-                                        setVariationGroups(updated);
-                                      }
-                                    }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="Stock" />
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = [...variationGroups];
-                                    if (updated[groupIdx]) {
-                                      updated[groupIdx].variations = updated[groupIdx].variations.filter((_, i) => i !== vIdx);
-                                      setVariationGroups(updated);
-                                    }
-                                  }}
-                                  className="absolute -top-1 -right-1 h-5 w-5 sm:relative sm:top-0 sm:right-0 sm:h-9 sm:w-9 flex items-center justify-center shrink-0 rounded-full sm:rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors border-none cursor-pointer"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </div>
-                            ))}
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...variationGroups];
-                                if (updated[groupIdx]) {
-                                  updated[groupIdx].variations.push({ name: '', price: newDevicePrice || '0', cost: newDeviceCost || '0', stock: '0' });
-                                  setVariationGroups(updated);
-                                }
-                              }}
-                              className="mt-2 self-start text-[11px] font-bold text-[#bd00ff] bg-transparent hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors border-2 border-dashed border-[#bd00ff]/50 hover:border-[#bd00ff] cursor-pointer flex items-center gap-1"
-                            >
-                              <Plus size={12} /> Add Variation
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end gap-3 rounded-b-2xl">
-              <button
-                type="button"
-                onClick={() => setAddDeviceModalOpen(false)}
-                className="px-6 py-2.5 font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleAddDevice}
-                disabled={isAddingDevice}
-                className="px-8 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors border-none cursor-pointer flex items-center gap-2 shadow-sm disabled:opacity-50"
-              >
-                {isAddingDevice ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Save Device'}
-              </button>
-            </div>
-
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{errorModalContent.title}</h3>
+            <p className="text-xs text-gray-600 mb-6 leading-relaxed">
+              {errorModalContent.message}
+            </p>
+            <button
+              onClick={() => setErrorModalOpen(false)}
+              className="w-full px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
-
-      {/* Edit Device Modal */}
-      {editModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]">
-
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50 shrink-0">
-              <h3 className="text-xl font-bold text-black m-0">Edit Device</h3>
-              <button onClick={() => setEditModalOpen(false)} className="text-gray-500 hover:text-black hover:bg-gray-200 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer">
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="overflow-y-auto p-6 flex flex-col gap-6">
-              {editDeviceError && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-semibold border border-red-200">{editDeviceError}</div>}
-
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Image Uploads */}
-                <div className="shrink-0 flex flex-col gap-6 w-full md:w-[200px]">
-
-                  <div className="flex flex-col gap-2">
-                    <label className="w-full h-[120px] rounded-xl border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-purple-50 transition-colors text-[#bd00ff] bg-white">
-                      <Upload size={24} />
-                      <span className="text-xs font-semibold text-center leading-tight">Upload Photos</span>
-                      <input type="file" multiple onChange={handleEditDeviceImageChange} accept="image/*" className="hidden" />
-                    </label>
-                    {editDeviceImagePreviews.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                        {editDeviceImagePreviews.map((preview, idx) => (
-                          <div key={idx} className="relative w-[60px] h-[60px] shrink-0 border border-gray-200 rounded-lg overflow-hidden group">
-                            <img src={preview} alt="preview" className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => removeEditDeviceImage(idx)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"><X size={10} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  
-
-                </div>
-
-                {/* Main Inputs */}
-                <div className="flex-1 flex flex-col gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Device Name <span className="text-red-500">*</span></label>
-                    <input type="text" value={editDeviceName} onChange={e => setEditDeviceName(e.target.value)} placeholder="e.g. iPhone 15 Pro" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Cost <span className="text-red-500">*</span></label>
-                      <input type="number" step="0.01" value={editDeviceCost} onChange={e => setEditDeviceCost(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Selling Price <span className="text-red-500">*</span></label>
-                      <input type="number" step="0.01" value={editDevicePrice} onChange={e => setEditDevicePrice(e.target.value)} placeholder="0.00" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-bold text-gray-700 mb-1">Stocks <span className="text-red-500">*</span></label>
-                      <input type="number" value={editDeviceStocks} onChange={e => setEditDeviceStocks(e.target.value)} placeholder="0" className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Specifications and Category */}
-              <div className="flex flex-col gap-4">
-                {/* Device Type */}
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Type <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select
-                      value={editDeviceType}
-                      onChange={e => setEditDeviceType(e.target.value)}
-                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
-                    >
-                      <option value="Smartphone" className="font-medium text-black">Smartphone</option>
-                      <option value="Laptop" className="font-medium text-black">Laptop</option>
-                      <option value="iPads/Tablets" className="font-medium text-black">iPads/Tablets</option>
-                      <option value="TVs" className="font-medium text-black">TVs</option>
-                      <option value="Speakers" className="font-medium text-black">Speakers</option>
-                      <option value="Phone Accessories" className="font-medium text-black">Phone Accessories</option>
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Brand <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <select
-                      value={editDeviceCategory}
-                      onChange={e => setEditDeviceCategory(e.target.value)}
-                      className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold appearance-none bg-white cursor-pointer hover:border-gray-300"
-                    >
-                      <option value="" disabled className="text-gray-400">Select a brand...</option>
-                      {categories.map((cat, idx) => (
-                        <option key={idx} value={cat.id} className="font-medium text-black">
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-gray-400">
-                      <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Product Condition <span className="text-red-500">*</span></label>
-                  <select
-                    value={editDeviceIsPreOwned ? 'pre-owned' : 'new'}
-                    onChange={e => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
-                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold bg-white cursor-pointer hover:border-gray-300"
-                  >
-                    <option value="new" className="font-medium text-black">New</option>
-                    <option value="pre-owned" className="font-medium text-black">Pre-Owned</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="block text-sm font-bold text-gray-700">Specs / Description</label>
-                  <textarea value={editDeviceSpecs} onChange={e => setEditDeviceSpecs(e.target.value)} rows={3} placeholder="Memory, Color, Connectivity, etc..." className="w-full border-2 border-gray-200 rounded-xl p-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-medium resize-y min-h-[80px]" />
-                </div>
-
-                {/* Downpayment Section */}
-                <div className="mt-2 border-2 border-cyan-100 bg-cyan-50/20 rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden mb-4">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-[#01f0ff]" />
-                  <h4 className="text-cyan-800 font-bold text-sm m-0">Downpayment Options</h4>
-                  
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* QR Uploader */}
-                    <div className="shrink-0 w-full md:w-[140px] flex flex-col gap-1">
-                      <label className="block text-xs font-bold text-gray-700">QR Code</label>
-                      <label className="w-full h-[100px] rounded-xl border-2 border-dashed border-[#01f0ff] flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-cyan-50 transition-colors text-[#01f0ff] overflow-hidden relative bg-white">
-                        {editDeviceDownpaymentImagePreview ? (
-                          <img src={editDeviceDownpaymentImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                        ) : (
-                          <>
-                            <Upload size={16} />
-                            <span className="text-[10px] font-semibold text-center leading-tight px-2">Upload QR</span>
-                          </>
-                        )}
-                        <input type="file" onChange={handleEditDownpaymentImageChange} accept="image/*" className="hidden" />
-                      </label>
-                    </div>
-
-                    {/* Text Fields */}
-                    <div className="flex-1 flex flex-col gap-3 justify-end">
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-gray-700">As Low As <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={editDeviceAsLowAs} onChange={e => setEditDeviceAsLowAs(e.target.value)} placeholder="e.g. ₱1,500/mo" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-black text-sm" />
-                        </div>
-                        <div className="flex-1 flex flex-col gap-1">
-                          <label className="block text-xs font-bold text-gray-700">Warranty <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                          <input type="text" value={editDeviceWarranty} onChange={e => setEditDeviceWarranty(e.target.value)} placeholder="e.g. 1 Year Local" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-black text-sm" />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="block text-xs font-bold text-gray-700">Downpayment <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                        <input type="text" value={editDeviceDownpayment} onChange={e => setEditDeviceDownpayment(e.target.value)} placeholder="e.g. 20% or ₱5,000" className="w-full h-10 border-2 border-cyan-100 rounded-lg px-3 focus:border-[#01f0ff] outline-none transition-colors text-black text-sm" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Edit Variations Section */}
-                <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-bold text-gray-700">Variations <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditVariationGroups([...editVariationGroups, { section: '', variations: [{ name: '', price: editDevicePrice || '0', cost: editDeviceCost || '0', stock: '0' }] }])
-                      }}
-                      className="text-xs font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors border-none cursor-pointer flex items-center gap-1"
-                    >
-                      <Plus size={14} /> Add Section
-                    </button>
-                  </div>
-
-                  {editVariationGroups.length > 0 && (
-                    <div className="flex flex-col gap-4 mt-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {editVariationGroups.map((group, groupIdx) => (
-                        <div key={groupIdx} className="flex flex-col gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 relative">
-                          <div className="flex items-center gap-3">
-                            <label className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Section</label>
-                            <input
-                              type="text"
-                              value={group.section}
-                              onChange={e => {
-                                const updated = [...editVariationGroups];
-                                if (updated[groupIdx]) updated[groupIdx].section = e.target.value;
-                                setEditVariationGroups(updated);
-                              }}
-                              className="h-9 border border-gray-300 rounded-lg px-3 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold flex-1 max-w-[200px]"
-                              placeholder="e.g. Color"
-                            />
-                            <div className="flex-1"></div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = editVariationGroups.filter((_, i) => i !== groupIdx);
-                                setEditVariationGroups(updated);
-                              }}
-                              className="h-8 w-8 flex items-center justify-center shrink-0 rounded-full bg-red-100 text-red-500 hover:bg-red-200 transition-colors border-none cursor-pointer shadow-sm"
-                              title="Remove Section"
-                            >
-                              <Trash size={14} />
-                            </button>
-                          </div>
-
-                          <div className="flex flex-col gap-2 pl-2 border-l-2 border-purple-200 ml-2">
-                            {group.variations.map((v, vIdx) => (
-                              <div key={vIdx} className="flex flex-col sm:flex-row gap-2 items-start sm:items-end relative group/var">
-                                <div className="w-full sm:w-1/3">
-                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Variation Name</label>
-                                  <input type="text" value={v.name} onChange={e => {
-                                    const updated = [...editVariationGroups];
-                                    if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
-                                      updated[groupIdx].variations[vIdx].name = e.target.value;
-                                      setEditVariationGroups(updated);
-                                    }
-                                  }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="e.g. Red" />
-                                </div>
-                                <div className="flex gap-2 w-full sm:w-[50%]">
-                                  <div className="flex-1">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Price</label>
-                                    <input type="number" step="0.01" value={v.price} onChange={e => {
-                                      const updated = [...editVariationGroups];
-                                      if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
-                                        updated[groupIdx].variations[vIdx].price = e.target.value;
-                                        setEditVariationGroups(updated);
-                                      }
-                                    }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="Price" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Stock</label>
-                                    <input type="number" value={v.stock} onChange={e => {
-                                      const updated = [...editVariationGroups];
-                                      if (updated[groupIdx] && updated[groupIdx].variations[vIdx]) {
-                                        updated[groupIdx].variations[vIdx].stock = e.target.value;
-                                        setEditVariationGroups(updated);
-                                      }
-                                    }} className="w-full h-9 border border-gray-300 rounded-lg px-2 text-sm outline-none focus:border-[#bd00ff] text-black font-semibold" placeholder="Stock" />
-                                  </div>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = [...editVariationGroups];
-                                    if (updated[groupIdx]) {
-                                      updated[groupIdx].variations = updated[groupIdx].variations.filter((_, i) => i !== vIdx);
-                                      setEditVariationGroups(updated);
-                                    }
-                                  }}
-                                  className="absolute -top-1 -right-1 h-5 w-5 sm:relative sm:top-0 sm:right-0 sm:h-9 sm:w-9 flex items-center justify-center shrink-0 rounded-full sm:rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 transition-colors border-none cursor-pointer"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </div>
-                            ))}
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...editVariationGroups];
-                                if (updated[groupIdx]) {
-                                  updated[groupIdx].variations.push({ name: '', price: editDevicePrice || '0', cost: editDeviceCost || '0', stock: '0' });
-                                  setEditVariationGroups(updated);
-                                }
-                              }}
-                              className="mt-2 self-start text-[11px] font-bold text-[#bd00ff] bg-transparent hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors border-2 border-dashed border-[#bd00ff]/50 hover:border-[#bd00ff] cursor-pointer flex items-center gap-1"
-                            >
-                              <Plus size={12} /> Add Variation
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-100 bg-gray-50 shrink-0 flex justify-end gap-3 rounded-b-2xl">
-              <button
-                type="button"
-                onClick={() => setEditModalOpen(false)}
-                className="px-6 py-2.5 font-bold text-gray-600 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleEditDevice}
-                disabled={isEditingDevice}
-                className="px-8 py-2.5 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors border-none cursor-pointer flex items-center gap-2 shadow-sm disabled:opacity-50"
-              >
-                {isEditingDevice ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : 'Update Settings'}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* Categories Management Modal */}
-      {categoriesModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[90vh]">
-
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50">
-              <h3 className="text-xl font-bold text-black m-0">Manage Categories</h3>
-              <button onClick={() => setCategoriesModalOpen(false)} className="text-gray-500 hover:text-black hover:bg-gray-200 p-2 rounded-full transition-colors border-none bg-transparent cursor-pointer">
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
-
-              {/* Add Category Form or Delete Controls */}
-              {isDeleteCatMode ? (
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-red-50 p-4 rounded-xl border border-red-100">
-                  <div className="flex items-center gap-2 text-red-600 font-bold">
-                    <AlertCircle size={20} />
-                    <span>{selectedCatsToDelete.length} selected for deletion</span>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button onClick={() => { setIsDeleteCatMode(false); setSelectedCatsToDelete([]); }} className="flex-1 sm:flex-none px-4 py-2 bg-white text-gray-600 border border-gray-300 rounded-lg font-bold hover:bg-gray-50 transition-colors cursor-pointer">Cancel</button>
-                    <button 
-                      onClick={handleDeleteSelectedCategories} 
-                      disabled={selectedCatsToDelete.length === 0 || isDeletingCats} 
-                      className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors border-none shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      {isDeletingCats ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Trash size={16} /> Delete Selected</>}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center bg-purple-50/50 p-4 rounded-xl border border-purple-100">
-                <label className="shrink-0 w-16 h-16 rounded-full border-2 border-dashed border-[#bd00ff] flex flex-col justify-center items-center cursor-pointer hover:bg-white transition-colors text-[#bd00ff] overflow-hidden relative bg-transparent">
-                  {newCatImagePreview ? (
-                    <img src={newCatImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <Upload size={20} />
-                  )}
-                  <input type="file" onChange={handleCatImageChange} accept="image/*" className="hidden" />
-                </label>
-
-                <div className="flex-1 w-full relative">
-                  <input
-                    type="text"
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="Enter new category name..."
-                    className="w-full h-12 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] outline-none transition-colors text-black"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAddCategory();
-                    }}
-                  />
-                </div>
-
-                <button
-                  onClick={handleAddCategory}
-                  disabled={!newCatName || isAddingCat}
-                  className="w-full sm:w-auto h-12 px-6 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors border-none cursor-pointer flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-                >
-                  {isAddingCat ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Plus size={20} /> Add</>}
-                </button>
-              </div>
-              )}
-
-              {/* List Categories */}
-              <div className="flex flex-col gap-3">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-gray-500 font-bold uppercase text-sm m-0">Existing Categories</h4>
-                  {categories.length > 0 && (
-                    <button 
-                      onClick={() => { setIsDeleteCatMode(!isDeleteCatMode); setSelectedCatsToDelete([]); }} 
-                      className={`p-1.5 rounded-lg transition-colors border-none cursor-pointer flex items-center justify-center ${isDeleteCatMode ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                      title={isDeleteCatMode ? "Cancel Delete Mode" : "Enter Delete Mode"}
-                    >
-                      <Trash size={16} />
-                    </button>
-                  )}
-                </div>
-                {categories.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">No categories found. Add one above!</div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {categories.map((cat, idx) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => {
-                          if (isDeleteCatMode) {
-                            setSelectedCatsToDelete(prev => prev.includes(cat.id) ? prev.filter(id => id !== cat.id) : [...prev, cat.id]);
-                          }
-                        }}
-                        className={`flex items-center gap-3 p-3 bg-white border rounded-xl shadow-sm transition-all ${isDeleteCatMode ? 'cursor-pointer hover:border-red-400' : 'hover:border-[#bd00ff]'} ${isDeleteCatMode && selectedCatsToDelete.includes(cat.id) ? 'border-red-500 bg-red-50/50' : 'border-gray-200'}`}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 relative">
-                          {cat.logoUrl ? (
-                            <img src={cat.logoUrl} alt={cat.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-xs text-gray-400 font-bold">No Img</span>
-                          )}
-                          {isDeleteCatMode && selectedCatsToDelete.includes(cat.id) && (
-                            <div className="absolute inset-0 bg-red-500/80 flex items-center justify-center">
-                              <Trash size={16} className="text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <span className={`font-semibold break-words line-clamp-2 text-sm ${isDeleteCatMode && selectedCatsToDelete.includes(cat.id) ? 'text-red-600' : 'text-black'}`}>{cat.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-    </main>
+    </div>
   );
 }
