@@ -21,6 +21,7 @@ function CashierEditDeviceContent() {
   const [devicePrice, setDevicePrice] = useState('');
   const [deviceStocks, setDeviceStocks] = useState('');
   const [deviceSpecs, setDeviceSpecs] = useState('');
+  const [isPreOwned, setIsPreOwned] = useState(false);
   const [existingImage, setExistingImage] = useState<string | null>(null);
   const [newImage, setNewImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -42,6 +43,7 @@ function CashierEditDeviceContent() {
         setDevicePrice(data.price?.toString() || '');
         setDeviceStocks(data.stock?.toString() || '');
         setDeviceSpecs(data.specs || '');
+        setIsPreOwned(data.isPreOwned || false);
         setExistingImage(data.image || null);
         setIsLoading(false);
       })
@@ -72,6 +74,7 @@ function CashierEditDeviceContent() {
     formData.append('devicePrice', devicePrice);
     formData.append('deviceStocks', deviceStocks);
     formData.append('deviceSpecs', deviceSpecs);
+    formData.append('isPreOwned', isPreOwned ? 'true' : 'false');
     if (newImage) {
       formData.append('deviceImage', newImage);
     }
@@ -152,6 +155,18 @@ function CashierEditDeviceContent() {
               <div className="flex flex-col md:flex-row items-start md:items-center gap-1 md:gap-2 w-full">
                 <label htmlFor="deviceStocks" className="w-full md:w-[120px] font-semibold text-lg text-black mb-1 md:mb-0">Stocks</label>
                 <input type="number" id="deviceStocks" value={deviceStocks} onChange={e => setDeviceStocks(e.target.value)} className="w-full md:flex-1 h-12 min-h-[48px] border-2 border-[#bd00ff] rounded-xl px-4 text-black outline-none focus:shadow-[0_0_5px_rgba(189,0,255,0.4)] bg-transparent" />
+              </div>
+              <div className="flex flex-col md:flex-row items-start md:items-center gap-1 md:gap-2 w-full">
+                <label htmlFor="deviceCondition" className="w-full md:w-[120px] font-semibold text-lg text-black mb-1 md:mb-0">Condition</label>
+                <select
+                  id="deviceCondition"
+                  value={isPreOwned ? 'pre-owned' : 'new'}
+                  onChange={e => setIsPreOwned(e.target.value === 'pre-owned')}
+                  className="w-full md:flex-1 h-12 min-h-[48px] border-2 border-[#bd00ff] rounded-xl px-4 text-black outline-none focus:shadow-[0_0_5px_rgba(189,0,255,0.4)] bg-white cursor-pointer font-semibold"
+                >
+                  <option value="new">New</option>
+                  <option value="pre-owned">Pre-Owned</option>
+                </select>
               </div>
             </div>
           </div>

@@ -303,6 +303,11 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                     className="bg-white rounded-xl p-2 sm:p-4 shadow-lg hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col gap-2 border-2 border-purple-400/30 hover:border-[#01f0ff] group relative"
                   >
                     <div className="aspect-square w-full md:h-36 bg-gray-50 rounded-lg flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                      {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                        <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
+                          PRE-OWNED
+                        </span>
+                      )}
                       <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 animate-pulse">
                         {product.discount}% OFF
                       </span>
@@ -371,6 +376,11 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
               return (
                 <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group">
                   <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
+                    {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                      <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
+                        PRE-OWNED
+                      </span>
+                    )}
                     {hasDiscount && (
                       <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
                         {product.discount}% OFF

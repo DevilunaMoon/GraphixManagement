@@ -40,6 +40,7 @@ export async function GET(req: Request) {
     const typeFilter = searchParams.get('type') || '';
     const branchParam = searchParams.get('branch');
     const stockStatus = searchParams.get('stockStatus'); // 'all' | 'low' | 'out'
+    const condition = searchParams.get('condition') || ''; // 'all' | 'new' | 'pre-owned'
 
     // RBAC: Super Admin can query any branch or 'all'. Branch Admin and Cashier are strictly scoped to their assigned branch.
     const activeBranch = isSuperAdmin
@@ -51,6 +52,12 @@ export async function GET(req: Request) {
     const branches = ['Tagoloan', 'Villanueva', 'Jasaan'];
 
     const where: any = {};
+    if (condition === 'pre-owned' || condition === 'Pre-Owned') {
+      where.isPreOwned = true;
+    } else if (condition === 'new' || condition === 'New') {
+      where.isPreOwned = false;
+    }
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },

@@ -298,6 +298,11 @@ function CustomerProductInfoContent() {
                     </button>
                   </>
                 )}
+                {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                  <span className="absolute top-4 left-4 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-xs font-black px-3.5 py-1 rounded-full shadow-lg uppercase tracking-wider z-10 border border-purple-300">
+                    PRE-OWNED
+                  </span>
+                )}
                 {product.images && product.images.length > 0 ? (
                   <img 
                     src={product.images[activeImageIndex] || product.images[0] || product.image} 
@@ -334,7 +339,7 @@ function CustomerProductInfoContent() {
               <div className="flex flex-col gap-3">
                 <h3 className="text-3xl md:text-4xl font-black text-gray-900 border-none m-0 tracking-tight leading-tight">{product.name}</h3>
                 
-                {/* Branch Availability Filter */}
+                {/* Branch Availability & Condition Filter */}
                 <div className="flex flex-wrap items-center gap-3 mt-1">
                   <div className="flex items-center gap-2">
                     <label htmlFor="branchFilterSelect" className="text-xs font-black text-gray-500 uppercase tracking-wider flex items-center gap-1">
@@ -360,6 +365,27 @@ function CustomerProductInfoContent() {
                         <ChevronDown size={15} strokeWidth={2.5} />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Product Condition Display */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-gray-500 uppercase tracking-wider">
+                      Product Condition:
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                      product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${
+                        product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
+                          ? 'bg-amber-500'
+                          : 'bg-emerald-500'
+                      }`} />
+                      {product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
+                        ? 'Pre-Owned'
+                        : 'New'}
+                    </span>
                   </div>
 
                   <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all ${currentStock > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50 shadow-sm' : 'bg-rose-50 text-rose-600 border border-rose-200/50 shadow-sm'}`}>

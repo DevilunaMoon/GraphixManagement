@@ -444,7 +444,14 @@ export default function StandardDigitalReceipt({
             {resolvedItems.map((item, idx) => (
               <div key={idx} className="flex flex-col gap-0.5">
                 <div className="flex justify-between items-start font-black text-black">
-                  <span className="truncate pr-2">{item.name.toUpperCase()}</span>
+                  <span className="truncate pr-2 flex items-center gap-1">
+                    <span>{item.name.toUpperCase()}</span>
+                    {((item as any).isPreOwned || (data.device as any)?.isPreOwned || (item.name || '').toLowerCase().includes('pre-owned') || (item.name || '').toLowerCase().includes('pre owned')) && (
+                      <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300">
+                        PRE-OWNED
+                      </span>
+                    )}
+                  </span>
                   <span className="shrink-0 font-bold">
                     {item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V
                   </span>

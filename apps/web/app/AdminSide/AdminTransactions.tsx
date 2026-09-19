@@ -267,7 +267,14 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           <div className="w-10 h-10 rounded-lg bg-gray-200" />
                         )}
                         <div className="flex flex-col max-w-[200px]">
-                          <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name}</span>
+                            {((tx.device as any)?.isPreOwned || (tx.device?.name || '').toLowerCase().includes('pre-owned') || (tx.device?.name || '').toLowerCase().includes('pre owned')) && (
+                              <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300 uppercase tracking-wider">
+                                PRE-OWNED
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xs text-gray-500 font-semibold truncate">
                             Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                           </span>

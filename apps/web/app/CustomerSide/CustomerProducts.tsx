@@ -352,8 +352,8 @@ function CustomerProductsContent() {
                 >
                   <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                     {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                      <span className="absolute top-1 left-1 bg-[#5c0099] text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300">
-                        Pre-Owned
+                      <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
+                        PRE-OWNED
                       </span>
                     )}
                     {isDiscountActive && (

@@ -124,7 +124,7 @@ export async function GET(req: Request) {
               select: { name: true, email: true, id: true, phone: true }
             },
             device: {
-              select: { name: true, price: true, image: true, id: true }
+              select: { name: true, price: true, image: true, id: true, isPreOwned: true }
             }
           },
           orderBy: {
@@ -175,7 +175,7 @@ export async function GET(req: Request) {
           select: { name: true, email: true, id: true, phone: true }
         },
         device: {
-          select: { name: true, price: true, image: true, id: true }
+          select: { name: true, price: true, image: true, id: true, isPreOwned: true }
         }
       },
       orderBy: {

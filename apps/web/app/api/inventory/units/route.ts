@@ -60,7 +60,7 @@ export async function GET(req: Request) {
       prisma.deviceUnit.findMany({
         where,
         include: {
-          device: { select: { id: true, name: true, image: true, type: true } },
+          device: { select: { id: true, name: true, image: true, type: true, isPreOwned: true } },
           variation: { select: { id: true, name: true, productId: true, price: true } }
         },
         orderBy: { createdAt: 'desc' },

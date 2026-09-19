@@ -755,7 +755,16 @@ export default function CashierDevices() {
               <tbody>
                 {paginatedDevices.map(device => (
                   <tr key={device.id} className="border-b border-gray-100/80 hover:bg-purple-50/50 transition-colors group">
-                    <td className="p-4 font-bold text-[1.1rem] text-black align-middle">{device.name || 'Unnamed'}</td>
+                    <td className="p-4 font-bold text-[1.1rem] text-black align-middle">
+                      <div className="flex items-center gap-2">
+                        <span>{device.name || 'Unnamed'}</span>
+                        {device.isPreOwned && (
+                          <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
+                            PRE-OWNED
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4 font-bold text-[1.05rem] text-gray-600 align-middle">
                       ₱{device.cost ? Number(device.cost).toFixed(2) : '0.00'}
                     </td>
@@ -1047,17 +1056,16 @@ export default function CashierDevices() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
-                  <input 
-                    type="checkbox" 
-                    id="cashierNewDeviceIsPreOwned" 
-                    checked={newDeviceIsPreOwned} 
-                    onChange={e => setNewDeviceIsPreOwned(e.target.checked)} 
-                    className="w-5 h-5 accent-[#bd00ff] cursor-pointer rounded"
-                  />
-                  <label htmlFor="cashierNewDeviceIsPreOwned" className="text-sm font-bold text-black cursor-pointer select-none">
-                    Pre-Owned Device <span className="text-xs text-gray-500 font-normal ml-1">(Mark if product is second-hand / refurbished)</span>
-                  </label>
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-gray-700">Product Condition <span className="text-red-500">*</span></label>
+                  <select
+                    value={newDeviceIsPreOwned ? 'pre-owned' : 'new'}
+                    onChange={e => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
+                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold bg-white cursor-pointer hover:border-gray-300"
+                  >
+                    <option value="new" className="font-medium text-black">New</option>
+                    <option value="pre-owned" className="font-medium text-black">Pre-Owned</option>
+                  </select>
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -1359,17 +1367,16 @@ export default function CashierDevices() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 bg-purple-50/60 p-3 rounded-xl border border-purple-200">
-                  <input 
-                    type="checkbox" 
-                    id="cashierEditDeviceIsPreOwned" 
-                    checked={editDeviceIsPreOwned} 
-                    onChange={e => setEditDeviceIsPreOwned(e.target.checked)} 
-                    className="w-5 h-5 accent-[#bd00ff] cursor-pointer rounded"
-                  />
-                  <label htmlFor="cashierEditDeviceIsPreOwned" className="text-sm font-bold text-black cursor-pointer select-none">
-                    Pre-Owned Device <span className="text-xs text-gray-500 font-normal ml-1">(Mark if product is second-hand / refurbished)</span>
-                  </label>
+                <div className="flex flex-col gap-1">
+                  <label className="block text-sm font-bold text-gray-700">Product Condition <span className="text-red-500">*</span></label>
+                  <select
+                    value={editDeviceIsPreOwned ? 'pre-owned' : 'new'}
+                    onChange={e => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
+                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 outline-none transition-all text-black font-semibold bg-white cursor-pointer hover:border-gray-300"
+                  >
+                    <option value="new" className="font-medium text-black">New</option>
+                    <option value="pre-owned" className="font-medium text-black">Pre-Owned</option>
+                  </select>
                 </div>
 
                 <div className="flex flex-col gap-1">

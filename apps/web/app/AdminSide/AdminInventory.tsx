@@ -36,6 +36,7 @@ export default function AdminInventory() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedDeviceType, setSelectedDeviceType] = useState<string>('all');
+  const [selectedCondition, setSelectedCondition] = useState<'all' | 'new' | 'pre-owned'>('all');
   const [stockStatusFilter, setStockStatusFilter] = useState<'all' | 'low' | 'out'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -303,7 +304,7 @@ export default function AdminInventory() {
   const fetchProducts = () => {
     setIsLoading(true);
     const activeBranchParam = isSuperAdmin ? selectedBranch : userBranch;
-    const url = `/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&categoryId=${selectedCategory}&type=${selectedDeviceType}&branch=${encodeURIComponent(activeBranchParam)}&stockStatus=${stockStatusFilter}`;
+    const url = `/api/devices?page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchQuery)}&categoryId=${selectedCategory}&type=${selectedDeviceType}&condition=${selectedCondition}&branch=${encodeURIComponent(activeBranchParam)}&stockStatus=${stockStatusFilter}`;
 
     fetch(url)
       .then(res => res.json())
@@ -417,7 +418,7 @@ export default function AdminInventory() {
       fetchProducts();
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchQuery, selectedCategory, selectedDeviceType, selectedBranch, stockStatusFilter]);
+  }, [currentPage, searchQuery, selectedCategory, selectedDeviceType, selectedCondition, selectedBranch, stockStatusFilter]);
 
   useEffect(() => {
     fetchCategories();
@@ -1117,6 +1118,17 @@ export default function AdminInventory() {
             <option value="phone accessories">Accessories</option>
           </select>
 
+          {/* Condition Filter Dropdown */}
+          <select
+            value={selectedCondition}
+            onChange={(e) => setSelectedCondition(e.target.value as any)}
+            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+          >
+            <option value="all">All Conditions</option>
+            <option value="new">New</option>
+            <option value="pre-owned">Pre-Owned</option>
+          </select>
+
           {/* Export Buttons */}
           <button onClick={downloadPDF} className="flex items-center gap-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3.5 py-2 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
             <FileText size={14} /> PDF
@@ -1196,12 +1208,24 @@ export default function AdminInventory() {
                               className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" 
                             />
                             <div className="flex flex-col">
-                              <span className="font-bold text-gray-900 text-[0.95rem] hover:text-[#5c0099] transition-colors">
-                                {prod.name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {prod.category?.name || prod.type || 'Smartphone'}
-                              </span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-gray-900 text-[0.95rem] hover:text-[#5c0099] transition-colors">
+                                  {prod.name}
+                                </span>
+                                {prod.isPreOwned && (
+                                  <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
+                                    PRE-OWNED
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">
+                                  {prod.category?.name || prod.type || 'Smartphone'}
+                                </span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${prod.isPreOwned ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`}>
+                                  {prod.isPreOwned ? 'Pre-Owned' : 'New'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -1264,8 +1288,13 @@ export default function AdminInventory() {
                               <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <div className="flex items-center gap-2">
                                   <Package size={18} className="text-[#5c0099]" />
-                                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide">
-                                    {prod.name} – Storage Variants & Branch Inventory
+                                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2 flex-wrap">
+                                    <span>{prod.name} – Storage Variants & Branch Inventory</span>
+                                    {prod.isPreOwned && (
+                                      <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
+                                        PRE-OWNED
+                                      </span>
+                                    )}
                                   </h4>
                                 </div>
                                 <span className="text-xs text-gray-500">Click variant row to adjust branch stock or transfer</span>
@@ -1867,6 +1896,7 @@ export default function AdminInventory() {
                     <tr className="bg-gray-50 text-gray-700 font-bold uppercase tracking-wider border-b border-gray-200">
                       <th className="py-3 px-3">IMEI / Serial Number</th>
                       <th className="py-3 px-3">Product Model</th>
+                      <th className="py-3 px-3">Condition</th>
                       <th className="py-3 px-3">Product ID</th>
                       <th className="py-3 px-3">Branch</th>
                       <th className="py-3 px-3 text-center">Status</th>
@@ -1883,6 +1913,11 @@ export default function AdminInventory() {
                         </td>
                         <td className="py-3 px-3 font-bold text-gray-900">
                           {u.device?.name || 'Device'}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${u.device?.isPreOwned ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'}`}>
+                            {u.device?.isPreOwned ? 'Pre-Owned' : 'New'}
+                          </span>
                         </td>
                         <td className="py-3 px-3">
                           <span className="font-mono text-purple-700 font-semibold">
@@ -1932,17 +1967,28 @@ export default function AdminInventory() {
 
             <form onSubmit={handleAddProduct} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
               {/* Basic Details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Name / Model *</label>
                   <input
                     type="text"
-                    placeholder="e.g. Vivo Y11"
+                    placeholder="e.g. iPhone 13 Pro Max"
                     value={newDeviceName}
                     onChange={(e) => setNewDeviceName(e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Condition *</label>
+                  <select
+                    value={newDeviceIsPreOwned ? 'pre-owned' : 'new'}
+                    onChange={(e) => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
+                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="new">New</option>
+                    <option value="pre-owned">Pre-Owned</option>
+                  </select>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -1967,6 +2013,9 @@ export default function AdminInventory() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Origin / Branch *</label>
                   {isSuperAdmin ? (
@@ -1985,9 +2034,6 @@ export default function AdminInventory() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Cost (₱) *</label>
                   <input
@@ -2329,7 +2375,7 @@ export default function AdminInventory() {
             </div>
 
             <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Name / Model</label>
                   <input
@@ -2339,6 +2385,17 @@ export default function AdminInventory() {
                     className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Condition *</label>
+                  <select
+                    value={editDeviceIsPreOwned ? 'pre-owned' : 'new'}
+                    onChange={(e) => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
+                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="new">New</option>
+                    <option value="pre-owned">Pre-Owned</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Price (₱)</label>
