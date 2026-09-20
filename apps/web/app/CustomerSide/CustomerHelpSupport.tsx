@@ -13,14 +13,20 @@ interface BranchContact {
   gcashNumber?: string | null;
 }
 
-const FAQS = [
+interface FAQItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+const DEFAULT_FAQS: FAQItem[] = [
   {
-    id: 1,
+    id: '1',
     question: "How long do repairs usually take?",
-    answer: "Standard diagnostics and simple repairs usually take 2-3 business days. More complex hardware issues may take up to a week. We will notify you at every step."
+    answer: "Repair duration depends on the type of issue and the availability of replacement parts. Our branch staff will provide an estimated completion time after checking the device."
   },
   {
-    id: 2,
+    id: '2',
     question: "What payment methods do you accept?",
     answer: "Currently, our system accepts Cash and GCash payments for products, reservations, and repair services."
   }
@@ -53,10 +59,24 @@ const DEFAULT_BRANCHES: BranchContact[] = [
 export default function CustomerHelpSupport() {
   const router = useRouter();
   const navigate = router.push;
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [faqs, setFaqs] = useState<FAQItem[]>(DEFAULT_FAQS);
   const [branches, setBranches] = useState<BranchContact[]>(DEFAULT_BRANCHES);
 
   useEffect(() => {
+    // Fetch active FAQs
+    fetch('/api/faqs')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setFaqs(data);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load FAQs:', err);
+      });
+
+    // Fetch Branches
     fetch('/api/branches')
       .then(res => res.json())
       .then(data => {
@@ -102,7 +122,7 @@ export default function CustomerHelpSupport() {
           <h3 className="text-xl font-bold text-gray-800 border-none">Frequently Asked Questions</h3>
           
           <div className="flex flex-col gap-3 sm:gap-4">
-            {FAQS.map(faq => (
+            {faqs.map(faq => (
               <div 
                 key={faq.id} 
                 className={`border border-gray-200 rounded-xl overflow-hidden transition-all duration-300 ${openFaq === faq.id ? 'shadow-md border-[#bd00ff]' : 'hover:border-gray-300'}`}
@@ -117,7 +137,7 @@ export default function CustomerHelpSupport() {
                 <div 
                   className={`overflow-hidden transition-all duration-300 ${openFaq === faq.id ? 'max-h-60 border-t border-gray-100 bg-gray-50' : 'max-h-0'}`}
                 >
-                  <p className="p-4 sm:p-5 m-0 text-gray-600 leading-relaxed font-medium text-sm sm:text-base">{faq.answer}</p>
+                  <p className="p-4 sm:p-5 m-0 text-gray-600 leading-relaxed font-medium text-sm sm:text-base whitespace-pre-wrap">{faq.answer}</p>
                 </div>
               </div>
             ))}

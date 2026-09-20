@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare } from 'lucide-react';
+import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, HelpCircle } from 'lucide-react';
+import { useBranch } from '../../context/BranchContext';
 
 export default function AdminSettings() {
   const router = useRouter();
   const navigate = router.push;
+  const { isSuperAdmin } = useBranch();
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,13 +75,36 @@ export default function AdminSettings() {
             onClick={() => navigate('/admin/terms')}
           />
 
+          <SettingsItem 
+            icon={<HelpCircle className="text-[#BF00FF] w-7 h-7" />}
+            label="Frequently Asked Questions"
+            badge={!isSuperAdmin ? "View Only" : undefined}
+            sublabel={isSuperAdmin 
+              ? "Manage frequently asked questions and answers displayed to customers."
+              : "View published frequently asked questions and answers"
+            }
+            onClick={() => navigate('/admin/faqs')}
+          />
+
         </ul>
       </div>
     </div>
   );
 }
 
-function SettingsItem({ icon, label, sublabel, onClick }: { icon: React.ReactNode, label: string, sublabel?: string, onClick: () => void }) {
+function SettingsItem({ 
+  icon, 
+  label, 
+  sublabel, 
+  badge, 
+  onClick 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  sublabel?: string; 
+  badge?: string; 
+  onClick: () => void;
+}) {
   return (
     <li 
       onClick={onClick}
@@ -88,7 +113,14 @@ function SettingsItem({ icon, label, sublabel, onClick }: { icon: React.ReactNod
       <div className="flex items-center gap-5 md:gap-6">
         <div className="shrink-0">{icon}</div>
         <div className="flex flex-col">
-          <span className="text-[1.05rem] md:text-[1.1rem] font-bold text-[#111] group-hover:text-[#BF00FF] transition-colors">{label}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="text-[1.05rem] md:text-[1.1rem] font-bold text-[#111] group-hover:text-[#BF00FF] transition-colors">{label}</span>
+            {badge && (
+              <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] rounded-full border border-purple-200 shadow-2xs">
+                {badge}
+              </span>
+            )}
+          </div>
           {sublabel && (
             <span className="text-xs text-gray-500 font-normal mt-0.5">{sublabel}</span>
           )}
