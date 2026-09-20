@@ -38,7 +38,11 @@ export default function AdminTermsConditions() {
           else if (pType === 'PAYMENT') setPaymentPolicy(policy.content || '');
           else if (pType === 'REPAIR') setRepairPolicy(policy.content || '');
           else if (pType === 'PRIVACY') setPrivacyPolicy(policy.content || '');
-          else {
+          else if (pType.startsWith('ABOUT_')) {
+            // Exclude About page dedicated policies (ABOUT_MAIN, ABOUT_PURCHASE, ABOUT_DOWNPAYMENT, ABOUT_FACEBOOK_BRANCHES, etc.)
+            // as they are exclusively managed under /admin/about-editor
+            return;
+          } else {
             // Custom policy
             customs.push({
               id: policy.id,
@@ -101,10 +105,12 @@ export default function AdminTermsConditions() {
         { type: 'PAYMENT', content: paymentPolicy },
         { type: 'REPAIR', content: repairPolicy },
         { type: 'PRIVACY', content: privacyPolicy },
-        ...customPolicies.map(cp => ({
-          type: cp.type.toUpperCase().replace(/\s+/g, '_'),
-          content: cp.content
-        }))
+        ...customPolicies
+          .filter(cp => !cp.type.toUpperCase().startsWith('ABOUT_'))
+          .map(cp => ({
+            type: cp.type.toUpperCase().replace(/\s+/g, '_'),
+            content: cp.content
+          }))
       ];
 
       const res = await fetch('/api/policies', {
