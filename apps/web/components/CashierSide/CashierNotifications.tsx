@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, Wrench } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, Wrench, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
 
@@ -33,6 +33,7 @@ export default function CashierNotifications() {
   const [now, setNow] = useState(Date.now());
   const [selectedRepairRequest, setSelectedRepairRequest] = useState<any>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Update clock every 30 seconds for live 8-hour countdown and auto-expiration
   useEffect(() => {
@@ -53,6 +54,7 @@ export default function CashierNotifications() {
       console.error('Failed to fetch notifications:', error);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -134,6 +136,8 @@ export default function CashierNotifications() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'RESTOCK':
+        return <Package size={20} className="text-white" />;
       case 'REPAIR_REQUEST':
       case 'REPAIR':
         return <Wrench size={20} className="text-white" />;
@@ -160,7 +164,7 @@ export default function CashierNotifications() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex flex-col gap-6 w-full font-['Inter']">
       {feedbackMessage && (
         <div className="bg-green-600 text-white font-bold px-6 py-4 rounded-xl shadow-lg flex items-center justify-between transition-all duration-300 animate-in fade-in slide-in-from-top-4 duration-300">
           <span className="text-sm tracking-wide">{feedbackMessage}</span>
@@ -178,14 +182,26 @@ export default function CashierNotifications() {
             <p className="text-sm font-semibold text-gray-500">You have {unreadCount} unread alert{unreadCount !== 1 ? 's' : ''}</p>
           </div>
         </div>
-        {unreadCount > 0 && (
+        <div className="flex items-center gap-3">
           <button
-            onClick={markAllAsRead}
-            className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            onClick={() => {
+              setIsRefreshing(true);
+              fetchNotifications(page);
+            }}
+            title="Refresh"
+            className="p-2.5 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-xl border border-gray-200 transition-all cursor-pointer shadow-sm"
           >
-            <CheckCheck size={16} /> Mark All as Read
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
           </button>
-        )}
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              className="px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200 transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            >
+              <CheckCheck size={16} /> Mark All as Read
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] overflow-hidden">
@@ -197,6 +213,7 @@ export default function CashierNotifications() {
         ) : (
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
+              const isRestock = notification.type === 'RESTOCK';
               const isStockOut = notification.type === 'STOCK_OUT';
               const isStockLow = notification.type === 'STOCK_LOW';
               const isStockAlert = isStockOut || isStockLow;
@@ -220,7 +237,9 @@ export default function CashierNotifications() {
 
               const isRepairRequest = notification.type === 'REPAIR_REQUEST';
               let iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-300';
-              if (isRepairRequest) {
+              if (isRestock) {
+                iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
+              } else if (isRepairRequest) {
                 iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
               } else if (isStockOut) {
                 iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
@@ -235,7 +254,8 @@ export default function CashierNotifications() {
 
               let cardBg = 'hover:bg-gray-50';
               if (!notification.isRead) {
-                if (isRepairRequest) cardBg = 'bg-purple-50/70 hover:bg-purple-100/50';
+                if (isRestock) cardBg = 'bg-emerald-50/40 hover:bg-emerald-50/60';
+                else if (isRepairRequest) cardBg = 'bg-purple-50/70 hover:bg-purple-100/50';
                 else if (isStockOut) cardBg = 'bg-rose-50/40 hover:bg-rose-50/60';
                 else if (isStockLow) cardBg = 'bg-amber-50/40 hover:bg-amber-50/60';
                 else if (isCashReservation) {
@@ -263,6 +283,11 @@ export default function CashierNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isRestock && (
+                        <span className="shrink-0 bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-emerald-200">
+                          RESTOCK
+                        </span>
+                      )}
                       {isRepairRequest && (
                         <span className="shrink-0 bg-purple-100 text-[#bd00ff] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-200">
                           REPAIR REQUEST
@@ -342,6 +367,14 @@ export default function CashierNotifications() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 sm:self-center" onClick={e => e.stopPropagation()}>
+                    {isRestock && (
+                      <Link 
+                        href="/cashier/devices"
+                        className="shrink-0 px-3.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline border border-emerald-200"
+                      >
+                        <Package size={14} /> View Inventory
+                      </Link>
+                    )}
                     {isRepairRequest ? (
                       <button 
                         onClick={() => openRepairRequest(notification)}
@@ -407,12 +440,20 @@ export default function CashierNotifications() {
                           </button>
                           <button 
                             onClick={() => handleAction(notification.id, 'UNPAID')}
-                            className="shrink-0 px-4 py-2 bg-red-50 border border-red-200 text-red-700 font-bold text-sm rounded-lg hover:bg-red-100 hover:border-red-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                            className="shrink-0 px-4 py-2 bg-red-50 border border-red-200 text-red-700 font-bold text-sm rounded-lg hover:bg-red-100 hover:border-green-300 transition-all shadow-sm flex items-center gap-2 cursor-pointer"
                           >
                             <X size={16} strokeWidth={3} /> Unpaid
                           </button>
                         </>
                       )
+                    )}
+                    {isRestock && !notification.isRead && (
+                      <button 
+                        onClick={() => handleAction(notification.id, 'READ')}
+                        className="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1 cursor-pointer border-none"
+                      >
+                        <Check size={14} /> Read
+                      </button>
                     )}
                   </div>
                 </div>

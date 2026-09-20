@@ -5,6 +5,151 @@ interface TriggerStockAlertParams {
   tx?: any;
 }
 
+export interface CreateRestockNotificationParams {
+  deviceId?: string;
+  variationId?: string | null;
+  productName: string;
+  branch: string;
+  quantityAdded: number;
+  previousStock: number;
+  newStock: number;
+  actorUserId: string;
+  actorName?: string | null;
+  actorRole: string; // 'SUPER_ADMIN' | 'ADMIN' | 'CASHIER'
+  tx?: any;
+}
+
+/**
+ * Creates role & branch targeted Restock notifications when a Super Admin, Branch Admin, or Cashier
+ * restocks inventory.
+ */
+export async function createRestockNotifications({
+  deviceId,
+  variationId,
+  productName,
+  branch,
+  quantityAdded,
+  previousStock,
+  newStock,
+  actorUserId,
+  actorName,
+  actorRole,
+  tx
+}: CreateRestockNotificationParams) {
+  const db = tx || prisma;
+  try {
+    const cleanBranch = branch.trim();
+
+    // Determine the actor's display title/role
+    let actorLabel = 'Staff';
+    if (actorRole === 'SUPER_ADMIN') {
+      actorLabel = 'Super Admin';
+    } else if (actorRole === 'ADMIN') {
+      actorLabel = `${cleanBranch} Branch Admin`;
+    } else if (actorRole === 'CASHIER') {
+      actorLabel = `${cleanBranch} Cashier`;
+    }
+
+    const title = 'Product Restocked';
+    const message = `${actorLabel} restocked ${productName}. Stock increased from ${previousStock} → ${newStock} units (+${quantityAdded} unit${quantityAdded === 1 ? '' : 's'} added • ${cleanBranch} Branch).`;
+
+    // Target user rules:
+    // 1. If Super Admin restocks -> Notify Branch Admin + Cashier of affected branch (not actor, not other branches).
+    // 2. If Branch Admin restocks -> Notify Super Admin + Cashier of this branch (not actor, not other branches).
+    // 3. If Cashier restocks -> Notify Super Admin + Branch Admin of this branch (not actor, not other branches).
+    let targetUsers: Array<{ id: string; role: string; branch: string | null }> = [];
+
+    if (actorRole === 'SUPER_ADMIN') {
+      const branchStaff = await db.user.findMany({
+        where: {
+          role: { in: ['ADMIN', 'CASHIER'] },
+          branch: { equals: cleanBranch, mode: 'insensitive' },
+          id: { not: actorUserId }
+        },
+        select: { id: true, role: true, branch: true }
+      });
+      targetUsers = branchStaff;
+    } else if (actorRole === 'ADMIN') {
+      const [superAdmins, branchCashiers] = await Promise.all([
+        db.user.findMany({
+          where: {
+            role: 'SUPER_ADMIN',
+            id: { not: actorUserId }
+          },
+          select: { id: true, role: true, branch: true }
+        }),
+        db.user.findMany({
+          where: {
+            role: 'CASHIER',
+            branch: { equals: cleanBranch, mode: 'insensitive' },
+            id: { not: actorUserId }
+          },
+          select: { id: true, role: true, branch: true }
+        })
+      ]);
+      targetUsers = [...superAdmins, ...branchCashiers];
+    } else if (actorRole === 'CASHIER') {
+      const [superAdmins, branchAdmins] = await Promise.all([
+        db.user.findMany({
+          where: {
+            role: 'SUPER_ADMIN',
+            id: { not: actorUserId }
+          },
+          select: { id: true, role: true, branch: true }
+        }),
+        db.user.findMany({
+          where: {
+            role: 'ADMIN',
+            branch: { equals: cleanBranch, mode: 'insensitive' },
+            id: { not: actorUserId }
+          },
+          select: { id: true, role: true, branch: true }
+        })
+      ]);
+      targetUsers = [...superAdmins, ...branchAdmins];
+    } else {
+      const superAdmins = await db.user.findMany({
+        where: { role: 'SUPER_ADMIN', id: { not: actorUserId } },
+        select: { id: true, role: true, branch: true }
+      });
+      targetUsers = superAdmins;
+    }
+
+    const uniqueUserIds = Array.from(new Set(targetUsers.map(u => u.id)));
+    if (uniqueUserIds.length === 0) return;
+
+    for (const userId of uniqueUserIds) {
+      await db.notification.create({
+        data: {
+          userId,
+          title,
+          message,
+          type: 'RESTOCK',
+          branch: cleanBranch,
+          isRead: false
+        }
+      });
+    }
+
+    // Clean up or resolve any existing out-of-stock / low-stock warnings for this item if stock is now > 3
+    if (newStock > 3) {
+      const stockAlertTitles = [
+        `Out of Stock: ${productName}`,
+        `Low Stock Warning: ${productName}`
+      ];
+      await db.notification.deleteMany({
+        where: {
+          title: { in: stockAlertTitles },
+          branch: cleanBranch,
+          type: { in: ['STOCK_OUT', 'STOCK_LOW'] }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error creating restock notifications:', error);
+  }
+}
+
 export async function triggerStockAlert({ deviceId, tx }: TriggerStockAlertParams) {
   const db = tx || prisma;
   try {
@@ -144,8 +289,9 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
   try {
     const isSuperAdmin = role === 'SUPER_ADMIN';
     const isAdmin = role === 'ADMIN';
+    const isCashier = role === 'CASHIER';
 
-    if (!isSuperAdmin && !isAdmin) return;
+    if (!isSuperAdmin && !isAdmin && !isCashier) return;
 
     // 1. Fetch all low branch stocks in 1 fast query
     const lowBranchStocks = await prisma.branchStock.findMany({
@@ -241,6 +387,3 @@ export async function syncStockAlertsForUser(userId: string, role: string, userB
     console.error('Error syncing stock alerts for user:', err);
   }
 }
-
-
-

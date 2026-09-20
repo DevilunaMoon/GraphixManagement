@@ -12,9 +12,10 @@ export async function GET(req: Request) {
 
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const isAdmin = session.role === 'ADMIN';
+    const isCashier = session.role === 'CASHIER';
 
-    // Auto-sync current stock alert state for this staff/admin user
-    if (isSuperAdmin || isAdmin) {
+    // Auto-sync current stock alert state for staff/admin/cashier users
+    if (isSuperAdmin || isAdmin || isCashier) {
       await syncStockAlertsForUser(session.userId, session.role, session.branch);
     }
 
@@ -28,15 +29,15 @@ export async function GET(req: Request) {
       userId: session.userId,
     };
 
-    // For Super Admin & Admin, include stock alerts, repair requests, and system notifications
-    if (isSuperAdmin || isAdmin) {
-      whereClause.type = { in: ['STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'REVIEW_REPLY'] };
+    // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, etc.
+    if (isSuperAdmin || isAdmin || isCashier) {
+      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY'] };
     }
 
-    // Branch filtering for Super Admin / Admin
+    // Branch filtering
     if (branchParam && branchParam.toLowerCase() !== 'all') {
       whereClause.branch = branchParam;
-    } else if (isAdmin && session.branch) {
+    } else if ((isAdmin || isCashier) && session.branch) {
       whereClause.branch = session.branch;
     }
 
@@ -70,4 +71,3 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
   }
 }
-

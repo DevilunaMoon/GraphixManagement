@@ -68,7 +68,9 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
       try {
         const res = await fetch('/api/notifications');
         const data = await res.json();
-        if (Array.isArray(data)) {
+        if (data && typeof data.unreadCount === 'number') {
+          setUnreadCount(data.unreadCount);
+        } else if (Array.isArray(data)) {
           const unread = data.filter((n: any) => !n.isRead).length;
           setUnreadCount(unread);
         }

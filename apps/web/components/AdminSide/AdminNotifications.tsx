@@ -62,7 +62,6 @@ export default function AdminNotifications() {
     setPage(1);
   }, [selectedBranch]);
 
-
   const handleAction = async (id: string, action: 'READ' | 'PAID' | 'UNPAID') => {
     try {
       const res = await fetch('/api/notifications/mark-read', {
@@ -131,6 +130,8 @@ export default function AdminNotifications() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'RESTOCK':
+        return <Package size={20} className="text-white" />;
       case 'REPAIR_REQUEST':
       case 'REPAIR':
         return <Wrench size={20} className="text-white" />;
@@ -209,15 +210,17 @@ export default function AdminNotifications() {
         ) : (
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
+              const isRestock = notification.type === 'RESTOCK';
               const isRepairRequest = notification.type === 'REPAIR_REQUEST';
               const isStockOut = notification.type === 'STOCK_OUT';
               const isStockLow = notification.type === 'STOCK_LOW';
               const isStockAlert = isStockOut || isStockLow;
 
               let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
-              if (isRepairRequest) iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
-              if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
-              if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
+              if (isRestock) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
+              else if (isRepairRequest) iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
+              else if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
+              else if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
 
               return (
                 <div 
@@ -227,7 +230,9 @@ export default function AdminNotifications() {
                   }}
                   className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isRepairRequest ? 'cursor-pointer' : ''} ${
                     !notification.isRead 
-                      ? isRepairRequest
+                      ? isRestock
+                        ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
+                        : isRepairRequest
                         ? 'bg-purple-50/70 hover:bg-purple-100/50'
                         : isStockOut 
                         ? 'bg-rose-50/40 hover:bg-rose-50/60' 
@@ -246,6 +251,11 @@ export default function AdminNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isRestock && (
+                        <span className="shrink-0 bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-emerald-200">
+                          RESTOCK
+                        </span>
+                      )}
                       {isRepairRequest && (
                         <span className="shrink-0 bg-purple-100 text-[#bd00ff] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-200">
                           REPAIR REQUEST
@@ -281,6 +291,14 @@ export default function AdminNotifications() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 sm:self-center" onClick={e => e.stopPropagation()}>
+                    {isRestock && (
+                      <Link 
+                        href="/admin/inventory"
+                        className="shrink-0 px-3.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline border border-emerald-200"
+                      >
+                        <Package size={14} /> View Inventory
+                      </Link>
+                    )}
                     {isRepairRequest && (
                       <button 
                         onClick={() => openRepairRequest(notification)}

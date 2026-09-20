@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 import { logActivity } from '../../../../lib/logger';
-import { triggerStockAlert } from '../../../../lib/stock-alerts';
+import { triggerStockAlert, createRestockNotifications } from '../../../../lib/stock-alerts';
 
 export async function POST(req: Request) {
   try {
@@ -12,8 +12,8 @@ export async function POST(req: Request) {
     }
 
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
-    if (!isSuperAdmin && session.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Permission denied. Only Admins can adjust inventory.' }, { status: 403 });
+    if (!isSuperAdmin && session.role !== 'ADMIN' && session.role !== 'CASHIER') {
+      return NextResponse.json({ error: 'Permission denied. Only Admins and Cashiers can adjust inventory.' }, { status: 403 });
     }
 
     const {
@@ -40,6 +40,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Stock quantity must be a non-negative number.' }, { status: 400 });
     }
 
+    let prevStock = 0;
+    let calculatedStock = 0;
+    let diff = 0;
+
     const result = await prisma.$transaction(async (tx) => {
       const device = await tx.device.findUnique({
         where: { id: deviceId },
@@ -62,9 +66,9 @@ export async function POST(req: Request) {
         }
       });
 
-      const prevStock = existingStock ? existingStock.stock : 0;
-      const calculatedStock = adjustmentType === 'ADD' ? (prevStock + parsedQty) : parsedQty;
-      const diff = calculatedStock - prevStock;
+      prevStock = existingStock ? existingStock.stock : 0;
+      calculatedStock = adjustmentType === 'ADD' ? (prevStock + parsedQty) : parsedQty;
+      diff = calculatedStock - prevStock;
 
       let updatedBs;
       if (existingStock) {
@@ -98,7 +102,7 @@ export async function POST(req: Request) {
         data: { stock: totalAggStock }
       });
 
-      const moveType = diff >= 0 ? (adjustmentType === 'ADD' ? 'RESTOCK' : 'ADJUSTMENT') : 'ADJUSTMENT';
+      const moveType = diff > 0 ? 'RESTOCK' : (diff < 0 ? 'ADJUSTMENT' : (adjustmentType === 'ADD' ? 'RESTOCK' : 'ADJUSTMENT'));
 
       const movement = await tx.stockMovement.create({
         data: {
@@ -112,7 +116,7 @@ export async function POST(req: Request) {
           previousStock: prevStock,
           newStock: calculatedStock,
           notes: notes || `${moveType === 'RESTOCK' ? 'Restocked' : 'Adjusted'} in ${targetBranch}`,
-          performedBy: session.name || session.email || 'Admin',
+          performedBy: session.name || session.email || (session.role === 'SUPER_ADMIN' ? 'Super Admin' : (session.role === 'ADMIN' ? `${targetBranch} Branch Admin` : `${targetBranch} Cashier`)),
           userRole: session.role
         }
       });
@@ -131,6 +135,23 @@ export async function POST(req: Request) {
       userId: session.userId,
       userRole: session.role
     });
+
+    // Trigger Restock Notification if stock increased or restocked
+    if (diff > 0 || (adjustmentType === 'ADD' && parsedQty > 0)) {
+      const quantityAdded = diff > 0 ? diff : parsedQty;
+      await createRestockNotifications({
+        deviceId,
+        variationId: variationId || null,
+        productName: result.movement.productName,
+        branch: targetBranch,
+        quantityAdded,
+        previousStock: prevStock,
+        newStock: calculatedStock,
+        actorUserId: session.userId,
+        actorName: session.name || session.email,
+        actorRole: session.role
+      });
+    }
 
     await triggerStockAlert({ deviceId });
 
