@@ -565,10 +565,12 @@ export default function AdminAccounts() {
             <tbody className="divide-y divide-gray-100 font-medium text-gray-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2.5">
-                      <div className="w-8 h-8 border-3 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
-                      <span className="text-gray-500 font-bold text-xs animate-pulse">Loading accounts across branches...</span>
+                  <td colSpan={7} className="py-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+                      <span className="text-gray-500 font-semibold animate-pulse">
+                        {isSuperAdmin ? 'Loading accounts across branches...' : 'Loading branch accounts...'}
+                      </span>
                     </div>
                   </td>
                 </tr>
