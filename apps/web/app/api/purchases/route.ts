@@ -381,11 +381,16 @@ export async function POST(req: Request) {
         (!device.discountEndDate || new Date(device.discountEndDate) >= now)
       );
 
-      const effectivePrice = isDiscountActive ? (device.price * (1 - device.discount / 100)) : device.price;
+      const varTotal = Array.isArray(parsedVars) && parsedVars.length > 0
+        ? parsedVars.reduce((acc: number, v: any) => acc + (v.price || 0), 0)
+        : 0;
+      const basePrice = varTotal > 0 ? varTotal : (device.price || 0);
+
+      const effectivePrice = isDiscountActive ? (basePrice * (1 - device.discount / 100)) : basePrice;
       const totalFullPrice = effectivePrice * reqQty;
 
       const isDp = paymentType === 'Downpayment';
-      const dpAmt = isDp ? (downpaymentAmount || amount || 0) : (amount || totalFullPrice);
+      const dpAmt = isDp ? (downpaymentAmount || amount || 0) : (amount && amount > 0 ? amount : totalFullPrice);
       const remBal = isDp ? (remainingBalance ?? Math.max(0, totalFullPrice - dpAmt)) : 0;
       const settled = isDp ? (isSettled ?? (remBal === 0)) : true;
 

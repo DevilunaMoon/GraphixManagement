@@ -49,6 +49,7 @@ function CustomerPaymentContent() {
   const variationIds = searchParams.get('variationIds');
   const cartItemIdsParam = searchParams.get('cartItemIds');
   const branchParam = searchParams.get('branch');
+  const quantityParam = searchParams.get('quantity') || searchParams.get('qty');
   const navigate = router.push;
 
   const [method, setMethod] = useState<'cash' | 'gcash'>('cash');
@@ -200,6 +201,7 @@ function CustomerPaymentContent() {
             const basePrice = varTotal > 0 ? varTotal : (device.price || 0);
             const unitDiscount = discountPercent > 0 ? (basePrice * (discountPercent / 100)) : 0;
             const effectivePrice = basePrice - unitDiscount;
+            const parsedQty = Math.max(1, parseInt(quantityParam || '1', 10) || 1);
 
             const singleItem: PurchasedItem = {
               id: device.id,
@@ -208,14 +210,14 @@ function CustomerPaymentContent() {
               price: effectivePrice,
               originalPrice: basePrice,
               discount: discountPercent,
-              quantity: 1,
+              quantity: parsedQty,
               variations: vars
             };
 
             setItems([singleItem]);
-            setSubtotal(basePrice);
-            setTotalDiscount(unitDiscount);
-            setFinalTotal(effectivePrice);
+            setSubtotal(basePrice * parsedQty);
+            setTotalDiscount(unitDiscount * parsedQty);
+            setFinalTotal(effectivePrice * parsedQty);
           }
         } else {
           // Default checkout context matching "Secure Payment" standard (Vivo Y31d - ₱28,998.00)
@@ -241,7 +243,7 @@ function CustomerPaymentContent() {
     };
 
     fetchCheckoutData();
-  }, [deviceId, variationIds, cartItemIdsParam]);
+  }, [deviceId, variationIds, cartItemIdsParam, quantityParam]);
 
   const handleCopyGcashNumber = () => {
     navigator.clipboard.writeText(cleanGcashDigits || activeGcashNumber);

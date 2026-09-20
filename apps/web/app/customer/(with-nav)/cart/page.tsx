@@ -129,6 +129,9 @@ export default function CartPage() {
               {cartItems.map(item => {
                 const vars = item.variations ? JSON.parse(item.variations) : [];
                 const basePrice = vars.length > 0 ? vars.reduce((sum: number, v: any) => sum + (v.price || 0), 0) : item.device.price;
+                const maxStock = vars.length > 0 
+                  ? Math.min(...vars.map((v: any) => v.stock !== undefined ? v.stock : item.device.stock))
+                  : item.device.stock;
                 const isDiscountActive = Boolean(
                   item.device.discount && 
                   item.device.discount > 0 &&
@@ -171,7 +174,7 @@ export default function CartPage() {
                       <div className="flex items-center border-2 border-gray-200 rounded-xl bg-white overflow-hidden">
                         <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-2 bg-transparent border-none text-gray-700 hover:bg-gray-100 cursor-pointer disabled:opacity-30" disabled={item.quantity <= 1}><Minus size={16} /></button>
                         <span className="w-8 text-center font-bold text-sm text-black">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-2 bg-transparent border-none text-gray-700 hover:bg-gray-100 cursor-pointer disabled:opacity-30" disabled={item.quantity >= item.device.stock}><Plus size={16} /></button>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-2 bg-transparent border-none text-gray-700 hover:bg-gray-100 cursor-pointer disabled:opacity-30" disabled={item.quantity >= maxStock || maxStock <= 0}><Plus size={16} /></button>
                       </div>
                       <button onClick={() => removeItem(item.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer bg-transparent border-none transition-colors" title="Remove item">
                         <Trash size={20} />

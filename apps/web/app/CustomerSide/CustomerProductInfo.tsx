@@ -170,8 +170,8 @@ function CustomerProductInfoContent() {
   const [comments, setComments] = useState<Comment[]>([]);
 
   const updateQty = (change: number) => {
-    if (!product) return;
-    setQty(prev => Math.min(Math.max(1, prev + change), Math.max(1, currentStock)));
+    if (!product || currentStock <= 0) return;
+    setQty(prev => Math.min(Math.max(1, prev + change), currentStock));
   };
 
   const handlePrevImage = () => {
@@ -389,8 +389,12 @@ function CustomerProductInfoContent() {
                   (!discountEndDate || new Date(discountEndDate) >= now)
                 );
 
-                const rawPrice = currentPrice || 0;
-                const discountedPrice = isDiscountActive ? (rawPrice * (1 - discountPercent / 100)) : rawPrice;
+                const unitRawPrice = currentPrice || 0;
+                const unitDiscountedPrice = isDiscountActive ? (unitRawPrice * (1 - discountPercent / 100)) : unitRawPrice;
+
+                const totalRawPrice = unitRawPrice * qty;
+                const totalDiscountedPrice = unitDiscountedPrice * qty;
+                const totalSavings = isDiscountActive ? ((unitRawPrice * discountPercent / 100) * qty) : 0;
 
                 return (
                   <div className="flex flex-col gap-1.5 p-5 rounded-3xl bg-gradient-to-br from-purple-50/70 to-indigo-50/20 border border-purple-100/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)] w-full">
@@ -405,15 +409,15 @@ function CustomerProductInfoContent() {
                     <div className="flex items-baseline gap-2 flex-wrap">
                       <div className="flex items-baseline text-[#bd00ff]">
                         <span className="text-2xl font-black mr-0.5">₱</span>
-                        <span className="text-4xl font-black tracking-tight">{discountedPrice?.toLocaleString()}</span>
+                        <span className="text-4xl font-black tracking-tight">{totalDiscountedPrice?.toLocaleString()}</span>
                       </div>
                       {isDiscountActive && (
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-base text-gray-400 line-through font-semibold">
-                            ₱ {rawPrice?.toLocaleString()}
+                            ₱ {totalRawPrice?.toLocaleString()}
                           </span>
                           <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                            Save ₱ {((rawPrice * discountPercent) / 100).toLocaleString()}
+                            Save ₱ {totalSavings.toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -484,14 +488,16 @@ function CustomerProductInfoContent() {
                   <div className="flex items-center bg-gray-50 border border-gray-200/80 rounded-2xl p-1 w-max">
                     <button 
                       onClick={() => updateQty(-1)} 
-                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-sm active:scale-90"
+                      disabled={qty <= 1 || currentStock <= 0}
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-sm active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Minus size={16} strokeWidth={2.5} />
                     </button>
                     <span className="w-12 text-center font-black text-gray-800 text-lg">{qty}</span>
                     <button 
                       onClick={() => updateQty(1)} 
-                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-sm active:scale-90"
+                      disabled={qty >= currentStock || currentStock <= 0}
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-sm active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Plus size={16} strokeWidth={2.5} />
                     </button>
@@ -510,7 +516,7 @@ function CustomerProductInfoContent() {
                   {isAddingToCart ? 'Adding...' : 'Add to Cart'}
                 </button>
                 <button 
-                  onClick={() => navigate(`/customer/payment?deviceId=${targetDeviceId}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}`)}
+                  onClick={() => navigate(`/customer/payment?deviceId=${targetDeviceId}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}&quantity=${qty}`)}
                   disabled={currentStock === 0 || !hasSelectedAllSections}
                   className="w-full sm:flex-1 py-4 border-none bg-gradient-to-r from-[#bd00ff] to-[#4B0082] rounded-2xl text-white font-extrabold text-base hover:opacity-95 shadow-lg shadow-purple-500/20 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
                 >

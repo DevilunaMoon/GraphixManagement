@@ -16,19 +16,38 @@ export async function PATCH(req: Request, props: { params: Promise<{ id: string 
       return NextResponse.json({ error: 'Invalid quantity' }, { status: 400 });
     }
 
-    const updated = await prisma.cartItem.updateMany({
+    const cartItem = await prisma.cartItem.findFirst({
       where: {
         id: params.id,
-        userId: session.userId // Ensure user owns the cart item
+        userId: session.userId
       },
-      data: { quantity }
+      include: {
+        device: true
+      }
     });
 
-    if (updated.count === 0) {
+    if (!cartItem) {
       return NextResponse.json({ error: 'Cart item not found or unauthorized' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    let maxStock = cartItem.device.stock;
+    if (cartItem.variations) {
+      try {
+        const parsed = JSON.parse(cartItem.variations);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          maxStock = Math.min(...parsed.map((v: any) => (v.stock !== undefined ? v.stock : cartItem.device.stock)));
+        }
+      } catch (e) {}
+    }
+
+    const validQty = Math.max(1, Math.min(quantity, Math.max(1, maxStock)));
+
+    await prisma.cartItem.update({
+      where: { id: cartItem.id },
+      data: { quantity: validQty }
+    });
+
+    return NextResponse.json({ success: true, quantity: validQty }, { status: 200 });
   } catch (error) {
     console.error('Error updating cart item:', error);
     return NextResponse.json({ error: 'Failed to update cart item' }, { status: 500 });

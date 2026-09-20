@@ -49,30 +49,55 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing deviceId' }, { status: 400 });
     }
 
+    const device = await prisma.device.findUnique({
+      where: { id: deviceId }
+    });
+
+    if (!device) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    let maxStock = device.stock;
+    if (variations) {
+      try {
+        const parsed = typeof variations === 'string' ? JSON.parse(variations) : variations;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          maxStock = Math.min(...parsed.map((v: any) => (v.stock !== undefined ? v.stock : device.stock)));
+        }
+      } catch (e) {}
+    }
+
+    if (maxStock <= 0) {
+      return NextResponse.json({ error: 'This item is currently out of stock.' }, { status: 400 });
+    }
+
     // Check if item already exists with exact same variations
     const existingItem = await prisma.cartItem.findFirst({
       where: {
         userId: session.userId,
         deviceId: deviceId,
-        variations: variations || null
+        variations: variations ? (typeof variations === 'string' ? variations : JSON.stringify(variations)) : null
       }
     });
 
+    const addQty = Math.max(1, quantity || 1);
+
     if (existingItem) {
-      // Just increase quantity
+      const targetQty = Math.min(maxStock, existingItem.quantity + addQty);
       const updated = await prisma.cartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + (quantity || 1) }
+        data: { quantity: targetQty }
       });
       return NextResponse.json(updated, { status: 200 });
     } else {
+      const targetQty = Math.min(maxStock, addQty);
       // Create new cart item
       const newItem = await prisma.cartItem.create({
         data: {
           userId: session.userId,
           deviceId: deviceId,
-          quantity: quantity || 1,
-          variations: variations || null
+          quantity: targetQty,
+          variations: variations ? (typeof variations === 'string' ? variations : JSON.stringify(variations)) : null
         }
       });
       return NextResponse.json(newItem, { status: 201 });
