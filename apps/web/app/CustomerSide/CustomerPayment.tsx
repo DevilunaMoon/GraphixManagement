@@ -15,7 +15,9 @@ import {
   ShoppingBag,
   ShieldCheck,
   Receipt,
-  MapPin
+  MapPin,
+  X,
+  ZoomIn
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QRCodeDisplay from '../../components/Common/QRCodeDisplay';
@@ -71,6 +73,7 @@ function CustomerPaymentContent() {
   const [gcashRef, setGcashRef] = useState<string>('');
   const [copiedNumber, setCopiedNumber] = useState(false);
   const [showGcashModal, setShowGcashModal] = useState(false);
+  const [showEnlargedQr, setShowEnlargedQr] = useState(false);
 
   // General States
   const [staffMessage, setStaffMessage] = useState('');
@@ -757,27 +760,57 @@ function CustomerPaymentContent() {
       {showGcashModal && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={() => setShowGcashModal(false)}
+          onClick={() => {
+            setShowGcashModal(false);
+            setShowEnlargedQr(false);
+          }}
         >
           <div 
-            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border border-gray-100 flex flex-col items-center gap-4 text-center animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border border-gray-100 flex flex-col items-center gap-3.5 text-center relative animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close Button top-right */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowGcashModal(false);
+                setShowEnlargedQr(false);
+              }}
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+              title="Close modal"
+            >
+              <X size={18} />
+            </button>
+
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-[#005ce6] text-white rounded-lg flex items-center justify-center font-black text-sm">
+              <div className="w-7 h-7 bg-[#005ce6] text-white rounded-lg flex items-center justify-center font-black text-sm shadow-xs">
                 G
               </div>
               <h3 className="font-extrabold text-base text-gray-900 m-0">GCash Merchant QR</h3>
             </div>
 
-            <div className="w-52 h-52 bg-gray-50 border-2 border-dashed border-blue-200 rounded-2xl flex items-center justify-center relative overflow-hidden shadow-inner p-2">
+            {/* Clickable QR Code to enlarge */}
+            <button
+              type="button"
+              onClick={() => setShowEnlargedQr(true)}
+              className="w-52 h-52 bg-white border-2 border-dashed border-blue-300 hover:border-[#005ce6] rounded-2xl flex items-center justify-center relative overflow-hidden shadow-xs p-2 cursor-pointer group transition-all"
+              title="Click to view larger QR code"
+            >
               <QRCodeDisplay
                 value={qrRedirectUrl}
                 uploadedImageUrl={activeGcashQr}
                 size={190}
                 alt={`${activeGcashName} GCash QR`}
               />
-            </div>
+              <div className="absolute inset-0 bg-[#005ce6]/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                <span className="bg-white/95 text-[#005ce6] text-xs font-extrabold px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5 border border-blue-100">
+                  <ZoomIn size={14} /> Click to Enlarge
+                </span>
+              </div>
+            </button>
+            <span className="text-[11px] text-[#005ce6] font-semibold -mt-1 flex items-center gap-1">
+              <ZoomIn size={13} /> Click QR code to enlarge & scan
+            </span>
 
             <div className="flex flex-col gap-1">
               <span className="font-black text-sm text-gray-900">{activeGcashName}</span>
@@ -787,18 +820,71 @@ function CustomerPaymentContent() {
               </span>
             </div>
 
-            <a
-              href="gcash://app"
-              className="w-full py-2.5 bg-[#005ce6] hover:bg-blue-700 font-bold text-xs text-white rounded-xl transition-colors cursor-pointer text-center no-underline flex items-center justify-center gap-2 shadow-sm"
+            <button
+              type="button"
+              onClick={() => {
+                setShowGcashModal(false);
+                setShowEnlargedQr(false);
+              }}
+              className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 font-bold text-xs text-gray-700 rounded-xl transition-colors cursor-pointer border-none mt-1"
             >
-              <Smartphone size={15} />
-              Open in GCash App
-            </a>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Enlarged QR Code Modal */}
+      {showEnlargedQr && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setShowEnlargedQr(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm sm:max-w-md w-full shadow-2xl border border-gray-100 flex flex-col items-center gap-4 text-center relative animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button top-right */}
+            <button
+              type="button"
+              onClick={() => setShowEnlargedQr(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+              title="Close enlarged view"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#005ce6] text-white rounded-xl flex items-center justify-center font-black text-base shadow-xs">
+                G
+              </div>
+              <h3 className="font-extrabold text-lg text-gray-900 m-0">GCash Merchant QR</h3>
+            </div>
+
+            {/* High-visibility clean large QR container */}
+            <div className="w-full max-w-[280px] sm:max-w-[340px] aspect-square bg-white border-2 border-blue-200 rounded-2xl flex items-center justify-center p-3 sm:p-4 shadow-sm relative overflow-hidden">
+              <QRCodeDisplay
+                value={qrRedirectUrl}
+                uploadedImageUrl={activeGcashQr}
+                size={340}
+                alt={`${activeGcashName} GCash QR`}
+                className="w-full h-full"
+              />
+            </div>
+
+            {/* Merchant Details */}
+            <div className="flex flex-col gap-1 items-center">
+              <span className="font-black text-base sm:text-lg text-gray-900">{activeGcashName}</span>
+              <span className="font-mono text-sm sm:text-base text-[#005ce6] font-extrabold tracking-wide">{activeGcashNumber}</span>
+              <p className="text-xs text-gray-500 m-0 mt-1 max-w-xs font-medium leading-relaxed">
+                Scan using your GCash app scanner & transfer exact amount of <strong className="text-gray-900 font-bold">₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+              </p>
+            </div>
 
             <button
               type="button"
-              onClick={() => setShowGcashModal(false)}
-              className="w-full py-2 bg-gray-100 hover:bg-gray-200 font-bold text-xs text-gray-700 rounded-xl transition-colors cursor-pointer border-none"
+              onClick={() => setShowEnlargedQr(false)}
+              className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 font-bold text-xs text-gray-700 rounded-xl transition-colors cursor-pointer border-none"
             >
               Close
             </button>
