@@ -2,23 +2,69 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Users, ShoppingCart, Wrench, TrendingUp, TrendingDown, X, FileSpreadsheet } from 'lucide-react';
+import { 
+  Users, 
+  ShoppingCart, 
+  Wrench, 
+  TrendingUp, 
+  TrendingDown, 
+  X, 
+  FileSpreadsheet, 
+  Calendar, 
+  Building2, 
+  ReceiptText, 
+  Banknote, 
+  QrCode,
+  Lock,
+  Clock,
+  RefreshCw
+} from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 
 export default function AdminAnalytics() {
-  const { selectedBranch } = useBranch();
+  const { selectedBranch, isSuperAdmin, userBranch } = useBranch();
   const [userCount, setUserCount] = useState<string | number>("...");
   const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Date Filter states: 'today' | 'week' | 'month' | 'year' | 'custom'
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'year' | 'custom'>('year');
   
+  // Custom Date Range
+  const todayStr = new Date().toISOString().split('T')[0] || '';
+  const firstDayOfMonthStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] || '';
+  const [customStartDate, setCustomStartDate] = useState<string>(firstDayOfMonthStr);
+  const [customEndDate, setCustomEndDate] = useState<string>(todayStr);
+
   const [reportData, setReportData] = useState<{year: string; salesGrowth: number; userGrowth: number}[]>([]);
   const [userGrowthData, setUserGrowthData] = useState<{ year: string, users: string, trend: string, trendUp: boolean }[]>([]);
   const [selectedYearData, setSelectedYearData] = useState<{ year: string, users: string, trend: string, trendUp: boolean } | null>(null);
 
   const { styles } = useTheme();
 
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const branchParam = isSuperAdmin ? selectedBranch : (userBranch || 'Tagoloan');
+      let url = `/api/analytics/all-time?branch=${encodeURIComponent(branchParam)}&dateFilter=${dateFilter}`;
+      if (dateFilter === 'custom' && customStartDate && customEndDate) {
+        url += `&startDate=${encodeURIComponent(customStartDate)}&endDate=${encodeURIComponent(customEndDate)}`;
+      }
+
+      const res = await fetch(url);
+      const data = await res.json();
+      setAnalyticsData(data);
+    } catch (err) {
+      console.error("Failed to fetch analytics data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch(`/api/analytics/users/count?branch=${encodeURIComponent(selectedBranch)}`)
+    const branchParam = isSuperAdmin ? selectedBranch : (userBranch || 'Tagoloan');
+    fetch(`/api/analytics/users/count?branch=${encodeURIComponent(branchParam)}`)
       .then(res => res.json())
       .then(data => {
         if (typeof data.count === 'number') {
@@ -31,14 +77,9 @@ export default function AdminAnalytics() {
       })
       .catch(err => console.error("Failed to fetch user count:", err));
 
-    fetch(`/api/analytics/all-time?branch=${encodeURIComponent(selectedBranch)}`)
-      .then(res => res.json())
-      .then(data => {
-        setAnalyticsData(data);
-      })
-      .catch(err => console.error("Failed to fetch analytics data:", err));
+    fetchAnalytics();
 
-    // Mock Data for Year-over-Year charts (since we don't have a YoY API yet)
+    // Year-over-Year chart dataset
     const years = ['2022', '2023', '2024', '2025', '2026'];
     setReportData(years.map(y => ({
       year: y,
@@ -53,7 +94,7 @@ export default function AdminAnalytics() {
       trendUp: Math.random() > 0.2
     })).reverse());
 
-  }, [selectedBranch]);
+  }, [selectedBranch, dateFilter, customStartDate, customEndDate, isSuperAdmin, userBranch]);
 
   const handleDownload = () => {
     if (reportData.length === 0) return;
@@ -67,24 +108,103 @@ export default function AdminAnalytics() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Graphix_AllTime_Analytics.csv`);
+    link.setAttribute('download', `Graphix_Analytics_${dateFilter.toUpperCase()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  const filterOptions: Array<{ id: 'today' | 'week' | 'month' | 'year' | 'custom'; label: string }> = [
+    { id: 'today', label: 'Today' },
+    { id: 'week', label: 'This Week' },
+    { id: 'month', label: 'This Month' },
+    { id: 'year', label: 'This Year' },
+    { id: 'custom', label: 'Custom Date Range' }
+  ];
+
+  const effectiveBranchLabel = isSuperAdmin
+    ? (selectedBranch === 'all' ? 'All Branches' : `${selectedBranch} Branch`)
+    : `${userBranch || 'Tagoloan'} Branch`;
+
   return (
     <>
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
-          <h2 className="text-[1.6rem] font-bold text-[#111]">Comprehensive Analytics (All-Time)</h2>
-          <button 
-            onClick={handleDownload}
-            className={`flex items-center gap-2 bg-gradient-to-r ${styles.gradient} text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-sm opacity-90 hover:opacity-100`}
-          >
-            <FileSpreadsheet size={20} />
-            <span>Download Full Report</span>
-          </button>
+      <div className="flex flex-col gap-8 font-['Inter']">
+        {/* Header & Controls */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-[1.6rem] font-bold text-[#111]">
+                {isSuperAdmin ? "Comprehensive Analytics" : `${userBranch || 'Tagoloan'} Branch Analytics`}
+              </h2>
+              {!isSuperAdmin && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-200 text-[#5c0099] rounded-full text-xs font-black uppercase tracking-wider shadow-sm">
+                  <Lock size={12} /> {userBranch || 'Tagoloan'}
+                </span>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-gray-500 mt-1">
+              Performance metrics, payment methods breakdown, and branch volume
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <button 
+              onClick={handleDownload}
+              className={`flex items-center gap-2 bg-gradient-to-r ${styles.gradient} text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md hover:opacity-95 cursor-pointer border-none`}
+            >
+              <FileSpreadsheet size={16} />
+              <span>Export CSV Report</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Date Filter Bar */}
+        <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 mr-2 uppercase tracking-wide">
+              <Calendar size={15} className="text-[#bd00ff]" /> Period:
+            </div>
+            {filterOptions.map((opt) => {
+              const isActive = dateFilter === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setDateFilter(opt.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    isActive
+                      ? `bg-gradient-to-r ${styles.gradient} text-white shadow-sm border-transparent`
+                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Date Inputs if 'custom' is active */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 flex-wrap bg-purple-50/70 p-2 rounded-xl border border-purple-200/80 animate-in fade-in">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                <span>From:</span>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-white px-2 py-1 rounded-lg border border-purple-200 text-xs font-bold text-gray-800 outline-none cursor-pointer focus:border-[#bd00ff]"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">
+                <span>To:</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-white px-2 py-1 rounded-lg border border-purple-200 text-xs font-bold text-gray-800 outline-none cursor-pointer focus:border-[#bd00ff]"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats Grid */}
@@ -92,10 +212,10 @@ export default function AdminAnalytics() {
           <StatCard 
             icon={<span className="text-[22px] font-bold">₱</span>}
             label="This Year's Sales" 
-            value={`₱${analyticsData?.sales?.thisYear?.toLocaleString() || 0}`} 
+            value={`₱${(analyticsData?.sales?.thisYear ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
             subText={
-              <span className={analyticsData?.sales?.thisYear >= analyticsData?.sales?.lastYear ? 'text-green-600' : 'text-red-500'}>
-                vs Last Year: ₱{analyticsData?.sales?.lastYear?.toLocaleString() || 0}
+              <span className={(analyticsData?.sales?.thisYear ?? 0) >= (analyticsData?.sales?.lastYear ?? 0) ? 'text-green-600' : 'text-red-500'}>
+                vs Last Year: ₱{(analyticsData?.sales?.lastYear ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             }
             iconBg="bg-green-100" 
@@ -104,18 +224,18 @@ export default function AdminAnalytics() {
           <StatCard 
             icon={<span className="text-[22px] font-bold">₱</span>}
             label="Last Year's Sales" 
-            value={`₱${analyticsData?.sales?.lastYear?.toLocaleString() || 0}`} 
+            value={`₱${(analyticsData?.sales?.lastYear ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
             iconBg="bg-blue-100" 
             iconColor="text-blue-600" 
           />
           <StatCard 
             icon={<span className="text-[22px] font-bold">₱</span>}
             label="All-Time Sales" 
-            value={`₱${analyticsData?.sales?.allTime?.toLocaleString() || 0}`} 
+            value={`₱${(analyticsData?.sales?.allTime ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
             iconBg="bg-purple-100" 
             iconColor="text-purple-600" 
           />
-          <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1">
+          <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1 no-underline">
             <StatCard 
               icon={<Users size={24} />} 
               label="Total Users (All-Time)" 
@@ -126,15 +246,13 @@ export default function AdminAnalytics() {
           </Link>
         </div>
 
-
-
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
           {/* Year-Over-Year Sales Growth Bar Chart */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
             <div className="mb-8">
               <h3 className="text-xl font-bold text-[#111] mb-1">Year-Over-Year Sales Growth</h3>
-              <p className="text-sm text-[#666]">All-Time Overview</p>
+              <p className="text-sm text-[#666]">All-Time Overview ({effectiveBranchLabel})</p>
             </div>
             
             <div className={`w-full overflow-x-auto border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
@@ -156,34 +274,82 @@ export default function AdminAnalytics() {
           </div>
         </div>
 
-        {/* Lower Section Grid: Cards on left, Table on right */}
+        {/* Lower Section Grid: Payment Methods & Branch Performance on Left, User Growth on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-          {/* Left Column: Stacked Cards */}
+          {/* Left Column: Payment Methods & Branch Performance */}
           <div className="flex flex-col gap-6 lg:col-span-1">
-            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-              <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Lifetime Transactions</h3>
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
-                  <h4 className="text-4xl font-black text-[#111] mt-1">{analyticsData?.transactions?.total || 0}</h4>
-                </div>
-                <div className="text-right flex flex-col gap-1">
-                  <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {analyticsData?.transactions?.online || 0}</p>
-                  <p className="text-sm font-bold bg-orange-50 text-orange-600 px-3 py-1 rounded-lg">Physical: {analyticsData?.transactions?.physical || 0}</p>
+            
+            {/* 1. Payment Methods Card */}
+            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex flex-col justify-between">
+              <div>
+                <h3 className="text-lg font-black text-[#111] mb-4 flex items-center gap-2">
+                  <span className="text-xl">🧾</span> Payment Methods
+                </h3>
+                
+                <div className="flex flex-col gap-4 divide-y divide-gray-100">
+                  {/* Cash Payment */}
+                  <div className="pt-1 first:pt-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">💵</span>
+                      <span className="text-sm font-bold text-gray-800">Cash Payment</span>
+                    </div>
+                    <div className="text-3xl font-black text-[#111]">
+                      ₱{(analyticsData?.paymentMethods?.cash?.totalAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                      {analyticsData?.paymentMethods?.cash?.transactionCount ?? 0} transactions
+                    </div>
+                  </div>
+
+                  {/* GCash Payment */}
+                  <div className="pt-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-base">📱</span>
+                      <span className="text-sm font-bold text-gray-800">GCash Payment</span>
+                    </div>
+                    <div className="text-3xl font-black text-[#111]">
+                      ₱{(analyticsData?.paymentMethods?.gcash?.totalAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                      {analyticsData?.paymentMethods?.gcash?.transactionCount ?? 0} transactions
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-              <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><span className="font-bold text-[22px] text-[#bd00ff]">₱</span> Lifetime Revenue</h3>
-              <div className="flex justify-between items-end">
-                <div>
-                  <p className="text-[#666] text-sm font-semibold">Total Revenue Generated</p>
-                  <h4 className="text-4xl font-black text-[#111] mt-1">₱{analyticsData?.breakdown?.total?.toLocaleString() || 0}</h4>
+            {/* 2. Branch Performance Card */}
+            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-black text-[#111] flex items-center gap-2">
+                    <span className="text-xl">🏢</span> Branch Performance
+                  </h3>
+                  {!isSuperAdmin && (
+                    <span className="text-[11px] font-bold text-gray-400">Assigned Branch</span>
+                  )}
                 </div>
-                <div className="text-right flex flex-col gap-1">
-                  <p className="text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg">Retail: ₱{analyticsData?.breakdown?.retail?.toLocaleString() || 0}</p>
-                  <p className="text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg">Repair: ₱{analyticsData?.breakdown?.repair?.toLocaleString() || 0}</p>
+
+                <div className="flex flex-col gap-4 divide-y divide-gray-100">
+                  {(analyticsData?.branchPerformance && analyticsData.branchPerformance.length > 0) ? (
+                    analyticsData.branchPerformance.map((bp: any) => (
+                      <div key={bp.branch} className="pt-3 first:pt-0">
+                        <div className="text-sm font-bold text-gray-800 mb-0.5 flex items-center gap-1.5">
+                          <span>📍</span> {bp.branch}
+                        </div>
+                        <div className="text-2xl font-black text-[#111]">
+                          ₱{(bp.revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                          {bp.orders ?? 0} orders
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs font-semibold text-gray-400 py-3">
+                      No branch performance data recorded yet.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
