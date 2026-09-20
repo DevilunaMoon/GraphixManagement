@@ -26,6 +26,18 @@ const INITIAL_BRANCHES: FacebookBranch[] = [
     title: 'Graphix Main Store',
     link: 'https://www.facebook.com',
     image: '/Images/storefront-bg.jpg'
+  },
+  {
+    id: 'branch-2',
+    title: 'Jasaan Branch',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
+  },
+  {
+    id: 'branch-3',
+    title: 'Villanueva Branch',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
   }
 ];
 
@@ -116,9 +128,12 @@ export default function AdminAboutEditor() {
               const parsed = JSON.parse(branchesRec.content);
               if (Array.isArray(parsed) && parsed.length > 0) {
                 setBranches(parsed);
+              } else {
+                setBranches(INITIAL_BRANCHES);
               }
             } catch (e) {
-              console.error('Error parsing branches JSON:', e);
+              console.error('Error parsing branches JSON, defaulting to initial branches:', e);
+              setBranches(INITIAL_BRANCHES);
             }
           } else {
             // Check legacy fields
@@ -133,6 +148,8 @@ export default function AdminAboutEditor() {
                 link: fbLinkRec?.content || 'https://www.facebook.com',
                 image: fbImgRec?.content || '/Images/storefront-bg.jpg'
               }]);
+            } else {
+              setBranches(INITIAL_BRANCHES);
             }
           }
         }
@@ -225,20 +242,31 @@ export default function AdminAboutEditor() {
     ];
 
     try {
-      let allOk = true;
-      for (const item of itemsToSave) {
-        const res = await fetch('/api/policies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item)
-        });
-        if (!res.ok) allOk = false;
-      }
+      const res = await fetch('/api/policies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policies: itemsToSave })
+      });
 
-      if (allOk) {
+      if (res.ok) {
         setToastMessage({ type: 'success', text: 'About page contents and all Facebook store branches updated successfully!' });
       } else {
-        setToastMessage({ type: 'error', text: 'Some fields failed to save. Please try again.' });
+        // Fallback to sequential saves if needed
+        let allOk = true;
+        for (const item of itemsToSave) {
+          const sRes = await fetch('/api/policies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+          });
+          if (!sRes.ok) allOk = false;
+        }
+
+        if (allOk) {
+          setToastMessage({ type: 'success', text: 'About page contents and all Facebook store branches updated successfully!' });
+        } else {
+          setToastMessage({ type: 'error', text: 'Some fields failed to save. Please try again.' });
+        }
       }
     } catch (err) {
       console.error('Failed to save policies:', err);

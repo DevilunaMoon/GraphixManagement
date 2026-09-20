@@ -22,6 +22,18 @@ const INITIAL_BRANCHES: FacebookBranch[] = [
     title: 'Graphix Main Store',
     link: 'https://www.facebook.com',
     image: '/Images/storefront-bg.jpg'
+  },
+  {
+    id: 'branch-2',
+    title: 'Jasaan Branch',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
+  },
+  {
+    id: 'branch-3',
+    title: 'Villanueva Branch',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
   }
 ];
 
@@ -52,9 +64,12 @@ export default function CustomerAbout() {
                 const parsed = JSON.parse(branchesRec.content);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   setBranches(parsed);
+                } else {
+                  setBranches(INITIAL_BRANCHES);
                 }
               } catch (e) {
-                console.error('Error parsing branches JSON:', e);
+                console.error('Error parsing branches JSON, defaulting to initial branches:', e);
+                setBranches(INITIAL_BRANCHES);
               }
             } else {
               // Legacy fallback
@@ -69,6 +84,8 @@ export default function CustomerAbout() {
                   link: fbLinkRec?.content || 'https://www.facebook.com',
                   image: fbImgRec?.content || '/Images/storefront-bg.jpg'
                 }]);
+              } else {
+                setBranches(INITIAL_BRANCHES);
               }
             }
           }

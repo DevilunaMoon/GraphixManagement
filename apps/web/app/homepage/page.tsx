@@ -18,6 +18,27 @@ interface FacebookBranch {
   image: string;
 }
 
+const INITIAL_BRANCHES: FacebookBranch[] = [
+  {
+    id: 'branch-1',
+    title: 'Graphix Main Store',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
+  },
+  {
+    id: 'branch-2',
+    title: 'Jasaan Branch',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
+  },
+  {
+    id: 'branch-3',
+    title: 'Villanueva Branch',
+    link: 'https://www.facebook.com',
+    image: '/Images/storefront-bg.jpg'
+  }
+];
+
 export default function HomePage() {
   const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,7 +51,7 @@ export default function HomePage() {
   const [policyContent, setPolicyContent] = useState('');
   const [loadingPolicy, setLoadingPolicy] = useState(false);
 
-  const [facebookBranches, setFacebookBranches] = useState<FacebookBranch[]>([]);
+  const [facebookBranches, setFacebookBranches] = useState<FacebookBranch[]>(INITIAL_BRANCHES);
 
   const openPolicyModal = async (e: React.MouseEvent, type: string) => {
     e.preventDefault();
@@ -142,12 +163,7 @@ export default function HomePage() {
                 image: fbImgRec?.content || '/Images/storefront-bg.jpg'
               }]);
             } else {
-              setFacebookBranches([{
-                id: 'branch-1',
-                title: 'Graphix Main Store',
-                link: 'https://www.facebook.com',
-                image: '/Images/storefront-bg.jpg'
-              }]);
+              setFacebookBranches(INITIAL_BRANCHES);
             }
           }
         }
