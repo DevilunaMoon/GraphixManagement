@@ -62,6 +62,14 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const itemsPerPage = 8;
 
   const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
 
   const handleSettleBalance = async (txId: string) => {
     try {
@@ -72,14 +80,14 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
         if (selectedTransaction && selectedTransaction.id === txId) {
           setSelectedTransaction({ ...selectedTransaction, remainingBalance: 0, isSettled: true });
         }
-        alert('Remaining balance settled successfully!');
+        showToast('Remaining balance settled successfully!', 'success');
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to settle balance');
+        showToast(data.error || 'Failed to settle balance', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to settle balance');
+      showToast('Failed to settle balance', 'error');
     } finally {
       setSettlingTxId(null);
     }
@@ -424,11 +432,13 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                       if (res.ok) {
                         setTransactions(prev => prev.map(t => t.id === selectedTransaction.id ? { ...t, status: 'Cancelled' } : t));
                         setSelectedTransaction({ ...selectedTransaction, status: 'Cancelled' });
+                        showToast('Transaction cancelled and inventory released.', 'success');
                       } else {
-                        alert('Failed to cancel transaction');
+                        showToast('Failed to cancel transaction', 'error');
                       }
                     } catch (err) {
                       console.error(err);
+                      showToast('Error cancelling transaction', 'error');
                     }
                   }}
                   className="mt-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-xl transition-colors text-center cursor-pointer border-none shadow-xs text-xs"
@@ -458,6 +468,25 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div 
+          className={`fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${
+            toast.type === 'error'
+              ? 'bg-rose-600 text-white border-rose-500 shadow-rose-200'
+              : 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-200'
+          }`}
+        >
+          <span className="text-sm font-bold tracking-wide">{toast.message}</span>
+          <button 
+            onClick={() => setToast(null)} 
+            className="text-white hover:text-gray-200 bg-transparent border-none outline-none font-black ml-3 cursor-pointer p-0"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>

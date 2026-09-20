@@ -46,6 +46,16 @@ export default function AdminBranches() {
   const [branches, setBranches] = useState<BranchMetricItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Toast Notification State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -130,12 +140,13 @@ export default function AdminBranches() {
       const data = await res.json();
       if (data.url) {
         setFormGcashQrCode(data.url);
+        showToast('GCash QR Code uploaded successfully!', 'success');
       } else {
-        alert(data.error || 'Failed to upload QR image');
+        showToast(data.error || 'Failed to upload QR image', 'error');
       }
     } catch (err) {
       console.error('QR upload error:', err);
-      alert('Failed to upload QR image');
+      showToast('Failed to upload QR image', 'error');
     } finally {
       setUploadingQr(false);
     }
@@ -144,7 +155,7 @@ export default function AdminBranches() {
   const handleSaveBranch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) {
-      alert('Branch name is required');
+      showToast('Branch name is required', 'error');
       return;
     }
 
@@ -176,13 +187,13 @@ export default function AdminBranches() {
         setIsEditModalOpen(false);
         await fetchBranchMetrics();
         await refreshBranches();
-        alert(data.message || 'Branch saved successfully!');
+        showToast(data.message || (isEditModalOpen ? 'Branch updated successfully!' : 'Branch created successfully!'), 'success');
       } else {
-        alert(data.error || 'Failed to save branch');
+        showToast(data.error || 'Failed to save branch', 'error');
       }
     } catch (err) {
       console.error('Save branch error:', err);
-      alert('An error occurred while saving branch');
+      showToast('An error occurred while saving branch', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -200,13 +211,13 @@ export default function AdminBranches() {
         setBranchToDelete(null);
         await fetchBranchMetrics();
         await refreshBranches();
-        alert(data.message || 'Branch removed/deactivated successfully!');
+        showToast(data.message || 'Branch removed/deactivated successfully!', 'success');
       } else {
-        alert(data.error || 'Failed to delete branch');
+        showToast(data.error || 'Failed to delete branch', 'error');
       }
     } catch (err) {
       console.error('Delete branch error:', err);
-      alert('Failed to delete branch');
+      showToast('Failed to delete branch', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -223,12 +234,14 @@ export default function AdminBranches() {
       if (res.ok) {
         await fetchBranchMetrics();
         await refreshBranches();
+        showToast(`Branch status changed to ${newStatus}`, 'success');
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to update branch status');
+        showToast(data.error || 'Failed to update branch status', 'error');
       }
     } catch (err) {
       console.error('Toggle status error:', err);
+      showToast('Network error while updating status', 'error');
     }
   };
 
@@ -242,13 +255,37 @@ export default function AdminBranches() {
   });
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300 font-['Inter'] relative">
+      {/* Toast Feedback Notification */}
+      {toast && (
+        <div 
+          className={`fixed top-6 right-6 z-[9999] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${
+            toast.type === 'error'
+              ? 'bg-rose-600 text-white border-rose-500 shadow-rose-200'
+              : 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-200'
+          }`}
+        >
+          {toast.type === 'error' ? (
+            <XCircle size={20} className="shrink-0 text-white" />
+          ) : (
+            <CheckCircle2 size={20} className="shrink-0 text-white" />
+          )}
+          <span className="text-sm font-bold tracking-wide">{toast.message}</span>
+          <button 
+            onClick={() => setToast(null)} 
+            className="text-white hover:text-gray-200 bg-transparent border-none outline-none font-black ml-3 cursor-pointer p-0"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Header Card */}
       <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3 md:gap-4">
           <Link
             href="/admin/settings"
-            className="w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors shrink-0"
+            className="w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors shrink-0 no-underline"
             title="Back to Settings"
           >
             <ChevronLeft size={22} />
@@ -272,14 +309,14 @@ export default function AdminBranches() {
           <button
             onClick={fetchBranchMetrics}
             title="Refresh"
-            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer"
+            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer border-none"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
           {isSuperAdmin && (
             <button
               onClick={handleOpenAdd}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#bd00ff] hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all cursor-pointer"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#bd00ff] hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all cursor-pointer border-none"
             >
               <Plus size={18} /> Add New Branch
             </button>
@@ -301,7 +338,7 @@ export default function AdminBranches() {
           </p>
         </div>
       ) : filteredBranches.length === 1 ? (
-        /* Single Branch Full-Width Layout (matching the header card width) */
+        /* Single Branch Full-Width Layout */
         <div className="w-full">
           {filteredBranches.map((branch) => {
             const admins = branch.adminsCount || 0;
@@ -324,7 +361,7 @@ export default function AdminBranches() {
                       <button
                         onClick={() => handleToggleStatus(branch)}
                         title={`Click to ${branch.status === 'Active' ? 'Deactivate' : 'Activate'}`}
-                        className={`px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                        className={`px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border-none ${
                           branch.status === 'Active' 
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                             : 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -373,7 +410,7 @@ export default function AdminBranches() {
                   </div>
                 </div>
 
-                {/* Metrics & GCash Grid (Full-Width Responsive 4 Columns) */}
+                {/* Metrics & GCash Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Staff Members */}
                   <div className="bg-purple-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-purple-100/50">
@@ -503,7 +540,7 @@ export default function AdminBranches() {
                   <button
                     onClick={() => handleToggleStatus(branch)}
                     title={`Click to ${branch.status === 'Active' ? 'Deactivate' : 'Activate'}`}
-                    className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ${
+                    className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border-none ${
                       branch.status === 'Active' 
                         ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                         : 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -820,14 +857,14 @@ export default function AdminBranches() {
                 <button
                   type="button"
                   onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }}
-                  className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer bg-transparent"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-8 py-3 rounded-xl bg-[#bd00ff] hover:bg-purple-700 text-white font-bold text-sm shadow-lg shadow-purple-200 transition-all cursor-pointer disabled:opacity-50"
+                  className="px-8 py-3 rounded-xl bg-[#bd00ff] hover:bg-purple-700 text-white font-bold text-sm shadow-lg shadow-purple-200 transition-all cursor-pointer disabled:opacity-50 border-none"
                 >
                   {submitting ? 'Saving...' : isEditModalOpen ? 'Update Branch' : 'Create Branch'}
                 </button>
@@ -851,14 +888,14 @@ export default function AdminBranches() {
             <div className="flex gap-3">
               <button
                 onClick={() => setBranchToDelete(null)}
-                className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
+                className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer bg-transparent"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteBranch}
                 disabled={isDeleting}
-                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-200 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-200 transition-all cursor-pointer disabled:opacity-50 border-none"
               >
                 {isDeleting ? 'Removing...' : 'Confirm'}
               </button>
