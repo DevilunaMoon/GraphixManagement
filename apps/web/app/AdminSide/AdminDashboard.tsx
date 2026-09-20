@@ -3,14 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
-import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Wrench, Building2 } from 'lucide-react';
+import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Building2 } from 'lucide-react';
+
+const formatCurrency = (val: number) => {
+  return '₱' + (val || 0).toLocaleString('en-PH', {
+    minimumFractionDigits: (val || 0) % 1 !== 0 ? 2 : 0,
+    maximumFractionDigits: 2,
+  });
+};
 
 export default function AdminDashboard() {
   const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
   const [userCount, setUserCount] = useState<string | number>("...");
   const [dashboardData, setDashboardData] = useState<any>(null);
-  const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, units: string, trend: string, trendUp: boolean } | null>(null);
-  const [unitsSoldData, setUnitsSoldData] = useState<{ month: string, units: string, trend: string, trendUp: boolean }[]>([]);
+  const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, units: string, trend: string, trendUp: boolean | null } | null>(null);
+  const [unitsSoldData, setUnitsSoldData] = useState<{ month: string, units: string, trend: string, trendUp: boolean | null }[]>([]);
 
   useEffect(() => {
     fetch('/api/analytics/users/count')
@@ -53,10 +60,10 @@ export default function AdminDashboard() {
           <StatCard 
             icon={<span className="text-xl font-bold">₱</span>}
             label="Total Sales" 
-            value={`₱${(dashboardData?.summary?.totalSales ?? dashboardData?.breakdown?.total ?? 0).toLocaleString()}`} 
+            value={formatCurrency(dashboardData?.summary?.totalSales ?? dashboardData?.breakdown?.total ?? 0)} 
             subText={
               <span className="text-purple-700 font-semibold text-[11px]">
-                Today: ₱{(dashboardData?.sales?.today || 0).toLocaleString()}
+                Today: {formatCurrency(dashboardData?.sales?.today || 0)}
               </span>
             }
             iconBg="bg-emerald-100" 
@@ -130,185 +137,185 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-        {/* Sales Growth Bar Chart */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-[#111] mb-1">Sales Growth</h3>
-            <p className="text-sm text-[#666]">Monthly Overview</p>
-          </div>
-          
-          <div className="w-full overflow-x-auto border-2 border-[#BF00FF] rounded-xl relative">
-            <div className="w-full min-w-[500px] h-[300px] flex justify-around items-end gap-2 text-xs md:text-sm p-5">
-            {(() => {
-              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              const salesData = dashboardData?.salesGrowth || Array(12).fill(0);
-              const maxSales = Math.max(...salesData, 1); // Avoid division by zero
-              
-              return months.map((month, i) => {
-                const value = salesData[i];
-                // Calculate percentage height, maximum 85% so the tooltip has room above the bar
-                const heightPercent = value > 0 ? Math.max((value / maxSales) * 85, 2) : 2;
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+          {/* Sales Growth Bar Chart */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-[#111] mb-1">Monthly Sales</h3>
+              <p className="text-sm text-[#666]">Monthly Overview ({new Date().getFullYear()})</p>
+            </div>
+            
+            <div className="w-full overflow-x-auto border-2 border-[#BF00FF] rounded-xl relative">
+              <div className="w-full min-w-[500px] h-[300px] flex justify-around items-end gap-2 text-xs md:text-sm p-5">
+              {(() => {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const salesData = dashboardData?.salesGrowth || Array(12).fill(0);
+                const maxSales = Math.max(...salesData, 1);
                 
-                return <ChartBar key={month} label={month} height={`${heightPercent}%`} value={value} />;
-              });
-            })()}
+                return months.map((month, i) => {
+                  const value = salesData[i];
+                  const heightPercent = value > 0 ? Math.max((value / maxSales) * 85, 2) : 2;
+                  
+                  return <ChartBar key={month} label={month} height={`${heightPercent}%`} value={value} />;
+                });
+              })()}
+            </div>
+            </div>
           </div>
+
+          {/* Yearly Best Sellers Pie Chart */}
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-1 flex flex-col">
+            <div className="mb-4">
+              <h3 className="text-xl font-bold text-[#111] mb-1">Yearly Best Sellers</h3>
+              <p className="text-sm text-[#666]">By Units Sold</p>
+            </div>
+            <BestSellersPieChart products={dashboardData?.topProducts || []} />
           </div>
         </div>
 
-        {/* Best Sellers Pie Chart */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-1 flex flex-col">
-          <div className="mb-4">
-            <h3 className="text-xl font-bold text-[#111] mb-1">Best Sellers</h3>
-            <p className="text-sm text-[#666]">By Units Sold</p>
-          </div>
-          <BestSellersPieChart products={dashboardData?.topProducts || []} />
-        </div>
-      </div>
-
-      {/* Lower Section Grid: Cards on left, Table on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-        {/* Left Column: Stacked Cards */}
-        <div className="flex flex-col gap-6 lg:col-span-1">
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-            <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Transaction Count</h3>
-            <div className="flex justify-between items-end">
-              <div>
-                <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
-                <h4 className="text-4xl font-black text-[#111] mt-1">{dashboardData?.transactions?.total || 0}</h4>
-              </div>
-              <div className="text-right flex flex-col gap-1">
-                <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {dashboardData?.transactions?.online || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-            <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><span className="font-bold text-[22px] text-[#bd00ff]">₱</span> Revenue Breakdown</h3>
-            <div className="flex justify-between items-end">
-              <div>
-                <p className="text-[#666] text-sm font-semibold">Total Revenue</p>
-                <h4 className="text-4xl font-black text-[#111] mt-1">₱{dashboardData?.breakdown?.total?.toLocaleString() || 0}</h4>
-              </div>
-              <div className="text-right flex flex-col gap-1">
-                <p className="text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg">Retail: ₱{dashboardData?.breakdown?.retail?.toLocaleString() || 0}</p>
-                <p className="text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg">Repair: ₱{dashboardData?.breakdown?.repair?.toLocaleString() || 0}</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Right Column: Units Sold per Month */}
-        <div className="lg:col-span-2">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col h-full">
-            <div className="mb-5 pb-4 border-b border-black/5">
-              <h3 className="text-lg text-[#111] font-bold">Units Sold per Month</h3>
-            </div>
-            <div className="w-full">
-              <table className="w-full border-collapse text-left">
-                <thead>
-                  <tr>
-                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Month</th>
-                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Units Sold</th>
-                    <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5 hidden md:table-cell">Trend</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unitsSoldData.map((data, idx) => (
-                    <tr 
-                      key={idx} 
-                      className="border-b border-black/5 cursor-pointer hover:bg-black/5 transition-colors"
-                      onClick={() => setSelectedMonthData(data)}
-                    >
-                      <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.month}</td>
-                      <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.units}</td>
-                      <td className="py-3 px-4 hidden md:table-cell">
-                        <div className={`font-bold text-sm flex items-center gap-1 ${data.trendUp ? 'text-green-600' : 'text-red-600'}`}>
-                          {data.trendUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />} {data.trend}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Multi-Branch Performance Comparison (Super Admin System-Wide View) */}
-      {isSuperAdmin && (!selectedBranch || selectedBranch === 'all') && dashboardData?.branchComparison && dashboardData.branchComparison.length > 0 && (
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
-          <div className="mb-6 pb-4 border-b border-black/5 flex justify-between items-center">
-            <div>
-              <h3 className="text-xl font-bold text-[#111] flex items-center gap-2">
-                <Building2 className="text-[#bd00ff]" size={22} /> Multi-Branch Performance Comparison
-              </h3>
-              <p className="text-sm text-[#666] mt-0.5">Live revenue, product units sold, and volume comparison across branches</p>
-            </div>
-            <Link 
-              href="/admin/branches"
-              className="text-xs font-bold text-[#bd00ff] hover:underline hidden sm:inline"
-            >
-              Manage Branches →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {dashboardData.branchComparison.map((comp: any) => {
-              const maxRev = Math.max(...dashboardData.branchComparison.map((c: any) => c.revenue), 1);
-              const percent = Math.round((comp.revenue / maxRev) * 100);
-
-              return (
-                <div 
-                  key={comp.branch} 
-                  className="bg-gray-50/70 border border-gray-100 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-purple-200 transition-all"
-                >
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-bold text-base text-gray-900 flex items-center gap-1.5">
-                        📍 {comp.branch}
-                      </span>
-                      <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                        {comp.transactions} Orders
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1 mb-3">
-                      <span className="text-xs font-semibold text-gray-500">Completed Sales</span>
-                      <span className="text-2xl font-black text-gray-900">₱{comp.revenue.toLocaleString()}</span>
-                    </div>
-
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
-                      <div 
-                        className="bg-gradient-to-r from-purple-500 to-[#bd00ff] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.max(percent, 4)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-gray-200/60 flex justify-between items-center text-xs font-semibold text-gray-600">
-                    <span>Units Sold: <strong className="text-gray-900">{comp.unitsSold} units</strong></span>
-                    <button
-                      onClick={() => setSelectedBranch(comp.branch)}
-                      className="text-[#bd00ff] hover:underline text-xs font-bold cursor-pointer"
-                    >
-                      Filter Branch →
-                    </button>
-                  </div>
+        {/* Lower Section Grid: Cards on left, Table on right */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+          {/* Left Column: Stacked Cards */}
+          <div className="flex flex-col gap-6 lg:col-span-1">
+            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+              <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Transaction Count</h3>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
+                  <h4 className="text-4xl font-black text-[#111] mt-1">{dashboardData?.transactions?.total ?? 0}</h4>
                 </div>
-              );
-            })}
+                <div className="text-right flex flex-col gap-1">
+                  <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {dashboardData?.transactions?.online ?? 0}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
+              <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><span className="font-bold text-[22px] text-[#bd00ff]">₱</span> Revenue Breakdown</h3>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[#666] text-sm font-semibold">Total Revenue</p>
+                  <h4 className="text-4xl font-black text-[#111] mt-1">{formatCurrency(dashboardData?.breakdown?.total ?? 0)}</h4>
+                </div>
+                <div className="text-right flex flex-col gap-1.5">
+                  <p className="text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg">Retail: {formatCurrency(dashboardData?.breakdown?.retail ?? 0)}</p>
+                  <p className="text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg">Repair: {formatCurrency(dashboardData?.breakdown?.repair ?? 0)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Units Sold per Month */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col h-full">
+              <div className="mb-5 pb-4 border-b border-black/5">
+                <h3 className="text-lg text-[#111] font-bold">Units Sold per Month</h3>
+              </div>
+              <div className="w-full">
+                <table className="w-full border-collapse text-left">
+                  <thead>
+                    <tr>
+                      <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Month</th>
+                      <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5">Units Sold</th>
+                      <th className="py-3 px-4 font-semibold text-[#666] text-sm uppercase tracking-wide border-b border-black/5 hidden md:table-cell">Trend</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unitsSoldData.map((data, idx) => (
+                      <tr 
+                        key={idx} 
+                        className="border-b border-black/5 cursor-pointer hover:bg-black/5 transition-colors"
+                        onClick={() => setSelectedMonthData(data)}
+                      >
+                        <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.month}</td>
+                        <td className="py-3 px-4 font-medium text-[#111] text-sm">{data.units}</td>
+                        <td className="py-3 px-4 hidden md:table-cell">
+                          <div className={`font-bold text-sm flex items-center gap-1 ${
+                            data.trendUp === true ? 'text-green-600' : data.trendUp === false ? 'text-red-600' : 'text-gray-400'
+                          }`}>
+                            {data.trendUp === true && <TrendingUp size={16} />}
+                            {data.trendUp === false && <TrendingDown size={16} />}
+                            <span>{data.trend}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
-      )}
-    </div>
-      
+
+        {/* Multi-Branch Performance Comparison (Super Admin System-Wide View) */}
+        {isSuperAdmin && (!selectedBranch || selectedBranch === 'all') && dashboardData?.branchComparison && dashboardData.branchComparison.length > 0 && (
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
+            <div className="mb-6 pb-4 border-b border-black/5 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold text-[#111] flex items-center gap-2">
+                  <Building2 className="text-[#bd00ff]" size={22} /> Multi-Branch Performance Comparison
+                </h3>
+                <p className="text-sm text-[#666] mt-0.5">Live revenue, product units sold, and volume comparison across branches</p>
+              </div>
+              <Link 
+                href="/admin/branches"
+                className="text-xs font-bold text-[#bd00ff] hover:underline hidden sm:inline"
+              >
+                Manage Branches →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {dashboardData.branchComparison.map((comp: any) => {
+                const maxRev = Math.max(...dashboardData.branchComparison.map((c: any) => c.revenue), 1);
+                const percent = Math.round((comp.revenue / maxRev) * 100);
+
+                return (
+                  <div 
+                    key={comp.branch} 
+                    className="bg-gray-50/70 border border-gray-100 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-purple-200 transition-all"
+                  >
+                    <div>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="font-bold text-base text-gray-900 flex items-center gap-1.5">
+                          📍 {comp.branch}
+                        </span>
+                        <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                          {comp.transactions} Orders
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col gap-1 mb-3">
+                        <span className="text-xs font-semibold text-gray-500">Completed Sales</span>
+                        <span className="text-2xl font-black text-gray-900">{formatCurrency(comp.revenue)}</span>
+                      </div>
+
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
+                        <div 
+                          className="bg-gradient-to-r from-purple-500 to-[#bd00ff] h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.max(percent, 4)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-gray-200/60 flex justify-between items-center text-xs font-semibold text-gray-600">
+                      <span>Units Sold: <strong className="text-gray-900">{comp.unitsSold} units</strong></span>
+                      <button
+                        onClick={() => setSelectedBranch(comp.branch)}
+                        className="text-[#bd00ff] hover:underline text-xs font-bold cursor-pointer"
+                      >
+                        Filter Branch →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+        
       {selectedMonthData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedMonthData(null)}>
           <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -325,9 +332,12 @@ export default function AdminDashboard() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#666] font-medium">Monthly Trend</span>
-                <div className={`font-bold text-lg flex items-center gap-1.5 ${selectedMonthData.trendUp ? 'text-green-600' : 'text-red-600'}`}>
-                  {selectedMonthData.trendUp ? <TrendingUp size={20} /> : <TrendingDown size={20} />} 
-                  {selectedMonthData.trend}
+                <div className={`font-bold text-lg flex items-center gap-1.5 ${
+                  selectedMonthData.trendUp === true ? 'text-green-600' : selectedMonthData.trendUp === false ? 'text-red-600' : 'text-gray-400'
+                }`}>
+                  {selectedMonthData.trendUp === true && <TrendingUp size={20} />}
+                  {selectedMonthData.trendUp === false && <TrendingDown size={20} />}
+                  <span>{selectedMonthData.trend}</span>
                 </div>
               </div>
             </div>
@@ -370,7 +380,7 @@ function ChartBar({ label, height, value }: { label: string, height: string, val
       >
         {value !== undefined && (
           <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
-            ₱{value.toLocaleString()}
+            {formatCurrency(value)}
           </div>
         )}
       </div>

@@ -7,23 +7,32 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const session = await getSession();
-    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+    if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN' && session.role !== 'CASHIER')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const isSuperAdmin = session.role === 'SUPER_ADMIN';
 
     const { searchParams } = new URL(req.url);
     const branchQuery = searchParams.get('branch');
 
+    // Strict branch scoping:
+    // Super Admin can view specific branch or all branches.
+    // Branch Admin / Cashier are strictly locked to their assigned branch.
     let targetBranch: string | null = null;
     if (isSuperAdmin) {
       if (branchQuery && branchQuery !== 'all') {
-        targetBranch = branchQuery;
+        targetBranch = branchQuery.trim();
       }
     } else {
-      targetBranch = session?.branch || 'Tagoloan';
+      targetBranch = (session.branch || 'Tagoloan').trim();
     }
 
-    const whereClause: any = {};
+    const whereClause: any = {
+      status: { notIn: ['Cancelled', 'Voided', 'Failed', 'Unpaid', 'Pending Pickup'] }
+    };
     if (targetBranch) {
-      whereClause.branch = targetBranch;
+      whereClause.branch = { equals: targetBranch, mode: 'insensitive' as const };
     }
 
     const now = new Date();
@@ -61,21 +70,26 @@ export async function GET(req: Request) {
     }
 
     const result = lastMonths.slice(0, 4).map((m, i) => {
-      let trendStr = "0%";
-      let trendUp = true;
+      let trendStr = "—";
+      let trendUp: boolean | null = null;
 
       const prevMonthUnits = lastMonths[i + 1]?.units || 0;
       if (prevMonthUnits > 0) {
         const diff = m.units - prevMonthUnits;
-        const percent = Math.round((Math.abs(diff) / prevMonthUnits) * 100);
-        trendStr = `${percent}%`;
-        trendUp = diff >= 0;
+        if (diff === 0) {
+          trendStr = "0%";
+          trendUp = true;
+        } else {
+          const percent = Math.round((Math.abs(diff) / prevMonthUnits) * 100);
+          trendStr = `${percent}%`;
+          trendUp = diff > 0;
+        }
       } else if (m.units > 0) {
         trendStr = "100%";
         trendUp = true;
       } else {
-        trendStr = "0%";
-        trendUp = true;
+        trendStr = "—";
+        trendUp = null;
       }
 
       return {
@@ -92,3 +106,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch units sold' }, { status: 500 });
   }
 }
+
