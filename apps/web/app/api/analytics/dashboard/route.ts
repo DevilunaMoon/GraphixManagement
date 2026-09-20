@@ -110,7 +110,7 @@ export async function GET(req: Request) {
     const monthlyData = Array(12).fill(0);
 
     allPurchases.forEach(p => {
-      const amt = p.amount > 0 ? p.amount : (p.device?.price || 0);
+      const amt = p.amount || 0;
       totalRetail += amt;
       const createdAt = new Date(p.createdAt);
 
@@ -214,7 +214,7 @@ export async function GET(req: Request) {
         if (!branchStats[matchKey]) {
           branchStats[matchKey] = { branch: matchKey, revenue: 0, unitsSold: 0, transactions: 0 };
         }
-        const amt = p.amount > 0 ? p.amount : (p.device?.price || 0);
+        const amt = p.amount || 0;
         branchStats[matchKey].revenue += amt;
         branchStats[matchKey].unitsSold += (p.quantity || 1);
         branchStats[matchKey].transactions += 1;

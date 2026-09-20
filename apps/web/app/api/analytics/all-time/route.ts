@@ -134,7 +134,7 @@ export async function GET(req: Request) {
     let physicalCount = 0;
 
     allPurchases.forEach(p => {
-      const amt = p.amount > 0 ? p.amount : (p.device?.price || 0);
+      const amt = p.amount || 0;
       totalRetail += amt;
       allTimeSales += amt;
       
@@ -176,7 +176,7 @@ export async function GET(req: Request) {
     let gcashCount = 0;
 
     filteredPurchases.forEach(p => {
-      const amt = p.amount > 0 ? p.amount : (p.device?.price || 0);
+      const amt = p.amount || 0;
       const pType = (p.paymentType || '').toLowerCase();
       const pSource = (p.source || '').toLowerCase();
 
@@ -223,7 +223,7 @@ export async function GET(req: Request) {
         const branchPurchases = filteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
         const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
 
-        let rev = branchPurchases.reduce((sum, p) => sum + (p.amount > 0 ? p.amount : (p.device?.price || 0)), 0);
+        let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
         rev += branchRepairs.reduce((sum, r) => {
           const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
           return sum + (isNaN(num) ? 0 : num);
@@ -256,7 +256,7 @@ export async function GET(req: Request) {
           const bPurchases = allBranchesPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
           const bRepairs = allBranchesRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
 
-          let rev = bPurchases.reduce((sum, p) => sum + (p.amount > 0 ? p.amount : (p.device?.price || 0)), 0);
+          let rev = bPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
           rev += bRepairs.reduce((sum, r) => {
             const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
             return sum + (isNaN(num) ? 0 : num);
@@ -275,7 +275,7 @@ export async function GET(req: Request) {
       const branchPurchases = filteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
       const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
 
-      let rev = branchPurchases.reduce((sum, p) => sum + (p.amount > 0 ? p.amount : (p.device?.price || 0)), 0);
+      let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
       rev += branchRepairs.reduce((sum, r) => {
         const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
         return sum + (isNaN(num) ? 0 : num);
