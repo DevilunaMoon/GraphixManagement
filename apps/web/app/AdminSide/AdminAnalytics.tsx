@@ -518,25 +518,35 @@ function ChartBar({ label, height, color }: { label: string, height: () => strin
   );
 }
 
+const BEST_SELLER_COLORS = [
+  '#bd00ff', // 1st: Primary Graphix Purple (Highest Seller - Kept Exact)
+  '#00b4d8', // 2nd: Vibrant Sky Blue
+  '#10b981', // 3rd: Vibrant Emerald Green
+  '#f97316', // 4th: Vibrant Warm Orange
+  '#f43f5e', // 5th: Vibrant Coral Red
+];
+
 function BestSellersPieChart({ products }: { products: { name: string, sold: number }[] }) {
   if (!products || products.length === 0) {
     return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">Loading data...</div>;
   }
 
-  const colors = ['#bd00ff', '#01f0ff', '#5c0099', '#f000ff', '#8b00cc'];
-  const total = products.reduce((sum, p) => sum + p.sold, 0);
+  // Sort descending by units sold to ensure rank 1 always receives the primary color dynamically
+  const sortedProducts = [...products].sort((a, b) => b.sold - a.sold);
+  const total = sortedProducts.reduce((sum, p) => sum + p.sold, 0);
   
   if (total === 0) {
     return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">No sales yet this year</div>;
   }
 
   let currentPercentage = 0;
-  const gradientStops = products.map((p, i) => {
+  const gradientStops = sortedProducts.map((p, i) => {
     const percentage = (p.sold / total) * 100;
     const start = currentPercentage;
     const end = currentPercentage + percentage;
     currentPercentage = end;
-    return `${colors[i % colors.length]} ${start}% ${end}%`;
+    const color = BEST_SELLER_COLORS[i % BEST_SELLER_COLORS.length];
+    return `${color} ${start}% ${end}%`;
   }).join(', ');
 
   return (
@@ -546,18 +556,21 @@ function BestSellersPieChart({ products }: { products: { name: string, sold: num
         style={{ background: `conic-gradient(${gradientStops})` }}
       ></div>
       <div className="w-full flex flex-col gap-3">
-        {products.map((p, i) => (
-          <div key={i} className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <span className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: colors[i % colors.length] }}></span>
-              <span className="font-semibold text-gray-700 truncate max-w-[130px]">{p.name}</span>
+        {sortedProducts.map((p, i) => {
+          const itemColor = BEST_SELLER_COLORS[i % BEST_SELLER_COLORS.length];
+          return (
+            <div key={i} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: itemColor }}></span>
+                <span className="font-semibold text-gray-700 truncate max-w-[130px]" title={p.name}>{p.name}</span>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-gray-400 text-xs">{p.sold} sold</span>
+                <span className="font-black text-[#111] w-12 text-right">{((p.sold / total) * 100).toFixed(0)}%</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400 text-xs">{p.sold} sold</span>
-              <span className="font-black text-[#111] w-12 text-right">{((p.sold / total) * 100).toFixed(0)}%</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
