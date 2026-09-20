@@ -12,6 +12,27 @@ const formatCurrency = (val: number) => {
   });
 };
 
+function getResponsiveNumberClass(val: string | number, variant: 'compact' | 'standard' = 'compact') {
+  const str = String(val ?? '');
+  const len = str.length;
+
+  if (variant === 'compact') {
+    // Used in 6-column grid on Dashboard
+    if (len <= 6) return 'text-2xl xl:text-3xl';
+    if (len <= 9) return 'text-xl xl:text-2xl';
+    if (len <= 13) return 'text-lg xl:text-xl';
+    if (len <= 17) return 'text-base xl:text-lg';
+    return 'text-sm xl:text-base';
+  }
+
+  // Used in standard / wider containers (Analytics cards, Revenue Breakdown, etc.)
+  if (len <= 7) return 'text-2xl sm:text-3xl lg:text-[32px]';
+  if (len <= 11) return 'text-xl sm:text-2xl lg:text-3xl';
+  if (len <= 15) return 'text-lg sm:text-xl lg:text-2xl';
+  if (len <= 19) return 'text-base sm:text-lg lg:text-xl';
+  return 'text-sm sm:text-base lg:text-lg';
+}
+
 export default function AdminDashboard() {
   const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
   const [userCount, setUserCount] = useState<string | number>("...");
@@ -52,17 +73,19 @@ export default function AdminDashboard() {
       .catch(err => console.error("Failed to fetch dashboard data:", err));
   }, [selectedBranch]);
 
+  const totalRevenueValue = formatCurrency(dashboardData?.summary?.totalSales ?? dashboardData?.breakdown?.total ?? 0);
+
   return (
     <>
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8 font-['Inter']">
         {/* Centralized Multi-Branch Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard 
             icon={<span className="text-xl font-bold">₱</span>}
             label="Total Sales" 
-            value={formatCurrency(dashboardData?.summary?.totalSales ?? dashboardData?.breakdown?.total ?? 0)} 
+            value={totalRevenueValue} 
             subText={
-              <span className="text-purple-700 font-semibold text-[11px]">
+              <span className="text-purple-700 font-semibold text-[11px] truncate block">
                 Today: {formatCurrency(dashboardData?.sales?.today || 0)}
               </span>
             }
@@ -74,7 +97,7 @@ export default function AdminDashboard() {
             label="Units Sold" 
             value={`${dashboardData?.summary?.totalUnitsSold ?? 0} pcs`} 
             subText={
-              <span className="text-blue-700 font-semibold text-[11px]">
+              <span className="text-blue-700 font-semibold text-[11px] truncate block">
                 {dashboardData?.summary?.totalOrders ?? 0} purchases
               </span>
             }
@@ -86,20 +109,20 @@ export default function AdminDashboard() {
             label="Total Orders" 
             value={`${dashboardData?.summary?.totalOrders ?? dashboardData?.transactions?.total ?? 0}`} 
             subText={
-              <span className="text-gray-500 font-semibold text-[11px]">
+              <span className="text-gray-500 font-semibold text-[11px] truncate block">
                 Physical & Online
               </span>
             }
             iconBg="bg-purple-100" 
             iconColor="text-purple-700" 
           />
-          <Link href="/admin/inventory" className="block transition-transform hover:-translate-y-1">
+          <Link href="/admin/inventory" className="block transition-transform hover:-translate-y-1 no-underline">
             <StatCard 
               icon={<Building2 size={20} />} 
               label="Total Inventory" 
               value={`${dashboardData?.summary?.totalInventory ?? 0} pcs`} 
               subText={
-                <span className="text-indigo-600 font-semibold text-[11px]">
+                <span className="text-indigo-600 font-semibold text-[11px] truncate block">
                   Warehouse & Stores
                 </span>
               }
@@ -107,13 +130,13 @@ export default function AdminDashboard() {
               iconColor="text-indigo-700" 
             />
           </Link>
-          <Link href="/admin/inventory" className="block transition-transform hover:-translate-y-1">
+          <Link href="/admin/inventory" className="block transition-transform hover:-translate-y-1 no-underline">
             <StatCard 
               icon={<TrendingDown size={20} />} 
               label="Low Stock" 
               value={`${dashboardData?.summary?.lowStockProducts ?? 0}`} 
               subText={
-                <span className="text-rose-600 font-bold text-[11px]">
+                <span className="text-rose-600 font-bold text-[11px] truncate block">
                   Needs restock (&lt; 5 pcs)
                 </span>
               }
@@ -121,13 +144,13 @@ export default function AdminDashboard() {
               iconColor="text-rose-600" 
             />
           </Link>
-          <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1">
+          <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1 no-underline">
             <StatCard 
               icon={<Users size={20} />} 
               label="Active Users" 
               value={`${dashboardData?.summary?.activeUsers ?? userCount}`} 
               subText={
-                <span className="text-sky-600 font-semibold text-[11px]">
+                <span className="text-sky-600 font-semibold text-[11px] truncate block">
                   System-wide accounts
                 </span>
               }
@@ -180,27 +203,40 @@ export default function AdminDashboard() {
           <div className="flex flex-col gap-6 lg:col-span-1">
             <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
               <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Transaction Count</h3>
-              <div className="flex justify-between items-end">
-                <div>
+              <div className="flex justify-between items-end gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
-                  <h4 className="text-4xl font-black text-[#111] mt-1">{dashboardData?.transactions?.total ?? 0}</h4>
+                  <h4 className={`font-black text-[#111] mt-1 tracking-tight truncate ${getResponsiveNumberClass(dashboardData?.transactions?.total ?? 0, 'standard')}`}>
+                    {dashboardData?.transactions?.total ?? 0}
+                  </h4>
                 </div>
-                <div className="text-right flex flex-col gap-1">
-                  <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg">Online: {dashboardData?.transactions?.online ?? 0}</p>
+                <div className="text-right flex flex-col gap-1 shrink-0">
+                  <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg whitespace-nowrap">
+                    Online: {dashboardData?.transactions?.online ?? 0}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
               <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><span className="font-bold text-[22px] text-[#bd00ff]">₱</span> Revenue Breakdown</h3>
-              <div className="flex justify-between items-end">
-                <div>
+              <div className="flex justify-between items-end gap-3">
+                <div className="min-w-0 flex-1">
                   <p className="text-[#666] text-sm font-semibold">Total Revenue</p>
-                  <h4 className="text-4xl font-black text-[#111] mt-1">{formatCurrency(dashboardData?.breakdown?.total ?? 0)}</h4>
+                  <h4 
+                    className={`font-black text-[#111] mt-1 tracking-tight truncate ${getResponsiveNumberClass(totalRevenueValue, 'standard')}`}
+                    title={totalRevenueValue}
+                  >
+                    {totalRevenueValue}
+                  </h4>
                 </div>
-                <div className="text-right flex flex-col gap-1.5">
-                  <p className="text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg">Retail: {formatCurrency(dashboardData?.breakdown?.retail ?? 0)}</p>
-                  <p className="text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg">Repair: {formatCurrency(dashboardData?.breakdown?.repair ?? 0)}</p>
+                <div className="text-right flex flex-col gap-1.5 shrink-0">
+                  <p className="text-xs sm:text-sm font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg whitespace-nowrap">
+                    Retail: {formatCurrency(dashboardData?.breakdown?.retail ?? 0)}
+                  </p>
+                  <p className="text-xs sm:text-sm font-bold bg-purple-50 text-purple-600 px-3 py-1 rounded-lg whitespace-nowrap">
+                    Repair: {formatCurrency(dashboardData?.breakdown?.repair ?? 0)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -270,6 +306,7 @@ export default function AdminDashboard() {
               {dashboardData.branchComparison.map((comp: any) => {
                 const maxRev = Math.max(...dashboardData.branchComparison.map((c: any) => c.revenue), 1);
                 const percent = Math.round((comp.revenue / maxRev) * 100);
+                const compRevFormatted = formatCurrency(comp.revenue);
 
                 return (
                   <div 
@@ -288,7 +325,12 @@ export default function AdminDashboard() {
 
                       <div className="flex flex-col gap-1 mb-3">
                         <span className="text-xs font-semibold text-gray-500">Completed Sales</span>
-                        <span className="text-2xl font-black text-gray-900">{formatCurrency(comp.revenue)}</span>
+                        <span 
+                          className={`font-black text-gray-900 tracking-tight truncate ${getResponsiveNumberClass(compRevFormatted, 'standard')}`}
+                          title={compRevFormatted}
+                        >
+                          {compRevFormatted}
+                        </span>
                       </div>
 
                       <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
@@ -356,17 +398,40 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: React.ReactNode, label: string, value: string, subText?: React.ReactNode, iconBg: string, iconColor: string }) {
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  subText, 
+  iconBg, 
+  iconColor,
+  variant = 'compact'
+}: { 
+  icon: React.ReactNode, 
+  label: string, 
+  value: string, 
+  subText?: React.ReactNode, 
+  iconBg: string, 
+  iconColor: string,
+  variant?: 'compact' | 'standard'
+}) {
+  const valueClass = getResponsiveNumberClass(value, variant);
+
   return (
-    <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col gap-4 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full">
-      <div className={`w-11 h-11 rounded-xl flex justify-center items-center ${iconBg} ${iconColor}`}>
-        {icon}
-      </div>
+    <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl flex flex-col justify-between gap-3 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full overflow-hidden">
       <div>
-        <span className="text-sm font-semibold text-[#666]">{label}</span>
-        <h3 className="text-3xl font-extrabold text-[#111] mt-1">{value}</h3>
-        {subText && <div className="mt-2 text-xs font-semibold">{subText}</div>}
+        <div className={`w-10 h-10 rounded-xl flex justify-center items-center mb-3 ${iconBg} ${iconColor}`}>
+          {icon}
+        </div>
+        <span className="text-xs font-bold text-[#666] uppercase tracking-wider block truncate">{label}</span>
+        <h3 
+          className={`font-black text-[#111] mt-1 tracking-tight leading-tight whitespace-nowrap truncate ${valueClass}`}
+          title={value}
+        >
+          {value}
+        </h3>
       </div>
+      {subText && <div className="mt-1 text-xs font-semibold overflow-hidden">{subText}</div>}
     </div>
   );
 }

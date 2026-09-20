@@ -22,6 +22,24 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 
+const formatCurrency = (val: number) => {
+  return '₱' + (val || 0).toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+function getResponsiveNumberClass(val: string | number) {
+  const str = String(val ?? '');
+  const len = str.length;
+
+  if (len <= 7) return 'text-2xl sm:text-3xl lg:text-[32px]';
+  if (len <= 11) return 'text-xl sm:text-2xl lg:text-3xl';
+  if (len <= 15) return 'text-lg sm:text-xl lg:text-2xl';
+  if (len <= 19) return 'text-base sm:text-lg lg:text-xl';
+  return 'text-sm sm:text-base lg:text-lg';
+}
+
 export default function AdminAnalytics() {
   const { selectedBranch, isSuperAdmin, userBranch } = useBranch();
   const [userCount, setUserCount] = useState<string | number>("...");
@@ -212,10 +230,10 @@ export default function AdminAnalytics() {
           <StatCard 
             icon={<span className="text-[22px] font-bold">₱</span>}
             label="This Year's Sales" 
-            value={`₱${(analyticsData?.sales?.thisYear ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+            value={formatCurrency(analyticsData?.sales?.thisYear ?? 0)} 
             subText={
-              <span className={(analyticsData?.sales?.thisYear ?? 0) >= (analyticsData?.sales?.lastYear ?? 0) ? 'text-green-600' : 'text-red-500'}>
-                vs Last Year: ₱{(analyticsData?.sales?.lastYear ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className={`truncate block ${(analyticsData?.sales?.thisYear ?? 0) >= (analyticsData?.sales?.lastYear ?? 0) ? 'text-green-600' : 'text-red-500'}`}>
+                vs Last Year: {formatCurrency(analyticsData?.sales?.lastYear ?? 0)}
               </span>
             }
             iconBg="bg-green-100" 
@@ -224,14 +242,14 @@ export default function AdminAnalytics() {
           <StatCard 
             icon={<span className="text-[22px] font-bold">₱</span>}
             label="Last Year's Sales" 
-            value={`₱${(analyticsData?.sales?.lastYear ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+            value={formatCurrency(analyticsData?.sales?.lastYear ?? 0)} 
             iconBg="bg-blue-100" 
             iconColor="text-blue-600" 
           />
           <StatCard 
             icon={<span className="text-[22px] font-bold">₱</span>}
             label="All-Time Sales" 
-            value={`₱${(analyticsData?.sales?.allTime ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+            value={formatCurrency(analyticsData?.sales?.allTime ?? 0)} 
             iconBg="bg-purple-100" 
             iconColor="text-purple-600" 
           />
@@ -293,10 +311,18 @@ export default function AdminAnalytics() {
                       <span className="text-base">💵</span>
                       <span className="text-sm font-bold text-gray-800">Cash Payment</span>
                     </div>
-                    <div className="text-3xl font-black text-[#111]">
-                      ₱{(analyticsData?.paymentMethods?.cash?.totalAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                    {(() => {
+                      const cashVal = formatCurrency(analyticsData?.paymentMethods?.cash?.totalAmount ?? 0);
+                      return (
+                        <div 
+                          className={`font-black text-[#111] tracking-tight leading-tight whitespace-nowrap truncate ${getResponsiveNumberClass(cashVal)}`}
+                          title={cashVal}
+                        >
+                          {cashVal}
+                        </div>
+                      );
+                    })()}
+                    <div className="text-xs font-semibold text-gray-500 mt-1">
                       {analyticsData?.paymentMethods?.cash?.transactionCount ?? 0} transactions
                     </div>
                   </div>
@@ -307,10 +333,18 @@ export default function AdminAnalytics() {
                       <span className="text-base">📱</span>
                       <span className="text-sm font-bold text-gray-800">GCash Payment</span>
                     </div>
-                    <div className="text-3xl font-black text-[#111]">
-                      ₱{(analyticsData?.paymentMethods?.gcash?.totalAmount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                    {(() => {
+                      const gcashVal = formatCurrency(analyticsData?.paymentMethods?.gcash?.totalAmount ?? 0);
+                      return (
+                        <div 
+                          className={`font-black text-[#111] tracking-tight leading-tight whitespace-nowrap truncate ${getResponsiveNumberClass(gcashVal)}`}
+                          title={gcashVal}
+                        >
+                          {gcashVal}
+                        </div>
+                      );
+                    })()}
+                    <div className="text-xs font-semibold text-gray-500 mt-1">
                       {analyticsData?.paymentMethods?.gcash?.transactionCount ?? 0} transactions
                     </div>
                   </div>
@@ -332,19 +366,25 @@ export default function AdminAnalytics() {
 
                 <div className="flex flex-col gap-4 divide-y divide-gray-100">
                   {(analyticsData?.branchPerformance && analyticsData.branchPerformance.length > 0) ? (
-                    analyticsData.branchPerformance.map((bp: any) => (
-                      <div key={bp.branch} className="pt-3 first:pt-0">
-                        <div className="text-sm font-bold text-gray-800 mb-0.5 flex items-center gap-1.5">
-                          <span>📍</span> {bp.branch}
+                    analyticsData.branchPerformance.map((bp: any) => {
+                      const bpVal = formatCurrency(bp.revenue ?? 0);
+                      return (
+                        <div key={bp.branch} className="pt-3 first:pt-0">
+                          <div className="text-sm font-bold text-gray-800 mb-0.5 flex items-center gap-1.5">
+                            <span>📍</span> {bp.branch}
+                          </div>
+                          <div 
+                            className={`font-black text-[#111] tracking-tight leading-tight whitespace-nowrap truncate ${getResponsiveNumberClass(bpVal)}`}
+                            title={bpVal}
+                          >
+                            {bpVal}
+                          </div>
+                          <div className="text-xs font-semibold text-gray-500 mt-0.5">
+                            {bp.orders ?? 0} orders
+                          </div>
                         </div>
-                        <div className="text-2xl font-black text-[#111]">
-                          ₱{(bp.revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                        <div className="text-xs font-semibold text-gray-500 mt-0.5">
-                          {bp.orders ?? 0} orders
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-xs font-semibold text-gray-400 py-3">
                       No branch performance data recorded yet.
@@ -436,16 +476,23 @@ export default function AdminAnalytics() {
 }
 
 function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: React.ReactNode, label: string, value: string, subText?: React.ReactNode, iconBg: string, iconColor: string }) {
+  const valueClass = getResponsiveNumberClass(value);
+
   return (
-    <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col gap-4 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full">
-      <div className={`w-11 h-11 rounded-xl flex justify-center items-center ${iconBg} ${iconColor}`}>
-        {icon}
-      </div>
+    <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col justify-between gap-3 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full overflow-hidden">
       <div>
-        <span className="text-sm font-semibold text-[#666]">{label}</span>
-        <h3 className="text-3xl font-extrabold text-[#111] mt-1">{value}</h3>
-        {subText && <div className="mt-2 text-xs font-semibold">{subText}</div>}
+        <div className={`w-11 h-11 rounded-xl flex justify-center items-center mb-3 ${iconBg} ${iconColor}`}>
+          {icon}
+        </div>
+        <span className="text-xs font-bold text-[#666] uppercase tracking-wider block truncate">{label}</span>
+        <h3 
+          className={`font-black text-[#111] mt-1 tracking-tight leading-tight whitespace-nowrap truncate ${valueClass}`}
+          title={value}
+        >
+          {value}
+        </h3>
       </div>
+      {subText && <div className="mt-1 text-xs font-semibold overflow-hidden">{subText}</div>}
     </div>
   );
 }
@@ -515,3 +562,4 @@ function BestSellersPieChart({ products }: { products: { name: string, sold: num
     </div>
   );
 }
+
