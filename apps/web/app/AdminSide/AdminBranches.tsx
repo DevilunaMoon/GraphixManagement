@@ -313,14 +313,6 @@ export default function AdminBranches() {
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
-          {isSuperAdmin && (
-            <button
-              onClick={handleOpenAdd}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#bd00ff] hover:bg-purple-700 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-purple-200 transition-all cursor-pointer border-none"
-            >
-              <Plus size={18} /> Add New Branch
-            </button>
-          )}
         </div>
       </div>
 
@@ -334,7 +326,7 @@ export default function AdminBranches() {
           <Building2 size={48} className="mx-auto text-gray-300 mb-3" />
           <h3 className="text-lg font-bold text-gray-700">No Branches Found</h3>
           <p className="text-sm text-gray-500 mt-1">
-            {isSuperAdmin ? 'Click "Add New Branch" to register a branch.' : 'No branch record found for your account.'}
+            No branch records found in the system.
           </p>
         </div>
       ) : filteredBranches.length === 1 ? (
