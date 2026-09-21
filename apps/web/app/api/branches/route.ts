@@ -106,7 +106,15 @@ export async function POST(req: Request) {
     await logActivity({
       action: 'CREATE_BRANCH',
       description: `Created new branch '${newBranch.name}'`,
-      details: JSON.stringify({ branchId: newBranch.id, address: newBranch.address, status: newBranch.status }),
+      details: JSON.stringify({
+        branchName: newBranch.name,
+        address: newBranch.address || 'N/A',
+        phone: newBranch.phone || 'N/A',
+        email: newBranch.email || 'N/A',
+        status: newBranch.status,
+        gcashName: newBranch.gcashName,
+        gcashNumber: newBranch.gcashNumber
+      }),
       branch: newBranch.name,
       userId: session.userId,
       userRole: session.role

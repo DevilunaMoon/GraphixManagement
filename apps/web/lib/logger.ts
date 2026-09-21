@@ -21,14 +21,15 @@ export async function logActivity(options: LogOptions) {
         userId = userId || session.userId;
         userRole = userRole || session.role;
         branch = branch || session.branch;
-        if (!userName && userId) {
-          const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { name: true, email: true }
-          });
-          userName = user?.name || user?.email || 'Unknown User';
-        }
       }
+    }
+
+    if (!userName && userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, email: true }
+      });
+      userName = user?.name || user?.email || (userRole === 'SUPER_ADMIN' ? 'Super Admin' : 'System');
     }
 
     await prisma.activityLog.create({
@@ -38,7 +39,7 @@ export async function logActivity(options: LogOptions) {
         details: options.details || null,
         branch: branch || 'Tagoloan',
         userId: userId || null,
-        userName: userName || 'System',
+        userName: userName || (userRole === 'SUPER_ADMIN' ? 'Super Admin' : 'System'),
         userRole: userRole || 'SUPER_ADMIN'
       }
     });
