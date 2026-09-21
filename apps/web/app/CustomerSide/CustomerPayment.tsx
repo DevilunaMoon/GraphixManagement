@@ -25,7 +25,11 @@ import {
   RefreshCw,
   Eye,
   FileUp,
-  Loader2
+  Loader2,
+  HelpCircle,
+  Camera,
+  ArrowDown,
+  Info
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QRCodeDisplay from '../../components/Common/QRCodeDisplay';
@@ -88,6 +92,7 @@ function CustomerPaymentContent() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [showReceiptPreviewModal, setShowReceiptPreviewModal] = useState(false);
+  const [showGcashGuideModal, setShowGcashGuideModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadAreaRef = useRef<HTMLDivElement>(null);
 
@@ -681,14 +686,25 @@ function CustomerPaymentContent() {
 
                 {/* Section 2.1: GCash Payment Receipt Upload */}
                 <div ref={uploadAreaRef} className="flex flex-col gap-2 pt-2 border-t border-blue-100">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
                       <FileUp size={15} className="text-[#005ce6]" />
                       Upload GCash Payment Receipt
                     </label>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full">
-                      Required
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowGcashGuideModal(true)}
+                        className="text-[11px] font-extrabold text-[#bd00ff] hover:text-[#9c00d6] bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs hover:shadow-xs"
+                        title="View step-by-step GCash guide"
+                      >
+                        <HelpCircle size={13} className="text-[#bd00ff]" />
+                        <span>How to Upload GCash Receipt?</span>
+                      </button>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full">
+                        Required
+                      </span>
+                    </div>
                   </div>
                   <p className="text-[11px] text-gray-500 m-0">
                     Upload your completed GCash payment screenshot for Cashier verification before store pickup.
@@ -1210,6 +1226,259 @@ function CustomerPaymentContent() {
                 className="px-5 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl border-none cursor-pointer transition-colors shadow-xs"
               >
                 I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step-by-Step GCash Payment Guide Modal */}
+      {showGcashGuideModal && (
+        <div 
+          className="fixed inset-0 z-[75] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowGcashGuideModal(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-gray-100 flex flex-col overflow-hidden max-h-[90vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-5 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-blue-50/50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#005ce6] text-white flex items-center justify-center font-black text-lg shadow-md shrink-0">
+                  G
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-gray-900 m-0">
+                    How to Upload Your GCash Receipt
+                  </h3>
+                  <p className="text-xs text-gray-500 m-0 mt-0.5">
+                    Follow these steps after completing your GCash payment to submit your payment for verification.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGcashGuideModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer border-none bg-transparent shrink-0"
+                title="Close guide"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content - Scrollable */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-gray-700 text-xs">
+              
+              {/* Sequential Steps (1 to 4) */}
+              <div className="flex flex-col gap-3.5">
+                
+                {/* Step 1 */}
+                <div className="bg-gray-50/80 border border-gray-200/80 rounded-2xl p-4 flex gap-3.5 items-start">
+                  <div className="w-7 h-7 rounded-xl bg-[#005ce6] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    1
+                  </div>
+                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-gray-900">
+                        ① Pay with GCash
+                      </span>
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                        GCash App
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 m-0 leading-relaxed">
+                      Open your GCash app and complete the payment using the provided GCash payment details or QR code.
+                    </p>
+                    <div className="bg-white rounded-xl p-2.5 border border-blue-100 flex items-center justify-between text-[11px] font-mono mt-1">
+                      <span className="text-gray-500">Merchant: <strong className="text-gray-800">{activeGcashName}</strong></span>
+                      <span className="text-[#005ce6] font-bold">{activeGcashNumber}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="bg-gray-50/80 border border-gray-200/80 rounded-2xl p-4 flex gap-3.5 items-start">
+                  <div className="w-7 h-7 rounded-xl bg-[#005ce6] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    2
+                  </div>
+                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-gray-900">
+                        ② Screenshot Your GCash Transaction Receipt
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Camera size={11} /> Screenshot
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 m-0 leading-relaxed">
+                      After your payment is successful, open the GCash transaction receipt or confirmation screen and take a screenshot.
+                    </p>
+                    <div className="bg-white rounded-xl p-3 border border-emerald-100 flex flex-col gap-1.5 mt-1">
+                      <span className="text-[11px] font-bold text-gray-800">Your screenshot should clearly show:</span>
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px] text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                          <span>Amount paid (₱{finalTotal.toLocaleString()})</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                          <span>Transaction / Ref No.</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                          <span>Date and time</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <CheckCircle2 size={13} className="text-emerald-500 shrink-0" />
+                          <span>Recipient / Merchant info</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-2 bg-amber-50/80 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium">
+                      ⚠️ <strong>Reminder:</strong> Please upload the <strong>successful transaction receipt</strong>, not the GCash QR code or payment screen before completing the transaction.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="bg-gray-50/80 border border-gray-200/80 rounded-2xl p-4 flex gap-3.5 items-start">
+                  <div className="w-7 h-7 rounded-xl bg-[#bd00ff] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    3
+                  </div>
+                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-gray-900">
+                        ③ Upload Your GCash Receipt
+                      </span>
+                      <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">
+                        JPG, PNG, JPEG
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 m-0 leading-relaxed">
+                      Return to Graphix and upload the screenshot of your successful GCash transaction receipt using the <strong>Upload GCash Receipt</strong> dropzone.
+                    </p>
+                    <p className="text-[11px] text-gray-500 m-0">
+                      After selecting your file, you can preview the image, zoom in, or replace/remove it anytime before submitting.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Step 4 */}
+                <div className="bg-gray-50/80 border border-gray-200/80 rounded-2xl p-4 flex gap-3.5 items-start">
+                  <div className="w-7 h-7 rounded-xl bg-[#bd00ff] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    4
+                  </div>
+                  <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-gray-900">
+                        ④ Submit Your Receipt
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        Verification Queue
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 m-0 leading-relaxed">
+                      After selecting your receipt image, review the uploaded image and click <strong className="text-gray-900 font-extrabold">Submit Payment for Verification</strong>.
+                    </p>
+                    <p className="text-[11px] text-gray-500 m-0">
+                      Your uploaded GCash receipt will be reviewed by a Graphix Cashier. Uploading the receipt does not automatically confirm your payment.
+                    </p>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* What Happens After Submission Section (Steps 5 to 7) */}
+              <div className="bg-gradient-to-b from-purple-50/50 to-white border border-purple-100 rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-purple-100 text-[#bd00ff] rounded-lg">
+                    <ShieldCheck size={16} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider m-0">
+                      What Happens After Submission?
+                    </h4>
+                    <span className="text-[11px] text-gray-500">
+                      Here is the complete process after you submit your receipt:
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  {/* Step 5 */}
+                  <div className="bg-white rounded-xl p-3 border border-purple-100 shadow-2xs flex flex-col gap-1.5 text-center items-center">
+                    <div className="w-6 h-6 rounded-full bg-purple-100 text-[#bd00ff] font-extrabold text-xs flex items-center justify-center">
+                      5
+                    </div>
+                    <span className="font-extrabold text-xs text-gray-900">
+                      ⑤ Cashier Verifies Payment
+                    </span>
+                    <span className="text-[10px] text-gray-500 leading-tight">
+                      Branch staff reviews the uploaded receipt against the order amount.
+                    </span>
+                  </div>
+
+                  {/* Step 6 */}
+                  <div className="bg-white rounded-xl p-3 border border-purple-100 shadow-2xs flex flex-col gap-1.5 text-center items-center">
+                    <div className="w-6 h-6 rounded-full bg-blue-100 text-[#005ce6] font-extrabold text-xs flex items-center justify-center">
+                      6
+                    </div>
+                    <span className="font-extrabold text-xs text-gray-900">
+                      ⑥ Graphix Store Receipt Generated
+                    </span>
+                    <span className="text-[10px] text-gray-500 leading-tight">
+                      Official Sales Invoice PDF is issued & unlocked in your account.
+                    </span>
+                  </div>
+
+                  {/* Step 7 */}
+                  <div className="bg-white rounded-xl p-3 border border-emerald-100 shadow-2xs flex flex-col gap-1.5 text-center items-center">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 font-extrabold text-xs flex items-center justify-center">
+                      7
+                    </div>
+                    <span className="font-extrabold text-xs text-gray-900">
+                      ⑦ Ready for Pickup
+                    </span>
+                    <span className="text-[10px] text-gray-500 leading-tight">
+                      You receive a notification and can claim your item at the store branch.
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-gray-600 m-0 bg-white/70 p-2.5 rounded-xl border border-purple-100/60 leading-relaxed">
+                  Once the Cashier successfully verifies your GCash payment, your official Graphix Store receipt will be generated and your order will be marked <strong>Ready for Pickup</strong>.
+                </p>
+              </div>
+
+              {/* Important Notice Box */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200/80 rounded-2xl p-4 flex gap-3 items-start shadow-xs">
+                <div className="p-2 bg-white text-[#005ce6] rounded-xl shadow-2xs shrink-0 mt-0.5 border border-blue-100">
+                  <Info size={18} />
+                </div>
+                <div className="flex flex-col gap-1 text-xs">
+                  <span className="font-black text-gray-900 uppercase tracking-wide text-[11px]">
+                    Important Notice
+                  </span>
+                  <p className="text-gray-700 m-0 leading-relaxed text-[11px]">
+                    <strong>Important:</strong> Uploading your GCash receipt does not automatically confirm your payment. Your payment must first be verified by a Graphix Cashier. After successful verification, you will receive your official Graphix Store receipt and your order will become <strong>Ready for Pickup</strong>.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 sm:px-6 py-3.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">
+                Need help? Ask branch staff upon pickup.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowGcashGuideModal(false)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-extrabold text-xs rounded-xl border-none cursor-pointer transition-colors shadow-xs"
+              >
+                Close Guide
               </button>
             </div>
           </div>
