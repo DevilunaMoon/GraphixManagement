@@ -32,6 +32,7 @@ import {
   Info
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import imageCompression from 'browser-image-compression';
 import QRCodeDisplay from '../../components/Common/QRCodeDisplay';
 import { getBranchCode, formatDisplayInvoiceId } from '../../lib/invoice';
 
@@ -91,6 +92,8 @@ function CustomerPaymentContent() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [isCompressingReceipt, setIsCompressingReceipt] = useState(false);
+  const [originalFileSize, setOriginalFileSize] = useState<number | null>(null);
   const [showReceiptPreviewModal, setShowReceiptPreviewModal] = useState(false);
   const [showGcashGuideModal, setShowGcashGuideModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -277,26 +280,60 @@ function CustomerPaymentContent() {
     setTimeout(() => setCopiedNumber(false), 2000);
   };
 
-  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReceiptFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const extMatch = file.name.match(/\.(jpg|jpeg|png)$/i);
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const extMatch = file.name.match(/\.(jpg|jpeg|png|webp)$/i);
     if (!validTypes.includes(file.type.toLowerCase()) && !extMatch) {
       setReceiptError('Please upload a valid receipt image (JPG, JPEG, or PNG).');
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setReceiptError('Receipt image must be smaller than 15MB.');
+    if (file.size > 25 * 1024 * 1024) {
+      setReceiptError('Receipt image must be smaller than 25MB.');
       return;
     }
 
     setReceiptError(null);
-    setReceiptFile(file);
-    const objectUrl = URL.createObjectURL(file);
-    setReceiptPreview(objectUrl);
+    setOriginalFileSize(file.size);
+    setIsCompressingReceipt(true);
+
+    try {
+      // Compress image client-side before preview and submission to optimize size while keeping crisp clarity
+      const options = {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1800,
+        useWebWorker: true,
+        fileType: file.type.includes('png') ? 'image/png' : 'image/jpeg',
+        initialQuality: 0.85
+      };
+
+      let finalFile: File = file;
+      try {
+        const compressedBlob = await imageCompression(file, options);
+        finalFile = new File([compressedBlob], file.name, {
+          type: compressedBlob.type || file.type,
+          lastModified: Date.now()
+        });
+      } catch (compressionErr) {
+        console.warn('Compression fallback to original file:', compressionErr);
+        finalFile = file;
+      }
+
+      setReceiptFile(finalFile);
+      if (receiptPreview) {
+        URL.revokeObjectURL(receiptPreview);
+      }
+      const objectUrl = URL.createObjectURL(finalFile);
+      setReceiptPreview(objectUrl);
+    } catch (err: any) {
+      console.error('Failed to process receipt image:', err);
+      setReceiptError('Failed to process image. Please try again.');
+    } finally {
+      setIsCompressingReceipt(false);
+    }
   };
 
   const handleRemoveReceipt = () => {
@@ -306,6 +343,8 @@ function CustomerPaymentContent() {
     setReceiptFile(null);
     setReceiptPreview(null);
     setReceiptError(null);
+    setOriginalFileSize(null);
+    setShowReceiptPreviewModal(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -718,7 +757,15 @@ function CustomerPaymentContent() {
                     className="hidden"
                   />
 
-                  {!receiptPreview ? (
+                  {/* Compressing State Indicator */}
+                  {isCompressingReceipt && (
+                    <div className="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 flex items-center justify-center gap-2.5 text-xs text-[#005ce6] font-bold animate-pulse shadow-2xs">
+                      <Loader2 size={16} className="animate-spin text-[#005ce6]" />
+                      <span>Compressing & optimizing receipt image...</span>
+                    </div>
+                  )}
+
+                  {!receiptPreview && !isCompressingReceipt ? (
                     /* Dropzone when no file selected */
                     <div
                       onClick={() => fileInputRef.current?.click()}
@@ -749,21 +796,21 @@ function CustomerPaymentContent() {
                           Click to browse or drag & drop receipt
                         </span>
                         <span className="text-[10px] text-gray-400 font-medium">
-                          Accepted formats: JPG, JPEG, PNG (Max 15MB)
+                          Auto-compressed • Accepted: JPG, JPEG, PNG (Max 25MB)
                         </span>
                       </div>
                       <span className="text-[11px] font-bold text-[#005ce6] bg-white px-3 py-1 rounded-xl border border-blue-200 shadow-2xs">
                         Select Receipt Image
                       </span>
                     </div>
-                  ) : (
+                  ) : receiptPreview && !isCompressingReceipt ? (
                     /* Preview Card when file is uploaded */
                     <div className="bg-white border-2 border-blue-300 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in fade-in zoom-in-95">
                       <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                         <div 
                           onClick={() => setShowReceiptPreviewModal(true)}
                           className="w-16 h-16 rounded-xl bg-gray-100 border border-blue-200 overflow-hidden relative cursor-pointer group shrink-0"
-                          title="Click to enlarge"
+                          title="Click to view full receipt"
                         >
                           <img
                             src={receiptPreview}
@@ -778,8 +825,17 @@ function CustomerPaymentContent() {
                           <span className="text-xs font-bold text-gray-900 truncate">
                             {receiptFile?.name || 'GCash_Receipt.png'}
                           </span>
-                          <span className="text-[10px] text-gray-400">
-                            {receiptFile ? `${(receiptFile.size / 1024).toFixed(1)} KB` : 'Image ready'} • Ready for verification
+                          <span className="text-[10px] text-gray-500 font-medium">
+                            {receiptFile ? (
+                              <>
+                                <span className="font-bold text-blue-600">{(receiptFile.size / 1024).toFixed(1)} KB</span>
+                                {originalFileSize && originalFileSize > receiptFile.size && (
+                                  <span className="text-emerald-600 font-semibold ml-1">
+                                    (Compressed from {(originalFileSize / 1024).toFixed(0)} KB)
+                                  </span>
+                                )}
+                              </>
+                            ) : 'Image ready'} • Ready for verification
                           </span>
                           <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
                             <CheckCircle2 size={11} /> Proof Attached
@@ -791,15 +847,17 @@ function CustomerPaymentContent() {
                         <button
                           type="button"
                           onClick={() => setShowReceiptPreviewModal(true)}
-                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#005ce6] text-xs font-bold rounded-xl border border-blue-200 flex items-center gap-1 cursor-pointer transition-colors"
+                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#005ce6] text-xs font-extrabold rounded-xl border border-blue-200 flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                          title="Click to view full size receipt"
                         >
-                          <Eye size={13} />
+                          <Eye size={14} />
                           <span>View</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Replace receipt image"
                         >
                           <RefreshCw size={13} />
                           <span>Replace</span>
@@ -814,7 +872,7 @@ function CustomerPaymentContent() {
                         </button>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Receipt Error Alert */}
                   {receiptError && (
@@ -1480,6 +1538,83 @@ function CustomerPaymentContent() {
               >
                 Close Guide
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* High-Resolution Receipt Preview Modal */}
+      {showReceiptPreviewModal && receiptPreview && (
+        <div 
+          className="fixed inset-0 z-[80] flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setShowReceiptPreviewModal(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-gray-100 flex flex-col overflow-hidden max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50/50 to-white">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-100 text-[#005ce6] rounded-xl">
+                  <Receipt size={18} />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-gray-900 m-0">
+                    Uploaded GCash Receipt
+                  </h4>
+                  <p className="text-[11px] text-gray-500 m-0">
+                    {receiptFile?.name || 'GCash_Receipt.png'} • {receiptFile ? `${(receiptFile.size / 1024).toFixed(1)} KB` : 'Proof of Payment'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReceiptPreviewModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+                title="Close viewer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Receipt Image Display */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex items-center justify-center bg-gray-900/5 min-h-[300px]">
+              <div className="max-w-full rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-white">
+                <img
+                  src={receiptPreview}
+                  alt="GCash Receipt Proof"
+                  className="w-full h-auto max-h-[65vh] object-contain block select-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3.5 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold">
+                <CheckCircle2 size={13} />
+                <span>Ready for Cashier Verification</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReceiptPreviewModal(false);
+                    fileInputRef.current?.click();
+                  }}
+                  className="px-3 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                >
+                  <RefreshCw size={13} />
+                  <span>Replace</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReceiptPreviewModal(false)}
+                  className="px-5 py-2 bg-[#bd00ff] hover:bg-[#9c00d6] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer border-none shadow-xs"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
