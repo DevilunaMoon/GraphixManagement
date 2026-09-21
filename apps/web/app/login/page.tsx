@@ -155,8 +155,11 @@ function LoginContent() {
     setIsLogin(viewIsLogin);
   };
 
-  // Filter policies for Terms and Conditions modal (excluding privacy)
-  const termsPolicies = policies.filter(p => (p.type || '').toUpperCase() !== 'PRIVACY');
+  // Filter policies for Terms and Conditions modal (excluding privacy and about-page policies)
+  const termsPolicies = policies.filter(p => {
+    const pType = (p.type || '').toUpperCase();
+    return pType !== 'PRIVACY' && !pType.startsWith('ABOUT_');
+  });
   // Privacy policy for Privacy modal
   const privacyPolicy = policies.find(p => (p.type || '').toUpperCase() === 'PRIVACY');
 

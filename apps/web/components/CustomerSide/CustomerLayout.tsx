@@ -106,16 +106,26 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
     fetch('/api/policies')
       .then(res => res.json())
       .then(data => {
-        if (data.policies) setPolicies(data.policies);
+        if (Array.isArray(data)) setPolicies(data);
+        else if (data?.policies) setPolicies(data.policies);
       })
       .catch(console.error);
   }, []);
 
   const openPolicy = (e: any, type: string) => {
     e.preventDefault();
-    const p = policies.find(p => p.type === type);
+    const typeMapping: Record<string, string> = {
+      'Privacy Policy': 'PRIVACY',
+      'Terms of Service': 'PURCHASE',
+      'Refund Policy': 'PURCHASE',
+      'Purchase Policy': 'PURCHASE',
+      'Payment Policy': 'PAYMENT',
+      'Repair Policy': 'REPAIR'
+    };
+    const targetType = typeMapping[type] || type.toUpperCase().replace(/\s+/g, '_');
+    const p = policies.find(p => (p.type || '').toUpperCase() === targetType);
     if (p) {
-      setSelectedPolicyTitle(p.title);
+      setSelectedPolicyTitle(type);
       setSelectedPolicyContent(p.content);
     } else {
       setSelectedPolicyTitle(type);
