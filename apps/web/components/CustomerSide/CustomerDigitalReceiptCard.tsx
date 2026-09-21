@@ -133,8 +133,9 @@ export default function CustomerDigitalReceiptCard({
     : 'Cash';
 
   const isCashOrder = paymentMethod === 'Cash';
-  const isVerified = data?.isVerified !== undefined ? data.isVerified : !isCashOrder;
-  const isLocked = isCashOrder && !isVerified;
+  const isGcashOrder = paymentMethod === 'GCash';
+  const isVerified = data?.isVerified !== undefined ? Boolean(data.isVerified) : false;
+  const isLocked = !isVerified;
 
   const tenderedCash = (data?.tenderedCash !== undefined && data?.tenderedCash !== null)
     ? data.tenderedCash
@@ -423,17 +424,27 @@ export default function CustomerDigitalReceiptCard({
             <p className="text-[11px] text-gray-600 m-0 mt-0.5">
               {timestamp}
             </p>
-            {paymentMethod === 'Cash' && (
+            {isGcashOrder ? (
+              <p className={`text-[10px] font-black rounded px-2 py-0.5 mt-1.5 inline-block border uppercase tracking-tight ${
+                isLocked 
+                  ? 'text-blue-800 bg-blue-50 border-blue-300' 
+                  : 'text-emerald-800 bg-emerald-50 border-emerald-300'
+              }`}>
+                {isLocked ? 'GCASH PAYMENT (FOR CASHIER VERIFICATION)' : 'OFFICIAL SALES INVOICE (VERIFIED PAID)'}
+              </p>
+            ) : isCashOrder ? (
               <p className="text-[10px] font-black text-amber-800 bg-amber-50 rounded px-2 py-0.5 mt-1.5 inline-block border border-amber-300 uppercase tracking-tight">
                 {isLocked ? 'UNVERIFIED RESERVATION (8H CLAIM LIMIT)' : 'OFFICIAL SALES INVOICE (VERIFIED PAID)'}
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Invoice Header */}
           <div className="py-2.5 border-b border-dashed border-gray-300 text-center">
             <span className="font-black text-xs tracking-wider block">
-              {isLocked ? 'RESERVATION CLAIM SLIP (UNPAID)' : 'SALES INVOICE'}
+              {isLocked 
+                ? (isGcashOrder ? 'GCASH PAYMENT PROOF (FOR VERIFICATION)' : 'RESERVATION CLAIM SLIP (UNPAID)') 
+                : 'SALES INVOICE'}
             </span>
             <span className="font-bold text-xs text-purple-700">{shortTransId}</span>
           </div>

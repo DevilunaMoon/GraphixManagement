@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight, Smartphone } from 'lucide-react';
+import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight, Smartphone, Eye, ZoomIn, XCircle, FileText, Check } from 'lucide-react';
 import CashierImeiPromptModal from './CashierImeiPromptModal';
 import { isIPhoneProduct } from '../../lib/imei';
 
@@ -16,6 +16,8 @@ interface PickupReservation {
   branch: string;
   status: string;
   isSettled: boolean;
+  receiptUrl?: string | null;
+  staffMessage?: string | null;
   createdAt: string;
   expiresAt: string;
   isExpired: boolean;
@@ -89,12 +91,17 @@ export default function CashierVerifyPickupModal({
   onSuccess
 }: CashierVerifyPickupModalProps) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [filterTab, setFilterTab] = useState<'all' | 'gcash' | 'cash'>('all');
   const [reservations, setReservations] = useState<PickupReservation[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<PickupReservation | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectionReasonInput, setRejectionReasonInput] = useState('');
+  const [showReceiptImageModal, setShowReceiptImageModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imeiModalTarget, setImeiModalTarget] = useState<{
@@ -141,6 +148,9 @@ export default function CashierVerifyPickupModal({
       setSuccessMessage(null);
       setErrorMessage(null);
       setCurrentPage(1);
+      setShowRejectDialog(false);
+      setShowReceiptImageModal(false);
+      setRejectionReasonInput('');
     }
   }, [isOpen, searchQuery]);
 
@@ -148,6 +158,7 @@ export default function CashierVerifyPickupModal({
     setSelectedOrder(order);
     setErrorMessage(null);
     setSuccessMessage(null);
+    setShowRejectDialog(false);
   };
 
   const handleConfirmVerification = async () => {
@@ -162,13 +173,14 @@ export default function CashierVerifyPickupModal({
         body: JSON.stringify({
           purchaseId: selectedOrder.id,
           referenceId: selectedOrder.referenceId,
-          amountTendered: selectedOrder.amount
+          amountTendered: selectedOrder.amount,
+          action: 'VERIFY'
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMessage(`Payment confirmed! ${selectedOrder.user.name || 'Customer'}'s official PDF receipt is now UNLOCKED.`);
+        setSuccessMessage(`Payment verified! ${selectedOrder.user.name || 'Customer'}'s official Graphix Store receipt is now issued and order is ready for pickup.`);
         setReservations(prev =>
           prev.map(r => r.id === selectedOrder.id ? { ...r, status: 'Paid', isSettled: true } : r)
         );
@@ -195,6 +207,44 @@ export default function CashierVerifyPickupModal({
     }
   };
 
+  const handleRejectPayment = async () => {
+    if (!selectedOrder) return;
+    setRejecting(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/purchases/verify-pickup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          purchaseId: selectedOrder.id,
+          referenceId: selectedOrder.referenceId,
+          action: 'REJECT',
+          rejectionReason: rejectionReasonInput.trim() || 'Payment receipt does not match expected amount or is invalid.'
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMessage(`GCash payment rejected for Order ${selectedOrder.referenceId}. Customer has been notified.`);
+        setReservations(prev =>
+          prev.map(r => r.id === selectedOrder.id ? { ...r, status: 'Rejected', isSettled: false } : r)
+        );
+        setSelectedOrder(prev => prev ? { ...prev, status: 'Rejected', isSettled: false } : null);
+        setShowRejectDialog(false);
+        setRejectionReasonInput('');
+        if (onSuccess) onSuccess();
+      } else {
+        setErrorMessage(data.error || 'Failed to reject payment');
+      }
+    } catch (err: any) {
+      console.error('Failed to reject:', err);
+      setErrorMessage('Network error while rejecting payment.');
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   const handleImeiSaved = (newImei: string) => {
     if (imeiModalTarget) {
       setReservations(prev => prev.map(r => r.id === imeiModalTarget.purchaseId ? { ...r, imei: newImei } : r));
@@ -204,11 +254,26 @@ export default function CashierVerifyPickupModal({
     if (onSuccess) onSuccess();
   };
 
-  const totalPages = Math.max(1, Math.ceil(reservations.length / itemsPerPage));
+  // Tab filtering
+  const filteredReservations = reservations.filter(r => {
+    if (filterTab === 'gcash') {
+      return r.paymentType?.toLowerCase().includes('gcash') || Boolean(r.receiptUrl) || r.status === 'For Verification';
+    }
+    if (filterTab === 'cash') {
+      return r.paymentType?.toLowerCase().includes('cash') && !r.receiptUrl && r.status !== 'For Verification';
+    }
+    return true;
+  });
+
+  const gcashPendingCount = reservations.filter(r => 
+    (r.paymentType?.toLowerCase().includes('gcash') || Boolean(r.receiptUrl) || r.status === 'For Verification') && r.status !== 'Paid' && r.status !== 'Rejected'
+  ).length;
+
+  const totalPages = Math.max(1, Math.ceil(filteredReservations.length / itemsPerPage));
   const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentReservations = reservations.slice(startIndex, endIndex);
+  const currentReservations = filteredReservations.slice(startIndex, endIndex);
 
   if (!isOpen) return null;
 
@@ -223,7 +288,7 @@ export default function CashierVerifyPickupModal({
               <ShieldCheck size={22} className="text-[#bd00ff]" />
             </div>
             <div>
-              <h3 className="text-lg font-black tracking-wide m-0">Verify In-Store Pickup</h3>
+              <h3 className="text-lg font-black tracking-wide m-0">Verify In-Store Pickup & GCash Payments</h3>
               <p className="text-xs text-purple-200 m-0">Search by Customer Name, Phone Number, or Claim Code</p>
             </div>
           </div>
@@ -235,28 +300,74 @@ export default function CashierVerifyPickupModal({
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="p-4 bg-purple-50/50 border-b border-purple-100 flex gap-2">
-          <div className="flex-1 relative">
-            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchOrders(searchQuery)}
-              placeholder="Search by customer name, phone (09...), or claim code (#CMTPQ...)"
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#bd00ff] shadow-sm"
-              autoFocus
-            />
+        {/* Filter Tabs & Search Bar */}
+        <div className="p-4 bg-purple-50/50 border-b border-purple-100 flex flex-col gap-3">
+          
+          {/* Tabs */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => { setFilterTab('all'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                filterTab === 'all'
+                  ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-purple-50'
+              }`}
+            >
+              All Reservations ({reservations.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setFilterTab('gcash'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${
+                filterTab === 'gcash'
+                  ? 'bg-[#005ce6] text-white border-[#005ce6] shadow-xs'
+                  : 'bg-white text-[#005ce6] border-blue-200 hover:bg-blue-50'
+              }`}
+            >
+              <span>GCash Verification</span>
+              {gcashPendingCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-rose-500 text-white text-[10px] rounded-full font-black">
+                  {gcashPendingCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setFilterTab('cash'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                filterTab === 'cash'
+                  ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-purple-50'
+              }`}
+            >
+              Cash on Pickup
+            </button>
           </div>
-          <button
-            onClick={() => fetchOrders(searchQuery)}
-            disabled={loading}
-            className="px-5 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-sm rounded-xl transition-all shadow-sm border-none cursor-pointer flex items-center gap-2 shrink-0 disabled:opacity-50"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-            <span>Search</span>
-          </button>
+
+          {/* Search Bar Input */}
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchOrders(searchQuery)}
+                placeholder="Search customer name, phone (09...), or claim code (#GRPX...)"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-purple-200 rounded-xl text-sm font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#bd00ff] shadow-sm"
+                autoFocus
+              />
+            </div>
+            <button
+              onClick={() => fetchOrders(searchQuery)}
+              disabled={loading}
+              className="px-5 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-sm rounded-xl transition-all shadow-sm border-none cursor-pointer flex items-center gap-2 shrink-0 disabled:opacity-50"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+              <span>Search</span>
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -281,7 +392,7 @@ export default function CashierVerifyPickupModal({
             <div className="bg-white border-2 border-purple-300 rounded-2xl p-5 shadow-md flex flex-col gap-4">
               <div className="flex justify-between items-start border-b border-gray-100 pb-3">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-xs font-mono font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                       {selectedOrder.referenceId}
                     </span>
@@ -289,13 +400,22 @@ export default function CashierVerifyPickupModal({
                       <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
                         PAID & VERIFIED
                       </span>
+                    ) : selectedOrder.status === 'For Verification' ? (
+                      <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+                        FOR VERIFICATION (GCASH)
+                      </span>
+                    ) : selectedOrder.status === 'Rejected' ? (
+                      <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">
+                        PAYMENT REJECTED
+                      </span>
                     ) : selectedOrder.isExpired ? (
                       <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">
                         EXPIRED
                       </span>
                     ) : (
                       <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                        PENDING PICKUP
+                        PENDING CASHIER VERIFICATION
                       </span>
                     )}
                   </div>
@@ -338,7 +458,7 @@ export default function CashierVerifyPickupModal({
                   ) : null}
                 </div>
                 <button
-                  onClick={() => setSelectedOrder(null)}
+                  onClick={() => { setSelectedOrder(null); setShowRejectDialog(false); }}
                   className="text-xs text-gray-400 hover:text-gray-700 bg-transparent border-none cursor-pointer font-bold"
                 >
                   Change Order
@@ -360,44 +480,169 @@ export default function CashierVerifyPickupModal({
                   <span className="font-bold text-purple-700">{selectedOrder.branch} Branch</span>
                 </div>
                 <div>
-                  <span className="text-gray-400 font-medium block">Total Amount Due:</span>
+                  <span className="text-gray-400 font-medium block">Expected Order Total:</span>
                   <span className="font-black text-sm text-black">
-                    {selectedOrder.isSettled ? (
-                      <span className="text-emerald-600 font-bold">₱0.00 (Paid via {selectedOrder.paymentType || 'GCash'})</span>
-                    ) : (
-                      `₱${selectedOrder.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-                    )}
+                    ₱{selectedOrder.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
-              {/* Payment Verification / Unit Handover Section */}
-              {selectedOrder.status !== 'Paid' && (
-                <div className="flex flex-col gap-3 pt-1">
-                  {selectedOrder.isSettled ? (
-                    <div className="p-2.5 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-semibold text-emerald-900 flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                      <span>Online payment ({selectedOrder.paymentType || 'GCash'}) verified. No cash collection required.</span>
+              {/* GCash Uploaded Receipt Inspection Block */}
+              {(selectedOrder.receiptUrl || selectedOrder.paymentType?.toLowerCase().includes('gcash')) && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-[#005ce6] text-white rounded-lg flex items-center justify-center font-bold text-xs">
+                        G
+                      </div>
+                      <div>
+                        <h5 className="font-extrabold text-xs text-gray-900 m-0">Submitted GCash Payment Proof</h5>
+                        <p className="text-[10px] text-gray-500 m-0">Uploaded receipt must match the expected total</p>
+                      </div>
                     </div>
-                  ) : selectedOrder.isExpired ? (
-                    <div className="p-2.5 bg-amber-100/80 border border-amber-300 rounded-xl text-xs font-semibold text-amber-900 flex items-center gap-2">
-                      <Clock size={16} className="text-amber-700 shrink-0" />
-                      <span>Note: The 8-hour claim window passed, but you can still confirm payment & fulfillment.</span>
-                    </div>
-                  ) : null}
-
-                  <button
-                    onClick={handleConfirmVerification}
-                    disabled={verifying}
-                    className={`w-full py-3.5 ${selectedOrder.isSettled ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#bd00ff] hover:bg-[#9c00d6]'} text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50`}
-                  >
-                    {verifying ? (
-                      <Loader2 size={18} className="animate-spin" />
+                    {selectedOrder.receiptUrl ? (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check size={11} /> Proof Attached
+                      </span>
                     ) : (
-                      <CheckCircle2 size={18} />
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                        No Screenshot Uploaded
+                      </span>
                     )}
-                    <span>{selectedOrder.isSettled ? 'Confirm Handover & Record IMEI' : 'Confirm Cash Payment & Unlock Receipt'}</span>
-                  </button>
+                  </div>
+
+                  {selectedOrder.receiptUrl && (
+                    <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-3 rounded-xl border border-blue-100 shadow-2xs">
+                      <div 
+                        onClick={() => setShowReceiptImageModal(true)}
+                        className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 relative cursor-pointer group shrink-0"
+                        title="Click to view full size receipt"
+                      >
+                        <img 
+                          src={selectedOrder.receiptUrl} 
+                          alt="GCash Receipt Proof" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                          <ZoomIn size={18} />
+                        </div>
+                      </div>
+
+                      <div className="flex-1 flex flex-col gap-1 min-w-0 text-xs">
+                        <span className="font-bold text-gray-900">Uploaded GCash Receipt Screenshot</span>
+                        <span className="text-[11px] text-gray-500">
+                          Verify transaction amount of <strong>₱{selectedOrder.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowReceiptImageModal(true)}
+                          className="self-start mt-1 px-3 py-1 bg-blue-50 hover:bg-blue-100 text-[#005ce6] text-xs font-bold rounded-lg border border-blue-200 flex items-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <Eye size={13} />
+                          <span>View Full Size GCash Receipt</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedOrder.staffMessage && (
+                    <div className="text-[11px] bg-white/80 p-2 rounded-lg border border-blue-100 text-gray-700">
+                      <strong>Customer Note:</strong> {selectedOrder.staffMessage}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Rejection Form Dialog */}
+              {showRejectDialog && (
+                <div className="p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl flex flex-col gap-2.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <h5 className="font-bold text-xs text-rose-950 m-0">Reject GCash Payment</h5>
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectDialog(false)}
+                      className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-rose-900/80 m-0">
+                    Please provide a reason for rejecting this GCash payment receipt. The customer will be notified to resubmit.
+                  </p>
+                  <textarea
+                    rows={2}
+                    value={rejectionReasonInput}
+                    onChange={(e) => setRejectionReasonInput(e.target.value)}
+                    placeholder="E.g., Payment amount does not match, blurred receipt, duplicate reference number..."
+                    className="w-full p-2.5 bg-white border border-rose-200 rounded-xl text-xs outline-none focus:border-rose-500 resize-none font-medium"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRejectDialog(false)}
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border-none cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={rejecting}
+                      onClick={handleRejectPayment}
+                      className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {rejecting ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
+                      <span>Confirm Rejection</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Verification / Unit Handover Action Buttons */}
+              {selectedOrder.status !== 'Paid' && (
+                <div className="flex flex-col gap-2 pt-1">
+                  
+                  {/* GCash order action buttons (Verify Payment vs Reject Payment) */}
+                  {(selectedOrder.receiptUrl || selectedOrder.paymentType?.toLowerCase().includes('gcash') || selectedOrder.status === 'For Verification') ? (
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <button
+                        type="button"
+                        onClick={handleConfirmVerification}
+                        disabled={verifying || rejecting}
+                        className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50"
+                      >
+                        {verifying ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 size={18} />
+                        )}
+                        <span>Verify Payment & Issue Receipt</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectDialog(true)}
+                        disabled={verifying || rejecting}
+                        className="px-5 py-3.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle size={16} />
+                        <span>Reject Receipt</span>
+                      </button>
+                    </div>
+                  ) : (
+                    /* Cash on Pickup Verification button */
+                    <button
+                      onClick={handleConfirmVerification}
+                      disabled={verifying}
+                      className="w-full py-3.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50"
+                    >
+                      {verifying ? (
+                        <Loader2 size={18} className="animate-spin" />
+                      ) : (
+                        <CheckCircle2 size={18} />
+                      )}
+                      <span>Confirm Cash Payment & Unlock Receipt</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -405,13 +650,13 @@ export default function CashierVerifyPickupModal({
             /* List of Reservations */
             <div className="flex flex-col gap-2.5">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider px-1">
-                {reservations.length > 0 ? `Active In-Store Reservations (${reservations.length})` : 'No Reservations Found'}
+                {filteredReservations.length > 0 ? `In-Store Reservations (${filteredReservations.length})` : 'No Reservations Found'}
               </span>
 
-              {reservations.length === 0 ? (
+              {filteredReservations.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 flex flex-col items-center justify-center gap-2">
                   <Package size={36} strokeWidth={1.5} />
-                  <p className="text-sm font-semibold">No pending reservations match your search.</p>
+                  <p className="text-sm font-semibold">No reservations match the selected filter.</p>
                   <p className="text-xs text-gray-400">Ask the customer for their full name, phone number, or show their order screenshot.</p>
                 </div>
               ) : (
@@ -419,6 +664,9 @@ export default function CashierVerifyPickupModal({
                   <div className="flex flex-col gap-2.5">
                     {currentReservations.map((resItem) => {
                       const isPaid = resItem.status === 'Paid';
+                      const isGcash = resItem.paymentType?.toLowerCase().includes('gcash') || Boolean(resItem.receiptUrl) || resItem.status === 'For Verification';
+                      const isForVerification = resItem.status === 'For Verification';
+
                       return (
                         <div
                           key={resItem.id}
@@ -426,6 +674,10 @@ export default function CashierVerifyPickupModal({
                           className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
                             isPaid
                               ? 'bg-gray-50 border-gray-200 opacity-75'
+                              : isForVerification
+                              ? 'bg-blue-50/50 border-blue-200 hover:border-[#005ce6] hover:shadow-md'
+                              : resItem.status === 'Rejected'
+                              ? 'bg-rose-50/40 border-rose-200'
                               : resItem.isExpired
                               ? 'bg-rose-50/40 border-rose-200'
                               : 'bg-white border-purple-100 hover:border-[#bd00ff] hover:shadow-md'
@@ -459,34 +711,41 @@ export default function CashierVerifyPickupModal({
                                 <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                                   VERIFIED
                                 </span>
+                              ) : isForVerification ? (
+                                <span className="text-[10px] font-black text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                                  GCASH VERIFICATION
+                                </span>
+                              ) : resItem.status === 'Rejected' ? (
+                                <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                                  REJECTED
+                                </span>
                               ) : !resItem.isExpired ? (
                                 <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                                  PENDING
+                                  CASH PENDING
                                 </span>
-                              ) : null}
+                              ) : (
+                                <span className="text-[10px] font-black text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded">
+                                  EXPIRED
+                                </span>
+                              )}
                             </div>
 
-                            {isPaid ? null : resItem.isExpired ? (
+                            {isPaid ? null : (
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSelectOrder(resItem);
                                 }}
-                                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none cursor-pointer shadow-xs transition-all"
+                                className={`px-3.5 py-1.5 font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all text-white ${
+                                  isForVerification
+                                    ? 'bg-[#005ce6] hover:bg-[#0047b3]'
+                                    : resItem.isExpired
+                                    ? 'bg-rose-600 hover:bg-rose-700'
+                                    : 'bg-[#bd00ff] hover:bg-[#9c00d6]'
+                                }`}
                               >
-                                Expired
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectOrder(resItem);
-                                }}
-                                className="px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all"
-                              >
-                                Verify
+                                {isForVerification ? 'Verify GCash' : 'Verify'}
                               </button>
                             )}
                           </div>
@@ -499,7 +758,7 @@ export default function CashierVerifyPickupModal({
                   {totalPages > 1 && (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-purple-100 mt-2 px-1">
                       <span className="text-xs font-semibold text-gray-500">
-                        Showing <strong className="text-gray-900">{startIndex + 1}</strong> to <strong className="text-gray-900">{Math.min(endIndex, reservations.length)}</strong> of <strong className="text-gray-900">{reservations.length}</strong> reservations
+                        Showing <strong className="text-gray-900">{startIndex + 1}</strong> to <strong className="text-gray-900">{Math.min(endIndex, filteredReservations.length)}</strong> of <strong className="text-gray-900">{filteredReservations.length}</strong> reservations
                       </span>
 
                       <div className="flex items-center gap-1.5">
@@ -560,6 +819,59 @@ export default function CashierVerifyPickupModal({
         </div>
 
       </div>
+
+      {/* Enlarged GCash Receipt Modal for Cashier */}
+      {showReceiptImageModal && selectedOrder?.receiptUrl && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setShowReceiptImageModal(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-5 max-w-xl w-full shadow-2xl border border-gray-100 flex flex-col items-center gap-3 relative animate-in zoom-in-95 duration-150 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between w-full pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 text-[#005ce6] rounded-xl flex items-center justify-center font-black text-sm">
+                  G
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-gray-900 m-0">GCash Receipt Verification View</h4>
+                  <p className="text-[10px] text-gray-400 m-0">Order: {selectedOrder.referenceId} • Amount: ₱{selectedOrder.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowReceiptImageModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="w-full flex-1 overflow-auto flex items-center justify-center bg-gray-50 rounded-2xl p-2 max-h-[65vh]">
+              <img
+                src={selectedOrder.receiptUrl}
+                alt="Submitted GCash Receipt Proof"
+                className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-xs"
+              />
+            </div>
+
+            <div className="flex items-center justify-between w-full pt-1 text-xs">
+              <span className="font-semibold text-gray-600">
+                Customer: {selectedOrder.user.name || 'Customer'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowReceiptImageModal(false)}
+                className="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-xl font-bold cursor-pointer transition-colors border-none text-xs"
+              >
+                Close View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* iPhone IMEI Prompt Modal */}
       {imeiModalTarget && (

@@ -27,7 +27,9 @@ export async function POST(req: Request) {
       isSettled, 
       targetUserId,
       branch,
-      referenceId
+      referenceId,
+      receiptUrl,
+      status: requestedStatus
     } = await req.json();
 
     const actualUserId = targetUserId || session.userId;
@@ -66,6 +68,13 @@ export async function POST(req: Request) {
       (staffMessage && staffMessage.toLowerCase().includes('cash on pickup'))
     );
 
+    // Detect GCash order with receipt submitted for verification
+    const isGcashOrder = Boolean(
+      (paymentMethod && paymentMethod.toLowerCase().includes('gcash')) ||
+      (paymentType && paymentType.toLowerCase().includes('gcash')) ||
+      receiptUrl
+    );
+
     // Exact 8-hour claim window calculation
     const CLAIM_LIMIT_HOURS = 8;
     const deadlineDate = new Date(Date.now() + CLAIM_LIMIT_HOURS * 60 * 60 * 1000);
@@ -86,6 +95,7 @@ export async function POST(req: Request) {
       totalAmount: number;
       purchaseIds?: string[];
       isCash?: boolean;
+      isGcash?: boolean;
     }) {
       // 1. Strictly isolate notifications to Cashiers in this operating branch
       const cashiers = await prisma.user.findMany({
@@ -110,15 +120,21 @@ export async function POST(req: Request) {
       }
 
       if (recipientIds.length > 0) {
-        const title = details.isCash
-          ? `Cash on Pickup Order — ${operatingBranch} Branch`
-          : `New Checkout Alert — ${operatingBranch} Branch`;
+        let title = `New Checkout Alert — ${operatingBranch} Branch`;
+        if (details.isGcash) {
+          title = `New GCash Payment for Verification — ${operatingBranch} Branch`;
+        } else if (details.isCash) {
+          title = `Cash on Pickup Order — ${operatingBranch} Branch`;
+        }
 
-        let msg = details.isCash
-          ? `${userName} reserved "${details.itemSummary}" for Cash on Pickup at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ⏰ 8-Hour Limit: Must be claimed by ${formattedDeadline}.`
-          : `${userName} just checked out via ${details.paymentLabel} at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+        let msg = `${userName} just checked out via ${details.paymentLabel} at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`;
+        if (details.isGcash) {
+          msg = `A customer (${userName}) has submitted a GCash payment receipt for Order ${cleanRefId}. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Please verify payment proof.`;
+        } else if (details.isCash) {
+          msg = `${userName} reserved "${details.itemSummary}" for Cash on Pickup at ${operatingBranch} Branch. Total: ₱${details.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. ⏰ 8-Hour Limit: Must be claimed by ${formattedDeadline}.`;
+        }
 
-        if (cleanRefId) {
+        if (cleanRefId && !details.isGcash) {
           msg += ` Claim Code: ${cleanRefId}.`;
         }
         if (phoneNumber) {
@@ -139,14 +155,24 @@ export async function POST(req: Request) {
           title,
           message: msg,
           branch: operatingBranch,
-          type: details.isCash ? 'CASH_RESERVATION' : 'PAYMENT'
+          type: details.isGcash ? 'PAYMENT' : (details.isCash ? 'CASH_RESERVATION' : 'PAYMENT')
         }));
 
         await prisma.notification.createMany({ data: notifications });
       }
 
-      // 2. Also dispatch an automated confirmation notification to the customer for Cash reservations
-      if (actualUserId && details.isCash) {
+      // 2. Dispatch automated notification to customer
+      if (actualUserId && details.isGcash) {
+        await prisma.notification.create({
+          data: {
+            userId: actualUserId,
+            title: `GCash Receipt Submitted — Order ${cleanRefId}`,
+            message: `Your GCash payment receipt for "${details.itemSummary}" has been submitted for Cashier verification. Please wait while our cashier verifies your payment.`,
+            branch: operatingBranch,
+            type: 'PAYMENT'
+          }
+        });
+      } else if (actualUserId && details.isCash) {
         await prisma.notification.create({
           data: {
             userId: actualUserId,
@@ -217,7 +243,11 @@ export async function POST(req: Request) {
           );
 
           const discountedPrice = isDiscountActive ? (basePrice * (1 - (device?.discount || 0) / 100)) : basePrice;
-          const itemRefId = cartItems.length > 1 ? `${cleanRefId}-${i + 1}` : cleanRefId;
+          const resolvedPaymentType = isGcashOrder ? 'GCash' : (isCashOrder ? 'Cash' : (paymentType || 'Full'));
+          const resolvedStatus = isGcashOrder 
+            ? 'For Verification' 
+            : (isCashOrder ? 'Pending Pickup' : (requestedStatus || 'Active'));
+          const resolvedSettled = isGcashOrder ? false : (!isCashOrder);
 
           const p = await tx.purchase.create({
             data: {
@@ -226,14 +256,15 @@ export async function POST(req: Request) {
               amount: discountedPrice * item.quantity,
               quantity: item.quantity,
               variations: item.variations,
-              paymentType: isCashOrder ? 'Cash' : (paymentType || 'Full'),
+              paymentType: resolvedPaymentType,
               source: source || 'Online',
               branch: operatingBranch,
-              status: isCashOrder ? 'Pending Pickup' : 'Active',
-              referenceId: itemRefId,
+              status: resolvedStatus,
+              referenceId: cleanRefId,
               downpaymentAmount: 0,
               remainingBalance: 0,
-              isSettled: !isCashOrder
+              isSettled: resolvedSettled,
+              receiptUrl: receiptUrl || null
             }
           });
           createdPurchases.push(p);
@@ -253,7 +284,7 @@ export async function POST(req: Request) {
       });
 
       if (result.success) {
-        const pTypeLabel = isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)');
+        const pTypeLabel = isGcashOrder ? 'GCash (For Verification)' : (isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)'));
         const summary = result.itemNames.length > 1
           ? `${result.itemNames[0]} (+${result.itemNames.length - 1} more)`
           : (result.itemNames[0] || 'Cart Items');
@@ -263,7 +294,8 @@ export async function POST(req: Request) {
           itemSummary: summary,
           totalAmount: result.totalCartAmount,
           purchaseIds: result.createdPurchases.map((p: any) => p.id),
-          isCash: isCashOrder
+          isCash: isCashOrder,
+          isGcash: isGcashOrder
         });
 
         // Check and trigger stock alerts for all purchased cart items
@@ -394,6 +426,12 @@ export async function POST(req: Request) {
       const remBal = isDp ? (remainingBalance ?? Math.max(0, totalFullPrice - dpAmt)) : 0;
       const settled = isDp ? (isSettled ?? (remBal === 0)) : true;
 
+      const singleResolvedPaymentType = isGcashOrder ? 'GCash' : (isCashOrder ? 'Cash' : (paymentType || 'Full'));
+      const singleResolvedStatus = isGcashOrder
+        ? 'For Verification'
+        : (isCashOrder ? 'Pending Pickup' : (requestedStatus || 'Active'));
+      const singleResolvedSettled = isGcashOrder ? false : (isDp ? settled : (isCashOrder ? false : true));
+
       // Record the purchase
       return await tx.purchase.create({
         data: {
@@ -402,14 +440,15 @@ export async function POST(req: Request) {
           amount: dpAmt,
           quantity: reqQty,
           variations: variations ? (typeof variations === 'string' ? variations : JSON.stringify(variations)) : null,
-          paymentType: isCashOrder ? 'Cash' : (paymentType || 'Full'),
+          paymentType: singleResolvedPaymentType,
           source: source || 'Online',
           branch: operatingBranch,
-          status: isCashOrder ? 'Pending Pickup' : 'Active',
+          status: singleResolvedStatus,
           referenceId: cleanRefId,
           downpaymentAmount: isDp ? dpAmt : 0,
           remainingBalance: remBal,
-          isSettled: isDp ? settled : (isCashOrder ? false : true)
+          isSettled: singleResolvedSettled,
+          receiptUrl: receiptUrl || null
         },
         include: {
           device: true
@@ -417,13 +456,14 @@ export async function POST(req: Request) {
       });
     });
 
-    const singlePTypeLabel = isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)');
+    const singlePTypeLabel = isGcashOrder ? 'GCash (For Verification)' : (isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)'));
     await notifyCashiers({
       paymentLabel: singlePTypeLabel,
       itemSummary: purchase.device?.name || 'Device',
       totalAmount: purchase.amount,
       purchaseIds: [purchase.id],
-      isCash: isCashOrder
+      isCash: isCashOrder,
+      isGcash: isGcashOrder
     });
 
     // Trigger stock alert check for single purchase

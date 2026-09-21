@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { 
   ChevronLeft, 
   Coins, 
@@ -17,7 +17,15 @@ import {
   Receipt,
   MapPin,
   X,
-  ZoomIn
+  ZoomIn,
+  Upload,
+  UploadCloud,
+  Image as ImageIcon,
+  Trash2,
+  RefreshCw,
+  Eye,
+  FileUp,
+  Loader2
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import QRCodeDisplay from '../../components/Common/QRCodeDisplay';
@@ -75,10 +83,20 @@ function CustomerPaymentContent() {
   const [showGcashModal, setShowGcashModal] = useState(false);
   const [showEnlargedQr, setShowEnlargedQr] = useState(false);
 
+  // GCash Receipt Upload States
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [showReceiptPreviewModal, setShowReceiptPreviewModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAreaRef = useRef<HTMLDivElement>(null);
+
   // General States
   const [staffMessage, setStaffMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showItemsList, setShowItemsList] = useState(false);
+  const [agreedTerms, setAgreedTerms] = useState(true);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     fetch('/api/branches')
@@ -254,15 +272,74 @@ function CustomerPaymentContent() {
     setTimeout(() => setCopiedNumber(false), 2000);
   };
 
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const extMatch = file.name.match(/\.(jpg|jpeg|png)$/i);
+    if (!validTypes.includes(file.type.toLowerCase()) && !extMatch) {
+      setReceiptError('Please upload a valid receipt image (JPG, JPEG, or PNG).');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setReceiptError('Receipt image must be smaller than 15MB.');
+      return;
+    }
+
+    setReceiptError(null);
+    setReceiptFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setReceiptPreview(objectUrl);
+  };
+
+  const handleRemoveReceipt = () => {
+    if (receiptPreview) {
+      URL.revokeObjectURL(receiptPreview);
+    }
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setReceiptError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handlePlaceOrder = async () => {
+    if (method === 'gcash' && !receiptFile) {
+      setReceiptError('Please upload your GCash payment receipt to submit for verification.');
+      uploadAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      fileInputRef.current?.click();
+      return;
+    }
+
     setSubmitting(true);
+    setReceiptError(null);
 
     const branchCode = getBranchCode(selectedBranch);
     const plannedTxId = `#GRPX-${branchCode}-A1`;
     let createdId = '';
     let formattedTxId = plannedTxId;
+    let uploadedReceiptUrl: string | null = null;
 
     try {
+      // 1. If paying with GCash, upload receipt image proof first
+      if (method === 'gcash' && receiptFile) {
+        const formData = new FormData();
+        formData.append('file', receiptFile);
+        formData.append('folder', 'gcash_receipts');
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.url) {
+          throw new Error(uploadData.error || 'Failed to upload GCash receipt. Please try again.');
+        }
+        uploadedReceiptUrl = uploadData.url;
+      }
+
       const selectedVariationsStr = (items[0]?.variations && items[0].variations.length > 0)
         ? JSON.stringify(items[0].variations)
         : null;
@@ -285,7 +362,10 @@ function CustomerPaymentContent() {
           phoneNumber: customerProfile?.phone || undefined,
           staffMessage: fullStaffMessage || undefined,
           paymentMethod: method === 'cash' ? 'Cash' : 'GCash',
-          paymentType: method === 'cash' ? 'Cash' : 'Full',
+          paymentType: method === 'cash' ? 'Cash' : 'GCash',
+          status: method === 'gcash' ? 'For Verification' : (method === 'cash' ? 'Pending Pickup' : 'Active'),
+          isSettled: false,
+          receiptUrl: uploadedReceiptUrl || undefined,
           source: 'Online',
           branch: selectedBranch.replace(/\s*Branch$/i, '').trim(),
         })
@@ -301,10 +381,16 @@ function CustomerPaymentContent() {
             formattedTxId = formatDisplayInvoiceId(data.id, selectedBranch);
           }
         }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to record purchase.');
       }
       window.dispatchEvent(new Event('cartUpdated'));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to record purchase:', err);
+      setReceiptError(err.message || 'Failed to process order. Please try again.');
+      setSubmitting(false);
+      return;
     } finally {
       setSubmitting(false);
     }
@@ -340,7 +426,8 @@ function CustomerPaymentContent() {
       tenderedCash: method === 'cash' ? finalTotal : null,
       change: 0,
       staffMessage: staffMessage.trim() || '',
-      status: 'Purchase Confirmed',
+      receiptUrl: uploadedReceiptUrl || null,
+      status: method === 'gcash' ? 'For Verification' : 'Purchase Confirmed',
       timestamp: new Date().toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -371,6 +458,12 @@ function CustomerPaymentContent() {
     }
     if (receiptPayload.staffMessage) {
       queryParams.set('note', receiptPayload.staffMessage);
+    }
+    if (method === 'gcash') {
+      queryParams.set('status', 'For Verification');
+      if (uploadedReceiptUrl) {
+        queryParams.set('receiptUrl', uploadedReceiptUrl);
+      }
     }
 
     navigate(`/customer/purchase-confirmed?${queryParams.toString()}`);
@@ -585,6 +678,141 @@ function CustomerPaymentContent() {
                     className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-[#005ce6] focus:ring-1 focus:ring-blue-100"
                   />
                 </div>
+
+                {/* Section 2.1: GCash Payment Receipt Upload */}
+                <div ref={uploadAreaRef} className="flex flex-col gap-2 pt-2 border-t border-blue-100">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-gray-900 flex items-center gap-1.5">
+                      <FileUp size={15} className="text-[#005ce6]" />
+                      Upload GCash Payment Receipt
+                    </label>
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full">
+                      Required
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 m-0">
+                    Upload your completed GCash payment screenshot for Cashier verification before store pickup.
+                  </p>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    onChange={handleReceiptFileChange}
+                    className="hidden"
+                  />
+
+                  {!receiptPreview ? (
+                    /* Dropzone when no file selected */
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) {
+                          const dt = new DataTransfer();
+                          dt.items.add(file);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.files = dt.files;
+                            handleReceiptFileChange({ target: fileInputRef.current } as any);
+                          }
+                        }
+                      }}
+                      className="border-2 border-dashed border-blue-300 hover:border-[#005ce6] hover:bg-blue-50/60 bg-blue-50/30 rounded-2xl p-4 sm:p-5 flex flex-col items-center justify-center gap-2.5 text-center cursor-pointer transition-all group"
+                    >
+                      <div className="w-11 h-11 rounded-full bg-blue-100 text-[#005ce6] flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
+                        <Upload size={20} />
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-bold text-gray-800">
+                          Click to browse or drag & drop receipt
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          Accepted formats: JPG, JPEG, PNG (Max 15MB)
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-[#005ce6] bg-white px-3 py-1 rounded-xl border border-blue-200 shadow-2xs">
+                        Select Receipt Image
+                      </span>
+                    </div>
+                  ) : (
+                    /* Preview Card when file is uploaded */
+                    <div className="bg-white border-2 border-blue-300 rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in fade-in zoom-in-95">
+                      <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+                        <div 
+                          onClick={() => setShowReceiptPreviewModal(true)}
+                          className="w-16 h-16 rounded-xl bg-gray-100 border border-blue-200 overflow-hidden relative cursor-pointer group shrink-0"
+                          title="Click to enlarge"
+                        >
+                          <img
+                            src={receiptPreview}
+                            alt="Receipt Preview"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                            <ZoomIn size={16} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-gray-900 truncate">
+                            {receiptFile?.name || 'GCash_Receipt.png'}
+                          </span>
+                          <span className="text-[10px] text-gray-400">
+                            {receiptFile ? `${(receiptFile.size / 1024).toFixed(1)} KB` : 'Image ready'} • Ready for verification
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                            <CheckCircle2 size={11} /> Proof Attached
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowReceiptPreviewModal(true)}
+                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#005ce6] text-xs font-bold rounded-xl border border-blue-200 flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Eye size={13} />
+                          <span>View</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <RefreshCw size={13} />
+                          <span>Replace</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveReceipt}
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl border border-rose-200 cursor-pointer transition-colors"
+                          title="Remove receipt"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Receipt Error Alert */}
+                  {receiptError && (
+                    <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-semibold animate-in fade-in">
+                      <AlertCircle size={15} className="shrink-0 text-rose-600" />
+                      <span>{receiptError}</span>
+                    </div>
+                  )}
+
+                  {/* Verification Notice */}
+                  <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 text-[11px] text-blue-900/80 leading-relaxed">
+                    ℹ️ <strong>Note:</strong> Uploading your receipt submits it for <strong>Cashier verification</strong>. The official Graphix Store receipt and pickup release are issued after cashier approval.
+                  </div>
+                </div>
               </div>
             )}
 
@@ -721,40 +949,82 @@ function CustomerPaymentContent() {
               </div>
             </div>
 
-            {/* Section 5: Place Order / Confirm Payment Button */}
-            <button
-              type="button"
-              disabled={loading || submitting}
-              onClick={handlePlaceOrder}
-              className="w-full py-4 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-sm md:text-base rounded-2xl border-none cursor-pointer shadow-lg shadow-purple-500/25 active:scale-[0.99] transition-all uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? (
-                <>
-                  <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Processing Order...</span>
-                </>
-              ) : (
-                <>
-                  <span>Place Order • ₱{finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </>
-              )}
-            </button>
+            {/* Section 5: Terms & Action Submission Button */}
+            <div className="flex flex-col gap-3">
+              {/* Terms Checkbox */}
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-gray-600 select-none">
+                <input
+                  type="checkbox"
+                  checked={agreedTerms}
+                  onChange={(e) => setAgreedTerms(e.target.checked)}
+                  className="mt-0.5 rounded border-gray-300 text-[#bd00ff] focus:ring-[#bd00ff] cursor-pointer"
+                />
+                <span>
+                  I agree to the{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowTermsModal(true);
+                    }}
+                    className="text-[#bd00ff] font-bold hover:underline bg-transparent border-none p-0 cursor-pointer text-xs inline"
+                  >
+                    Terms & Conditions
+                  </button>{' '}
+                  and understand that in-store pickup reservations and payments are subject to staff verification.
+                </span>
+              </label>
 
-            {/* Trust Badges */}
-            <div className="flex items-center justify-center gap-3 text-[11px] text-gray-400 font-medium">
-              <span className="flex items-center gap-1">
-                <ShieldCheck size={14} className="text-emerald-500" /> Secure Checkout
-              </span>
-              <span>•</span>
-              <span>100% In-Store Pickup</span>
-              <span>•</span>
-              <span>Official Warranty</span>
+              {/* Submit / Place Order Button */}
+              <button
+                type="button"
+                disabled={submitting || !agreedTerms || loading}
+                onClick={handlePlaceOrder}
+                className={`w-full py-4 px-6 rounded-2xl font-black text-sm tracking-wide text-white transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed ${
+                  method === 'gcash'
+                    ? (!receiptFile ? 'bg-[#005ce6] hover:bg-[#0047b3] shadow-blue-500/20' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20')
+                    : 'bg-[#bd00ff] hover:bg-[#9c00d6] shadow-purple-500/25'
+                }`}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Processing Order...</span>
+                  </>
+                ) : method === 'gcash' ? (
+                  !receiptFile ? (
+                    <>
+                      <UploadCloud size={18} />
+                      <span>Upload GCash Receipt</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck size={18} />
+                      <span>Submit Payment for Verification</span>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <ShoppingBag size={18} />
+                    <span>Place Order (Cash on Pickup)</span>
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-center gap-2 text-[11px] text-gray-400 font-medium pt-1">
+                <ShieldCheck size={14} className="text-emerald-500" />
+                <span>100% Authentic Products • Official Graphix Warranty</span>
+              </div>
             </div>
 
           </div>
+          {/* End Right Column */}
+
         </div>
+        {/* End 2-Column Grid */}
 
       </div>
+      {/* End Main Container */}
 
       {/* GCash QR Modal */}
       {showGcashModal && (
@@ -888,6 +1158,60 @@ function CustomerPaymentContent() {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Terms and Conditions Modal */}
+      {showTermsModal && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowTermsModal(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-gray-100 flex flex-col gap-4 relative animate-in zoom-in-95 duration-200 max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-purple-50 text-[#bd00ff] rounded-xl">
+                  <ShieldCheck size={20} />
+                </div>
+                <h3 className="font-extrabold text-base text-gray-900 m-0">Terms & Conditions</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto pr-1 text-xs text-gray-600 leading-relaxed flex flex-col gap-3">
+              <p>
+                <strong>1. Reservation & Verification:</strong> All checkout reservations placed through Graphix Store are subject to staff verification at the designated pickup branch.
+              </p>
+              <p>
+                <strong>2. GCash Payment Proof:</strong> Customers selecting GCash must upload a valid, clear screenshot of their transaction receipt. The submitted proof will be verified by the branch cashier before the official store receipt is issued and the order is marked ready for pickup.
+              </p>
+              <p>
+                <strong>3. Cash on Pickup:</strong> Cash reservations must be claimed and settled at the selected branch within the 8-hour reservation limit.
+              </p>
+              <p>
+                <strong>4. Warranty & Official Receipt:</strong> The official Graphix Store PDF sales receipt is generated and released only after verified payment. All devices come with the standard Graphix warranty.
+              </p>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-5 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl border-none cursor-pointer transition-colors shadow-xs"
+              >
+                I Understand
+              </button>
+            </div>
           </div>
         </div>
       )}

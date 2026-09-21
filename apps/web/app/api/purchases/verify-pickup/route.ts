@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { purchaseId, referenceId, amountTendered } = await req.json();
+    const { purchaseId, referenceId, amountTendered, action = 'VERIFY', rejectionReason } = await req.json();
 
     if (!purchaseId && !referenceId) {
       return NextResponse.json({ error: 'Missing purchase identifier' }, { status: 400 });
@@ -52,6 +52,43 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
+    // Handle Reject Action
+    if (action === 'REJECT') {
+      const formattedReason = rejectionReason?.trim() || 'Payment receipt could not be verified.';
+
+      const rejectedPurchase = await prisma.purchase.update({
+        where: { id: purchase.id },
+        data: {
+          status: 'Rejected',
+          isSettled: false
+        },
+        include: {
+          device: true,
+          user: true
+        }
+      });
+
+      // Dispatch rejection notification to the customer
+      if (purchase.userId) {
+        await prisma.notification.create({
+          data: {
+            userId: purchase.userId,
+            title: `GCash Payment Rejected — Order ${purchase.referenceId || purchase.id}`,
+            message: `Your submitted GCash payment proof for "${purchase.device?.name || 'Device'}" at ${purchase.branch || 'store'} was not approved. Reason: "${formattedReason}". Please review and resubmit your payment receipt.`,
+            branch: purchase.branch,
+            type: 'PAYMENT'
+          }
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Payment rejected for Order ${purchase.referenceId || purchase.id}. Customer has been notified.`,
+        purchase: rejectedPurchase
+      });
+    }
+
+    // Handle Verify Action
     if (purchase.status === 'Paid') {
       return NextResponse.json({ 
         success: true, 
@@ -96,11 +133,19 @@ export async function POST(req: Request) {
 
     // Dispatch automated confirmation notification to the customer
     if (purchase.userId) {
+      const isGcash = purchase.paymentType?.toLowerCase().includes('gcash') || Boolean(purchase.receiptUrl);
+      const notifTitle = isGcash 
+        ? 'GCash Payment Verified & Ready for Pickup'
+        : 'Payment Verified & Official Receipt Unlocked';
+      const notifMessage = isGcash
+        ? `Your GCash payment for "${purchase.device?.name || 'Device'}" (Order ${purchase.referenceId || purchase.id}) has been verified! Your official Graphix Store receipt is now available and your order is ready for pickup at GraphiX ${purchase.branch || 'store'}.`
+        : `Your in-store cash payment for "${purchase.device?.name || 'Device'}" at GraphiX ${purchase.branch || 'store'} has been verified as PAID! Your official 80mm PDF sales receipt is now unlocked.`;
+
       await prisma.notification.create({
         data: {
           userId: purchase.userId,
-          title: 'Payment Verified & Official Receipt Unlocked',
-          message: `Your in-store cash payment for "${purchase.device.name}" at GraphiX ${purchase.branch || 'store'} has been verified as PAID! Your official 80mm PDF sales receipt is now unlocked.`,
+          title: notifTitle,
+          message: notifMessage,
           branch: purchase.branch,
           type: 'PAYMENT'
         }
@@ -109,7 +154,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Payment verified for ${purchase.device.name}. Customer's official PDF receipt is now unlocked!`,
+      message: `Payment verified for ${purchase.device?.name || 'Device'}. Official Graphix Store receipt is now issued and order is ready for pickup!`,
       purchase: updatedPurchase
     });
   } catch (error: any) {
