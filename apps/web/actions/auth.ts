@@ -3,6 +3,7 @@
 import bcrypt from "bcryptjs";
 import { setSession } from "../lib/session";
 import { prisma } from "database";
+import { validatePassword } from "../lib/passwordPolicy";
 
 interface RateLimitData {
   count: number;
@@ -25,6 +26,13 @@ export async function register(formData: FormData) {
     return { error: "Missing required fields" };
   }
 
+  // 1. Password Policy Validation
+  const pwdValidation = validatePassword(password);
+  if (!pwdValidation.isValid) {
+    return { error: pwdValidation.error || "Password does not meet security requirements." };
+  }
+
+  // 2. Confirm Password Match
   if (confirmPassword !== undefined && confirmPassword !== null && password !== confirmPassword) {
     return { error: "Passwords do not match." };
   }
@@ -153,9 +161,26 @@ export async function logoutUser() {
 export async function changePassword(formData: FormData) {
   const oldPassword = formData.get("oldPassword") as string;
   const newPassword = formData.get("newPassword") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!oldPassword || !newPassword) {
     return { error: "Missing required fields" };
+  }
+
+  // Confirm password match check if provided
+  if (confirmPassword && newPassword !== confirmPassword) {
+    return { error: "Passwords do not match." };
+  }
+
+  // Prevent reusing current password
+  if (oldPassword === newPassword) {
+    return { error: "New password must be different from your current password." };
+  }
+
+  // Password Policy validation
+  const validation = validatePassword(newPassword);
+  if (!validation.isValid) {
+    return { error: validation.error || "Password does not meet security requirements." };
   }
 
   try {
@@ -180,7 +205,7 @@ export async function changePassword(formData: FormData) {
 
     const passwordsMatch = await bcrypt.compare(oldPassword, user.password);
     if (!passwordsMatch) {
-      return { error: "Incorrect old password" };
+      return { error: "Current password is incorrect." };
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
@@ -190,7 +215,7 @@ export async function changePassword(formData: FormData) {
       data: { password: hashedNewPassword },
     });
 
-    return { success: true };
+    return { success: true, message: "Your password has been changed successfully." };
   } catch (err: any) {
     console.error("Change Password Error:", err);
     return { error: err.message || "Failed to change password" };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "database";
 import bcrypt from "bcryptjs";
+import { validatePassword } from "../../../../lib/passwordPolicy";
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,6 +9,11 @@ export async function POST(req: NextRequest) {
 
     if (!token || !password) {
       return NextResponse.json({ error: "Token and password are required" }, { status: 400 });
+    }
+
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      return NextResponse.json({ error: validation.error || "Password does not meet security requirements." }, { status: 400 });
     }
 
     // Find user with valid token

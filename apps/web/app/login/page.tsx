@@ -19,6 +19,8 @@ import {
   FileText 
 } from "lucide-react";
 import { login, register } from "../../actions/auth";
+import PasswordRequirements from "../../components/PasswordRequirements";
+import { validatePassword, detectInvalidPasswordChars } from "../../lib/passwordPolicy";
 
 interface PolicyItem {
   id?: string;
@@ -32,6 +34,10 @@ function LoginContent() {
   const [rememberMe, setRememberMe] = useState(false);
   
   // Registration form states
+  const [signUpPassword, setSignUpPassword] = useState("");
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("");
+  const [isSignUpPasswordFocused, setIsSignUpPasswordFocused] = useState(false);
+  const [isSignUpConfirmFocused, setIsSignUpConfirmFocused] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -118,8 +124,8 @@ function LoginContent() {
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
+    const password = (formData.get("password") as string) || signUpPassword;
+    const confirmPassword = (formData.get("confirmPassword") as string) || signUpConfirmPassword;
 
     // 1. Validate Agreement Checkbox
     if (!acceptTerms) {
@@ -127,7 +133,14 @@ function LoginContent() {
       return;
     }
 
-    // 2. Validate Password and Confirm Password match
+    // 2. Validate Password Policy Requirements
+    const pwdVal = validatePassword(password);
+    if (!pwdVal.isValid) {
+      setErrorMsg(pwdVal.error || "Password does not meet security requirements.");
+      return;
+    }
+
+    // 3. Validate Password and Confirm Password match
     if (password !== confirmPassword) {
       setErrorMsg("Passwords do not match.");
       return;
@@ -145,6 +158,8 @@ function LoginContent() {
       setIsLoading(false);
       setShowSuccessModal(true);
       (e.target as HTMLFormElement).reset();
+      setSignUpPassword("");
+      setSignUpConfirmPassword("");
       setAcceptTerms(false);
     }
   };
@@ -153,6 +168,8 @@ function LoginContent() {
   const toggleView = (viewIsLogin: boolean) => {
     setErrorMsg("");
     setIsLogin(viewIsLogin);
+    setIsSignUpPasswordFocused(false);
+    setIsSignUpConfirmFocused(false);
   };
 
   // Filter policies for Terms and Conditions modal (excluding privacy and about-page policies)
@@ -307,41 +324,77 @@ function LoginContent() {
             </div>
 
             {/* 4. Password */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
-                <Lock size={20} />
+            <div className="flex flex-col gap-1.5">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
+                  <Lock size={20} />
+                </div>
+                <input 
+                  type={showSignUpPassword ? "text" : "password"} 
+                  name="password" 
+                  required 
+                  value={signUpPassword}
+                  onChange={(e) => {
+                    setSignUpPassword(e.target.value);
+                    if (errorMsg) setErrorMsg("");
+                  }}
+                  onFocus={() => setIsSignUpPasswordFocused(true)}
+                  onBlur={() => setIsSignUpPasswordFocused(false)}
+                  placeholder="Password" 
+                  className="w-full pl-11 pr-11 py-2.5 bg-white/40 border border-white/50 shadow-sm rounded-[0.9rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600 text-sm" 
+                />
+                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+                  <button type="button" onClick={() => setShowSignUpPassword(!showSignUpPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
+                    {showSignUpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
-              <input 
-                type={showSignUpPassword ? "text" : "password"} 
-                name="password" 
-                required 
-                placeholder="Password" 
-                className="w-full pl-11 pr-11 py-2.5 bg-white/40 border border-white/50 shadow-sm rounded-[0.9rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600 text-sm" 
+
+              {/* Real-time Password Requirements */}
+              <PasswordRequirements 
+                password={signUpPassword} 
+                isFocused={isSignUpPasswordFocused} 
+                variant="glass" 
               />
-              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-                <button type="button" onClick={() => setShowSignUpPassword(!showSignUpPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
-                  {showSignUpPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
             </div>
 
             {/* 5. Confirm Password (Directly below Password) */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
-                <Lock size={20} />
+            <div className="flex flex-col gap-1">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
+                  <Lock size={20} />
+                </div>
+                <input 
+                  type={showSignUpConfirmPassword ? "text" : "password"} 
+                  name="confirmPassword" 
+                  required 
+                  value={signUpConfirmPassword}
+                  onChange={(e) => {
+                    setSignUpConfirmPassword(e.target.value);
+                    if (errorMsg) setErrorMsg("");
+                  }}
+                  onFocus={() => setIsSignUpConfirmFocused(true)}
+                  onBlur={() => setIsSignUpConfirmFocused(false)}
+                  placeholder="Confirm Password" 
+                  className={`w-full pl-11 pr-11 py-2.5 bg-white/40 border shadow-sm rounded-[0.9rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600 text-sm ${
+                    signUpConfirmPassword && signUpPassword !== signUpConfirmPassword
+                      ? 'border-rose-400 focus:ring-rose-400'
+                      : 'border-white/50'
+                  }`}
+                />
+                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+                  <button type="button" onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
+                    {showSignUpConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
-              <input 
-                type={showSignUpConfirmPassword ? "text" : "password"} 
-                name="confirmPassword" 
-                required 
-                placeholder="Confirm Password" 
-                className="w-full pl-11 pr-11 py-2.5 bg-white/40 border border-white/50 shadow-sm rounded-[0.9rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600 text-sm" 
-              />
-              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-                <button type="button" onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
-                  {showSignUpConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
+
+              {/* Inline Confirm Password Mismatch */}
+              {signUpConfirmPassword.length > 0 && signUpPassword !== signUpConfirmPassword && (
+                <div className="text-[11px] font-bold text-rose-300 ml-1 animate-in fade-in">
+                  Passwords do not match.
+                </div>
+              )}
             </div>
 
             {/* 6. Agreement Checkbox (White text for purple background readability) */}

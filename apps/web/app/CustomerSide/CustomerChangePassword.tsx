@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { UserCircle2, Pencil, Receipt, KeyRound, Eye, EyeOff, Activity } from 'lucide-react';
+import { UserCircle2, Pencil, Receipt, KeyRound, Eye, EyeOff, Activity, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updatePassword } from '../../actions/user';
+import PasswordRequirements from '../../components/PasswordRequirements';
+import { validatePassword, detectInvalidPasswordChars } from '../../lib/passwordPolicy';
 
 export default function CustomerChangePassword({ user }: { user?: any }) {
   const router = useRouter();
@@ -12,6 +14,9 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [isNewFocused, setIsNewFocused] = useState(false);
+  const [isConfirmFocused, setIsConfirmFocused] = useState(false);
 
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -28,25 +33,33 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setMessage({ text: 'New passwords do not match.', type: 'error' });
+    if (oldPassword === newPassword) {
+      setMessage({ text: 'New password must be different from your current password.', type: 'error' });
       return;
     }
 
-    if (newPassword.length < 6) {
-      setMessage({ text: 'New password must be at least 6 characters.', type: 'error' });
+    const pwdVal = validatePassword(newPassword);
+    if (!pwdVal.isValid) {
+      setMessage({ text: pwdVal.error || 'Password does not meet security requirements.', type: 'error' });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage({ text: 'Passwords do not match.', type: 'error' });
       return;
     }
 
     setIsSaving(true);
-    const res = await updatePassword(oldPassword, newPassword);
+    const res = await updatePassword(oldPassword, newPassword, confirmPassword);
     setIsSaving(false);
 
     if (res?.success) {
-      setMessage({ text: 'Password successfully updated!', type: 'success' });
+      setMessage({ text: 'Your password has been changed successfully.', type: 'success' });
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setIsNewFocused(false);
+      setIsConfirmFocused(false);
     } else {
       setMessage({ text: res?.error || "Failed to update password", type: 'error' });
     }
@@ -114,7 +127,10 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
                 <input 
                   type={showOld ? "text" : "password"}
                   value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
+                  onChange={(e) => {
+                    setOldPassword(e.target.value);
+                    if (message.text) setMessage({ text: '', type: '' });
+                  }}
                   className="w-full h-12 sm:h-14 border-2 border-gray-200 rounded-xl px-4 sm:px-5 text-black outline-none focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 transition-all font-medium pr-10 sm:pr-12 text-base sm:text-lg shadow-sm"
                   placeholder="Enter current password"
                 />
@@ -130,7 +146,12 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
                 <input 
                   type={showNew ? "text" : "password"}
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    if (message.text) setMessage({ text: '', type: '' });
+                  }}
+                  onFocus={() => setIsNewFocused(true)}
+                  onBlur={() => setIsNewFocused(false)}
                   className="w-full h-12 sm:h-14 border-2 border-gray-200 rounded-xl px-4 sm:px-5 text-black outline-none focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 transition-all font-medium pr-10 sm:pr-12 text-base sm:text-lg shadow-sm"
                   placeholder="Enter new password"
                 />
@@ -138,6 +159,21 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
                   {showNew ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
               </div>
+
+              {/* Password Re-use warning if identical to Current Password */}
+              {oldPassword && newPassword && oldPassword === newPassword && (
+                <div className="text-xs font-bold text-red-500 ml-1 animate-in fade-in flex items-center gap-1">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>New password must be different from your current password.</span>
+                </div>
+              )}
+
+              {/* Real-time Password Requirements */}
+              <PasswordRequirements 
+                password={newPassword} 
+                isFocused={isNewFocused} 
+                variant="card" 
+              />
             </div>
 
             <div className="flex flex-col gap-2">
@@ -146,14 +182,31 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
                 <input 
                   type={showConfirm ? "text" : "password"}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full h-12 sm:h-14 border-2 border-gray-200 rounded-xl px-4 sm:px-5 text-black outline-none focus:border-[#bd00ff] focus:ring-4 focus:ring-[#bd00ff]/10 transition-all font-medium pr-10 sm:pr-12 text-base sm:text-lg shadow-sm"
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (message.text) setMessage({ text: '', type: '' });
+                  }}
+                  onFocus={() => setIsConfirmFocused(true)}
+                  onBlur={() => setIsConfirmFocused(false)}
+                  className={`w-full h-12 sm:h-14 border-2 rounded-xl px-4 sm:px-5 text-black outline-none focus:ring-4 transition-all font-medium pr-10 sm:pr-12 text-base sm:text-lg shadow-sm ${
+                    confirmPassword && newPassword !== confirmPassword
+                      ? 'border-red-400 focus:border-red-400 focus:ring-red-100'
+                      : 'border-gray-200 focus:border-[#bd00ff] focus:ring-[#bd00ff]/10'
+                  }`}
                   placeholder="Confirm new password"
                 />
                 <button onClick={() => setShowConfirm(!showConfirm)} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#bd00ff] cursor-pointer bg-transparent border-none p-0 flex items-center justify-center transition-colors">
                   {showConfirm ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
               </div>
+
+              {/* Real-time mismatch error */}
+              {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                <div className="text-xs font-bold text-red-500 ml-1 animate-in fade-in flex items-center gap-1">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>Passwords do not match.</span>
+                </div>
+              )}
             </div>
             
             <div className="pt-4 sm:pt-6 flex justify-center">

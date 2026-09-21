@@ -1,17 +1,22 @@
 "use client";
 
 import React, { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, Eye, EyeOff, CheckCircle } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Lock, CheckCircle, ArrowLeft, Eye, EyeOff, AlertCircle } from "lucide-react";
+import PasswordRequirements from "../../components/PasswordRequirements";
+import { validatePassword, detectInvalidPasswordChars } from "../../lib/passwordPolicy";
 
-function ResetPasswordContent() {
-  const router = useRouter();
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
-  const token = searchParams?.get("token");
+  const router = useRouter();
+  const token = searchParams.get("token");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isConfirmFocused, setIsConfirmFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [success, setSuccess] = useState(false);
@@ -23,9 +28,15 @@ function ResetPasswordContent() {
         style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/Images/storefront-bg.jpg')" }}
       >
         <div className="bg-white/30 backdrop-blur-md rounded-[2rem] shadow-2xl p-8 max-w-md w-full text-center border border-white/50">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Link</h2>
-          <p className="text-gray-800 mb-6 font-extrabold">This password reset link is invalid or missing the token.</p>
-          <button onClick={() => router.push('/login')} className="bg-[#8b00cc] text-white px-6 py-2 rounded-full font-bold">Go to Login</button>
+          <div className="bg-red-50 text-red-600 p-6 rounded-2xl border border-red-100 text-center font-bold">
+            <p className="text-lg">Invalid or missing reset token.</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-4 px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
+            >
+              Back to Login
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -33,17 +44,20 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setErrorMsg("Passwords do not match");
+    setErrorMsg("");
+
+    const val = validatePassword(password);
+    if (!val.isValid) {
+      setErrorMsg(val.error || "Password does not meet security requirements.");
       return;
     }
-    if (password.length < 6) {
-      setErrorMsg("Password must be at least 6 characters long");
+
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match.");
       return;
     }
 
     setIsLoading(true);
-    setErrorMsg("");
 
     try {
       const res = await fetch("/api/auth/reset-password", {
@@ -102,38 +116,72 @@ function ResetPasswordContent() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
-                <Lock size={22} />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
+                  <Lock size={22} />
+                </div>
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  required 
+                  placeholder="New Password" 
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errorMsg) setErrorMsg("");
+                  }}
+                  onFocus={() => setIsPasswordFocused(true)}
+                  onBlur={() => setIsPasswordFocused(false)}
+                  className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
+                    {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                  </button>
+                </div>
               </div>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                required 
-                placeholder="New Password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
+
+              {/* Password Requirements */}
+              <PasswordRequirements 
+                password={password} 
+                isFocused={isPasswordFocused} 
+                variant="glass" 
               />
-              <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
-                  {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
-                </button>
-              </div>
             </div>
 
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
-                <Lock size={22} />
+            <div className="flex flex-col gap-1">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
+                  <Lock size={22} />
+                </div>
+                <input 
+                  type={showConfirmPassword ? "text" : "password"} 
+                  required 
+                  placeholder="Confirm New Password" 
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errorMsg) setErrorMsg("");
+                  }}
+                  onFocus={() => setIsConfirmFocused(true)}
+                  onBlur={() => setIsConfirmFocused(false)}
+                  className={`w-full pl-12 pr-12 py-3 bg-white/40 border shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600 ${
+                    confirmPassword && password !== confirmPassword ? "border-rose-400" : "border-white/50"
+                  }`} 
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
+                    {showConfirmPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                  </button>
+                </div>
               </div>
-              <input 
-                type={showPassword ? "text" : "password"} 
-                required 
-                placeholder="Confirm New Password" 
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
-              />
+
+              {confirmPassword.length > 0 && password !== confirmPassword && (
+                <div className="text-[11px] font-bold text-rose-300 ml-2 animate-in fade-in">
+                  Passwords do not match.
+                </div>
+              )}
             </div>
 
             <div className="flex justify-center mt-4">
@@ -155,7 +203,7 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div></div>}>
-      <ResetPasswordContent />
+      <ResetPasswordForm />
     </Suspense>
   );
 }
