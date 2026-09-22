@@ -161,6 +161,8 @@ export async function POST(req: Request) {
 
     // Process photo uploads
     const photoUrls: string[] = [];
+    const physicalDamagePhotos: Record<string, string> = {};
+    const mainProblemPhotos: string[] = [];
     
     // Single image file (from admin or standard upload)
     const singleImage = formData.get('image') as File | null;
@@ -170,14 +172,29 @@ export async function POST(req: Request) {
       photoUrls.push(url);
     }
 
-    // Multi-photo upload (photo_0, photo_1, ...)
-    const photoCountStr = formData.get('photoCount') as string | null;
-    const photoCount = photoCountStr ? parseInt(photoCountStr, 10) : 5;
-    for (let i = 0; i < photoCount; i++) {
-      const photoFile = formData.get(`photo_${i}`) as File | null;
+    // Physical damage slots upload (physical_photo_front, back, right, left, top, bottom)
+    const physicalSlots = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+    for (const slot of physicalSlots) {
+      const file = formData.get(`physical_photo_${slot}`) as File | null;
+      if (file && file.name && file.size > 0) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const url = await uploadToCloudinary(buffer, 'monitoring/physical-damage');
+        physicalDamagePhotos[slot] = url;
+        if (!photoUrls.includes(url)) {
+          photoUrls.push(url);
+        }
+      }
+    }
+
+    // Main problem photos upload (main_photo_0, main_photo_1, ...)
+    const mainPhotoCountVal = formData.get('mainPhotoCount') || formData.get('photoCount');
+    const mainPhotoCount = typeof mainPhotoCountVal === 'string' ? parseInt(mainPhotoCountVal, 10) : 5;
+    for (let i = 0; i < mainPhotoCount; i++) {
+      const photoFile = (formData.get(`main_photo_${i}`) || formData.get(`photo_${i}`)) as File | null;
       if (photoFile && photoFile.name && photoFile.size > 0) {
         const buffer = Buffer.from(await photoFile.arrayBuffer());
-        const url = await uploadToCloudinary(buffer, 'monitoring');
+        const url = await uploadToCloudinary(buffer, 'monitoring/issues');
+        mainProblemPhotos.push(url);
         if (!photoUrls.includes(url)) {
           photoUrls.push(url);
         }
@@ -191,6 +208,12 @@ export async function POST(req: Request) {
         const parsed = JSON.parse(repairHistoryRaw);
         if (photoUrls.length > 0) {
           parsed.photos = photoUrls;
+        }
+        if (Object.keys(physicalDamagePhotos).length > 0) {
+          parsed.physicalDamagePhotos = physicalDamagePhotos;
+        }
+        if (mainProblemPhotos.length > 0) {
+          parsed.mainProblemPhotos = mainProblemPhotos;
         }
         finalRepairHistory = JSON.stringify(parsed);
       } catch (e) {

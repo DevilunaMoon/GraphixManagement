@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Trash2, CheckCircle2, AlertCircle, Wrench, Building2, Smartphone, HelpCircle, ShieldCheck } from 'lucide-react';
+import { X, Upload, Trash2, CheckCircle2, AlertCircle, Wrench, Building2, Smartphone, HelpCircle, ShieldCheck, Camera, Eye, RefreshCw } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 
 interface CustomerRepairRequestModalProps {
@@ -50,6 +50,17 @@ const BRANCH_OPTIONS = [
   'Jasaan'
 ];
 
+const PHYSICAL_DAMAGE_SLOTS = [
+  { key: 'front', labelEn: 'Front of Phone', labelCeb: 'Atubangan sa Phone' },
+  { key: 'back', labelEn: 'Back of Phone', labelCeb: 'Likod sa Phone' },
+  { key: 'right', labelEn: 'Right Side', labelCeb: 'Tuong Kilid' },
+  { key: 'left', labelEn: 'Left Side', labelCeb: 'Wala nga Kilid' },
+  { key: 'top', labelEn: 'Top Side', labelCeb: 'Ibabaw nga Bahin' },
+  { key: 'bottom', labelEn: 'Bottom Side', labelCeb: 'Ubos nga Bahin' }
+] as const;
+
+type PhysicalSlotKey = typeof PHYSICAL_DAMAGE_SLOTS[number]['key'];
+
 export default function CustomerRepairRequestModal({
   isOpen,
   onClose,
@@ -71,10 +82,32 @@ export default function CustomerRepairRequestModal({
   // Device Condition
   const [isWorking, setIsWorking] = useState<'Yes' | 'No' | 'Partially'>('Yes');
   const [hasPhysicalDamage, setHasPhysicalDamage] = useState<'Yes' | 'No'>('No');
+  const [physicalDamageDescription, setPhysicalDamageDescription] = useState('');
 
-  // Device Photos (up to 5)
-  const [photos, setPhotos] = useState<File[]>([]);
-  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  // Physical Damage Photos (6 slots)
+  const [physicalPhotos, setPhysicalPhotos] = useState<Record<PhysicalSlotKey, File | null>>({
+    front: null,
+    back: null,
+    right: null,
+    left: null,
+    top: null,
+    bottom: null
+  });
+  const [physicalPreviews, setPhysicalPreviews] = useState<Record<PhysicalSlotKey, string | null>>({
+    front: null,
+    back: null,
+    right: null,
+    left: null,
+    top: null,
+    bottom: null
+  });
+
+  // Section 4: Main Problem / Repair Issue Photos (up to 5)
+  const [mainProblemPhotos, setMainProblemPhotos] = useState<File[]>([]);
+  const [mainProblemPreviews, setMainProblemPreviews] = useState<string[]>([]);
+
+  // Lightbox Modal for enlarged view
+  const [enlargedImage, setEnlargedImage] = useState<{ url: string; title: string } | null>(null);
 
   // Preferred Branch
   const [branch, setBranch] = useState('Tagoloan');
@@ -124,43 +157,119 @@ export default function CustomerRepairRequestModal({
       .finally(() => setIsLoadingProfile(false));
   }, [isOpen]);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Image compression helper (Target ~2 MB max, preserving sharpness and aspect ratio)
+  const compressImageFile = async (file: File): Promise<File> => {
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      throw new Error('Please upload a valid image file (JPG, JPEG, PNG, or WebP).');
+    }
+
+    if (file.size <= 1.5 * 1024 * 1024 && (file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp')) {
+      return file;
+    }
+
+    try {
+      const options = {
+        maxSizeMB: 2,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        initialQuality: 0.85
+      };
+      const compressed = await imageCompression(file, options);
+      return compressed;
+    } catch (err) {
+      console.warn('Image compression fallback to original:', err);
+      return file;
+    }
+  };
+
+  // Section 3: Physical damage photo upload
+  const handlePhysicalPhotoUpload = async (slotKey: PhysicalSlotKey, file: File | null) => {
+    if (!file) return;
+    setErrorMessage(null);
+
+    try {
+      const compressed = await compressImageFile(file);
+      const previewUrl = URL.createObjectURL(compressed);
+
+      if (physicalPreviews[slotKey]) {
+        URL.revokeObjectURL(physicalPreviews[slotKey]!);
+      }
+
+      setPhysicalPhotos(prev => ({ ...prev, [slotKey]: compressed }));
+      setPhysicalPreviews(prev => ({ ...prev, [slotKey]: previewUrl }));
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to process image');
+    }
+  };
+
+  const handleRemovePhysicalPhoto = (slotKey: PhysicalSlotKey) => {
+    if (physicalPreviews[slotKey]) {
+      URL.revokeObjectURL(physicalPreviews[slotKey]!);
+    }
+    setPhysicalPhotos(prev => ({ ...prev, [slotKey]: null }));
+    setPhysicalPreviews(prev => ({ ...prev, [slotKey]: null }));
+  };
+
+  // Section 4: Main problem photo upload
+  const handleMainProblemPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
-    
-    if (photos.length + files.length > 5) {
-      setErrorMessage('You can upload a maximum of 5 photos.');
+
+    if (mainProblemPhotos.length + files.length > 5) {
+      setErrorMessage('You can upload a maximum of 5 main problem photos.');
       return;
     }
     setErrorMessage(null);
-
-    const options = {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1280,
-      useWebWorker: true,
-    };
 
     const newFiles: File[] = [];
     const newPreviews: string[] = [];
 
     for (const file of files) {
       try {
-        const compressedFile = await imageCompression(file, options);
-        newFiles.push(compressedFile);
-        newPreviews.push(URL.createObjectURL(compressedFile));
-      } catch (err) {
-        newFiles.push(file);
-        newPreviews.push(URL.createObjectURL(file));
+        const compressed = await compressImageFile(file);
+        newFiles.push(compressed);
+        newPreviews.push(URL.createObjectURL(compressed));
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Failed to process image');
       }
     }
 
-    setPhotos(prev => [...prev, ...newFiles]);
-    setPhotoPreviews(prev => [...prev, ...newPreviews]);
+    setMainProblemPhotos(prev => [...prev, ...newFiles]);
+    setMainProblemPreviews(prev => [...prev, ...newPreviews]);
   };
 
-  const handleRemovePhoto = (index: number) => {
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveMainProblemPhoto = (index: number) => {
+    if (mainProblemPreviews[index]) {
+      URL.revokeObjectURL(mainProblemPreviews[index]);
+    }
+    setMainProblemPhotos(prev => prev.filter((_, i) => i !== index));
+    setMainProblemPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleReplaceMainProblemPhoto = async (index: number, file: File | null) => {
+    if (!file) return;
+    try {
+      const compressed = await compressImageFile(file);
+      const previewUrl = URL.createObjectURL(compressed);
+
+      if (mainProblemPreviews[index]) {
+        URL.revokeObjectURL(mainProblemPreviews[index]);
+      }
+
+      setMainProblemPhotos(prev => {
+        const copy = [...prev];
+        copy[index] = compressed;
+        return copy;
+      });
+      setMainProblemPreviews(prev => {
+        const copy = [...prev];
+        copy[index] = previewUrl;
+        return copy;
+      });
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to replace image');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,6 +301,11 @@ export default function CustomerRepairRequestModal({
       return;
     }
 
+    if (hasPhysicalDamage === 'Yes' && !physicalDamageDescription.trim()) {
+      setErrorMessage('Please describe the visible physical damage.');
+      return;
+    }
+
     if (!branch) {
       setErrorMessage('Please select a preferred repair branch.');
       return;
@@ -216,6 +330,7 @@ export default function CustomerRepairRequestModal({
         problemDescription: problemDescription.trim(),
         isWorking,
         hasPhysicalDamage,
+        physicalDamageDescription: hasPhysicalDamage === 'Yes' ? physicalDamageDescription.trim() : '',
         branch,
         customerName: customerInfo.name,
         customerEmail: customerInfo.email,
@@ -225,11 +340,23 @@ export default function CustomerRepairRequestModal({
 
       formData.append('repairHistory', JSON.stringify(detailedPayload));
 
-      // Append photos
-      photos.forEach((file, index) => {
-        formData.append(`photo_${index}`, file);
+      // Append physical damage photos by slot
+      if (hasPhysicalDamage === 'Yes') {
+        PHYSICAL_DAMAGE_SLOTS.forEach(slot => {
+          const file = physicalPhotos[slot.key];
+          if (file) {
+            formData.append(`physical_photo_${slot.key}`, file);
+          }
+        });
+      }
+
+      // Append main problem photos
+      mainProblemPhotos.forEach((file, index) => {
+        formData.append(`main_photo_${index}`, file);
+        formData.append(`photo_${index}`, file); // Backward compatibility
       });
-      formData.append('photoCount', photos.length.toString());
+      formData.append('mainPhotoCount', mainProblemPhotos.length.toString());
+      formData.append('photoCount', mainProblemPhotos.length.toString());
 
       const res = await fetch('/api/monitoring', {
         method: 'POST',
@@ -264,8 +391,25 @@ export default function CustomerRepairRequestModal({
     setProblemDescription('');
     setIsWorking('Yes');
     setHasPhysicalDamage('No');
-    setPhotos([]);
-    setPhotoPreviews([]);
+    setPhysicalDamageDescription('');
+    setPhysicalPhotos({
+      front: null,
+      back: null,
+      right: null,
+      left: null,
+      top: null,
+      bottom: null
+    });
+    setPhysicalPreviews({
+      front: null,
+      back: null,
+      right: null,
+      left: null,
+      top: null,
+      bottom: null
+    });
+    setMainProblemPhotos([]);
+    setMainProblemPreviews([]);
     setErrorMessage(null);
     onSuccess();
     onClose();
@@ -458,10 +602,15 @@ export default function CustomerRepairRequestModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {/* Is Working? */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Is the device currently working? <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      IS THE DEVICE CURRENTLY WORKING? <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-gray-500 italic">
+                      Mugana ba karon ang device? <span className="text-red-500">*</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
                     {(['Yes', 'No', 'Partially'] as const).map((opt) => (
                       <button
                         type="button"
@@ -481,10 +630,15 @@ export default function CustomerRepairRequestModal({
 
                 {/* Visible Physical Damage? */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Does the device have visible physical damage? <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col">
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      DOES THE DEVICE HAVE VISIBLE PHYSICAL DAMAGE? <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-gray-500 italic">
+                      Naa ba'y makita nga pisikal nga kadaot sa device? <span className="text-red-500">*</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
                     {(['Yes', 'No'] as const).map((opt) => (
                       <button
                         type="button"
@@ -502,9 +656,139 @@ export default function CustomerRepairRequestModal({
                   </div>
                 </div>
               </div>
+
+              {/* Conditional Physical Damage Details (When Yes) */}
+              {hasPhysicalDamage === 'Yes' && (
+                <div className="flex flex-col gap-5 pt-3 border-t border-purple-100 animate-in fade-in slide-in-from-top-2">
+                  
+                  {/* Physical Damage Description */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                          Describe the Visible Physical Damage <span className="text-red-500">*</span>
+                        </label>
+                        <span className="text-[11px] text-gray-500 italic">
+                          Ilaraw ang makita nga pisikal nga kadaot.
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-gray-400">
+                        {physicalDamageDescription.length} / 500
+                      </span>
+                    </div>
+                    <textarea
+                      rows={3}
+                      maxLength={500}
+                      required={hasPhysicalDamage === 'Yes'}
+                      placeholder="Example: Cracked screen, scratches on the back cover, dent on the side, broken camera glass, etc."
+                      value={physicalDamageDescription}
+                      onChange={(e) => setPhysicalDamageDescription(e.target.value)}
+                      className="p-4 rounded-xl border border-gray-300 focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100 outline-none text-sm font-medium text-black bg-white transition-all resize-none"
+                    />
+                  </div>
+
+                  {/* Physical Damage Evidence Photos */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <Camera size={16} className="text-[#bd00ff]" />
+                        <span className="text-xs font-bold text-purple-950 uppercase tracking-wider">
+                          Physical Damage Evidence Photos
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-gray-500 italic">
+                        Mga Litrato sa Pisikal nga Kadaot
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 m-0">
+                      Upload clear photos showing the physical condition of the device from different angles.
+                    </p>
+                    <p className="text-[11px] text-gray-500 italic -mt-1 m-0">
+                      Pag-upload og klaro nga mga litrato sa device gikan sa lain-laing anggulo aron makita ang pisikal nga kondisyon ug kadaot niini.
+                    </p>
+
+                    {/* 6 Angle Slots Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 mt-2">
+                      {PHYSICAL_DAMAGE_SLOTS.map((slot) => {
+                        const preview = physicalPreviews[slot.key];
+                        return (
+                          <div
+                            key={slot.key}
+                            className="bg-white rounded-2xl border-2 border-dashed border-purple-200 p-2.5 flex flex-col items-center text-center relative hover:border-[#bd00ff] transition-all group shadow-sm min-h-[140px] justify-between"
+                          >
+                            {preview ? (
+                              <div className="w-full flex flex-col items-center gap-1.5">
+                                <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100 border border-purple-100 group/img">
+                                  <img
+                                    src={preview}
+                                    alt={slot.labelEn}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setEnlargedImage({ url: preview, title: `${slot.labelEn} (${slot.labelCeb})` })}
+                                      className="p-1.5 bg-white/90 hover:bg-white text-gray-800 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer border-none shadow"
+                                      title="View Photo"
+                                    >
+                                      <Eye size={13} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemovePhysicalPhoto(slot.key)}
+                                      className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer border-none shadow"
+                                      title="Remove Photo"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-center text-center">
+                                  <span className="text-[11px] font-bold text-gray-900 leading-tight">{slot.labelEn}</span>
+                                  <span className="text-[10px] text-gray-500 italic leading-tight">{slot.labelCeb}</span>
+                                </div>
+                                <label className="w-full py-1 px-2 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#bd00ff] text-[10px] font-bold cursor-pointer transition-colors flex items-center justify-center gap-1">
+                                  <RefreshCw size={11} />
+                                  <span>Replace</span>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    onChange={(e) => handlePhysicalPhotoUpload(slot.key, e.target.files?.[0] || null)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              </div>
+                            ) : (
+                              <label className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 cursor-pointer">
+                                <div className="w-9 h-9 rounded-full bg-purple-50 group-hover:bg-purple-100 text-[#bd00ff] flex items-center justify-center transition-colors">
+                                  <Camera size={18} />
+                                </div>
+                                <span className="text-xs font-bold text-purple-800 group-hover:text-[#bd00ff] transition-colors">
+                                  + Add Photo
+                                </span>
+                                <div className="flex flex-col items-center text-center leading-tight">
+                                  <span className="text-[11px] font-bold text-gray-800">{slot.labelEn}</span>
+                                  <span className="text-[10px] text-gray-400 italic">{slot.labelCeb}</span>
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                                  onChange={(e) => handlePhysicalPhotoUpload(slot.key, e.target.files?.[0] || null)}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </div>
 
-            {/* Section 4: Upload Device Photos */}
+            {/* Section 4: Upload Device Photos (Main Problem Photos) */}
             <div className="flex flex-col gap-4 bg-gray-50/70 p-5 rounded-2xl border border-gray-100">
               <div className="flex items-center justify-between border-b border-gray-200/80 pb-2">
                 <div className="flex items-center gap-2 text-purple-950 font-bold text-base">
@@ -512,50 +796,74 @@ export default function CustomerRepairRequestModal({
                   <span>4. Upload Device Photos</span>
                 </div>
                 <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1 rounded-full">
-                  {photos.length} / 5 photos
+                  {mainProblemPhotos.length} / 5 photos
                 </span>
               </div>
 
-              <p className="text-xs text-gray-500 -mt-2">
-                Suggested photos: Front of device, Back of device, Damaged area, Screen/problem area, or other relevant angle.
-              </p>
+              <div className="flex flex-col -mt-2">
+                <p className="text-xs text-gray-600 m-0">
+                  Upload photos showing the main problem or issue with your device.
+                </p>
+                <p className="text-[11px] text-gray-500 italic m-0">
+                  Pag-upload og mga litrato nga nagpakita sa main nga problema o issue sa imong device.
+                </p>
+              </div>
 
               {/* Photo Previews Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {photoPreviews.map((preview, index) => (
+                {mainProblemPreviews.map((preview, index) => (
                   <div
                     key={index}
                     className="relative aspect-square rounded-xl overflow-hidden border-2 border-purple-200 bg-white group shadow-sm"
                   >
                     <img
                       src={preview}
-                      alt={`Photo ${index + 1}`}
+                      alt={`Problem Photo ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePhoto(index)}
-                      className="absolute top-1.5 right-1.5 p-1.5 bg-red-600 text-white rounded-full opacity-90 hover:opacity-100 transition-opacity shadow cursor-pointer border-none"
-                      title="Remove photo"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center py-0.5 font-bold">
-                      Photo {index + 1}
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+                      <button
+                        type="button"
+                        onClick={() => setEnlargedImage({ url: preview, title: `Main Problem Photo ${index + 1}` })}
+                        className="p-1.5 bg-black/60 hover:bg-black text-white rounded-full transition-opacity shadow cursor-pointer border-none"
+                        title="View photo"
+                      >
+                        <Eye size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMainProblemPhoto(index)}
+                        className="p-1.5 bg-red-600 text-white rounded-full opacity-90 hover:opacity-100 transition-opacity shadow cursor-pointer border-none"
+                        title="Remove photo"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </div>
+                    <label
+                      className="absolute bottom-0 inset-x-0 bg-black/70 hover:bg-black/90 text-white text-[10px] text-center py-1 font-bold cursor-pointer transition-colors flex items-center justify-center gap-1"
+                      title="Replace photo"
+                    >
+                      <span>Replace Photo {index + 1}</span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => handleReplaceMainProblemPhoto(index, e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
                 ))}
 
-                {photos.length < 5 && (
+                {mainProblemPhotos.length < 5 && (
                   <label className="aspect-square rounded-xl border-2 border-dashed border-purple-300 hover:border-[#bd00ff] bg-purple-50/50 hover:bg-purple-100/50 flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors group">
                     <Upload size={22} className="text-purple-600 group-hover:scale-110 transition-transform mb-1" />
-                    <span className="text-xs font-bold text-purple-800">Add Photo</span>
-                    <span className="text-[10px] text-gray-400">Max 5MB</span>
+                    <span className="text-xs font-bold text-purple-800">+ Add Photo</span>
+                    <span className="text-[10px] text-gray-400">Max 5 photos</span>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
                       multiple
-                      onChange={handlePhotoUpload}
+                      onChange={handleMainProblemPhotoUpload}
                       className="hidden"
                     />
                   </label>
@@ -642,6 +950,32 @@ export default function CustomerRepairRequestModal({
           </form>
         </div>
       </div>
+
+      {/* Enlarged Photo Lightbox Modal */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full flex items-center justify-between text-white mb-2">
+              <span className="font-bold text-sm">{enlargedImage.title}</span>
+              <button
+                type="button"
+                onClick={() => setEnlargedImage(null)}
+                className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white cursor-pointer border-none transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <img
+              src={enlargedImage.url}
+              alt={enlargedImage.title}
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl bg-black"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Success Modal */}
       {isSuccessModalOpen && (

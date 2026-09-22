@@ -270,9 +270,9 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
 
                           {/* Device Condition if parsed */}
                           {parsed && (
-                            <div className="flex flex-col gap-1 sm:col-span-2">
+                            <div className="flex flex-col gap-2 sm:col-span-2">
                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Device Condition (At Intake)</span>
-                              <div className="grid grid-cols-2 gap-3 mt-1">
+                              <div className="grid grid-cols-2 gap-3 mt-0.5">
                                 <div className="bg-white border border-gray-200/70 rounded-xl p-3 text-xs">
                                   <span className="text-gray-400 font-medium block">Is Device Working</span>
                                   <span className="font-bold text-gray-900 text-sm mt-0.5 block">{parsed.isWorking || 'Yes'}</span>
@@ -282,11 +282,17 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                                   <span className="font-bold text-gray-900 text-sm mt-0.5 block">{parsed.hasPhysicalDamage || 'No'}</span>
                                 </div>
                               </div>
+                              {parsed.physicalDamageDescription && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mt-1 text-xs">
+                                  <span className="font-bold text-amber-900 block mb-1">Physical Damage Description</span>
+                                  <p className="text-amber-950 leading-relaxed m-0 text-sm">{parsed.physicalDamageDescription}</p>
+                                </div>
+                              )}
                             </div>
                           )}
 
                           {/* Uploaded Photos Gallery */}
-                          {photosList.length > 1 && (
+                          {photosList.length > 0 && (
                             <div className="flex flex-col gap-2 sm:col-span-2">
                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
                                 Uploaded Device Photos ({photosList.length})

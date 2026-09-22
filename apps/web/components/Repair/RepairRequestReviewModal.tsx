@@ -54,6 +54,9 @@ export default function RepairRequestReviewModal({
     problemDescription?: string;
     isWorking?: string;
     hasPhysicalDamage?: string;
+    physicalDamageDescription?: string;
+    physicalDamagePhotos?: Record<string, string>;
+    mainProblemPhotos?: string[];
     branch?: string;
     customerName?: string;
     customerEmail?: string;
@@ -97,6 +100,9 @@ export default function RepairRequestReviewModal({
   const problemDescription = parsedDetails?.problemDescription || request.cause?.split(':').slice(1).join(':').trim() || request.cause || 'No detailed description provided.';
   const isWorking = parsedDetails?.isWorking || 'Unknown';
   const hasPhysicalDamage = parsedDetails?.hasPhysicalDamage || 'Unknown';
+  const physicalDamageDescription = parsedDetails?.physicalDamageDescription || '';
+  const physicalDamagePhotos = parsedDetails?.physicalDamagePhotos || {};
+  const mainProblemPhotos = parsedDetails?.mainProblemPhotos || [];
   const dateSubmitted = parsedDetails?.submittedAt || request.createdAt;
 
   const formattedDate = dateSubmitted
@@ -273,6 +279,12 @@ export default function RepairRequestReviewModal({
                       {hasPhysicalDamage}
                     </span>
                   </div>
+                  {hasPhysicalDamage === 'Yes' && physicalDamageDescription && (
+                    <div className="mt-1 pt-2 border-t border-gray-200">
+                      <span className="text-gray-500 block text-[11px] font-semibold">Damage Description:</span>
+                      <p className="text-gray-800 text-xs mt-0.5 m-0 font-medium italic">"{physicalDamageDescription}"</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -292,27 +304,70 @@ export default function RepairRequestReviewModal({
               <span className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
                 <ImageIcon size={14} className="text-[#bd00ff]" /> Uploaded Device Photos ({photosList.length})
               </span>
+              
+              {/* Physical damage slots if present */}
+              {Object.keys(physicalDamagePhotos).length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">
+                    Physical Damage Angle Photos
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+                    {['front', 'back', 'right', 'left', 'top', 'bottom'].map((slot) => {
+                      const photoUrl = physicalDamagePhotos[slot];
+                      if (!photoUrl) return null;
+                      return (
+                        <div
+                          key={slot}
+                          onClick={() => setSelectedImage(photoUrl)}
+                          className="group relative aspect-square rounded-xl overflow-hidden border border-amber-300 hover:border-amber-500 bg-gray-100 cursor-pointer shadow-sm transition-all"
+                        >
+                          <img
+                            src={photoUrl}
+                            alt={`${slot} angle`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                            View
+                          </div>
+                          <div className="absolute bottom-0 inset-x-0 bg-amber-900/80 text-white text-[9px] uppercase tracking-wider text-center py-0.5 font-bold">
+                            {slot}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Main Issue / All Photos */}
               {photosList.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  {photosList.map((photoUrl, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setSelectedImage(photoUrl)}
-                      className="group relative aspect-square rounded-xl overflow-hidden border-2 border-purple-100 hover:border-[#bd00ff] bg-gray-100 cursor-pointer shadow-sm transition-all"
-                    >
-                      <img
-                        src={photoUrl}
-                        alt={`Device photo ${idx + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                        View
+                <div className="flex flex-col gap-2">
+                  {Object.keys(physicalDamagePhotos).length > 0 && (
+                    <span className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                      All / Issue Photos
+                    </span>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    {photosList.map((photoUrl, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => setSelectedImage(photoUrl)}
+                        className="group relative aspect-square rounded-xl overflow-hidden border-2 border-purple-100 hover:border-[#bd00ff] bg-gray-100 cursor-pointer shadow-sm transition-all"
+                      >
+                        <img
+                          src={photoUrl}
+                          alt={`Device photo ${idx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                          View
+                        </div>
+                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center py-0.5 font-semibold">
+                          Photo {idx + 1}
+                        </div>
                       </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] text-center py-0.5 font-semibold">
-                        Photo {idx + 1}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="p-6 text-center text-xs text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
