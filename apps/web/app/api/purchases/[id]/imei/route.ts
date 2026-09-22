@@ -83,12 +83,52 @@ export async function POST(
       }, { status: 409 });
     }
 
-    // 5. Save IMEI to Purchase
+    // 5. Check against DeviceUnit table if unit is tracked in inventory
+    const registeredUnit = await prisma.deviceUnit.findUnique({
+      where: { imei: cleanImei }
+    });
+
+    if (registeredUnit) {
+      if (registeredUnit.branch && purchase.branch && registeredUnit.branch.toLowerCase() !== purchase.branch.toLowerCase()) {
+        return NextResponse.json({
+          error: `IMEI ${cleanImei} is registered to ${registeredUnit.branch} Branch, but this order is at ${purchase.branch} Branch.`
+        }, { status: 400 });
+      }
+
+      if (registeredUnit.deviceId && purchase.deviceId && registeredUnit.deviceId !== purchase.deviceId) {
+        return NextResponse.json({
+          error: `IMEI ${cleanImei} is registered for a different device model in inventory.`
+        }, { status: 400 });
+      }
+
+      if (registeredUnit.status === 'Sold' && registeredUnit.purchaseId !== purchase.id) {
+        return NextResponse.json({
+          error: `IMEI ${cleanImei} is already marked as Sold in inventory.`
+        }, { status: 409 });
+      }
+    }
+
+    // 6. Save IMEI to Purchase and update status if needed
     const updatedPurchase = await prisma.purchase.update({
       where: { id: purchase.id },
       data: { imei: cleanImei },
       include: { device: true, user: true }
     });
+
+    // 7. Update DeviceUnit to Sold
+    if (registeredUnit) {
+      try {
+        await prisma.deviceUnit.update({
+          where: { id: registeredUnit.id },
+          data: {
+            status: 'Sold',
+            purchaseId: purchase.id
+          }
+        });
+      } catch (e) {
+        console.error('Error updating DeviceUnit:', e);
+      }
+    }
 
     // 6. Audit Log
     try {

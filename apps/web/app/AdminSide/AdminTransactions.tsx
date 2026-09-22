@@ -6,6 +6,7 @@ import DatePicker from '../../components/ui/DatePicker';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 import { formatDisplayInvoiceId } from '../../lib/invoice';
+import { isIPhoneProduct } from '../../lib/imei';
 
 interface Transaction {
   id: string;
@@ -286,11 +287,15 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           <span className="text-xs text-gray-500 font-semibold truncate">
                             Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                           </span>
-                          {tx.imei && (
+                          {tx.imei ? (
                             <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
                               IMEI: {tx.imei}
                             </span>
-                          )}
+                          ) : isIPhoneProduct(tx.device?.name || '') ? (
+                            <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                              IMEI: Pending Pickup
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     </td>

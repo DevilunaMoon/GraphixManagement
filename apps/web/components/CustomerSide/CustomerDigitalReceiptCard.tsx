@@ -5,6 +5,7 @@ import { Check, Download, Receipt, Printer, Copy, FileText, Lock } from 'lucide-
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { formatDisplayInvoiceId, getBranchCode } from '../../lib/invoice';
+import { isIPhoneProduct } from '../../lib/imei';
 
 export interface ReceiptCartItem {
   id?: string;
@@ -183,6 +184,8 @@ export default function CustomerDigitalReceiptCard({
 
     if (item.imei || data?.imei) {
       receiptText += `IMEI: ${item.imei || data?.imei}\n`;
+    } else if (isIPhoneProduct(item.name || data?.deviceName)) {
+      receiptText += `IMEI: Pending Pickup (recorded during in-store pickup)\n`;
     }
   });
 
@@ -467,11 +470,15 @@ export default function CustomerDigitalReceiptCard({
                     {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                {(item.imei || data?.imei) && (
+                {(item.imei || data?.imei) ? (
                   <div className="font-mono font-bold text-[10px] text-gray-800 text-left">
                     IMEI: {item.imei || data?.imei}
                   </div>
-                )}
+                ) : isIPhoneProduct(item.name || data?.deviceName) ? (
+                  <div className="font-sans font-semibold text-[10px] text-amber-700 text-left">
+                    IMEI: Pending Pickup <span className="text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

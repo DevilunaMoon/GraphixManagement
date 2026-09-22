@@ -104,11 +104,17 @@ export default function CashierVerifyPickupModal({
   const [showReceiptImageModal, setShowReceiptImageModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedVariations, setSelectedVariations] = useState<string | null>(null);
+  const [isEditingVariant, setIsEditingVariant] = useState(false);
+  const [newColorInput, setNewColorInput] = useState('');
   const [imeiModalTarget, setImeiModalTarget] = useState<{
     purchaseId: string;
     deviceName: string;
     referenceId?: string;
     customerName?: string | null;
+    branch?: string | null;
+    variations?: string | null;
+    quantity?: number;
     initialImei?: string | null;
   } | null>(null);
 
@@ -122,7 +128,9 @@ export default function CashierVerifyPickupModal({
         setReservations(data.purchases);
         setCurrentPage(1);
         if (data.purchases.length === 1 && query.trim()) {
-          setSelectedOrder(data.purchases[0]);
+          const first = data.purchases[0];
+          setSelectedOrder(first);
+          setSelectedVariations(first.variations);
         }
       } else {
         setReservations([]);
@@ -145,6 +153,9 @@ export default function CashierVerifyPickupModal({
       return () => clearTimeout(timer);
     } else {
       setSelectedOrder(null);
+      setSelectedVariations(null);
+      setIsEditingVariant(false);
+      setNewColorInput('');
       setSuccessMessage(null);
       setErrorMessage(null);
       setCurrentPage(1);
@@ -156,6 +167,9 @@ export default function CashierVerifyPickupModal({
 
   const handleSelectOrder = (order: PickupReservation) => {
     setSelectedOrder(order);
+    setSelectedVariations(order.variations);
+    setIsEditingVariant(false);
+    setNewColorInput('');
     setErrorMessage(null);
     setSuccessMessage(null);
     setShowRejectDialog(false);
@@ -180,22 +194,12 @@ export default function CashierVerifyPickupModal({
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMessage(`Payment verified! ${selectedOrder.user.name || 'Customer'}'s official Graphix Store receipt is now issued and order is ready for pickup.`);
+        setSuccessMessage(`Payment verified! ${selectedOrder.user.name || 'Customer'}'s order is now READY FOR PICKUP. Official Graphix Store receipt is issued. IMEI will be recorded upon device handover.`);
         setReservations(prev =>
           prev.map(r => r.id === selectedOrder.id ? { ...r, status: 'Paid', isSettled: true } : r)
         );
         setSelectedOrder(prev => prev ? { ...prev, status: 'Paid', isSettled: true } : null);
         if (onSuccess) onSuccess();
-
-        // Check if this verified order is an iPhone without an IMEI recorded yet
-        if (isIPhoneProduct(selectedOrder.device.name) && !selectedOrder.imei) {
-          setImeiModalTarget({
-            purchaseId: selectedOrder.id,
-            deviceName: selectedOrder.device.name,
-            referenceId: selectedOrder.referenceId,
-            customerName: selectedOrder.user.name
-          });
-        }
       } else {
         setErrorMessage(data.error || 'Failed to verify payment');
       }
@@ -247,8 +251,19 @@ export default function CashierVerifyPickupModal({
 
   const handleImeiSaved = (newImei: string) => {
     if (imeiModalTarget) {
-      setReservations(prev => prev.map(r => r.id === imeiModalTarget.purchaseId ? { ...r, imei: newImei } : r));
-      setSelectedOrder(prev => (prev && prev.id === imeiModalTarget.purchaseId) ? { ...prev, imei: newImei } : prev);
+      setReservations(prev => prev.map(r => r.id === imeiModalTarget.purchaseId ? { 
+        ...r, 
+        imei: newImei, 
+        status: 'Completed',
+        variations: selectedVariations || r.variations 
+      } : r));
+      setSelectedOrder(prev => (prev && prev.id === imeiModalTarget.purchaseId) ? { 
+        ...prev, 
+        imei: newImei, 
+        status: 'Completed',
+        variations: selectedVariations || prev.variations 
+      } : prev);
+      setSuccessMessage(`Device successfully handed over to customer! Recorded IMEI (${newImei}) is permanently linked.`);
     }
     setImeiModalTarget(null);
     if (onSuccess) onSuccess();
@@ -396,64 +411,129 @@ export default function CashierVerifyPickupModal({
                     <span className="text-xs font-mono font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                       {selectedOrder.referenceId}
                     </span>
-                    {selectedOrder.status === 'Paid' ? (
-                      <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        PAID & VERIFIED
+                    {selectedOrder.status === 'Completed' ? (
+                      <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                        <Check size={12} /> PICKUP COMPLETED
+                      </span>
+                    ) : selectedOrder.status === 'Paid' ? (
+                      <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                        READY FOR PICKUP (PAID)
                       </span>
                     ) : selectedOrder.status === 'For Verification' ? (
-                      <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="text-[10px] font-black bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full flex items-center gap-1 uppercase tracking-wider">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
                         FOR VERIFICATION (GCASH)
                       </span>
                     ) : selectedOrder.status === 'Rejected' ? (
-                      <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         PAYMENT REJECTED
                       </span>
                     ) : selectedOrder.isExpired ? (
-                      <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         EXPIRED
                       </span>
                     ) : (
-                      <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                         PENDING CASHIER VERIFICATION
                       </span>
                     )}
                   </div>
                   <h4 className="text-base font-extrabold text-gray-900 m-0">{selectedOrder.device.name}</h4>
+                  
+                  {/* Variations & Color Changer */}
                   <div className="flex items-center gap-1.5 flex-wrap mt-1">
                     <span className="text-xs font-bold text-gray-600">Qty: {selectedOrder.quantity}</span>
-                    {getVariationPills(selectedOrder.variations).map((pill, idx) => (
+                    {getVariationPills(selectedVariations || selectedOrder.variations).map((pill, idx) => (
                       <span key={idx} className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md">
                         {pill}
                       </span>
                     ))}
-                  </div>
 
-                  {/* Recorded IMEI Badge or Prompt for iPhone */}
-                  {selectedOrder.imei ? (
-                    <div className="flex items-center gap-1.5 mt-2 p-2 bg-indigo-50 border border-indigo-200 rounded-xl">
-                      <Smartphone size={15} className="text-indigo-600 shrink-0" />
-                      <span className="text-xs font-semibold text-gray-700">Recorded IMEI:</span>
-                      <span className="font-mono font-black text-xs text-indigo-900">{selectedOrder.imei}</span>
-                    </div>
-                  ) : isIPhoneProduct(selectedOrder.device.name) && (selectedOrder.status === 'Paid' || selectedOrder.isSettled || selectedOrder.status === 'Active') ? (
-                    <div className="flex items-center justify-between gap-2 mt-2 p-2 bg-amber-50 border border-amber-200 rounded-xl">
-                      <div className="flex items-center gap-1.5">
-                        <Smartphone size={15} className="text-amber-600 shrink-0" />
-                        <span className="text-xs font-bold text-amber-900">iPhone IMEI Not Recorded Yet</span>
-                      </div>
+                    {/* Color / Variant Change Toggle (Allowed before pickup is completed) */}
+                    {selectedOrder.status !== 'Completed' && (
                       <button
                         type="button"
-                        onClick={() => setImeiModalTarget({
-                          purchaseId: selectedOrder.id,
-                          deviceName: selectedOrder.device.name,
-                          referenceId: selectedOrder.referenceId,
-                          customerName: selectedOrder.user.name
-                        })}
-                        className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[11px] rounded-lg border-none cursor-pointer transition-all shadow-sm flex items-center gap-1"
+                        onClick={() => setIsEditingVariant(!isEditingVariant)}
+                        className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded-md cursor-pointer transition-colors"
                       >
-                        + Enter IMEI
+                        {isEditingVariant ? 'Cancel Color Change' : 'Change Color / Unit'}
                       </button>
+                    )}
+                  </div>
+
+                  {/* Inline Color / Unit Variant Editor */}
+                  {isEditingVariant && selectedOrder.status !== 'Completed' && (
+                    <div className="mt-2.5 p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex flex-col gap-2 animate-in fade-in">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-indigo-950">Customer requested a different color / unit at pickup:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['Space Black', 'Sierra Blue', 'Alpine Green', 'Silver', 'Gold', 'Deep Purple', 'Midnight', 'Blue', 'Black'].map((col) => (
+                          <button
+                            key={col}
+                            type="button"
+                            onClick={() => {
+                              const currentPills = getVariationPills(selectedVariations || selectedOrder.variations);
+                              const nonColor = currentPills.filter(p => !p.toLowerCase().includes('color:') && !['black','blue','green','silver','gold','purple','white','midnight'].some(c => p.toLowerCase().includes(c)));
+                              const updated = `Color: ${col}${nonColor.length > 0 ? `, ${nonColor.join(', ')}` : ''}`;
+                              setSelectedVariations(updated);
+                              setIsEditingVariant(false);
+                            }}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white border border-indigo-200 hover:border-indigo-500 text-gray-800 hover:text-indigo-900 cursor-pointer shadow-2xs transition-all"
+                          >
+                            {col}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 items-center mt-1">
+                        <input
+                          type="text"
+                          placeholder="Or type custom color (e.g. Titanium Blue)..."
+                          value={newColorInput}
+                          onChange={(e) => setNewColorInput(e.target.value)}
+                          className="flex-1 px-3 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-medium"
+                        />
+                        <button
+                          type="button"
+                          disabled={!newColorInput.trim()}
+                          onClick={() => {
+                            if (newColorInput.trim()) {
+                              setSelectedVariations(`Color: ${newColorInput.trim()}`);
+                              setNewColorInput('');
+                              setIsEditingVariant(false);
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold border-none cursor-pointer disabled:opacity-50"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recorded IMEI Badge or Pending Pickup Status */}
+                  {selectedOrder.imei ? (
+                    <div className="flex items-center gap-2 mt-2 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                      <Smartphone size={16} className="text-emerald-600 shrink-0" />
+                      <span className="text-xs font-bold text-gray-700">Recorded Physical IMEI:</span>
+                      <span className="font-mono font-black text-xs text-emerald-950">{selectedOrder.imei}</span>
+                      <span className="text-[10px] font-black bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full ml-auto">
+                        PERMANENTLY LINKED
+                      </span>
+                    </div>
+                  ) : isIPhoneProduct(selectedOrder.device.name) ? (
+                    <div className="flex items-center justify-between gap-2 mt-2 p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl">
+                      <div className="flex items-center gap-1.5">
+                        <Smartphone size={16} className="text-amber-600 shrink-0" />
+                        <div>
+                          <span className="text-xs font-bold text-amber-950 block">IMEI: Pending Pickup</span>
+                          <span className="text-[10px] text-amber-700 font-medium">IMEI will be recorded during physical device handover.</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-black bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full shrink-0">
+                        NOT ASSIGNED YET
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -597,8 +677,8 @@ export default function CashierVerifyPickupModal({
                 </div>
               )}
 
-              {/* Payment Verification / Unit Handover Action Buttons */}
-              {selectedOrder.status !== 'Paid' && (
+              {/* ACTION BUTTONS: Payment Verification vs Physical Handover */}
+              {selectedOrder.status !== 'Paid' && selectedOrder.status !== 'Completed' ? (
                 <div className="flex flex-col gap-2 pt-1">
                   
                   {/* GCash order action buttons (Verify Payment vs Reject Payment) */}
@@ -643,6 +723,42 @@ export default function CashierVerifyPickupModal({
                       <span>Confirm Cash Payment & Unlock Receipt</span>
                     </button>
                   )}
+                </div>
+              ) : selectedOrder.status === 'Paid' ? (
+                /* ORDER IS PAID & READY FOR PICKUP: Hand Over Device & Record IMEI */
+                <div className="flex flex-col gap-2.5 pt-2 border-t border-purple-100">
+                  <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 flex items-center justify-between text-xs">
+                    <span className="font-semibold text-purple-900">
+                      Customer is at the store to claim this verified device?
+                    </span>
+                    <span className="font-black text-purple-700 uppercase text-[10px] bg-white px-2 py-0.5 rounded border border-purple-200">
+                      Step: Physical Handover
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setImeiModalTarget({
+                      purchaseId: selectedOrder.id,
+                      deviceName: selectedOrder.device.name,
+                      referenceId: selectedOrder.referenceId,
+                      customerName: selectedOrder.user.name,
+                      branch: selectedOrder.branch,
+                      variations: selectedVariations || selectedOrder.variations,
+                      quantity: selectedOrder.quantity,
+                      initialImei: selectedOrder.imei
+                    })}
+                    className="w-full py-4 bg-gradient-to-r from-[#BF00FF] to-[#4B0082] hover:opacity-95 text-white font-black text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 border-none cursor-pointer"
+                  >
+                    <Smartphone size={18} />
+                    <span>Hand Over Device & Record IMEI (Complete Pickup)</span>
+                  </button>
+                </div>
+              ) : (
+                /* ORDER IS COMPLETED */
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-center gap-2 text-emerald-800 font-bold text-xs">
+                  <CheckCircle2 size={16} className="text-emerald-600" />
+                  <span>Pickup completed and physical unit handed over to customer.</span>
                 </div>
               )}
             </div>
@@ -882,6 +998,9 @@ export default function CashierVerifyPickupModal({
           deviceName={imeiModalTarget.deviceName}
           referenceId={imeiModalTarget.referenceId}
           customerName={imeiModalTarget.customerName}
+          branch={imeiModalTarget.branch}
+          variations={imeiModalTarget.variations}
+          quantity={imeiModalTarget.quantity}
           initialImei={imeiModalTarget.initialImei}
           onSaved={handleImeiSaved}
         />

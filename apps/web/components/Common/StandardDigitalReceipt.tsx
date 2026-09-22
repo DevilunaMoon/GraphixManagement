@@ -208,8 +208,11 @@ export default function StandardDigitalReceipt({
       const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
       text += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
 
+      const isIphone = (item.name || data.device?.name || '').toLowerCase().includes('iphone');
       if (item.imei || data.imei) {
         text += `IMEI: ${item.imei || data.imei}\n`;
+      } else if (isIphone) {
+        text += `IMEI: Pending Pickup (recorded during pickup)\n`;
       }
     });
 
@@ -441,10 +444,12 @@ export default function StandardDigitalReceipt({
 
           {/* Cart Item Breakdown */}
           <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-2.5">
-            {resolvedItems.map((item, idx) => (
-              <div key={idx} className="flex flex-col gap-0.5">
-                <div className="flex justify-between items-start font-black text-black">
-                  <span className="truncate pr-2 flex items-center gap-1">
+            {resolvedItems.map((item, idx) => {
+              const isIphone = (item.name || data.device?.name || '').toLowerCase().includes('iphone');
+              return (
+                <div key={idx} className="flex flex-col gap-0.5">
+                  <div className="flex justify-between items-start font-black text-black">
+                    <span className="truncate pr-2 flex items-center gap-1">
                     <span>{item.name.toUpperCase()}</span>
                     {((item as any).isPreOwned || (data.device as any)?.isPreOwned || (item.name || '').toLowerCase().includes('pre-owned') || (item.name || '').toLowerCase().includes('pre owned')) && (
                       <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300">
@@ -464,13 +469,18 @@ export default function StandardDigitalReceipt({
                     {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                {(item.imei || data.imei) && (
+                {(item.imei || data.imei) ? (
                   <div className="font-mono font-bold text-[10px] text-gray-800 text-left mt-0.5">
                     IMEI: {item.imei || data.imei}
                   </div>
-                )}
+                ) : isIphone ? (
+                  <div className="font-mono font-bold text-[10px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200 inline-block text-left mt-0.5">
+                    IMEI: Pending Pickup <span className="text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
+                  </div>
+                ) : null}
               </div>
-            ))}
+            );
+          })}
           </div>
 
           {/* Financial Totals & Payment Method */}
