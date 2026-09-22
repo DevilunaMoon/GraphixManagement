@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { Filter, Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Trash2, Loader2, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashierVerifyPickupModal from '../../components/CashierSide/CashierVerifyPickupModal';
 import { useBranch } from '../../context/BranchContext';
@@ -114,9 +114,6 @@ export default function CashierDashboard() {
   const navigate = router.push;
   const { userBranch } = useBranch();
   const [searchQuery, setSearchQuery] = useState('');
-  const [brandFilter, setBrandFilter] = useState('All Brands');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   
   const [products, setProducts] = useState<Product[]>([]);
@@ -130,7 +127,7 @@ export default function CashierDashboard() {
     setIsLoading(true);
     const delayDebounceFn = setTimeout(() => {
       const activeBranch = userBranch || 'Tagoloan';
-      fetch(`/api/devices?page=1&limit=100&search=${encodeURIComponent(searchQuery)}&brand=${encodeURIComponent(brandFilter === 'All Brands' ? '' : brandFilter)}&branch=${encodeURIComponent(activeBranch)}`)
+      fetch(`/api/devices?page=1&limit=100&search=${encodeURIComponent(searchQuery)}&branch=${encodeURIComponent(activeBranch)}`)
         .then(res => res.json())
         .then(data => {
           if (data && Array.isArray(data.devices)) {
@@ -149,23 +146,7 @@ export default function CashierDashboard() {
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery, brandFilter, userBranch]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setIsFilterOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleBrandSelect = (brand: string) => {
-    setBrandFilter(brand);
-    setCurrentPage(1);
-    setIsFilterOpen(false);
-  };
+  }, [searchQuery, userBranch]);
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val);
@@ -239,32 +220,6 @@ export default function CashierDashboard() {
           <h2 className="text-2xl font-semibold text-black">Product Devices on Sale</h2>
           
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            
-            {/* Filter */}
-            <div className="relative" ref={filterRef}>
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="flex items-center justify-center w-full sm:w-auto bg-white border border-[#bd00ff] rounded-lg px-6 py-2 text-[1.1rem] text-black cursor-pointer hover:bg-gray-50 transition-colors gap-2"
-              >
-                <Filter size={18} />
-                <span className="font-medium">{brandFilter}</span>
-              </button>
- 
-              {isFilterOpen && (
-                <div className="absolute top-[110%] left-0 bg-white border-2 border-[#bd00ff] rounded-lg shadow-lg min-w-[150px] flex flex-col py-2 z-10">
-                  {['All Brands', 'Iphone', 'Oppo', 'Techno', 'Realme'].map(brand => (
-                    <div 
-                      key={brand}
-                      className="px-5 py-2 cursor-pointer hover:bg-gray-100 font-medium transition-colors text-black"
-                      onClick={() => handleBrandSelect(brand)}
-                    >
-                      {brand}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
- 
             {/* Search */}
             <div className="flex items-center border border-[#bd00ff] rounded-lg px-3 py-2 bg-white flex-1 sm:max-w-[250px]">
               <Search size={18} className="text-gray-500" />
