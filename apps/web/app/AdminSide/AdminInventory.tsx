@@ -1161,19 +1161,24 @@ export default function AdminInventory() {
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white/95 backdrop-blur-md p-5 rounded-2xl border-2 border-purple-500/20 shadow-sm">
         <div className="flex flex-col">
           <div className="flex items-center gap-3">
-            <h2 className="text-[1.6rem] font-bold text-[#111] tracking-tight">Multi-Branch Inventory</h2>
+            <h2 className="text-[1.6rem] font-bold text-[#111] tracking-tight">
+              {isSuperAdmin ? 'Multi-Branch Inventory' : `${userBranch} Branch Inventory`}
+            </h2>
             {isSuperAdmin ? (
               <span className="bg-purple-100 text-[#5c0099] text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider border border-purple-200 flex items-center gap-1.5">
                 <ShieldCheck size={14} /> Super Admin (All Branches)
               </span>
             ) : (
               <span className="bg-blue-100 text-blue-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider border border-blue-200 flex items-center gap-1.5">
-                <Building2 size={14} /> {userBranch} Branch Admin
+                <Building2 size={14} /> {userBranch.toUpperCase()} BRANCH ADMIN
               </span>
             )}
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
-            Organized by Product Name/Model with variant Product IDs and live stock tracking across Tagoloan, Villanueva, and Jasaan.
+            {isSuperAdmin 
+              ? 'Organized by Product Name/Model with variant Product IDs and live stock tracking across Tagoloan, Villanueva, and Jasaan.'
+              : `Organized by Product Name/Model with variant Product IDs and live stock tracking for ${userBranch} branch.`
+            }
           </p>
         </div>
 
@@ -1406,9 +1411,15 @@ export default function AdminInventory() {
               <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
                 <th className="py-4 px-6">Product Model</th>
                 <th className="py-4 px-4 text-center">Variants Count</th>
-                <th className="py-4 px-4 text-center">Tagoloan Stock</th>
-                <th className="py-4 px-4 text-center">Villanueva Stock</th>
-                <th className="py-4 px-4 text-center">Jasaan Stock</th>
+                {isSuperAdmin ? (
+                  <>
+                    <th className="py-4 px-4 text-center">Tagoloan Stock</th>
+                    <th className="py-4 px-4 text-center">Villanueva Stock</th>
+                    <th className="py-4 px-4 text-center">Jasaan Stock</th>
+                  </>
+                ) : (
+                  <th className="py-4 px-4 text-center">{userBranch} Stock</th>
+                )}
                 <th className="py-4 px-4 text-center">Active Branch Stock</th>
                 <th className="py-4 px-4 text-center">Base Price</th>
                 <th className="py-4 px-6 text-right">Actions</th>
@@ -1417,10 +1428,10 @@ export default function AdminInventory() {
             <tbody className="divide-y divide-gray-100 text-sm">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
+                  <td colSpan={isSuperAdmin ? 8 : 6} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
-                      <span className="text-gray-500 font-semibold animate-pulse">Loading multi-branch inventory...</span>
+                      <span className="text-gray-500 font-semibold animate-pulse">Loading {isSuperAdmin ? 'multi-branch' : userBranch} inventory...</span>
                     </div>
                   </td>
                 </tr>
@@ -1429,6 +1440,12 @@ export default function AdminInventory() {
                   const isExpanded = expandedModelId === prod.id;
                   const variants: VariantData[] = prod.variations || [];
                   const isSingleOutOfStock = prod.stock === 0;
+
+                  const assignedStock = userBranch.toLowerCase() === 'villanueva'
+                    ? (prod.villanuevaStock || 0)
+                    : userBranch.toLowerCase() === 'jasaan'
+                    ? (prod.jasaanStock || 0)
+                    : (prod.tagoloanStock || 0);
 
                   return (
                     <React.Fragment key={prod.id}>
@@ -1507,26 +1524,45 @@ export default function AdminInventory() {
                                 {variants.length > 0 ? `${variants.length} Variants` : 'Standard'}
                               </span>
                             </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                                {prod.tagoloanStock > 0 ? `${prod.tagoloanStock} pcs` : 'Out of Stock'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                                {prod.villanuevaStock > 0 ? `${prod.villanuevaStock} pcs` : 'Out of Stock'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center">
-                              <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                                {prod.jasaanStock > 0 ? `${prod.jasaanStock} pcs` : 'Out of Stock'}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 text-center font-bold">
-                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${prod.stock > 0 ? (prod.stock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
-                                {prod.stock > 0 ? `${prod.stock} pcs` : 'Out of Stock'}
-                              </span>
-                            </td>
+                            {isSuperAdmin ? (
+                              <>
+                                <td className="py-4 px-4 text-center">
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                    {prod.tagoloanStock > 0 ? `${prod.tagoloanStock} pcs` : 'Out of Stock'}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-4 text-center">
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                    {prod.villanuevaStock > 0 ? `${prod.villanuevaStock} pcs` : 'Out of Stock'}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-4 text-center">
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                    {prod.jasaanStock > 0 ? `${prod.jasaanStock} pcs` : 'Out of Stock'}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-4 text-center font-bold">
+                                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${prod.stock > 0 ? (prod.stock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
+                                    {prod.stock > 0 ? `${prod.stock} pcs` : 'Out of Stock'}
+                                  </span>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                {/* Assigned Branch Stock */}
+                                <td className="py-4 px-4 text-center">
+                                  <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${assignedStock > 0 ? (assignedStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                                    {assignedStock > 0 ? `${assignedStock} pcs` : 'Out of Stock'}
+                                  </span>
+                                </td>
+                                {/* Active Branch Stock */}
+                                <td className="py-4 px-4 text-center font-bold">
+                                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${assignedStock > 0 ? (assignedStock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
+                                    {assignedStock > 0 ? `${assignedStock} pcs` : 'Out of Stock'}
+                                  </span>
+                                </td>
+                              </>
+                            )}
                             <td className="py-4 px-4 text-center font-bold text-gray-900">
                               {isDiscountActive ? (
                                 <div className="flex flex-col items-center">
@@ -1578,13 +1614,13 @@ export default function AdminInventory() {
                       {/* Expandable Storage Variants Sub-Table */}
                       {isExpanded && (
                         <tr className="bg-purple-50/30 border-b-2 border-purple-200/40">
-                          <td colSpan={8} className="p-4 sm:p-6">
+                          <td colSpan={isSuperAdmin ? 8 : 6} className="p-4 sm:p-6">
                             <div className="bg-white rounded-xl border border-purple-200 p-4 shadow-sm flex flex-col gap-3">
                               <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <div className="flex items-center gap-2">
                                   <Package size={18} className="text-[#5c0099]" />
                                   <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                                    <span>{prod.name} – Storage Variants & Branch Inventory</span>
+                                    <span>{prod.name} – Storage Variants & {isSuperAdmin ? 'Branch Inventory' : `${userBranch} Branch Inventory`}</span>
                                     {prod.isPreOwned && (
                                       <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
                                         PRE-OWNED
@@ -1592,7 +1628,9 @@ export default function AdminInventory() {
                                     )}
                                   </h4>
                                 </div>
-                                <span className="text-xs text-gray-500">Click variant row to adjust branch stock or transfer</span>
+                                <span className="text-xs text-gray-500">
+                                  {isSuperAdmin ? 'Click variant row to adjust branch stock or transfer' : 'Quickly adjust stock or manage variant'}
+                                </span>
                               </div>
 
                               {variants.length > 0 ? (
@@ -1602,77 +1640,111 @@ export default function AdminInventory() {
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
                                         <th className="py-2.5 px-3">Variant (Capacity)</th>
                                         <th className="py-2.5 px-3">Product ID</th>
-                                        <th className="py-2.5 px-3 text-center">Tagoloan</th>
-                                        <th className="py-2.5 px-3 text-center">Villanueva</th>
-                                        <th className="py-2.5 px-3 text-center">Jasaan</th>
-                                        <th className="py-2.5 px-3 text-center">Total Stock</th>
+                                        {isSuperAdmin ? (
+                                          <>
+                                            <th className="py-2.5 px-3 text-center">Tagoloan</th>
+                                            <th className="py-2.5 px-3 text-center">Villanueva</th>
+                                            <th className="py-2.5 px-3 text-center">Jasaan</th>
+                                            <th className="py-2.5 px-3 text-center">Total Stock</th>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
+                                            <th className="py-2.5 px-3 text-center">Active Branch Stock</th>
+                                          </>
+                                        )}
                                         <th className="py-2.5 px-3 text-right">Price</th>
                                         <th className="py-2.5 px-3 text-right">Actions</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 font-medium">
-                                      {variants.map((v, vIdx) => (
-                                        <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
-                                          <td className="py-3 px-3 font-bold text-gray-900">
-                                            {prod.name} – {v.name}
-                                          </td>
-                                          <td className="py-3 px-3">
-                                            <code className="bg-purple-100 text-purple-800 font-mono font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
-                                              {v.productId}
-                                            </code>
-                                          </td>
-                                          <td className="py-3 px-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded font-bold ${v.tagoloanStock && v.tagoloanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                              {v.tagoloanStock && v.tagoloanStock > 0 ? `${v.tagoloanStock} pcs` : 'Out of Stock'}
-                                            </span>
-                                          </td>
-                                          <td className="py-3 px-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded font-bold ${v.villanuevaStock && v.villanuevaStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                              {v.villanuevaStock && v.villanuevaStock > 0 ? `${v.villanuevaStock} pcs` : 'Out of Stock'}
-                                            </span>
-                                          </td>
-                                          <td className="py-3 px-3 text-center">
-                                            <span className={`px-2 py-0.5 rounded font-bold ${v.jasaanStock && v.jasaanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                              {v.jasaanStock && v.jasaanStock > 0 ? `${v.jasaanStock} pcs` : 'Out of Stock'}
-                                            </span>
-                                          </td>
-                                          <td className="py-3 px-3 text-center font-bold text-gray-800">
-                                            {v.totalStock || ((v.tagoloanStock || 0) + (v.villanuevaStock || 0) + (v.jasaanStock || 0))} pcs
-                                          </td>
-                                          <td className="py-3 px-3 text-right font-bold text-[#5c0099]">
-                                            ₱ {Number(v.price || prod.price).toLocaleString()}
-                                          </td>
-                                          <td className="py-3 px-3 text-right">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                              <button
-                                                onClick={() => {
-                                                  setAdjustItem({ device: prod, variant: v });
-                                                  setAdjustBranch(isSuperAdmin ? 'Tagoloan' : userBranch);
-                                                  setAdjustStockVal(String(isSuperAdmin ? (v.tagoloanStock || 0) : ((v as any)[`${userBranch.toLowerCase()}Stock`] || 0)));
-                                                  setAdjustModalOpen(true);
-                                                }}
-                                                className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer"
-                                                title="Quick Adjust Stock"
-                                              >
-                                                Adjust Stock
-                                              </button>
-                                              {isSuperAdmin && (
+                                      {variants.map((v, vIdx) => {
+                                        const vBranchStock = userBranch.toLowerCase() === 'villanueva'
+                                          ? (v.villanuevaStock ?? (v.branchStocks?.Villanueva || 0))
+                                          : userBranch.toLowerCase() === 'jasaan'
+                                          ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
+                                          : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
+
+                                        return (
+                                          <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
+                                            <td className="py-3 px-3 font-bold text-gray-900">
+                                              {prod.name} – {v.name}
+                                            </td>
+                                            <td className="py-3 px-3">
+                                              <code className="bg-purple-100 text-purple-800 font-mono font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
+                                                {v.productId}
+                                              </code>
+                                            </td>
+                                            {isSuperAdmin ? (
+                                              <>
+                                                <td className="py-3 px-3 text-center">
+                                                  <span className={`px-2 py-0.5 rounded font-bold ${v.tagoloanStock && v.tagoloanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                    {v.tagoloanStock && v.tagoloanStock > 0 ? `${v.tagoloanStock} pcs` : 'Out of Stock'}
+                                                  </span>
+                                                </td>
+                                                <td className="py-3 px-3 text-center">
+                                                  <span className={`px-2 py-0.5 rounded font-bold ${v.villanuevaStock && v.villanuevaStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                    {v.villanuevaStock && v.villanuevaStock > 0 ? `${v.villanuevaStock} pcs` : 'Out of Stock'}
+                                                  </span>
+                                                </td>
+                                                <td className="py-3 px-3 text-center">
+                                                  <span className={`px-2 py-0.5 rounded font-bold ${v.jasaanStock && v.jasaanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                    {v.jasaanStock && v.jasaanStock > 0 ? `${v.jasaanStock} pcs` : 'Out of Stock'}
+                                                  </span>
+                                                </td>
+                                                <td className="py-3 px-3 text-center font-bold text-gray-800">
+                                                  {v.totalStock || ((v.tagoloanStock || 0) + (v.villanuevaStock || 0) + (v.jasaanStock || 0))} pcs
+                                                </td>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <td className="py-3 px-3 text-center">
+                                                  <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                    {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
+                                                  </span>
+                                                </td>
+                                                <td className="py-3 px-3 text-center font-bold text-gray-800">
+                                                  <span className={`px-2.5 py-0.5 rounded-full font-bold ${vBranchStock > 0 ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-700'}`}>
+                                                    {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
+                                                  </span>
+                                                </td>
+                                              </>
+                                            )}
+                                            <td className="py-3 px-3 text-right font-bold text-[#5c0099]">
+                                              ₱ {Number(v.price || prod.price).toLocaleString()}
+                                            </td>
+                                            <td className="py-3 px-3 text-right">
+                                              <div className="flex items-center justify-end gap-1.5">
                                                 <button
                                                   onClick={() => {
-                                                    setTransferDeviceId(prod.id);
-                                                    setTransferVariationId(v.id || '');
-                                                    setTransferModalOpen(true);
+                                                    setAdjustItem({ device: prod, variant: v });
+                                                    setAdjustBranch(isSuperAdmin ? 'Tagoloan' : userBranch);
+                                                    setAdjustStockVal(String(isSuperAdmin ? (v.tagoloanStock || 0) : vBranchStock));
+                                                    setAdjustModalOpen(true);
                                                   }}
-                                                  className="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer flex items-center gap-1"
-                                                  title="Transfer variant stock"
+                                                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer"
+                                                  title="Quick Adjust Stock"
                                                 >
-                                                  <ArrowRightLeft size={12} /> Transfer
+                                                  Adjust Stock
                                                 </button>
-                                              )}
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      ))}
+                                                {isSuperAdmin && (
+                                                  <button
+                                                    onClick={() => {
+                                                      setTransferDeviceId(prod.id);
+                                                      setTransferVariationId(v.id || '');
+                                                      setTransferModalOpen(true);
+                                                    }}
+                                                    className="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer flex items-center gap-1"
+                                                    title="Transfer variant stock"
+                                                  >
+                                                    <ArrowRightLeft size={12} /> Transfer
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
                                     </tbody>
                                   </table>
                                 </div>
@@ -1688,7 +1760,7 @@ export default function AdminInventory() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500 font-semibold">
+                  <td colSpan={isSuperAdmin ? 8 : 6} className="py-12 text-center text-gray-500 font-semibold">
                     No products found matching the criteria.
                   </td>
                 </tr>

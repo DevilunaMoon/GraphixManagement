@@ -1270,9 +1270,7 @@ export default function CashierDevices() {
               <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
                 <th className="py-4 px-6">Product Model</th>
                 <th className="py-4 px-4 text-center">Variants Count</th>
-                <th className="py-4 px-4 text-center">Tagoloan Stock</th>
-                <th className="py-4 px-4 text-center">Villanueva Stock</th>
-                <th className="py-4 px-4 text-center">Jasaan Stock</th>
+                <th className="py-4 px-4 text-center">{userBranch} Stock</th>
                 <th className="py-4 px-4 text-center">Active Branch Stock</th>
                 <th className="py-4 px-4 text-center">Base Price</th>
                 <th className="py-4 px-6 text-right">Actions</th>
@@ -1281,7 +1279,7 @@ export default function CashierDevices() {
             <tbody className="divide-y divide-gray-100 text-sm">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
+                  <td colSpan={6} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
                       <span className="text-gray-500 font-semibold animate-pulse">Loading cashier inventory...</span>
@@ -1306,6 +1304,12 @@ export default function CashierDevices() {
                     prod.discount && prod.discount > 0 &&
                     prod.discountEndDate && new Date(prod.discountEndDate) < now
                   );
+
+                  const assignedStock = userBranch.toLowerCase() === 'villanueva'
+                    ? (prod.villanuevaStock || 0)
+                    : userBranch.toLowerCase() === 'jasaan'
+                    ? (prod.jasaanStock || 0)
+                    : (prod.tagoloanStock || 0);
 
                   return (
                     <React.Fragment key={prod.id}>
@@ -1362,24 +1366,16 @@ export default function CashierDevices() {
                             {variants.length > 0 ? `${variants.length} Variants` : 'Standard'}
                           </span>
                         </td>
+                        {/* Assigned Branch Stock */}
                         <td className="py-4 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                            {prod.tagoloanStock > 0 ? `${prod.tagoloanStock} pcs` : 'Out of Stock'}
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${assignedStock > 0 ? (assignedStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                            {assignedStock > 0 ? `${assignedStock} pcs` : 'Out of Stock'}
                           </span>
                         </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                            {prod.villanuevaStock > 0 ? `${prod.villanuevaStock} pcs` : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
-                            {prod.jasaanStock > 0 ? `${prod.jasaanStock} pcs` : 'Out of Stock'}
-                          </span>
-                        </td>
+                        {/* Active Branch Stock */}
                         <td className="py-4 px-4 text-center font-bold">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${prod.stock > 0 ? (prod.stock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
-                            {prod.stock > 0 ? `${prod.stock} pcs` : 'Out of Stock'}
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-black ${assignedStock > 0 ? (assignedStock < 5 ? 'bg-amber-500 text-white' : 'bg-purple-700 text-white') : 'bg-rose-600 text-white'}`}>
+                            {assignedStock > 0 ? `${assignedStock} pcs` : 'Out of Stock'}
                           </span>
                         </td>
                         <td className="py-4 px-4 text-center font-bold text-gray-900">
@@ -1439,13 +1435,13 @@ export default function CashierDevices() {
                       {/* Expandable Storage Variants Sub-Table */}
                       {isExpanded && (
                         <tr className="bg-purple-50/30 border-b-2 border-purple-200/40">
-                          <td colSpan={8} className="p-4 sm:p-6">
+                          <td colSpan={6} className="p-4 sm:p-6">
                             <div className="bg-white rounded-xl border border-purple-200 p-4 shadow-sm flex flex-col gap-3">
                               <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <div className="flex items-center gap-2">
                                   <Package size={18} className="text-[#5c0099]" />
                                   <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                                    <span>{prod.name} – Storage Variants & Branch Inventory</span>
+                                    <span>{prod.name} – Storage Variants & {userBranch} Branch Inventory</span>
                                     {prod.isPreOwned && (
                                       <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
                                         PRE-OWNED
@@ -1463,17 +1459,20 @@ export default function CashierDevices() {
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
                                         <th className="py-2.5 px-3">Variant (Capacity)</th>
                                         <th className="py-2.5 px-3">Product ID</th>
-                                        <th className="py-2.5 px-3 text-center">Tagoloan</th>
-                                        <th className="py-2.5 px-3 text-center">Villanueva</th>
-                                        <th className="py-2.5 px-3 text-center">Jasaan</th>
-                                        <th className="py-2.5 px-3 text-center">Total Stock</th>
+                                        <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
+                                        <th className="py-2.5 px-3 text-center">Active Branch Stock</th>
                                         <th className="py-2.5 px-3 text-right">Price</th>
                                         <th className="py-2.5 px-3 text-right">Actions</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 font-medium">
                                       {variants.map((v, vIdx) => {
-                                        const branchStock = (v as any)[`${userBranch.toLowerCase()}Stock`] || 0;
+                                        const vBranchStock = userBranch.toLowerCase() === 'villanueva'
+                                          ? (v.villanuevaStock ?? (v.branchStocks?.Villanueva || 0))
+                                          : userBranch.toLowerCase() === 'jasaan'
+                                          ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
+                                          : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
+
                                         return (
                                           <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
                                             <td className="py-3 px-3 font-bold text-gray-900">
@@ -1485,22 +1484,14 @@ export default function CashierDevices() {
                                               </code>
                                             </td>
                                             <td className="py-3 px-3 text-center">
-                                              <span className={`px-2 py-0.5 rounded font-bold ${v.tagoloanStock && v.tagoloanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                                {v.tagoloanStock && v.tagoloanStock > 0 ? `${v.tagoloanStock} pcs` : 'Out of Stock'}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-3 text-center">
-                                              <span className={`px-2 py-0.5 rounded font-bold ${v.villanuevaStock && v.villanuevaStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                                {v.villanuevaStock && v.villanuevaStock > 0 ? `${v.villanuevaStock} pcs` : 'Out of Stock'}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-3 text-center">
-                                              <span className={`px-2 py-0.5 rounded font-bold ${v.jasaanStock && v.jasaanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                                {v.jasaanStock && v.jasaanStock > 0 ? `${v.jasaanStock} pcs` : 'Out of Stock'}
+                                              <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
                                               </span>
                                             </td>
                                             <td className="py-3 px-3 text-center font-bold text-gray-800">
-                                              {v.totalStock || ((v.tagoloanStock || 0) + (v.villanuevaStock || 0) + (v.jasaanStock || 0))} pcs
+                                              <span className={`px-2.5 py-0.5 rounded-full font-bold ${vBranchStock > 0 ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-700'}`}>
+                                                {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
+                                              </span>
                                             </td>
                                             <td className="py-3 px-3 text-right font-bold text-[#5c0099]">
                                               ₱ {Number(v.price || prod.price).toLocaleString()}
@@ -1509,8 +1500,8 @@ export default function CashierDevices() {
                                               <div className="flex items-center justify-end gap-1.5">
                                                 <button
                                                   onClick={() => openPosModal(prod, v)}
-                                                  disabled={branchStock <= 0}
-                                                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${branchStock > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                                                  disabled={vBranchStock <= 0}
+                                                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${vBranchStock > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                                                   title="Sell variant in POS"
                                                 >
                                                   <ShoppingCart size={12} /> Sell
@@ -1518,7 +1509,7 @@ export default function CashierDevices() {
                                                 <button
                                                   onClick={() => {
                                                     setAdjustItem({ device: prod, variant: v });
-                                                    setAdjustStockVal(String(branchStock));
+                                                    setAdjustStockVal(String(vBranchStock));
                                                     setAdjustModalOpen(true);
                                                   }}
                                                   className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer"
@@ -1546,7 +1537,7 @@ export default function CashierDevices() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
+                  <td colSpan={6} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <AlertCircle className="text-gray-400 w-12 h-12" />
                       <span className="text-gray-600 font-bold text-base">No inventory products found</span>

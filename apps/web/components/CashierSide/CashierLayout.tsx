@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { BranchProvider, useBranch } from '../../context/BranchContext';
 
-export default function CashierLayout({ children }: { children: React.ReactNode }) {
+function CashierLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { styles, bgClass } = useTheme();
@@ -348,5 +349,13 @@ export default function CashierLayout({ children }: { children: React.ReactNode 
         </div>
       )}
     </div>
+  );
+}
+
+export default function CashierLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <BranchProvider>
+      <CashierLayoutContent>{children}</CashierLayoutContent>
+    </BranchProvider>
   );
 }
