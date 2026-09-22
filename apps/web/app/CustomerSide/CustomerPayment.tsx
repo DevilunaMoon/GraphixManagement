@@ -712,7 +712,7 @@ function CustomerPaymentContent() {
                 {/* Optional Reference Number Input */}
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-gray-700">
-                    GCash Reference No. (Optional)
+                    GCash Reference No.
                   </label>
                   <input
                     type="text"

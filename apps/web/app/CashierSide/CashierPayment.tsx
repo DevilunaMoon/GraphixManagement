@@ -589,7 +589,7 @@ export default function CashierPayment() {
                     {/* GCash Reference ID Input */}
                     <div className="flex flex-col gap-1.5 pt-2 border-t border-blue-200/60">
                       <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center justify-between">
-                        <span>GCash Reference No. (Optional)</span>
+                        <span>GCash Reference No.</span>
                         <span className="text-[10px] text-gray-400 lowercase">from customer receipt</span>
                       </label>
                       <input 
@@ -699,7 +699,7 @@ export default function CashierPayment() {
                     {/* Optional GCash Reference */}
                     <div className="flex flex-col gap-1">
                       <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-                        GCash Reference No. (Optional)
+                        GCash Reference No.
                       </label>
                       <input 
                         type="text"
