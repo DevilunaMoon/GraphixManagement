@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { ChevronLeft, Printer, Download, Check, Copy } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { formatRepairReceiptId } from '../../lib/invoice';
 
 export interface RepairItemPart {
   qty: number;
@@ -30,6 +31,7 @@ export interface RepairServiceReceiptData {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  paymentMethod?: string;
   user?: {
     name?: string;
     email?: string;
@@ -81,34 +83,22 @@ export default function RepairServiceReceiptModal({
     hour12: true
   });
 
-  // 3. Tracking / Job Order / Receipt No. (Format: GRPX-TAG-A1, GRPX-VIL-A1, GRPX-JAS-A1)
+  // 3. Tracking / Job Order / Receipt No. (Format: #GRPX-TAG-A1..A1000 -> B1)
   const resolveReceiptNo = () => {
     // 1. If device already has an assigned formatted tracking number (e.g. GRPX-TAG-A1 or #GRPX-TAG-A1)
     if (device.trackingNumber && typeof device.trackingNumber === 'string') {
-      const clean = device.trackingNumber.replace(/^#/, '').trim();
-      if (clean.startsWith('GRPX-') || clean.startsWith('GPRX-')) {
-        return clean;
+      const clean = device.trackingNumber.trim();
+      if (clean.replace(/^#/, '').startsWith('GRPX-')) {
+        return clean.startsWith('#') ? clean : `#${clean}`;
       }
     }
 
-    // 2. Resolve branch code: TAG (Tagoloan), VIL (Villanueva), JAS (Jasaan)
-    const rawBranch = (device.branch || userProfile?.branch || branchName || 'Tagoloan').toLowerCase();
-    let branchCode = 'TAG';
-    if (rawBranch.includes('vil')) {
-      branchCode = 'VIL';
-    } else if (rawBranch.includes('jas')) {
-      branchCode = 'JAS';
-    } else {
-      branchCode = 'TAG';
-    }
-
-    // 3. Sequential index: number goes up based on branch records (default A1)
     const seqNum = device.orderIndex || device.sequenceNumber || 1;
-    return `GRPX-${branchCode}-A${seqNum}`;
+    return formatRepairReceiptId(device.branch || userProfile?.branch || branchName, seqNum);
   };
 
-  const receiptNo = resolveReceiptNo();
-  const formattedReceiptNo = receiptNo.startsWith('#') ? receiptNo : `#${receiptNo}`;
+  const formattedReceiptNo = resolveReceiptNo();
+  const receiptNo = formattedReceiptNo.replace(/^#/, '');
 
   // 4. Device Details
   const deviceModel = (device.deviceName || 'Redmi 10C').toUpperCase();
@@ -116,9 +106,14 @@ export default function RepairServiceReceiptModal({
   const status = device.status || 'Active';
   const technician = device.technician || 'James';
 
-  // 5. Itemized Materials & Services Parsing
+  // 5. Itemized Materials & Payment Breakdown Parsing
   let parsedItems: RepairItemPart[] = [];
-  let parsedLabor = 0;
+  let parsedPaymentMethod: 'Cash' | 'GCash' | 'Split' = 'Cash';
+  let parsedCashPaid = 0;
+  let parsedGcashPaid = 0;
+  let parsedTotalPaid = 0;
+  let parsedChange = 0;
+  let parsedBalanceDue: number | null = null;
 
   if (device.materials) {
     try {
@@ -127,7 +122,14 @@ export default function RepairServiceReceiptModal({
         parsedItems = parsed;
       } else if (parsed && typeof parsed === 'object') {
         parsedItems = parsed.items || [];
-        parsedLabor = parseFloat(String(parsed.laborCost)) || 0;
+        if (parsed.paymentMethod) {
+          parsedPaymentMethod = parsed.paymentMethod;
+        }
+        if (parsed.cashAmount !== undefined) parsedCashPaid = parseFloat(String(parsed.cashAmount)) || 0;
+        if (parsed.gcashAmount !== undefined) parsedGcashPaid = parseFloat(String(parsed.gcashAmount)) || 0;
+        if (parsed.totalPaid !== undefined) parsedTotalPaid = parseFloat(String(parsed.totalPaid)) || 0;
+        if (parsed.change !== undefined) parsedChange = parseFloat(String(parsed.change)) || 0;
+        if (parsed.balanceDue !== undefined) parsedBalanceDue = parseFloat(String(parsed.balanceDue));
       }
     } catch (e) {
       // Fallback: If materials was stored as raw markdown text (e.g. | 1 | LCD | P 100.00 | P 100.00 |)
@@ -163,33 +165,34 @@ export default function RepairServiceReceiptModal({
   // Fallback itemization if none recorded yet
   if (parsedItems.length === 0) {
     if (rawCost > 0) {
-      const partsCost = Math.round(rawCost / 2);
-      const laborCost = rawCost - partsCost;
       parsedItems = [
         {
           qty: 1,
           description: `${device.deviceName || 'Device'} Replacement Parts`,
-          unitPrice: partsCost,
-          total: partsCost
+          unitPrice: rawCost,
+          total: rawCost
         }
       ];
-      parsedLabor = laborCost;
     } else {
       parsedItems = [];
-      parsedLabor = 0;
     }
   }
 
-  // Financial Totals
+  // Financial Totals strictly from Materials / Parts (NO LABOR FEE)
   const totalMaterials = parsedItems.reduce(
     (sum, item) => sum + (item.total || item.qty * item.unitPrice),
     0
   );
-  const totalRepairCost = rawCost > 0 ? rawCost : totalMaterials + parsedLabor;
-  const downpayment = rawDownpayment;
-  const balanceDue = Math.max(0, totalRepairCost - downpayment);
+  const totalRepairCost = rawCost > 0 ? rawCost : totalMaterials;
+  const downpayment = rawDownpayment > 0 ? rawDownpayment : parsedTotalPaid;
+  const balanceDue = parsedBalanceDue !== null ? parsedBalanceDue : Math.max(0, totalRepairCost - downpayment);
 
-  // Total Item Count: sum of parts quantities, or 1 if empty
+  if (parsedCashPaid === 0 && parsedGcashPaid === 0 && downpayment > 0) {
+    parsedCashPaid = downpayment;
+  }
+  const change = parsedChange > 0 ? parsedChange : Math.max(0, parsedCashPaid - totalRepairCost);
+
+  // Total Item Count
   const totalItemCount = parsedItems.reduce((acc, i) => acc + (i.qty || 1), 0) || 1;
 
   // Customer & Audit Information
@@ -311,10 +314,22 @@ export default function RepairServiceReceiptModal({
       });
 
       lines.push(dashedDivider);
-      lines.push(padRow("Total Materials", `Php ${formatMoney(totalMaterials)}`));
-      lines.push(padRow("Labor / Service Fee", formatMoney(parsedLabor)));
       lines.push(padRow("TOTAL REPAIR COST", `Php ${formatMoney(totalRepairCost)}`));
-      lines.push(padRow("Downpayment Paid", formatMoney(downpayment)));
+
+      if (parsedPaymentMethod === 'Split') {
+        lines.push(padRow("Payment Method:", "Split Payment"));
+        lines.push(padRow("Cash Payment", `Php ${formatMoney(parsedCashPaid)}`));
+        lines.push(padRow("GCash Payment", `Php ${formatMoney(parsedGcashPaid)}`));
+        lines.push(padRow("Total Amount Paid", `Php ${formatMoney(parsedCashPaid + parsedGcashPaid)}`));
+      } else if (parsedPaymentMethod === 'GCash') {
+        lines.push(padRow("Payment Method:", "GCash"));
+        lines.push(padRow("GCash Paid", `Php ${formatMoney(parsedGcashPaid > 0 ? parsedGcashPaid : downpayment)}`));
+      } else {
+        lines.push(padRow("Payment Method:", "Cash"));
+        lines.push(padRow("Cash Received", `Php ${formatMoney(parsedCashPaid > 0 ? parsedCashPaid : (downpayment > 0 ? downpayment : totalRepairCost))}`));
+        lines.push(padRow("Change", `Php ${formatMoney(change)}`));
+      }
+
       lines.push(padRow("BALANCE DUE", `Php ${formatMoney(balanceDue)}`));
       lines.push("");
       lines.push(centerText(`*** ${totalItemCount} ITEM(S) ***`));
@@ -389,7 +404,7 @@ export default function RepairServiceReceiptModal({
               <span>Back</span>
             </button>
 
-            {/* Action Buttons: Print (Purple outlined), Save PDF (Solid dark/black), Copy */}
+            {/* Action Buttons: Print, Save PDF, Copy */}
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -461,11 +476,11 @@ export default function RepairServiceReceiptModal({
                 {dashedDivider}
               </div>
 
-              {/* [DEVICE DETAILS] (Two-Column Justified) */}
+              {/* [DEVICE & ISSUE ROW] (Two-Column Justified) */}
               <div className="flex flex-col gap-1 font-mono">
                 <div className="flex justify-between items-baseline gap-2 font-bold leading-normal">
                   <span className="uppercase break-words">{deviceModel}</span>
-                  <span className="shrink-0 text-right whitespace-nowrap">
+                  <span className="shrink-0 text-right whitespace-nowrap font-mono">
                     {formatMoney(totalRepairCost)} V
                   </span>
                 </div>
@@ -482,7 +497,7 @@ export default function RepairServiceReceiptModal({
                 {dashedDivider}
               </div>
 
-              {/* [ITEMIZED MATERIALS & SERVICES] (Thermal List Format) */}
+              {/* [ITEMIZED MATERIALS] (Thermal List Format) */}
               <div className="flex flex-col gap-2 font-mono">
                 {parsedItems.map((item, idx) => (
                   <div key={idx} className="flex flex-col leading-normal">
@@ -504,30 +519,67 @@ export default function RepairServiceReceiptModal({
                 {dashedDivider}
               </div>
 
-              {/* [FINANCIAL BREAKDOWN & BALANCE DUE] (Two-Column Justified) */}
-              <div className="flex flex-col gap-0.5 font-mono leading-normal">
-                <div className="flex justify-between items-baseline gap-2">
-                  <span>Total Materials</span>
-                  <span className="shrink-0 text-right font-mono">Php {formatMoney(totalMaterials)}</span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2">
-                  <span>Labor / Service Fee</span>
-                  <span className="shrink-0 text-right font-mono">{formatMoney(parsedLabor)}</span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 font-bold text-xs pt-1">
+              {/* [FINANCIAL BREAKDOWN & PAYMENT INFO] (Two-Column Justified, NO LABOR) */}
+              <div className="flex flex-col gap-1 font-mono leading-normal">
+                <div className="flex justify-between items-baseline gap-2 font-bold text-xs">
                   <span>TOTAL REPAIR COST</span>
                   <span className="shrink-0 text-right font-mono">Php {formatMoney(totalRepairCost)}</span>
                 </div>
-                <div className="flex justify-between items-baseline gap-2">
-                  <span>Downpayment Paid</span>
-                  <span className="shrink-0 text-right font-mono">{formatMoney(downpayment)}</span>
-                </div>
-                <div className="flex justify-between items-baseline gap-2 font-bold text-xs pt-1">
+
+                {/* Payment Breakdown according to Method */}
+                {parsedPaymentMethod === 'Split' ? (
+                  <>
+                    <div className="flex justify-between items-baseline gap-2 text-[10px] text-gray-700">
+                      <span>Payment Method:</span>
+                      <span className="shrink-0 text-right font-bold text-black">Split Payment</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2 text-[10px]">
+                      <span>Cash Payment</span>
+                      <span className="shrink-0 text-right font-mono">{formatMoney(parsedCashPaid)}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2 text-[10px]">
+                      <span>GCash Payment</span>
+                      <span className="shrink-0 text-right font-mono">{formatMoney(parsedGcashPaid)}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2 text-[11px] font-medium pt-0.5">
+                      <span>Total Amount Paid</span>
+                      <span className="shrink-0 text-right font-mono">Php {formatMoney(parsedCashPaid + parsedGcashPaid)}</span>
+                    </div>
+                  </>
+                ) : parsedPaymentMethod === 'GCash' ? (
+                  <>
+                    <div className="flex justify-between items-baseline gap-2 text-[10px] text-gray-700">
+                      <span>Payment Method:</span>
+                      <span className="shrink-0 text-right font-bold text-black">GCash</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2 text-[11px]">
+                      <span>GCash Paid</span>
+                      <span className="shrink-0 text-right font-mono">{formatMoney(parsedGcashPaid > 0 ? parsedGcashPaid : downpayment)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-baseline gap-2 text-[10px] text-gray-700">
+                      <span>Payment Method:</span>
+                      <span className="shrink-0 text-right font-bold text-black">Cash</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2 text-[11px]">
+                      <span>Cash Received</span>
+                      <span className="shrink-0 text-right font-mono">{formatMoney(parsedCashPaid > 0 ? parsedCashPaid : (downpayment > 0 ? downpayment : totalRepairCost))}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2 text-[10px]">
+                      <span>Change</span>
+                      <span className="shrink-0 text-right font-mono">{formatMoney(change)}</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-between items-baseline gap-2 font-bold text-xs pt-1 border-t border-dashed border-gray-300 mt-0.5">
                   <span>BALANCE DUE</span>
                   <span className="shrink-0 text-right font-mono">Php {formatMoney(balanceDue)}</span>
                 </div>
 
-                <div className="text-center font-bold text-[10px] py-2 tracking-wider uppercase leading-normal">
+                <div className="text-center font-bold text-[10px] py-1.5 tracking-wider uppercase leading-normal">
                   *** {totalItemCount} ITEM(S) ***
                 </div>
               </div>

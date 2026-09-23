@@ -40,7 +40,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const index = branchRepairs.findIndex(r => r.id === request.id);
     const seqNum = index >= 0 ? index + 1 : 1;
-    const trackingNumber = `GRPX-${branchCode}-A${seqNum}`;
+    const letterIndex = Math.floor((seqNum - 1) / 1000);
+    const letter = String.fromCharCode(65 + (letterIndex % 26));
+    const seriesNum = ((seqNum - 1) % 1000) + 1;
+    const trackingNumber = `GRPX-${branchCode}-${letter}${seriesNum}`;
 
     return NextResponse.json({
       ...request,

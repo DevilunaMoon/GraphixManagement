@@ -518,8 +518,11 @@ export async function GET(req: Request) {
 
       const count = (branchCounters[code] || 0) + 1;
       branchCounters[code] = count;
+      const letterIndex = Math.floor((count - 1) / 1000);
+      const letter = String.fromCharCode(65 + (letterIndex % 26));
+      const seriesNum = ((count - 1) % 1000) + 1;
       trackingMap.set(r.id, {
-        trackingNumber: `GRPX-${code}-A${count}`,
+        trackingNumber: `GRPX-${code}-${letter}${seriesNum}`,
         orderIndex: count
       });
     }
@@ -533,8 +536,11 @@ export async function GET(req: Request) {
 
       const count = (branchCounters[code] || 0) + 1;
       branchCounters[code] = count;
+      const letterIndex = Math.floor((count - 1) / 1000);
+      const letter = String.fromCharCode(65 + (letterIndex % 26));
+      const seriesNum = ((count - 1) % 1000) + 1;
       trackingMap.set(p.id, {
-        trackingNumber: `GRPX-${code}-A${count}`,
+        trackingNumber: `GRPX-${code}-${letter}${seriesNum}`,
         orderIndex: count
       });
     });
@@ -564,10 +570,9 @@ export async function GET(req: Request) {
             const mats = JSON.parse(repair.materials);
             if (mats && typeof mats === 'object') {
               const itemsSum = Array.isArray(mats.items)
-                ? mats.items.reduce((acc: number, item: any) => acc + (parseFloat(item.cost || item.price || 0) * (parseInt(item.quantity || 1, 10) || 1)), 0)
+                ? mats.items.reduce((acc: number, item: any) => acc + (parseFloat(item.total || (item.unitPrice || item.price || item.cost || 0) * (item.qty || item.quantity || 1)) || 0), 0)
                 : 0;
-              const labor = parseFloat(mats.laborCost || 0) || 0;
-              totalCost = itemsSum + labor;
+              totalCost = itemsSum;
             }
           } catch (e) {
             // Ignore JSON error

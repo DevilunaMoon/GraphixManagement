@@ -183,8 +183,11 @@ export async function GET(
 
         const count = (repairBranchCounters[code] || 0) + 1;
         repairBranchCounters[code] = count;
+        const letterIndex = Math.floor((count - 1) / 1000);
+        const letter = String.fromCharCode(65 + (letterIndex % 26));
+        const seriesNum = ((count - 1) % 1000) + 1;
         repairTrackingMap.set(r.id, {
-          trackingNumber: `GRPX-${code}-A${count}`,
+          trackingNumber: `GRPX-${code}-${letter}${seriesNum}`,
           orderIndex: count
         });
       }

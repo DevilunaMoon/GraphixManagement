@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect } from 'react';
-import { Plus, Trash2, Calculator, Wrench, Receipt, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Calculator, Wrench, CheckCircle2, DollarSign, CreditCard, Layers, Banknote } from 'lucide-react';
 
 export interface MaterialItem {
   id: string;
@@ -11,20 +11,39 @@ export interface MaterialItem {
   total: number;
 }
 
+export interface PaymentDetails {
+  paymentMethod: 'Cash' | 'GCash' | 'Split';
+  cashAmount: number;
+  gcashAmount: number;
+  totalPaid: number;
+  change: number;
+  balanceDue: number;
+  isFullyPaid: boolean;
+}
+
 export interface MaterialBreakdownProps {
   materials?: MaterialItem[];
   items?: MaterialItem[];
   onChange?: (materials: MaterialItem[]) => void;
   onItemsChange?: (materials: MaterialItem[]) => void;
+  // Legacy prop compatibility (ignored in calculation)
   laborCost?: string | number;
   onChangeLaborCost?: (cost: string) => void;
   onLaborCostChange?: (cost: string) => void;
   downpayment?: string | number;
   onChangeDownpayment?: (downpayment: string) => void;
   onDownpaymentChange?: (downpayment: string) => void;
+  // Payment methods
+  paymentMethod?: 'Cash' | 'GCash' | 'Split' | string;
+  onPaymentMethodChange?: (method: 'Cash' | 'GCash' | 'Split') => void;
+  cashAmount?: string | number;
+  onCashAmountChange?: (cash: string) => void;
+  gcashAmount?: string | number;
+  onGcashAmountChange?: (gcash: string) => void;
+  onPaymentDetailsChange?: (details: PaymentDetails) => void;
   readOnly?: boolean;
   onTotalChange?: (totalRepairCost: number, balanceDue: number) => void;
-  onTotalCostCalculated?: (totalRepairCost: number, balanceDue: number) => void;
+  onTotalCostCalculated?: (totalRepairCost: number, balanceDue: number, details?: PaymentDetails) => void;
   deviceName?: string;
   customerName?: string;
 }
@@ -34,12 +53,16 @@ export default function MaterialBreakdownEditor({
   items,
   onChange,
   onItemsChange,
-  laborCost = '0',
-  onChangeLaborCost,
-  onLaborCostChange,
-  downpayment = '0',
+  downpayment,
   onChangeDownpayment,
   onDownpaymentChange,
+  paymentMethod: initialPaymentMethod,
+  onPaymentMethodChange,
+  cashAmount: initialCashAmount,
+  onCashAmountChange,
+  gcashAmount: initialGcashAmount,
+  onGcashAmountChange,
+  onPaymentDetailsChange,
   readOnly = false,
   onTotalChange,
   onTotalCostCalculated,
@@ -48,22 +71,96 @@ export default function MaterialBreakdownEditor({
 }: MaterialBreakdownProps) {
   const activeMaterials = items || materials || [];
   const handleMaterialsChange = onItemsChange || onChange;
-  const handleLaborCostChange = onLaborCostChange || onChangeLaborCost;
   const handleDownpaymentChange = onDownpaymentChange || onChangeDownpayment;
   const handleTotalChange = onTotalCostCalculated || onTotalChange;
 
-  const parsedLabor = parseFloat(String(laborCost)) || 0;
-  const parsedDownpayment = parseFloat(String(downpayment)) || 0;
+  // 1. Calculate Total Repair Cost strictly from Parts / Materials (Parts Subtotal = Total Repair Cost)
+  const totalRepairCost = activeMaterials.reduce((sum, item) => sum + (item.total || item.qty * item.unitPrice || 0), 0);
 
-  const partsSubtotal = activeMaterials.reduce((sum, item) => sum + (item.total || 0), 0);
-  const totalRepairCost = partsSubtotal + parsedLabor;
-  const balanceDue = Math.max(0, totalRepairCost - parsedDownpayment);
+  // 2. Payment Method state (Cash, GCash, Split)
+  const [internalMethod, setInternalMethod] = useState<'Cash' | 'GCash' | 'Split'>(() => {
+    if (initialPaymentMethod === 'GCash' || initialPaymentMethod === 'Split') return initialPaymentMethod;
+    return 'Cash';
+  });
+  const currentMethod = (initialPaymentMethod as 'Cash' | 'GCash' | 'Split') || internalMethod;
 
+  // 3. Cash and GCash amount states
+  const [internalCash, setInternalCash] = useState<string>(() => {
+    if (initialCashAmount !== undefined && initialCashAmount !== null) return String(initialCashAmount);
+    if (downpayment !== undefined && downpayment !== null && currentMethod === 'Cash') return String(downpayment);
+    return '';
+  });
+
+  const [internalGcash, setInternalGcash] = useState<string>(() => {
+    if (initialGcashAmount !== undefined && initialGcashAmount !== null) return String(initialGcashAmount);
+    if (downpayment !== undefined && downpayment !== null && currentMethod === 'GCash') return String(downpayment);
+    return '';
+  });
+
+  const activeCashStr = initialCashAmount !== undefined ? String(initialCashAmount) : internalCash;
+  const activeGcashStr = initialGcashAmount !== undefined ? String(initialGcashAmount) : internalGcash;
+
+  const parsedCash = parseFloat(activeCashStr) || 0;
+  const parsedGcash = parseFloat(activeGcashStr) || 0;
+
+  // 4. Financial Calculations based on selected method
+  let totalAmountPaid = 0;
+  let change = 0;
+  let balanceDue = totalRepairCost;
+
+  if (currentMethod === 'Cash') {
+    change = Math.max(0, parsedCash - totalRepairCost);
+    balanceDue = Math.max(0, totalRepairCost - parsedCash);
+    totalAmountPaid = Math.min(parsedCash, totalRepairCost);
+  } else if (currentMethod === 'GCash') {
+    change = 0;
+    balanceDue = Math.max(0, totalRepairCost - parsedGcash);
+    totalAmountPaid = Math.min(parsedGcash, totalRepairCost);
+  } else if (currentMethod === 'Split') {
+    change = Math.max(0, (parsedCash + parsedGcash) - totalRepairCost);
+    totalAmountPaid = parsedCash + parsedGcash;
+    balanceDue = Math.max(0, totalRepairCost - totalAmountPaid);
+  }
+
+  const isFullyPaid = balanceDue === 0 && totalRepairCost >= 0;
+
+  // 5. Propagate changes upstream
   useEffect(() => {
+    const details: PaymentDetails = {
+      paymentMethod: currentMethod,
+      cashAmount: parsedCash,
+      gcashAmount: parsedGcash,
+      totalPaid: currentMethod === 'Cash' ? parsedCash : (currentMethod === 'GCash' ? parsedGcash : totalAmountPaid),
+      change,
+      balanceDue,
+      isFullyPaid
+    };
+
     if (handleTotalChange) {
-      handleTotalChange(totalRepairCost, balanceDue);
+      handleTotalChange(totalRepairCost, balanceDue, details);
     }
-  }, [totalRepairCost, balanceDue, handleTotalChange]);
+    if (handleDownpaymentChange) {
+      handleDownpaymentChange(String(details.totalPaid));
+    }
+    if (onPaymentDetailsChange) {
+      onPaymentDetailsChange(details);
+    }
+  }, [totalRepairCost, currentMethod, parsedCash, parsedGcash, change, balanceDue, totalAmountPaid, isFullyPaid]);
+
+  const handleSelectMethod = (method: 'Cash' | 'GCash' | 'Split') => {
+    setInternalMethod(method);
+    if (onPaymentMethodChange) onPaymentMethodChange(method);
+  };
+
+  const handleCashChange = (val: string) => {
+    setInternalCash(val);
+    if (onCashAmountChange) onCashAmountChange(val);
+  };
+
+  const handleGcashChange = (val: string) => {
+    setInternalGcash(val);
+    if (onGcashAmountChange) onGcashAmountChange(val);
+  };
 
   const handleAddRow = () => {
     if (readOnly || !handleMaterialsChange) return;
@@ -111,7 +208,7 @@ export default function MaterialBreakdownEditor({
     handleMaterialsChange(activeMaterials.filter(item => item.id !== id));
   };
 
-  // Read-only view
+  // Read-only view (Intake sheet / review)
   if (readOnly) {
     return (
       <div className="flex flex-col gap-4 font-['Inter'] w-full">
@@ -129,7 +226,7 @@ export default function MaterialBreakdownEditor({
               {activeMaterials.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-4 text-center text-gray-400 font-medium italic">
-                    No itemized materials recorded (Standard repair service)
+                    No itemized materials recorded
                   </td>
                 </tr>
               ) : (
@@ -146,23 +243,21 @@ export default function MaterialBreakdownEditor({
           </table>
         </div>
 
-        {/* Read-Only Cost Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs">
-          <div>
-            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Parts Subtotal</span>
-            <span className="font-bold text-gray-800 font-mono">₱{partsSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-          </div>
-          <div>
-            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Labor / Service Fee</span>
-            <span className="font-bold text-gray-800 font-mono">₱{parsedLabor.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-          </div>
+        {/* Read-Only Cost & Payment Summary */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs">
           <div>
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Total Repair Cost</span>
-            <span className="font-black text-[#bd00ff] font-mono">₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span className="font-black text-lg text-[#bd00ff] font-mono">₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Payment Method</span>
+            <span className="font-bold text-gray-900 text-sm">
+              {currentMethod === 'Split' ? 'Split Payment (Cash + GCash)' : `${currentMethod} Payment`}
+            </span>
           </div>
           <div>
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Balance Due</span>
-            <span className={`font-black font-mono ${balanceDue > 0 ? 'text-amber-700' : 'text-green-600'}`}>
+            <span className={`font-black text-lg font-mono ${balanceDue > 0 ? 'text-amber-700' : 'text-green-600'}`}>
               ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -173,7 +268,7 @@ export default function MaterialBreakdownEditor({
 
   // Editable view
   return (
-    <div className="flex flex-col gap-3 font-['Inter'] w-full">
+    <div className="flex flex-col gap-4 font-['Inter'] w-full">
       {/* Title & Action */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -206,11 +301,11 @@ export default function MaterialBreakdownEditor({
             {activeMaterials.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-5 text-center text-gray-400 font-medium">
-                  No parts added yet. Click <span className="text-[#bd00ff] font-bold">"+ Add Part / Material"</span> to itemize replacement parts (e.g. Motherboard, Flex cable, Adhesive).
+                  No parts added yet. Click <span className="text-[#bd00ff] font-bold">"+ Add Part / Material"</span> to itemize replacement parts (e.g. LCD, Battery, Flex cable).
                 </td>
               </tr>
             ) : (
-              activeMaterials.map((item, index) => (
+              activeMaterials.map((item) => (
                 <tr key={item.id} className="hover:bg-purple-50/30 transition-colors">
                   {/* Qty */}
                   <td className="py-2 px-2 text-center">
@@ -227,7 +322,7 @@ export default function MaterialBreakdownEditor({
                   <td className="py-2 px-2">
                     <input
                       type="text"
-                      placeholder="e.g. iPhone 11 Motherboard / Adhesive"
+                      placeholder="e.g. LCD Screen / Battery Replacement"
                       value={item.description}
                       onChange={(e) => handleUpdateRow(item.id, 'description', e.target.value)}
                       className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg outline-none text-xs font-medium text-gray-800 focus:border-[#bd00ff] focus:bg-white"
@@ -273,98 +368,255 @@ export default function MaterialBreakdownEditor({
         </table>
       </div>
 
-      {/* Financial Calculations Card */}
-      <div className="bg-gradient-to-br from-purple-50/50 to-gray-50 p-4 sm:p-5 rounded-2xl border-2 border-purple-100 flex flex-col gap-3">
-        <div className="flex items-center gap-2 pb-2 border-b border-purple-100/80">
-          <Calculator size={16} className="text-[#bd00ff]" />
-          <span className="text-xs font-black text-gray-800 uppercase tracking-wider">
-            Repair Cost & Balance Calculation
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          {/* Labor Fee Input */}
-          <div className="flex flex-col gap-1">
-            <label className="font-bold text-gray-700">Labor / Service Fee (₱)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400 text-xs">₱</span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                placeholder="e.g. 500"
-                value={laborCost}
-                onChange={(e) => handleLaborCostChange && handleLaborCostChange(e.target.value)}
-                className="w-full pl-7 pr-3 py-2 bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff]"
-              />
-            </div>
-            <span className="text-[10px] text-gray-400">Parts Subtotal: ₱{partsSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+      {/* Payment & Cost Calculation Section */}
+      <div className="bg-gradient-to-br from-purple-50/50 to-gray-50 p-4 sm:p-5 rounded-2xl border-2 border-purple-100 flex flex-col gap-4">
+        
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-purple-100/80">
+          <div className="flex items-center gap-2">
+            <Calculator size={16} className="text-[#bd00ff]" />
+            <span className="text-xs font-black text-gray-800 uppercase tracking-wider">
+              Repair Cost & Payment Method
+            </span>
           </div>
-
-          {/* Downpayment Received Input */}
-          <div className="flex flex-col gap-1">
-            <label className="font-bold text-gray-700">Downpayment Received (₱)</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400 text-xs">₱</span>
-              <input
-                type="number"
-                min="0"
-                step="any"
-                placeholder="e.g. 500"
-                value={downpayment}
-                onChange={(e) => handleDownpaymentChange && handleDownpaymentChange(e.target.value)}
-                className="w-full pl-7 pr-3 py-2 bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff]"
-              />
-            </div>
-            <div className="flex gap-1 mt-0.5">
-              <button
-                type="button"
-                onClick={() => handleDownpaymentChange && handleDownpaymentChange(String(totalRepairCost))}
-                className="text-[9px] font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-1.5 py-0.5 rounded cursor-pointer border border-purple-100"
-              >
-                Full (₱{totalRepairCost.toLocaleString()})
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDownpaymentChange && handleDownpaymentChange('0')}
-                className="text-[9px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-1.5 py-0.5 rounded cursor-pointer border border-gray-200"
-              >
-                ₱0
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Calculated Totals Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-purple-100">
-          <div className="bg-white p-3 rounded-xl border border-gray-200 flex flex-col">
-            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Repair Cost (Parts + Labor)</span>
-            <span className="text-xl font-black text-[#bd00ff] font-mono mt-0.5">
+          <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-purple-100 shadow-2xs">
+            <span className="text-[11px] font-bold text-gray-500">Total Cost:</span>
+            <span className="text-sm font-black text-[#bd00ff] font-mono">
               ₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
+        </div>
 
-          <div className={`p-3 rounded-xl border flex flex-col ${
-            balanceDue > 0 ? 'bg-amber-50/70 border-amber-200' : 'bg-emerald-50/70 border-emerald-200'
-          }`}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">
-                Balance Due (Remaining)
-              </span>
-              {balanceDue === 0 && (
-                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <CheckCircle2 size={10} /> Fully Paid
-                </span>
-              )}
-            </div>
-            <span className={`text-xl font-black font-mono mt-0.5 ${
-              balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'
-            }`}>
-              ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
+        {/* 1. Payment Method Tabs */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-700">Select Payment Method</label>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('Cash')}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border-2 ${
+                currentMethod === 'Cash'
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+              }`}
+            >
+              <Banknote size={15} />
+              <span>Cash Payment</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('GCash')}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border-2 ${
+                currentMethod === 'GCash'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+              }`}
+            >
+              <CreditCard size={15} />
+              <span>GCash Payment</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('Split')}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer border-2 ${
+                currentMethod === 'Split'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white border-transparent shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
+              }`}
+            >
+              <Layers size={15} />
+              <span>Split (Cash + GCash)</span>
+            </button>
           </div>
         </div>
+
+        {/* 2. Dynamic Payment Inputs & Calculation Rows */}
+        {currentMethod === 'Cash' && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
+            {/* Cash Received */}
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-xs text-gray-700">Cash Received (₱)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400 text-xs">₱</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0.00"
+                  value={activeCashStr}
+                  onChange={(e) => handleCashChange(e.target.value)}
+                  className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm"
+                />
+              </div>
+              <div className="flex gap-1 mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleCashChange(String(totalRepairCost))}
+                  className="text-[10px] font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded cursor-pointer border border-purple-100"
+                >
+                  Exact (₱{totalRepairCost.toLocaleString()})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCashChange('0')}
+                  className="text-[10px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded cursor-pointer border border-gray-200"
+                >
+                  ₱0
+                </button>
+              </div>
+            </div>
+
+            {/* Change */}
+            <div className="flex flex-col justify-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Change (₱)</span>
+              <span className="text-base font-black font-mono text-gray-900 mt-0.5">
+                ₱{change.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            {/* Balance Due */}
+            <div className={`flex flex-col justify-center p-3 rounded-xl border ${
+              balanceDue > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">Balance Due (₱)</span>
+                {isFullyPaid && (
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                    <CheckCircle2 size={10} /> Fully Paid
+                  </span>
+                )}
+              </div>
+              <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {currentMethod === 'GCash' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
+            {/* GCash Amount Paid */}
+            <div className="flex flex-col gap-1">
+              <label className="font-bold text-xs text-gray-700">GCash Amount Paid (₱)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-blue-500 text-xs">₱</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="0.00"
+                  value={activeGcashStr}
+                  onChange={(e) => handleGcashChange(e.target.value)}
+                  className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-blue-500 text-sm"
+                />
+              </div>
+              <div className="flex gap-1 mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleGcashChange(String(totalRepairCost))}
+                  className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer border border-blue-100"
+                >
+                  Full (₱{totalRepairCost.toLocaleString()})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleGcashChange('0')}
+                  className="text-[10px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded cursor-pointer border border-gray-200"
+                >
+                  ₱0
+                </button>
+              </div>
+            </div>
+
+            {/* Balance Due */}
+            <div className={`flex flex-col justify-center p-3 rounded-xl border ${
+              balanceDue > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">Balance Due (₱)</span>
+                {isFullyPaid && (
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                    <CheckCircle2 size={10} /> Fully Paid
+                  </span>
+                )}
+              </div>
+              <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {currentMethod === 'Split' && (
+          <div className="flex flex-col gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Cash Component */}
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-xs text-gray-700">Cash Payment (₱)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-purple-500 text-xs">₱</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.00"
+                    value={activeCashStr}
+                    onChange={(e) => handleCashChange(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* GCash Component */}
+              <div className="flex flex-col gap-1">
+                <label className="font-bold text-xs text-gray-700">GCash Payment (₱)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-blue-500 text-xs">₱</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="0.00"
+                    value={activeGcashStr}
+                    onChange={(e) => handleGcashChange(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-blue-500 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Split Totals Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+              <div className="flex flex-col justify-center p-2.5 bg-purple-50/60 rounded-xl border border-purple-100">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Amount Paid (₱)</span>
+                <span className="text-base font-black font-mono text-[#bd00ff] mt-0.5">
+                  ₱{totalAmountPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              <div className={`flex flex-col justify-center p-2.5 rounded-xl border ${
+                balanceDue > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">Balance Due (₱)</span>
+                  {isFullyPaid && (
+                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                      <CheckCircle2 size={10} /> Fully Paid
+                    </span>
+                  )}
+                </div>
+                <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                  ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
+

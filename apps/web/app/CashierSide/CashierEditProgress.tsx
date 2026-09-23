@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronDown, Upload } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
+import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
 
 import { Suspense } from 'react';
 
@@ -22,7 +22,10 @@ function CashierEditProgressContent() {
   const [downpayment, setDownpayment] = useState('');
   const [repairHistory, setRepairHistory] = useState('');
   const [materials, setMaterials] = useState<MaterialItem[]>([]);
-  const [laborCost, setLaborCost] = useState<string>('0');
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'GCash' | 'Split'>('Cash');
+  const [cashAmount, setCashAmount] = useState<string>('');
+  const [gcashAmount, setGcashAmount] = useState<string>('');
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,7 +59,9 @@ function CashierEditProgressContent() {
             setRepairHistory(cleanNotes);
 
             let items: MaterialItem[] = [];
-            let labor = '0';
+            let method: 'Cash' | 'GCash' | 'Split' = 'Cash';
+            let cash = '';
+            let gcash = '';
             if (data.materials) {
               try {
                 const parsed = JSON.parse(data.materials);
@@ -64,16 +69,22 @@ function CashierEditProgressContent() {
                   items = parsed;
                 } else if (parsed && typeof parsed === 'object') {
                   items = parsed.items || [];
-                  labor = String(parsed.laborCost ?? 0);
+                  if (parsed.paymentMethod) method = parsed.paymentMethod;
+                  if (parsed.cashAmount !== undefined) cash = String(parsed.cashAmount);
+                  if (parsed.gcashAmount !== undefined) gcash = String(parsed.gcashAmount);
                 }
               } catch (e) {
                 console.error("Failed to parse materials:", e);
               }
-            } else if (data.repairCost) {
-              labor = data.repairCost;
+            }
+            if (!cash && !gcash && data.downpayment) {
+              if (method === 'GCash') gcash = data.downpayment;
+              else cash = data.downpayment;
             }
             setMaterials(items);
-            setLaborCost(labor);
+            setPaymentMethod(method);
+            setCashAmount(cash);
+            setGcashAmount(gcash);
           }
         })
         .catch(console.error)
@@ -133,7 +144,13 @@ function CashierEditProgressContent() {
           repairHistory: finalRepairHistory,
           materials: JSON.stringify({
             items: materials,
-            laborCost: parseFloat(laborCost) || 0
+            paymentMethod,
+            cashAmount: parseFloat(cashAmount) || 0,
+            gcashAmount: parseFloat(gcashAmount) || 0,
+            totalPaid: paymentDetails?.totalPaid ?? (parseFloat(downpayment) || 0),
+            change: paymentDetails?.change ?? 0,
+            balanceDue: paymentDetails?.balanceDue ?? 0,
+            isFullyPaid: paymentDetails?.isFullyPaid ?? false
           })
         })
       });
@@ -258,8 +275,13 @@ function CashierEditProgressContent() {
               <MaterialBreakdownEditor
                 items={materials}
                 onItemsChange={setMaterials}
-                laborCost={laborCost}
-                onLaborCostChange={setLaborCost}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={setPaymentMethod}
+                cashAmount={cashAmount}
+                onCashAmountChange={setCashAmount}
+                gcashAmount={gcashAmount}
+                onGcashAmountChange={setGcashAmount}
+                onPaymentDetailsChange={setPaymentDetails}
                 downpayment={downpayment}
                 onDownpaymentChange={setDownpayment}
                 onTotalCostCalculated={(total) => setRepairCost(total.toString())}

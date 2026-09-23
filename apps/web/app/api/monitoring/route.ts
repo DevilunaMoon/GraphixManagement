@@ -45,7 +45,7 @@ export async function GET(req: Request) {
       ? [ { status: 'asc' }, { createdAt: 'desc' } ]
       : [ { status: 'asc' }, { createdAt: 'asc' } ];
 
-    // Calculate branch sequence numbers (GRPX-TAG-A1, GRPX-VIL-A1, GRPX-JAS-A1)
+    // Calculate branch sequence numbers with 1000-rollover rule (GRPX-TAG-A1..A1000 -> B1)
     const allBranchRepairs = await prisma.repairRequest.findMany({
       select: { id: true, branch: true, createdAt: true },
       orderBy: { createdAt: 'asc' }
@@ -62,8 +62,11 @@ export async function GET(req: Request) {
 
       const count = (branchCounters[code] || 0) + 1;
       branchCounters[code] = count;
+      const letterIndex = Math.floor((count - 1) / 1000);
+      const letter = String.fromCharCode(65 + (letterIndex % 26));
+      const seriesNum = ((count - 1) % 1000) + 1;
       trackingMap.set(r.id, {
-        trackingNumber: `GRPX-${code}-A${count}`,
+        trackingNumber: `GRPX-${code}-${letter}${seriesNum}`,
         orderIndex: count
       });
     }

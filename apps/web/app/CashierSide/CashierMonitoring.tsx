@@ -6,7 +6,7 @@ import {
   ChevronDown, Upload, Wrench, Receipt, Building2, Eye, Smartphone, HelpCircle, 
   X, Plus, Trash2, Camera, User, Phone, Mail, Check, ShieldAlert, Cpu
 } from 'lucide-react';
-import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
+import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
 import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import { useRouter } from 'next/navigation';
@@ -154,7 +154,10 @@ export default function CashierMonitoring() {
   const [addPhotoPreviews, setAddPhotoPreviews] = useState<string[]>([]);
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
   const [addMaterials, setAddMaterials] = useState<MaterialItem[]>([]);
-  const [addLaborCost, setAddLaborCost] = useState<string>('0');
+  const [addPaymentMethod, setAddPaymentMethod] = useState<'Cash' | 'GCash' | 'Split'>('Cash');
+  const [addCashAmount, setAddCashAmount] = useState<string>('');
+  const [addGcashAmount, setAddGcashAmount] = useState<string>('');
+  const [addPaymentDetails, setAddPaymentDetails] = useState<PaymentDetails | null>(null);
 
   // View Details Modal State
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
@@ -196,7 +199,10 @@ export default function CashierMonitoring() {
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editMaterials, setEditMaterials] = useState<MaterialItem[]>([]);
-  const [editLaborCost, setEditLaborCost] = useState<string>('0');
+  const [editPaymentMethod, setEditPaymentMethod] = useState<'Cash' | 'GCash' | 'Split'>('Cash');
+  const [editCashAmount, setEditCashAmount] = useState<string>('');
+  const [editGcashAmount, setEditGcashAmount] = useState<string>('');
+  const [editPaymentDetails, setEditPaymentDetails] = useState<PaymentDetails | null>(null);
 
   const progressLevels = ['Accepted', 'Diagnostic', 'Repairing', 'Completed'];
   const initialProgressIndex = progressLevels.indexOf(initialEditProgress);
@@ -424,7 +430,9 @@ export default function CashierMonitoring() {
     setEditImagePreview(device.proofImage || null);
 
     let items: MaterialItem[] = [];
-    let labor = '0';
+    let method: 'Cash' | 'GCash' | 'Split' = 'Cash';
+    let cash = '';
+    let gcash = '';
     if (device.materials) {
       try {
         const parsedMats = JSON.parse(device.materials);
@@ -432,16 +440,22 @@ export default function CashierMonitoring() {
           items = parsedMats;
         } else if (parsedMats && typeof parsedMats === 'object') {
           items = parsedMats.items || [];
-          labor = String(parsedMats.laborCost ?? 0);
+          if (parsedMats.paymentMethod) method = parsedMats.paymentMethod;
+          if (parsedMats.cashAmount !== undefined) cash = String(parsedMats.cashAmount);
+          if (parsedMats.gcashAmount !== undefined) gcash = String(parsedMats.gcashAmount);
         }
       } catch (e) {
         console.error("Failed to parse materials:", e);
       }
-    } else if (device.repairCost) {
-      labor = device.repairCost;
+    }
+    if (!cash && !gcash && device.downpayment) {
+      if (method === 'GCash') gcash = device.downpayment;
+      else cash = device.downpayment;
     }
     setEditMaterials(items);
-    setEditLaborCost(labor);
+    setEditPaymentMethod(method);
+    setEditCashAmount(cash);
+    setEditGcashAmount(gcash);
     setEditModalOpen(true);
   };
 
@@ -563,7 +577,13 @@ export default function CashierMonitoring() {
 
     formData.append('materials', JSON.stringify({
       items: addMaterials,
-      laborCost: parseFloat(addLaborCost) || 0
+      paymentMethod: addPaymentMethod,
+      cashAmount: parseFloat(addCashAmount) || 0,
+      gcashAmount: parseFloat(addGcashAmount) || 0,
+      totalPaid: addPaymentDetails?.totalPaid ?? (parseFloat(addDownpayment) || 0),
+      change: addPaymentDetails?.change ?? 0,
+      balanceDue: addPaymentDetails?.balanceDue ?? 0,
+      isFullyPaid: addPaymentDetails?.isFullyPaid ?? false
     }));
 
     try {
@@ -587,7 +607,10 @@ export default function CashierMonitoring() {
         setAddRepairHistory('');
         setAddDownpayment('');
         setAddMaterials([]);
-        setAddLaborCost('0');
+        setAddPaymentMethod('Cash');
+        setAddCashAmount('');
+        setAddGcashAmount('');
+        setAddPaymentDetails(null);
         setAddPhotos([]);
         setAddPhotoPreviews([]);
         setAddImei('');
@@ -671,7 +694,13 @@ export default function CashierMonitoring() {
 
     formData.append('materials', JSON.stringify({
       items: editMaterials,
-      laborCost: parseFloat(editLaborCost) || 0
+      paymentMethod: editPaymentMethod,
+      cashAmount: parseFloat(editCashAmount) || 0,
+      gcashAmount: parseFloat(editGcashAmount) || 0,
+      totalPaid: editPaymentDetails?.totalPaid ?? (parseFloat(editDownpayment) || 0),
+      change: editPaymentDetails?.change ?? 0,
+      balanceDue: editPaymentDetails?.balanceDue ?? 0,
+      isFullyPaid: editPaymentDetails?.isFullyPaid ?? false
     }));
 
     try {
@@ -1355,8 +1384,13 @@ export default function CashierMonitoring() {
                 <MaterialBreakdownEditor
                   items={editMaterials}
                   onItemsChange={setEditMaterials}
-                  laborCost={editLaborCost}
-                  onLaborCostChange={setEditLaborCost}
+                  paymentMethod={editPaymentMethod}
+                  onPaymentMethodChange={setEditPaymentMethod}
+                  cashAmount={editCashAmount}
+                  onCashAmountChange={setEditCashAmount}
+                  gcashAmount={editGcashAmount}
+                  onGcashAmountChange={setEditGcashAmount}
+                  onPaymentDetailsChange={setEditPaymentDetails}
                   downpayment={editDownpayment}
                   onDownpaymentChange={setEditDownpayment}
                   onTotalCostCalculated={(total) => setEditRepairCost(total.toString())}
@@ -1799,8 +1833,13 @@ export default function CashierMonitoring() {
                 <MaterialBreakdownEditor
                   items={addMaterials}
                   onItemsChange={setAddMaterials}
-                  laborCost={addLaborCost}
-                  onLaborCostChange={setAddLaborCost}
+                  paymentMethod={addPaymentMethod}
+                  onPaymentMethodChange={setAddPaymentMethod}
+                  cashAmount={addCashAmount}
+                  onCashAmountChange={setAddCashAmount}
+                  gcashAmount={addGcashAmount}
+                  onGcashAmountChange={setAddGcashAmount}
+                  onPaymentDetailsChange={setAddPaymentDetails}
                   downpayment={addDownpayment}
                   onDownpaymentChange={setAddDownpayment}
                   onTotalCostCalculated={(total) => setAddRepairCost(total.toString())}
@@ -1834,7 +1873,9 @@ export default function CashierMonitoring() {
       {/* View Intake & Material Breakdown Modal */}
       {viewDetailsOpen && deviceToView && (() => {
         let items: MaterialItem[] = [];
-        let labor = '0';
+        let parsedMethod: 'Cash' | 'GCash' | 'Split' = 'Cash';
+        let parsedCash = '';
+        let parsedGcash = '';
         if (deviceToView.materials) {
           try {
             const parsed = JSON.parse(deviceToView.materials);
@@ -1842,11 +1883,17 @@ export default function CashierMonitoring() {
               items = parsed;
             } else if (parsed && typeof parsed === 'object') {
               items = parsed.items || [];
-              labor = String(parsed.laborCost ?? 0);
+              if (parsed.paymentMethod) parsedMethod = parsed.paymentMethod;
+              if (parsed.cashAmount !== undefined) parsedCash = String(parsed.cashAmount);
+              if (parsed.gcashAmount !== undefined) parsedGcash = String(parsed.gcashAmount);
             }
           } catch (e) {
             console.error(e);
           }
+        }
+        if (!parsedCash && !parsedGcash && deviceToView.downpayment) {
+          if (parsedMethod === 'GCash') parsedGcash = deviceToView.downpayment;
+          else parsedCash = deviceToView.downpayment;
         }
 
         const { parsed, cleanNotes } = parseRepairDetails(deviceToView.repairHistory);
@@ -1975,7 +2022,9 @@ export default function CashierMonitoring() {
               <MaterialBreakdownEditor
                 readOnly
                 items={items}
-                laborCost={labor}
+                paymentMethod={parsedMethod}
+                cashAmount={parsedCash}
+                gcashAmount={parsedGcash}
                 downpayment={deviceToView.downpayment || '0'}
                 deviceName={deviceToView.deviceName}
                 customerName={deviceToView.ownerName || 'Walk-in Customer'}

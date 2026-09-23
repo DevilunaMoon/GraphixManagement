@@ -339,14 +339,18 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                     {/* Customer Itemized Material Breakdown */}
                     {device.materials && (() => {
                       let items: any[] = [];
-                      let labor = '0';
+                      let method: 'Cash' | 'GCash' | 'Split' = 'Cash';
+                      let cash = '';
+                      let gcash = '';
                       try {
                         const parsed = JSON.parse(device.materials);
                         if (Array.isArray(parsed)) {
                           items = parsed;
                         } else if (parsed && typeof parsed === 'object') {
                           items = parsed.items || [];
-                          labor = String(parsed.laborCost ?? 0);
+                          if (parsed.paymentMethod) method = parsed.paymentMethod;
+                          if (parsed.cashAmount !== undefined) cash = String(parsed.cashAmount);
+                          if (parsed.gcashAmount !== undefined) gcash = String(parsed.gcashAmount);
                         }
                       } catch (e) {
                         const lines = String(device.materials).split('\n');
@@ -363,14 +367,20 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                           }
                         }
                       }
-                      if (items.length === 0 && (!labor || labor === '0')) return null;
+                      if (items.length === 0) return null;
+                      if (!cash && !gcash && device.downpayment) {
+                        if (method === 'GCash') gcash = device.downpayment;
+                        else cash = device.downpayment;
+                      }
 
                       return (
                         <div className="sm:col-span-2 pt-4 border-t border-gray-200">
                           <MaterialBreakdownEditor
                             readOnly
                             items={items}
-                            laborCost={labor}
+                            paymentMethod={method}
+                            cashAmount={cash}
+                            gcashAmount={gcash}
                             downpayment={device.downpayment || '0'}
                             deviceName={device.deviceName}
                             customerName={device.ownerName || 'Customer'}

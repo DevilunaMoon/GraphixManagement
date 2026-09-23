@@ -59,3 +59,33 @@ export function formatDisplayInvoiceId(rawId: string | null | undefined, branch?
   
   return `#GRPX-${code}-A${derivedSeq}`;
 }
+
+/**
+ * Resolves the 3-letter branch code for repair tracking:
+ * - 'TAG' for Tagoloan Branch
+ * - 'VIL' for Villanueva Branch
+ * - 'JAS' for Jasaan Branch
+ */
+export function getRepairBranchCode(branch: string | null | undefined): string {
+  if (!branch) return 'TAG';
+  const clean = branch.toLowerCase().trim();
+  if (clean.includes('vil')) return 'VIL';
+  if (clean.includes('jas')) return 'JAS';
+  return 'TAG';
+}
+
+/**
+ * Formats a branch-specific sequential Repair Receipt ID with 1000-rollover:
+ * - 1..1000 -> #GRPX-[TAG/VIL/JAS]-A1 .. #GRPX-[TAG/VIL/JAS]-A1000
+ * - 1001..2000 -> #GRPX-[TAG/VIL/JAS]-B1 .. #GRPX-[TAG/VIL/JAS]-B1000
+ * - 2001..3000 -> #GRPX-[TAG/VIL/JAS]-C1 .. #GRPX-[TAG/VIL/JAS]-C1000
+ */
+export function formatRepairReceiptId(branch: string | null | undefined, count: number): string {
+  const code = getRepairBranchCode(branch);
+  const safeCount = Math.max(1, count || 1);
+  const letterIndex = Math.floor((safeCount - 1) / 1000);
+  const letter = String.fromCharCode(65 + (letterIndex % 26));
+  const seriesNum = ((safeCount - 1) % 1000) + 1;
+  return `#GRPX-${code}-${letter}${seriesNum}`;
+}
+
