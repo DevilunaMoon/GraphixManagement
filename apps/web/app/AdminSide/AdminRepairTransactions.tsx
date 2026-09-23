@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, ShieldCheck, CheckCircle2, Receipt, Wrench, Building2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Receipt, Wrench } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { useBranch } from '../../context/BranchContext';
+import RepairServiceReceiptModal from '../../components/Repair/RepairServiceReceiptModal';
 
 interface Transaction {
   id: string;
   repairId: string;
+  trackingNumber?: string;
+  orderIndex?: number;
   createdAt: string;
   amount: number;
   quantity: number;
@@ -23,6 +24,13 @@ interface Transaction {
   isSettled?: boolean;
   address?: string;
   branch?: string;
+  materials?: string;
+  cause?: string;
+  technician?: string;
+  repairCost?: string | number;
+  downpayment?: string | number;
+  deviceName?: string;
+  ownerName?: string;
   user: {
     id: string;
     name: string | null;
@@ -47,56 +55,6 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
-
-  const hiddenReceiptRef = useRef<HTMLDivElement>(null);
-  const [downloadingTxId, setDownloadingTxId] = useState<string | null>(null);
-
-  const handleDownloadPDF = async (tx: Transaction) => {
-    setDownloadingTxId(tx.id);
-    setTimeout(async () => {
-      if (!hiddenReceiptRef.current) {
-        setDownloadingTxId(null);
-        return;
-      }
-      try {
-        const canvas = await html2canvas(hiddenReceiptRef.current, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          onclone: (clonedDoc) => {
-            const slip = clonedDoc.getElementById('admin-repair-thermal-slip-pdf');
-            if (slip) {
-              slip.style.overflow = 'visible';
-              slip.style.lineHeight = '1.5';
-              slip.querySelectorAll('*').forEach((el: any) => {
-                if (el.style) {
-                  el.style.overflow = 'visible';
-                }
-              });
-            }
-          }
-        });
-        const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 80; // Standard 80mm thermal receipt width
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        const doc = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: [imgWidth, imgHeight]
-        });
-
-        doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        const receiptCode = tx.id.startsWith('rp_') ? tx.id.substring(3).toUpperCase() : tx.id.toUpperCase();
-        doc.save(`Graphix_Repair_Receipt_${receiptCode}.pdf`);
-      } catch (err) {
-        console.error('Error generating PDF:', err);
-      } finally {
-        setDownloadingTxId(null);
-      }
-    }, 150);
-  };
 
   const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
 
@@ -161,197 +119,6 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
-
-  // Helper component to render 80mm monochrome POS thermal receipt
-  const renderThermalReceipt = (tx: Transaction, isPdf = false) => {
-    // 1. Format date (Diagnostics Date / Transaction Timestamp, e.g. August 2, 2026)
-    const formattedDate = new Date(tx.createdAt).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    // 2. Format Receipt ID
-    const rawId = tx.id || 'RP_0193671';
-    const cleanId = rawId.startsWith('#') ? rawId.substring(1) : rawId;
-    const formattedReceiptId = `#${cleanId.toUpperCase()}`;
-
-    // 3. Dynamic Branch
-    let branchName = tx.branch;
-    if (!branchName) {
-      const addr = (tx.address || '').toLowerCase();
-      if (addr.includes('villanueva')) {
-        branchName = 'Villanueva Branch';
-      } else if (addr.includes('jasaan')) {
-        branchName = 'Jasaan Branch';
-      } else {
-        branchName = 'Tagoloan Branch';
-      }
-    }
-    if (!branchName.toLowerCase().includes('branch')) {
-      branchName = `${branchName} Branch`;
-    }
-
-    // 4. Device and Service Details
-    const deviceName = (tx.device?.name || 'iPhone XR').toUpperCase();
-    const totalCost = tx.device?.price || tx.amount || 2000;
-    const unitPrice = tx.device?.price || tx.amount || 2000;
-    const paidAmount = tx.amount > 0 ? tx.amount : totalCost;
-    const isDownpayment = tx.paymentType === 'Downpayment';
-    const remainingBalance = tx.remainingBalance !== undefined ? tx.remainingBalance : (isDownpayment ? Math.max(0, totalCost - paidAmount) : 0);
-    const serviceCount = tx.quantity || 1;
-    const issueText = tx.variations || `${tx.device?.name || 'Device'} Issue`;
-
-    // 5. Payment method
-    const paymentMethodName = (tx.paymentType && tx.paymentType.toLowerCase().includes('gcash')) ? 'GCash' : 'Cash';
-
-    // 6. Customer & Audit information
-    const customerName = tx.user?.name || 'Joram Pacana';
-    const customerEmail = tx.user?.email || 'joram@gmail.com';
-    const technician = tx.device?.technician || 'Lead Tech';
-
-    const phoneMap: Record<string, string> = {
-      'joram pacana': '0917 584 9201',
-      'vincent mumaril': '0956 712 8493',
-      'mumaril, vincent a.': '0956 712 8493',
-      'april rose ocero': '0935 829 1042',
-      'ocero, april maiza dhaine g.': '0935 829 1042',
-      'juana mae mahusay': '0927 491 8203',
-      'pixter andrew gabatan': '0917 839 2018',
-    };
-    const lowerName = (customerName || '').toLowerCase().trim();
-    const cleanPhone = (tx.user?.phone && tx.user.phone !== 'N/A' && !tx.user.phone.includes('₱'))
-      ? tx.user.phone
-      : (phoneMap[lowerName] || '0917 123 4567');
-
-    const formatMoney = (val: number) =>
-      val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-    const dashedDivider = "----------------------------------------";
-
-    return (
-      <div 
-        id={isPdf ? 'admin-repair-thermal-slip-pdf' : 'admin-repair-thermal-slip'}
-        className={`w-full max-w-[320px] bg-white text-black p-5 border border-gray-300 shadow-sm rounded-sm font-mono text-[11px] select-text mx-auto ${isPdf ? 'shadow-none border-none' : ''}`}
-        style={{
-          fontFamily: "'Courier New', Courier, monospace",
-          lineHeight: "1.5",
-          color: "#000000",
-          backgroundColor: "#ffffff",
-          letterSpacing: "0.01em",
-          maxWidth: isPdf ? '100%' : '320px',
-        }}
-      >
-        {/* [HEADER] (Centered) */}
-        <div className="text-center font-mono">
-          <div className="font-bold text-[13px] tracking-wider uppercase leading-normal">GRAPHIX STORE</div>
-          <div className="text-[11px] uppercase leading-normal">BRANCH: {branchName}</div>
-          <div className="text-[10px] leading-normal">MIN: 22112113365644135</div>
-          <div className="text-[10px] leading-normal">DATE: {formattedDate}</div>
-        </div>
-
-        {/* Divider */}
-        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
-          {dashedDivider}
-        </div>
-
-        {/* [DOCUMENT TITLE] (Centered) */}
-        <div className="text-center font-mono py-0.5">
-          <div className="font-bold text-xs uppercase tracking-wide leading-normal">REPAIR SERVICE INVOICE</div>
-          <div className="font-bold text-xs leading-normal">{formattedReceiptId}</div>
-        </div>
-
-        {/* Divider */}
-        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
-          {dashedDivider}
-        </div>
-
-        {/* [DEVICE & SERVICE ROW] (Two-Column Justified) */}
-        <div className="flex flex-col gap-1 font-mono">
-          <div className="flex justify-between items-baseline gap-2 font-bold leading-normal">
-            <span className="uppercase break-words">{deviceName}</span>
-            <span className="shrink-0 text-right whitespace-nowrap">{formatMoney(totalCost)} V</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2 text-[10px] text-black leading-normal">
-            <span className="break-words">Item: {serviceCount}x (Issue: {issueText})</span>
-            <span className="shrink-0 text-right whitespace-nowrap">{serviceCount} @ {formatMoney(unitPrice)}</span>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
-          {dashedDivider}
-        </div>
-
-        {/* [TOTALS & PAYMENTS] (Two-Column Justified) */}
-        <div className="flex flex-col gap-0.5 font-mono leading-normal">
-          <div className="flex justify-between items-baseline gap-2 font-bold text-xs">
-            <span>Total</span>
-            <span className="shrink-0 text-right font-mono">Php {formatMoney(totalCost)}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2 text-[11px]">
-            <span>{isDownpayment ? `${paymentMethodName} (Deposit)` : paymentMethodName}</span>
-            <span className="shrink-0 text-right font-mono">{formatMoney(paidAmount)}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2 text-[11px]">
-            <span>Change</span>
-            <span className="shrink-0 text-right font-mono">0.00</span>
-          </div>
-          {isDownpayment && remainingBalance > 0 && (
-            <div className="flex justify-between items-baseline gap-2 text-[11px] font-bold text-black border-t border-dashed border-gray-300 pt-1 mt-0.5">
-              <span>Remaining Balance</span>
-              <span className="shrink-0 text-right font-mono">Php {formatMoney(remainingBalance)}</span>
-            </div>
-          )}
-
-          <div className="text-center font-bold text-[10px] py-1.5 tracking-wider uppercase leading-normal">
-            *** {serviceCount} SERVICE(S) ***
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
-          {dashedDivider}
-        </div>
-
-        {/* [CUSTOMER & AUDIT FOOTER] (Two-Column Justified) */}
-        <div className="flex flex-col gap-1 font-mono text-[10px] leading-normal">
-          <div className="flex justify-between items-baseline gap-2">
-            <span className="shrink-0 font-medium">Customer:</span>
-            <span className="font-bold text-right break-words">{customerName}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2">
-            <span className="shrink-0 font-medium">Email:</span>
-            <span className="text-right break-all">{customerEmail}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2">
-            <span className="shrink-0 font-medium">Phone:</span>
-            <span className="font-bold text-right whitespace-nowrap">{cleanPhone}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2">
-            <span className="shrink-0 font-medium">Technician:</span>
-            <span className="text-right break-words">{technician}</span>
-          </div>
-          <div className="flex justify-between items-baseline gap-2">
-            <span className="shrink-0 font-medium">Job Order No.</span>
-            <span className="font-bold text-right whitespace-nowrap">{formattedReceiptId}</span>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="text-center select-none my-1.5 text-[11px] leading-normal text-black tracking-tight font-mono">
-          {dashedDivider}
-        </div>
-
-        {/* [FOOTER WARRANTY NOTE] (Centered) */}
-        <div className="text-center font-mono py-1">
-          <p className="m-0 text-[10px] font-bold leading-normal">Thank you for trusting GraphiX Store!</p>
-          <p className="m-0 text-[9.5px] leading-normal">Warranty on parts & service: 3 Months</p>
-          <p className="m-0 text-[9px] leading-normal text-gray-700">Keep this receipt for claiming and warranty validation.</p>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -459,6 +226,9 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                 {paginatedTransactions.map((tx) => {
                   const remBal = tx.remainingBalance !== undefined ? tx.remainingBalance : 0;
                   const isFullyPaid = tx.isSettled || remBal === 0;
+                  const displayReceiptId = tx.trackingNumber 
+                    ? (tx.trackingNumber.startsWith('#') ? tx.trackingNumber : `#${tx.trackingNumber}`) 
+                    : `#${tx.id.replace(/^rp_/i, '').toUpperCase()}`;
 
                   return (
                   <tr 
@@ -468,8 +238,8 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   >
                     <td className="px-5 py-4 font-semibold">
                       <div className="flex flex-col items-start gap-1">
-                        <span className="text-xs font-bold text-gray-500 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-100">
-                          #{tx.id.substring(3).toUpperCase()}
+                        <span className="text-xs font-bold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-200 font-mono tracking-wide">
+                          {displayReceiptId}
                         </span>
                       </div>
                     </td>
@@ -567,11 +337,11 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                           </button>
                         )}
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleDownloadPDF(tx); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedTransaction(tx); }}
                           className="w-10 h-10 rounded-full inline-flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-110 transition-all shadow-md border-none cursor-pointer"
-                          title="Download Receipt"
+                          title="View Repair Service Receipt"
                         >
-                          <Download size={18} />
+                          <Receipt size={18} />
                         </button>
                       </div>
                     </td>
@@ -621,157 +391,42 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
         )}
       </div>
 
-      {/* Transaction Details Modal */}
+      {/* Repair Service Receipt Modal (Shared Standard with Customer Side) */}
       {selectedTransaction && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-4" onClick={() => setSelectedTransaction(null)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-purple-100" onClick={e => e.stopPropagation()}>
-            
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
-                  <ReceiptText size={22} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-lg m-0">Repair Details & Invoice</h3>
-                  <p className="text-xs text-gray-500 m-0">Transaction details, warranty, and thermal receipt</p>
-                </div>
-              </div>
-              <button 
-                className="text-gray-400 hover:text-black transition-colors p-1 cursor-pointer bg-transparent border-none font-bold text-xl" 
-                onClick={() => setSelectedTransaction(null)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Modal Body */}
-            <div className="p-5 md:p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-                
-                {/* Column 1: Details */}
-                <div className="flex flex-col gap-3 md:col-span-7">
-                  <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider border-b border-gray-100 pb-2 mb-1">
-                    Repair Information
-                  </h4>
-                  
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-gray-500 font-semibold text-xs">Receipt ID</span>
-                    <span className="font-bold text-gray-900 text-xs font-mono">#{selectedTransaction.id.replace(/^rp_/i, '').toUpperCase()}</span>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-gray-500 font-semibold text-xs">Branch</span>
-                    <span className="font-bold text-purple-900 text-xs">
-                      📍 {selectedTransaction.branch?.replace(/ branch/i, '') || 'Tagoloan'} Branch
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-gray-500 font-semibold text-xs">Customer</span>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900 text-xs">{selectedTransaction.user?.name || 'Walk-in Customer'}</div>
-                      <div className="text-[11px] text-gray-500">{selectedTransaction.user?.email}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-gray-500 font-semibold text-xs">Device Name</span>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900 text-xs">{selectedTransaction.device?.name}</div>
-                      <div className="text-[11px] text-gray-500">Issue: {selectedTransaction.variations || 'General Issue'}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-gray-500 font-semibold text-xs">Diagnostics Date</span>
-                    <span className="font-bold text-gray-900 text-xs">
-                      {new Date(selectedTransaction.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center border-b border-gray-50 pb-2">
-                    <span className="text-gray-500 font-semibold text-xs">Technician Assigned</span>
-                    <span className="font-bold text-gray-900 text-xs">{selectedTransaction.device?.technician || 'Not assigned'}</span>
-                  </div>
-                  
-                  {/* Warranty Card */}
-                  <div className="bg-gradient-to-r from-purple-50 to-fuchsia-50 p-3 rounded-2xl border border-purple-100 flex items-center gap-3 mt-1">
-                    <div className="p-2 bg-purple-100 text-purple-600 rounded-xl shrink-0">
-                      <ShieldCheck size={20} />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-purple-900 m-0 text-xs">3 Months Service Warranty</h4>
-                      <p className="text-[11px] text-purple-700 mt-0.5 mb-0 leading-normal">
-                        Valid until <span className="font-bold text-purple-900">
-                          {new Date(new Date(selectedTransaction.createdAt).setMonth(new Date(selectedTransaction.createdAt).getMonth() + 3)).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Repaired Device Image Preview */}
-                  {selectedTransaction.device?.image && (
-                    <div className="mt-2 flex flex-col gap-1.5">
-                      <span className="text-gray-500 font-semibold text-xs">Completed Repaired Device Photo</span>
-                      <div className="w-full h-32 rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative group bg-gray-50 flex items-center justify-center p-1">
-                        <img 
-                          src={selectedTransaction.device.image} 
-                          alt="Repaired Device Photo" 
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Modal Actions */}
-                  <div className="flex gap-3 mt-3">
-                    <button
-                      onClick={() => handleDownloadPDF(selectedTransaction)}
-                      className="flex-1 px-4 py-2.5 bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-300 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Download size={15} /> Download Receipt
-                    </button>
-                    <button
-                      onClick={() => setSelectedTransaction(null)}
-                      className="flex-1 px-4 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer border-none shadow-purple-200"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-
-                {/* Column 2: Digital Thermal Receipt */}
-                <div className="md:col-span-5 flex justify-center">
-                  <div className="w-full flex flex-col gap-2">
-                    <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wider border-b border-gray-100 pb-2 mb-1">
-                      Digital Thermal Receipt
-                    </h4>
-                    <div className="flex justify-center">
-                      {renderThermalReceipt(selectedTransaction)}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden PDF Printable Component */}
-      {downloadingTxId && (
-        <div id="thermal-receipt-container" style={{ position: 'absolute', left: '-9999px', top: '0', display: 'block' }}>
-          {(() => {
-            const tx = transactions.find(t => t.id === downloadingTxId) || selectedTransaction;
-            if (!tx) return null;
-            return (
-              <div ref={hiddenReceiptRef} style={{ width: "320px", background: "white", padding: "0" }}>
-                {renderThermalReceipt(tx, true)}
-              </div>
-            );
-          })()}
-        </div>
+        <RepairServiceReceiptModal
+          isOpen={!!selectedTransaction}
+          onClose={() => setSelectedTransaction(null)}
+          device={{
+            id: selectedTransaction.repairId || selectedTransaction.id,
+            trackingNumber: selectedTransaction.trackingNumber,
+            orderIndex: selectedTransaction.orderIndex,
+            deviceName: selectedTransaction.device?.name || selectedTransaction.deviceName || 'Device',
+            cause: selectedTransaction.cause || selectedTransaction.variations || 'General Maintenance',
+            technician: selectedTransaction.technician || selectedTransaction.device?.technician || 'Lead Tech',
+            status: selectedTransaction.status || 'Completed',
+            repairCost: selectedTransaction.repairCost || selectedTransaction.device?.price || selectedTransaction.amount,
+            downpayment: selectedTransaction.downpayment || selectedTransaction.downpaymentAmount || 0,
+            materials: selectedTransaction.materials,
+            branch: selectedTransaction.branch,
+            createdAt: selectedTransaction.createdAt,
+            ownerName: selectedTransaction.ownerName || selectedTransaction.user?.name || 'Customer',
+            customerName: selectedTransaction.user?.name || selectedTransaction.ownerName || 'Customer',
+            customerEmail: selectedTransaction.user?.email || 'customer@graphix.com',
+            customerPhone: selectedTransaction.user?.phone || '0917 123 4567',
+            user: selectedTransaction.user ? {
+              name: selectedTransaction.user.name || undefined,
+              email: selectedTransaction.user.email,
+              phone: selectedTransaction.user.phone || undefined,
+              branch: selectedTransaction.branch || undefined
+            } : null,
+          }}
+          userProfile={selectedTransaction.user ? {
+            name: selectedTransaction.user.name || '',
+            email: selectedTransaction.user.email || '',
+            phone: selectedTransaction.user.phone || '',
+            branch: selectedTransaction.branch || ''
+          } : null}
+        />
       )}
     </div>
   );

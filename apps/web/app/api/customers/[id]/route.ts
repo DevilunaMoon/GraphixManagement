@@ -167,6 +167,40 @@ export async function GET(
       };
     });
 
+    // Calculate branch sequence numbers for repair requests
+    const repairBranchCounters: Record<string, number> = {};
+    const repairTrackingMap = new Map<string, { trackingNumber: string; orderIndex: number }>();
+    try {
+      const allRepairsAsc = await prisma.repairRequest.findMany({
+        select: { id: true, branch: true, createdAt: true },
+        orderBy: { createdAt: 'asc' }
+      });
+      for (const r of allRepairsAsc) {
+        const bLower = (r.branch || 'Tagoloan').toLowerCase();
+        let code = 'TAG';
+        if (bLower.includes('vil')) code = 'VIL';
+        else if (bLower.includes('jas')) code = 'JAS';
+
+        const count = (repairBranchCounters[code] || 0) + 1;
+        repairBranchCounters[code] = count;
+        repairTrackingMap.set(r.id, {
+          trackingNumber: `GRPX-${code}-A${count}`,
+          orderIndex: count
+        });
+      }
+    } catch (repErr) {
+      console.warn("Could not build repair sequence map:", repErr);
+    }
+
+    const processedRepairs = repairRequests.map((r: any) => {
+      const track = repairTrackingMap.get(r.id);
+      return {
+        ...r,
+        trackingNumber: track?.trackingNumber || 'GRPX-TAG-A1',
+        orderIndex: track?.orderIndex || 1
+      };
+    });
+
     // Purchased devices list (specifically devices with tracked IMEI or physical unit history)
     const purchasedDevices = processedPurchases.map((tx: any) => ({
       purchaseId: tx.id,
@@ -191,8 +225,8 @@ export async function GET(
     const totalSpent = processedPurchases.reduce((acc, curr) => acc + (curr.amount || 0), 0);
     const pendingPickupCount = processedPurchases.filter(p => p.isPendingPickup).length;
     const assignedImeiCount = processedPurchases.filter(p => p.hasAssignedImei).length;
-    const totalRepairs = repairRequests.length;
-    const completedRepairs = repairRequests.filter(r => (r.progress || '').toLowerCase() === 'completed' || (r.status || '').toLowerCase() === 'completed').length;
+    const totalRepairs = processedRepairs.length;
+    const completedRepairs = processedRepairs.filter(r => (r.progress || '').toLowerCase() === 'completed' || (r.status || '').toLowerCase() === 'completed').length;
     const totalReviews = reviews.length;
 
     return NextResponse.json({
@@ -211,7 +245,7 @@ export async function GET(
       },
       purchases: processedPurchases,
       purchasedDevices,
-      repairRequests,
+      repairRequests: processedRepairs,
       reviews
     });
   } catch (error) {

@@ -501,6 +501,44 @@ export async function GET(req: Request) {
 
     const whereClause: any = andConditions.length > 0 ? { AND: andConditions } : {};
 
+    // Calculate branch sequence numbers (GRPX-TAG-A1, GRPX-VIL-A1, GRPX-JAS-A1)
+    const allBranchRepairs = await prisma.repairRequest.findMany({
+      select: { id: true, branch: true, createdAt: true },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    const branchCounters: Record<string, number> = {};
+    const trackingMap = new Map<string, { trackingNumber: string; orderIndex: number }>();
+
+    for (const r of allBranchRepairs) {
+      const bLower = (r.branch || 'Tagoloan').toLowerCase();
+      let code = 'TAG';
+      if (bLower.includes('vil')) code = 'VIL';
+      else if (bLower.includes('jas')) code = 'JAS';
+
+      const count = (branchCounters[code] || 0) + 1;
+      branchCounters[code] = count;
+      trackingMap.set(r.id, {
+        trackingNumber: `GRPX-${code}-A${count}`,
+        orderIndex: count
+      });
+    }
+
+    // Assign sequential tracking numbers to paper store receipts
+    STORE_PAPER_RECEIPTS.forEach(p => {
+      const bLower = (p.branch || 'Tagoloan').toLowerCase();
+      let code = 'TAG';
+      if (bLower.includes('vil')) code = 'VIL';
+      else if (bLower.includes('jas')) code = 'JAS';
+
+      const count = (branchCounters[code] || 0) + 1;
+      branchCounters[code] = count;
+      trackingMap.set(p.id, {
+        trackingNumber: `GRPX-${code}-A${count}`,
+        orderIndex: count
+      });
+    });
+
     let dbTransactions: any[] = [];
     try {
       // Fetch all matching repair records from Database
@@ -555,9 +593,15 @@ export async function GET(req: Request) {
         const customerPhone = repair.user?.phone || parsedHistory?.customerPhone || 'N/A';
         const photoUrl = repair.proofImage || repair.image || (parsedHistory?.photos && parsedHistory.photos[0]) || null;
 
+        const track = trackingMap.get(repair.id);
+        const trackingNumber = track?.trackingNumber || `GRPX-TAG-A1`;
+        const orderIndex = track?.orderIndex || 1;
+
         return {
           id: `rp_${repair.id.substring(0, 10)}`,
           repairId: repair.id,
+          trackingNumber,
+          orderIndex,
           createdAt: repair.createdAt.toISOString(),
           amount,
           quantity: 1,
@@ -571,6 +615,13 @@ export async function GET(req: Request) {
           isSettled: !isDownpayment,
           address: 'Walk-In / Online Request',
           branch: repairBranch,
+          cause: repair.cause,
+          technician: repair.technician || 'Lead Tech',
+          repairCost: repair.repairCost || String(totalCost),
+          downpayment: repair.downpayment || String(downpaymentAmount),
+          materials: repair.materials,
+          deviceName: repair.deviceName,
+          ownerName: customerName,
           user: {
             id: repair.userId || 'guest',
             name: customerName,
@@ -601,6 +652,8 @@ export async function GET(req: Request) {
       const dbIds = new Set(dbTransactions.map(tx => tx.repairId));
       matchedPaper = STORE_PAPER_RECEIPTS.filter((tx) => {
         if (dbIds.has(tx.repairId)) return false;
+        const track = trackingMap.get(tx.id);
+        const trackingNo = track?.trackingNumber || '';
         if (date) {
           const txDateStr = new Date(tx.createdAt).toDateString();
           const filterDateStr = new Date(date).toDateString();
@@ -610,6 +663,7 @@ export async function GET(req: Request) {
           const s = search.toLowerCase();
           return (
             tx.id.toLowerCase().includes(s) ||
+            trackingNo.toLowerCase().includes(s) ||
             tx.user.name.toLowerCase().includes(s) ||
             tx.user.email.toLowerCase().includes(s) ||
             tx.device.name.toLowerCase().includes(s) ||
@@ -618,25 +672,62 @@ export async function GET(req: Request) {
           );
         }
         return true;
+      }).map(tx => {
+        const track = trackingMap.get(tx.id);
+        return {
+          ...tx,
+          trackingNumber: track?.trackingNumber || `GRPX-TAG-A1`,
+          orderIndex: track?.orderIndex || 1,
+          deviceName: tx.device?.name,
+          cause: tx.variations,
+          technician: tx.device?.technician,
+          repairCost: String(tx.amount),
+          downpayment: String(tx.downpaymentAmount || 0),
+          ownerName: tx.user?.name,
+        };
       });
     }
 
     // Combine database results + physical store receipts
     const allTransactions = [...dbTransactions, ...matchedPaper];
 
+    // If search term is present, also allow filtering by tracking number for DB records
+    let filteredTransactions = allTransactions;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      filteredTransactions = allTransactions.filter(tx => {
+        const trackNo = (tx.trackingNumber || '').toLowerCase();
+        const idNo = (tx.id || '').toLowerCase();
+        const devName = (tx.device?.name || tx.deviceName || '').toLowerCase();
+        const uName = (tx.user?.name || '').toLowerCase();
+        const uEmail = (tx.user?.email || '').toLowerCase();
+        const varText = (tx.variations || tx.cause || '').toLowerCase();
+        const brText = (tx.branch || '').toLowerCase();
+        return (
+          trackNo.includes(q) ||
+          idNo.includes(q) ||
+          devName.includes(q) ||
+          uName.includes(q) ||
+          uEmail.includes(q) ||
+          varText.includes(q) ||
+          brText.includes(q)
+        );
+      });
+    }
+
     // Sort combined transactions by date (newest first)
-    allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    filteredTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // Calculate Pagination
-    const total = allTransactions.length;
+    const total = filteredTransactions.length;
     const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
     const limit = Math.max(1, parseInt(limitStr || '8', 10) || 8);
     const skip = (page - 1) * limit;
 
-    const paginatedTransactions = allTransactions.slice(skip, skip + limit);
+    const paginatedTransactions = filteredTransactions.slice(skip, skip + limit);
 
     // Calculate Total Sales
-    const totalSales = allTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const totalSales = filteredTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
     return NextResponse.json({
       transactions: paginatedTransactions,

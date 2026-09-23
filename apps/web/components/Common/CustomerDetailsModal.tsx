@@ -679,7 +679,7 @@ export default function CustomerDetailsModal({
                           {filteredRepairs.map((r: any) => (
                             <tr key={r.id} className="border-b border-gray-100 last:border-b-0 hover:bg-purple-50/40 transition-colors">
                               <td className="px-4 py-3 font-mono font-bold text-gray-800">
-                                #{r.id.slice(-8).toUpperCase()}
+                                {r.trackingNumber ? (r.trackingNumber.startsWith('#') ? r.trackingNumber : `#${r.trackingNumber}`) : `#${r.id.slice(-8).toUpperCase()}`}
                               </td>
                               <td className="px-4 py-3 font-bold text-gray-900">
                                 {r.deviceName}
