@@ -153,9 +153,68 @@ export default function CashierDevices() {
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
   const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
 
+  function parseUnitDetails(prodName: string, v: any): {
+    unitLabel: string;
+    color: string;
+    storage: string;
+  } {
+    if (!v) return { unitLabel: prodName, color: '—', storage: '—' };
+    
+    const rawName = String(v.name || '').trim();
+    const rawType = String(v.type || '').trim().toLowerCase();
+    
+    const knownColors = [
+      'red', 'blue', 'black', 'white', 'green', 'gold', 'silver', 'purple', 
+      'yellow', 'pink', 'gray', 'grey', 'midnight', 'starlight', 'titanium', 
+      'natural', 'orange', 'bronze', 'emerald', 'cyan', 'violet'
+    ];
+    
+    let color = '—';
+    let storage = '—';
+    
+    const isColorType = rawType === 'color' || knownColors.includes(rawName.toLowerCase());
+    const storageMatch = rawName.match(/(\d+)\s*(GB|TB|gb|tb)?/i);
+    
+    if (isColorType) {
+      color = rawName;
+      if (storageMatch && !knownColors.includes(storageMatch[1] || '')) {
+        const num = storageMatch[1];
+        const unit = storageMatch[2] ? String(storageMatch[2]).toUpperCase() : 'GB';
+        storage = `${num} ${unit}`;
+      }
+    } else if (rawType === 'storage' || storageMatch) {
+      if (storageMatch) {
+        const num = storageMatch[1];
+        const unit = storageMatch[2] ? String(storageMatch[2]).toUpperCase() : 'GB';
+        storage = `${num} ${unit}`;
+      } else {
+        storage = rawName;
+      }
+      for (const c of knownColors) {
+        if (rawName.toLowerCase().includes(c)) {
+          color = c.charAt(0).toUpperCase() + c.slice(1);
+          break;
+        }
+      }
+    } else {
+      if (knownColors.includes(rawName.toLowerCase())) {
+        color = rawName;
+      } else if (storageMatch) {
+        const num = storageMatch[1];
+        const unit = storageMatch[2] ? String(storageMatch[2]).toUpperCase() : 'GB';
+        storage = `${num} ${unit}`;
+      }
+    }
+    
+    const unitLabel = rawName ? `${prodName} – ${rawName}` : prodName;
+    return { unitLabel, color, storage };
+  }
+
   const [addVariants, setAddVariants] = useState<{
     type: string;
     name: string;
+    color: string;
+    storage: string;
     productId: string;
     price: string;
     cost: string;
@@ -163,10 +222,10 @@ export default function CashierDevices() {
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
   // Edit Product State
@@ -748,7 +807,8 @@ export default function CashierDevices() {
     let totalComputedStock = 0;
     if (addVariants.length > 0) {
       const processedVariants = addVariants.map(v => {
-        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, v.name);
+        const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
+        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
         const tagStock = userBranch === 'Tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0;
         const vilStock = userBranch === 'Villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0;
         const jasStock = userBranch === 'Jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0;
@@ -756,8 +816,8 @@ export default function CashierDevices() {
         totalComputedStock += varTotal;
 
         return {
-          type: v.type || 'Storage',
-          name: v.name,
+          type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
+          name: resolvedName,
           productId: autoProdId,
           price: v.price || newDevicePrice,
           cost: v.cost || newDeviceCost,
@@ -791,10 +851,10 @@ export default function CashierDevices() {
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
         setAddVariants([
-          { type: 'Storage', name: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
         ]);
         setSuccessModalContent({ title: 'Success!', message: `The product has been successfully added to ${userBranch} inventory.` });
         setSuccessModalOpen(true);
@@ -841,17 +901,22 @@ export default function CashierDevices() {
     setEditDeviceDownpaymentImage(null);
 
     if (prod.variations && prod.variations.length > 0) {
-      setEditVariants(prod.variations.map((v: any) => ({
-        id: v.id,
-        type: v.type || 'Storage',
-        name: v.name,
-        productId: v.productId || generateAutoProductId(prod.name, v.name),
-        price: v.price?.toString() || prod.price?.toString() || '',
-        cost: v.cost?.toString() || prod.cost?.toString() || '',
-        tagoloanStock: (v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0).toString(),
-        villanuevaStock: (v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0).toString(),
-        jasaanStock: (v.jasaanStock ?? v.branchStocks?.Jasaan ?? 0).toString()
-      })));
+      setEditVariants(prod.variations.map((v: any) => {
+        const { color, storage } = parseUnitDetails(prod.name, v);
+        return {
+          id: v.id,
+          type: v.type || 'Storage',
+          name: v.name,
+          color: color !== '—' ? color : '',
+          storage: storage !== '—' ? storage : '',
+          productId: v.productId || generateAutoProductId(prod.name, v.name),
+          price: v.price?.toString() || prod.price?.toString() || '',
+          cost: v.cost?.toString() || prod.cost?.toString() || '',
+          tagoloanStock: (v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0).toString(),
+          villanuevaStock: (v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0).toString(),
+          jasaanStock: (v.jasaanStock ?? v.branchStocks?.Jasaan ?? 0).toString()
+        };
+      }));
     } else {
       setEditVariants([]);
     }
@@ -898,7 +963,8 @@ export default function CashierDevices() {
     let totalComputedStock = 0;
     if (editVariants.length > 0) {
       const processedVariants = editVariants.map(v => {
-        const autoProdId = v.productId?.trim() || generateAutoProductId(editDeviceName, v.name);
+        const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
+        const autoProdId = v.productId?.trim() || generateAutoProductId(editDeviceName, resolvedName);
         const tagStock = parseInt(v.tagoloanStock || '0', 10);
         const vilStock = parseInt(v.villanuevaStock || '0', 10);
         const jasStock = parseInt(v.jasaanStock || '0', 10);
@@ -907,8 +973,8 @@ export default function CashierDevices() {
 
         return {
           id: v.id,
-          type: v.type || 'Storage',
-          name: v.name,
+          type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
+          name: resolvedName,
           productId: autoProdId,
           price: v.price || editDevicePrice,
           cost: v.cost || editDeviceCost,
@@ -1269,7 +1335,7 @@ export default function CashierDevices() {
             <thead>
               <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
                 <th className="py-4 px-6">Product Model</th>
-                <th className="py-4 px-4 text-center">Variants Count</th>
+                <th className="py-4 px-4 text-center">Units Count</th>
                 <th className="py-4 px-4 text-center">{userBranch} Stock</th>
                 <th className="py-4 px-4 text-center">Active Branch Stock</th>
                 <th className="py-4 px-4 text-center">Base Price</th>
@@ -1363,7 +1429,7 @@ export default function CashierDevices() {
                         <td className="py-4 px-4 text-center">
                           <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200">
                             <Layers size={13} className="text-purple-600" />
-                            {variants.length > 0 ? `${variants.length} Variants` : 'Standard'}
+                            {variants.length > 0 ? `${variants.length} Units` : 'Standard'}
                           </span>
                         </td>
                         {/* Assigned Branch Stock */}
@@ -1441,7 +1507,7 @@ export default function CashierDevices() {
                                 <div className="flex items-center gap-2">
                                   <Package size={18} className="text-[#5c0099]" />
                                   <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                                    <span>{prod.name} – Storage Variants & {userBranch} Branch Inventory</span>
+                                    <span>{prod.name} – Units & {userBranch} Branch Inventory</span>
                                     {prod.isPreOwned && (
                                       <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
                                         PRE-OWNED
@@ -1449,7 +1515,7 @@ export default function CashierDevices() {
                                     )}
                                   </h4>
                                 </div>
-                                <span className="text-xs text-gray-500">Quickly adjust stock or sell variant in POS</span>
+                                <span className="text-xs text-gray-500">Quickly adjust stock or sell unit in POS</span>
                               </div>
 
                               {variants.length > 0 ? (
@@ -1458,6 +1524,7 @@ export default function CashierDevices() {
                                     <thead>
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
                                         <th className="py-2.5 px-3">Unit</th>
+                                        <th className="py-2.5 px-3">Color</th>
                                         <th className="py-2.5 px-3">Internal Storage</th>
                                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
                                         <th className="py-2.5 px-3 text-center">Active Branch Stock</th>
@@ -1473,15 +1540,44 @@ export default function CashierDevices() {
                                           ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
                                           : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
 
+                                        const { unitLabel, color, storage } = parseUnitDetails(prod.name, v);
+
                                         return (
                                           <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
                                             <td className="py-3 px-3 font-bold text-gray-900">
-                                              {prod.name} – {v.name}
+                                              {unitLabel}
                                             </td>
                                             <td className="py-3 px-3">
-                                              <span className="font-semibold text-gray-800">
-                                                {v.name || 'Standard'}
-                                              </span>
+                                              {color !== '—' ? (
+                                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-800 border border-gray-200">
+                                                  <span 
+                                                    className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" 
+                                                    style={{ 
+                                                      backgroundColor: color.toLowerCase() === 'black' ? '#111' 
+                                                        : color.toLowerCase() === 'white' ? '#fff' 
+                                                        : color.toLowerCase() === 'red' ? '#ef4444' 
+                                                        : color.toLowerCase() === 'blue' ? '#3b82f6' 
+                                                        : color.toLowerCase() === 'green' ? '#10b981' 
+                                                        : color.toLowerCase() === 'gold' ? '#eab308' 
+                                                        : color.toLowerCase() === 'silver' ? '#94a3b8' 
+                                                        : color.toLowerCase() === 'purple' ? '#a855f7' 
+                                                        : '#8b5cf6' 
+                                                    }} 
+                                                  />
+                                                  {color}
+                                                </span>
+                                              ) : (
+                                                <span className="text-gray-400 font-medium">—</span>
+                                              )}
+                                            </td>
+                                            <td className="py-3 px-3">
+                                              {storage !== '—' ? (
+                                                <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
+                                                  {storage}
+                                                </span>
+                                              ) : (
+                                                <span className="text-gray-400 font-medium">—</span>
+                                              )}
                                             </td>
                                             <td className="py-3 px-3 text-center">
                                               <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
@@ -1502,7 +1598,7 @@ export default function CashierDevices() {
                                                   onClick={() => openPosModal(prod, v)}
                                                   disabled={vBranchStock <= 0}
                                                   className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${vBranchStock > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                                                  title="Sell variant in POS"
+                                                  title="Sell unit in POS"
                                                 >
                                                   <ShoppingCart size={12} /> Sell
                                                 </button>
@@ -1526,7 +1622,7 @@ export default function CashierDevices() {
                                   </table>
                                 </div>
                               ) : (
-                                <p className="text-gray-500 text-xs italic py-2">No individual variants created. This item uses standard single inventory.</p>
+                                <p className="text-gray-500 text-xs italic py-2">No individual units created. This item uses standard single inventory.</p>
                               )}
                             </div>
                           </td>
@@ -2435,13 +2531,13 @@ export default function CashierDevices() {
                 </div>
               </div>
 
-              {/* Storage Variants Table */}
+              {/* Units & Storage Variants Table */}
               <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Layers size={18} className="text-[#5c0099]" />
                     <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">
-                      Storage Variants & Branch Stock
+                      Units, Color & Internal Storage
                     </h4>
                   </div>
                   <button
@@ -2449,12 +2545,12 @@ export default function CashierDevices() {
                     onClick={() => {
                       setAddVariants(prev => [
                         ...prev,
-                        { type: 'Storage', name: '512 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
                       ]);
                     }}
                     className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
                   >
-                    <Plus size={14} /> Add Variant
+                    <Plus size={14} /> Add Unit
                   </button>
                 </div>
 
@@ -2463,6 +2559,7 @@ export default function CashierDevices() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
                         <th className="py-2.5 px-3 text-right">Price (₱)</th>
@@ -2482,20 +2579,33 @@ export default function CashierDevices() {
                                 setAddVariants(updated);
                               }}
                               className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
-                              placeholder="64 GB"
+                              placeholder="32 GB"
                             />
                           </td>
                           <td className="py-2 px-3">
                             <input
                               type="text"
-                              value={v.productId}
-                              placeholder={generateAutoProductId(newDeviceName, v.name)}
+                              value={v.color || ''}
                               onChange={(e) => {
                                 const updated = [...addVariants];
-                                updated[idx]!.productId = e.target.value.toUpperCase();
+                                updated[idx]!.color = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold w-36 outline-none"
+                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none"
+                              placeholder="Red"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.storage || ''}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.storage = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none"
+                              placeholder="32 GB"
                             />
                           </td>
                           <td className="py-2 px-3 text-center">
@@ -2765,6 +2875,136 @@ export default function CashierDevices() {
                   onChange={(e) => setEditDeviceSpecs(e.target.value)}
                   className="w-full border border-gray-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500"
                 />
+              </div>
+
+              {/* Units & Internal Storage Section */}
+              <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers size={18} className="text-[#5c0099]" />
+                    <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">
+                      Units & Internal Storage
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditVariants(prev => [
+                        ...prev,
+                        {
+                          type: 'Storage',
+                          name: '128 GB',
+                          color: '',
+                          storage: '128 GB',
+                          productId: '',
+                          price: editDevicePrice || '',
+                          cost: editDeviceCost || '',
+                          tagoloanStock: '0',
+                          villanuevaStock: '0',
+                          jasaanStock: '0'
+                        }
+                      ]);
+                    }}
+                    className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus size={14} /> Add Unit
+                  </button>
+                </div>
+
+                {editVariants.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
+                      <thead>
+                        <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
+                          <th className="py-2.5 px-3">Unit</th>
+                          <th className="py-2.5 px-3">Color</th>
+                          <th className="py-2.5 px-3">Internal Storage</th>
+                          <th className="py-2.5 px-3 text-right">Base Price (₱)</th>
+                          <th className="py-2.5 px-3 text-center">Stock</th>
+                          <th className="py-2.5 px-2 text-center"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {editVariants.map((v, idx) => (
+                          <tr key={v.id || idx}>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={v.name}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.name = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-28 outline-none"
+                                placeholder="e.g. 32 GB, Red"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={v.color || ''}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.color = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none"
+                                placeholder="Red"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={v.storage || ''}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.storage = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none"
+                                placeholder="32 GB"
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder={editDevicePrice || "5999"}
+                                value={v.price}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.price = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none"
+                              />
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              <span className="inline-block px-2.5 py-1 rounded-md text-xs font-bold bg-gray-100 text-gray-700">
+                                {(parseInt(v.tagoloanStock || '0') + parseInt(v.villanuevaStock || '0') + parseInt(v.jasaanStock || '0'))} pcs
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                                title="Remove Unit"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 bg-white rounded-xl border border-dashed border-gray-200">
+                    <p className="text-xs text-gray-500 italic">No specific units configured. Standard single model inventory used.</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
