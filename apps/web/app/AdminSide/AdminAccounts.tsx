@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
+import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 
 const splitName = (fullName: string) => {
   const nameToSplit = (fullName || '').trim();
@@ -54,6 +55,7 @@ export default function AdminAccounts() {
 
   // Modals State
   const [viewModalAccount, setViewModalAccount] = useState<any | null>(null);
+  const [customerDetailsTarget, setCustomerDetailsTarget] = useState<{ id?: string; email?: string; name?: string } | null>(null);
   const [editModalAccount, setEditModalAccount] = useState<any | null>(null);
   const [changeBranchAccount, setChangeBranchAccount] = useState<any | null>(null);
   const [resetPasswordAccount, setResetPasswordAccount] = useState<any | null>(null);
@@ -582,7 +584,13 @@ export default function AdminAccounts() {
                     <tr 
                       key={acc.id} 
                       className="hover:bg-purple-50/40 transition-colors group cursor-pointer"
-                      onClick={() => setViewModalAccount(acc)}
+                      onClick={() => {
+                        if (acc.role === 'CUSTOMER') {
+                          setCustomerDetailsTarget({ id: acc.id, email: acc.email, name: acc.fullName || acc.name });
+                        } else {
+                          setViewModalAccount(acc);
+                        }
+                      }}
                     >
                       {/* Email */}
                       <td className="py-3 px-4 font-semibold text-gray-900">
@@ -665,8 +673,12 @@ export default function AdminAccounts() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setViewModalAccount(acc);
                                   setActiveMenuId(null);
+                                  if (acc.role === 'CUSTOMER') {
+                                    setCustomerDetailsTarget({ id: acc.id, email: acc.email, name: acc.fullName || acc.name });
+                                  } else {
+                                    setViewModalAccount(acc);
+                                  }
                                 }}
                                 className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2"
                               >
@@ -1233,6 +1245,17 @@ export default function AdminAccounts() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Complete Customer Details Modal */}
+      {customerDetailsTarget && (
+        <CustomerDetailsModal
+          isOpen={Boolean(customerDetailsTarget)}
+          onClose={() => setCustomerDetailsTarget(null)}
+          customerId={customerDetailsTarget.id}
+          customerEmail={customerDetailsTarget.email}
+          customerName={customerDetailsTarget.name}
+        />
       )}
     </div>
   );

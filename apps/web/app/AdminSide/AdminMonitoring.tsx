@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
 import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
 import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
+import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import { useBranch } from '../../context/BranchContext';
 
 interface DeviceProgress {
@@ -159,6 +160,7 @@ export default function AdminMonitoring() {
   // View Details Modal State
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [deviceToView, setDeviceToView] = useState<DeviceProgress | null>(null);
+  const [customerDetailsTarget, setCustomerDetailsTarget] = useState<{ id?: string; email?: string; name?: string } | null>(null);
 
   // Account Linking States
   const [users, setUsers] = useState<UserData[]>([]);
@@ -810,9 +812,17 @@ export default function AdminMonitoring() {
                       <td className="p-4 font-bold text-[1.1rem] text-black align-middle">
                         <div>{device.deviceName}</div>
                         {device.ownerName ? (
-                          <div className="text-xs text-purple-700 font-medium mt-0.5 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCustomerDetailsTarget({ name: device.ownerName });
+                            }}
+                            className="text-xs text-purple-700 hover:text-purple-900 hover:underline font-semibold mt-0.5 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                            title="Click to view complete customer details"
+                          >
                             <span>👤</span> {device.ownerName}
-                          </div>
+                          </button>
                         ) : (
                           <div className="text-xs text-gray-400 font-normal mt-0.5">Walk-in Customer</div>
                         )}
@@ -2005,6 +2015,17 @@ export default function AdminMonitoring() {
           fetchMonitoring();
         }}
       />
+
+      {/* Complete Customer Details Modal */}
+      {customerDetailsTarget && (
+        <CustomerDetailsModal
+          isOpen={Boolean(customerDetailsTarget)}
+          onClose={() => setCustomerDetailsTarget(null)}
+          customerId={customerDetailsTarget.id}
+          customerEmail={customerDetailsTarget.email}
+          customerName={customerDetailsTarget.name}
+        />
+      )}
 
     </main>
   );

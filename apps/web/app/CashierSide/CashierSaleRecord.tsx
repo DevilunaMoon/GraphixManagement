@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
 import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
+import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import { formatDisplayInvoiceId } from '../../lib/invoice';
 import { isIPhoneProduct } from '../../lib/imei';
 
@@ -63,6 +64,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
   const [imeiStatus, setImeiStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [customerDetailsTarget, setCustomerDetailsTarget] = useState<{ id?: string; email?: string; name?: string } | null>(null);
   const [imeiModalTarget, setImeiModalTarget] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
 
@@ -250,11 +252,25 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <UserCircle2 size={36} className="text-gray-400" />
+                  <td 
+                    className="px-5 py-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCustomerDetailsTarget({
+                        id: tx.user?.id,
+                        email: tx.user?.email,
+                        name: tx.user?.name || undefined
+                      });
+                    }}
+                  >
+                    <div className="flex items-center gap-3 group/cust cursor-pointer" title="Click to view complete customer details">
+                      <div className="relative">
+                        <UserCircle2 size={36} className="text-gray-400 group-hover/cust:text-[#bd00ff] transition-colors" />
+                      </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-gray-900 text-sm">{tx.user?.name || 'Anonymous'}</span>
+                        <span className="font-bold text-gray-900 text-sm group-hover/cust:text-[#bd00ff] group-hover/cust:underline transition-colors flex items-center gap-1">
+                          {tx.user?.name || 'Anonymous'}
+                        </span>
                         <span className="text-xs text-gray-500 font-semibold">{tx.user?.email}</span>
                       </div>
                     </div>
@@ -413,6 +429,20 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
             )}
           </div>
         </div>
+      )}
+
+      {/* Complete Customer Details Modal */}
+      {customerDetailsTarget && (
+        <CustomerDetailsModal
+          isOpen={Boolean(customerDetailsTarget)}
+          onClose={() => setCustomerDetailsTarget(null)}
+          customerId={customerDetailsTarget.id}
+          customerEmail={customerDetailsTarget.email}
+          customerName={customerDetailsTarget.name}
+          onViewReceipt={(tx) => {
+            setSelectedTransaction(tx);
+          }}
+        />
       )}
 
       {/* iPhone IMEI Prompt Modal */}
