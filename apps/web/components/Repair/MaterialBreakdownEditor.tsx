@@ -60,7 +60,7 @@ export interface MaterialBreakdownProps {
 }
 
 // Built-in default branch GCash accounts
-const DEFAULT_BRANCH_GCASH: Record<string, BranchGcashInfo> = {
+const DEFAULT_BRANCH_GCASH: Record<'tagoloan' | 'villanueva' | 'jasaan', BranchGcashInfo> = {
   tagoloan: {
     name: 'Tagoloan Branch',
     gcashName: 'GRAPHIX MANAGEMENT - TAGOLOAN',
