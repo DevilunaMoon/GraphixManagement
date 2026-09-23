@@ -287,6 +287,7 @@ function CashierEditProgressContent() {
                 onTotalCostCalculated={(total) => setRepairCost(total.toString())}
                 deviceName={deviceData?.deviceName || 'Device'}
                 customerName={deviceData?.ownerName || 'Customer'}
+                branch={deviceData?.branch}
               />
             </div>
 

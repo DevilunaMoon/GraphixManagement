@@ -330,6 +330,10 @@ export default function RepairServiceReceiptModal({
         lines.push(padRow("Change", `Php ${formatMoney(change)}`));
       }
 
+      if (downpayment > 0 && balanceDue > 0) {
+        lines.push(padRow("Downpayment Paid", `Php ${formatMoney(downpayment)}`));
+      }
+
       lines.push(padRow("BALANCE DUE", `Php ${formatMoney(balanceDue)}`));
       lines.push("");
       lines.push(centerText(`*** ${totalItemCount} ITEM(S) ***`));
@@ -572,6 +576,13 @@ export default function RepairServiceReceiptModal({
                       <span className="shrink-0 text-right font-mono">{formatMoney(change)}</span>
                     </div>
                   </>
+                )}
+
+                {downpayment > 0 && balanceDue > 0 && (
+                  <div className="flex justify-between items-baseline gap-2 text-[10px] font-bold text-gray-900 pt-0.5">
+                    <span>Downpayment Paid</span>
+                    <span className="shrink-0 text-right font-mono">Php {formatMoney(downpayment)}</span>
+                  </div>
                 )}
 
                 <div className="flex justify-between items-baseline gap-2 font-bold text-xs pt-1 border-t border-dashed border-gray-300 mt-0.5">

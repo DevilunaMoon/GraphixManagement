@@ -1407,6 +1407,7 @@ export default function AdminMonitoring() {
                   onTotalCostCalculated={(total) => setEditRepairCost(total.toString())}
                   deviceName={editDeviceName || deviceToEdit.deviceName}
                   customerName={editOwnerName || deviceToEdit.ownerName || 'Customer'}
+                  branch={editBranch || deviceToEdit.branch}
                 />
               </div>
 
@@ -1856,6 +1857,7 @@ export default function AdminMonitoring() {
                   onTotalCostCalculated={(total) => setAddRepairCost(total.toString())}
                   deviceName={addDeviceName || 'Device'}
                   customerName={addOwnerName || addCustomerEmail || 'Customer'}
+                  branch={addBranch}
                 />
               </div>
 
@@ -2039,6 +2041,7 @@ export default function AdminMonitoring() {
                 downpayment={deviceToView.downpayment || '0'}
                 deviceName={deviceToView.deviceName}
                 customerName={deviceToView.ownerName || 'Walk-in Customer'}
+                branch={deviceToView.branch}
               />
 
               <div className="flex justify-end pt-3 border-t border-gray-100">

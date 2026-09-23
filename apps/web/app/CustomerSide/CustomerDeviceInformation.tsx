@@ -384,6 +384,7 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                             downpayment={device.downpayment || '0'}
                             deviceName={device.deviceName}
                             customerName={device.ownerName || 'Customer'}
+                            branch={device.branch}
                           />
                         </div>
                       );

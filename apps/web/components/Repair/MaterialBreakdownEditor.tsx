@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Calculator, Wrench, CheckCircle2, DollarSign, CreditCard, Layers, Banknote } from 'lucide-react';
+import { 
+  Plus, Trash2, Calculator, Wrench, CheckCircle2, DollarSign, CreditCard, 
+  Layers, Banknote, QrCode, Copy, Check, X, Smartphone, ExternalLink, AlertCircle
+} from 'lucide-react';
 
 export interface MaterialItem {
   id: string;
@@ -21,12 +24,19 @@ export interface PaymentDetails {
   isFullyPaid: boolean;
 }
 
+export interface BranchGcashInfo {
+  name: string;
+  gcashName: string;
+  gcashNumber: string;
+  gcashQrCode?: string | null;
+}
+
 export interface MaterialBreakdownProps {
   materials?: MaterialItem[];
   items?: MaterialItem[];
   onChange?: (materials: MaterialItem[]) => void;
   onItemsChange?: (materials: MaterialItem[]) => void;
-  // Legacy prop compatibility (ignored in calculation)
+  // Legacy prop compatibility
   laborCost?: string | number;
   onChangeLaborCost?: (cost: string) => void;
   onLaborCostChange?: (cost: string) => void;
@@ -46,7 +56,30 @@ export interface MaterialBreakdownProps {
   onTotalCostCalculated?: (totalRepairCost: number, balanceDue: number, details?: PaymentDetails) => void;
   deviceName?: string;
   customerName?: string;
+  branch?: string;
 }
+
+// Built-in default branch GCash accounts
+const DEFAULT_BRANCH_GCASH: Record<string, BranchGcashInfo> = {
+  tagoloan: {
+    name: 'Tagoloan Branch',
+    gcashName: 'GRAPHIX MANAGEMENT - TAGOLOAN',
+    gcashNumber: '0967 123 4567',
+    gcashQrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=09671234567%20GRAPHIX%20TAGOLOAN'
+  },
+  villanueva: {
+    name: 'Villanueva Branch',
+    gcashName: 'GRAPHIX MANAGEMENT - VILLANUEVA',
+    gcashNumber: '0967 234 5678',
+    gcashQrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=09672345678%20GRAPHIX%20VILLANUEVA'
+  },
+  jasaan: {
+    name: 'Jasaan Branch',
+    gcashName: 'GRAPHIX MANAGEMENT - JASAAN',
+    gcashNumber: '0967 345 6789',
+    gcashQrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=09673456789%20GRAPHIX%20JASAAN'
+  }
+};
 
 export default function MaterialBreakdownEditor({
   materials,
@@ -67,12 +100,57 @@ export default function MaterialBreakdownEditor({
   onTotalChange,
   onTotalCostCalculated,
   deviceName = 'Device',
-  customerName = 'Customer'
+  customerName = 'Customer',
+  branch = 'Tagoloan'
 }: MaterialBreakdownProps) {
   const activeMaterials = items || materials || [];
   const handleMaterialsChange = onItemsChange || onChange;
   const handleDownpaymentChange = onDownpaymentChange || onChangeDownpayment;
   const handleTotalChange = onTotalCostCalculated || onTotalChange;
+
+  // Branch GCash details state
+  const [branchGcash, setBranchGcash] = useState<BranchGcashInfo>(() => {
+    const key = (branch || 'Tagoloan').toLowerCase();
+    if (key.includes('vil')) return DEFAULT_BRANCH_GCASH.villanueva;
+    if (key.includes('jas')) return DEFAULT_BRANCH_GCASH.jasaan;
+    return DEFAULT_BRANCH_GCASH.tagoloan;
+  });
+
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [copiedGcash, setCopiedGcash] = useState(false);
+
+  // Fetch updated branch GCash data from backend if available
+  useEffect(() => {
+    const normalizedBranch = (branch || 'Tagoloan').toLowerCase();
+    let defaultInfo = DEFAULT_BRANCH_GCASH.tagoloan;
+    if (normalizedBranch.includes('vil')) defaultInfo = DEFAULT_BRANCH_GCASH.villanueva;
+    else if (normalizedBranch.includes('jas')) defaultInfo = DEFAULT_BRANCH_GCASH.jasaan;
+
+    fetch('/api/branches')
+      .then(res => res.json())
+      .then(data => {
+        const branchList = Array.isArray(data) ? data : (Array.isArray(data?.branches) ? data.branches : []);
+        if (branchList.length > 0) {
+          const match = branchList.find((b: any) => {
+            const bName = (b.name || '').toLowerCase();
+            return bName.includes(normalizedBranch) || normalizedBranch.includes(bName.replace('branch', '').trim());
+          });
+          if (match) {
+            setBranchGcash({
+              name: match.name || defaultInfo.name,
+              gcashName: match.gcashName || defaultInfo.gcashName,
+              gcashNumber: match.gcashNumber || defaultInfo.gcashNumber,
+              gcashQrCode: match.gcashQrCode || defaultInfo.gcashQrCode
+            });
+            return;
+          }
+        }
+        setBranchGcash(defaultInfo);
+      })
+      .catch(() => {
+        setBranchGcash(defaultInfo);
+      });
+  }, [branch]);
 
   // 1. Calculate Total Repair Cost strictly from Parts / Materials (Parts Subtotal = Total Repair Cost)
   const totalRepairCost = activeMaterials.reduce((sum, item) => sum + (item.total || item.qty * item.unitPrice || 0), 0);
@@ -122,7 +200,8 @@ export default function MaterialBreakdownEditor({
     balanceDue = Math.max(0, totalRepairCost - totalAmountPaid);
   }
 
-  const isFullyPaid = balanceDue === 0 && totalRepairCost >= 0;
+  const isFullyPaid = balanceDue === 0 && totalRepairCost > 0;
+  const isDownpayment = totalAmountPaid > 0 && balanceDue > 0;
 
   // 5. Propagate changes upstream
   useEffect(() => {
@@ -160,6 +239,14 @@ export default function MaterialBreakdownEditor({
   const handleGcashChange = (val: string) => {
     setInternalGcash(val);
     if (onGcashAmountChange) onGcashAmountChange(val);
+  };
+
+  const handleCopyGcash = () => {
+    if (branchGcash?.gcashNumber) {
+      navigator.clipboard.writeText(branchGcash.gcashNumber.replace(/\s+/g, ''));
+      setCopiedGcash(true);
+      setTimeout(() => setCopiedGcash(false), 2000);
+    }
   };
 
   const handleAddRow = () => {
@@ -208,56 +295,77 @@ export default function MaterialBreakdownEditor({
     handleMaterialsChange(activeMaterials.filter(item => item.id !== id));
   };
 
-  // Read-only view (Intake sheet / review)
+  // Helper for quick downpayment buttons
+  const halfCost = Math.round((totalRepairCost / 2) * 100) / 100;
+
+  // READ-ONLY Summary View
   if (readOnly) {
     return (
-      <div className="flex flex-col gap-4 font-['Inter'] w-full">
-        <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-xs">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-purple-50/80 border-b border-purple-100 text-purple-950 font-bold uppercase tracking-wider">
-                <th className="py-2.5 px-3 text-center w-14">Qty</th>
-                <th className="py-2.5 px-3">Material / Part Description</th>
-                <th className="py-2.5 px-3 text-right w-28">Unit Price (₱)</th>
-                <th className="py-2.5 px-3 text-right w-28">Total (₱)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-gray-800">
-              {activeMaterials.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-400 font-medium italic">
-                    No itemized materials recorded
-                  </td>
-                </tr>
-              ) : (
-                activeMaterials.map(item => (
-                  <tr key={item.id} className="hover:bg-gray-50/50">
-                    <td className="py-2 px-3 text-center font-bold text-gray-700">{item.qty}</td>
-                    <td className="py-2 px-3 font-semibold text-gray-900">{item.description || 'Part item'}</td>
-                    <td className="py-2 px-3 text-right text-gray-600 font-mono">₱{item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="py-2 px-3 text-right font-mono font-bold text-gray-900">₱{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div className="flex flex-col gap-3 font-['Inter'] w-full">
+        <div className="flex items-center justify-between pb-1 border-b border-gray-200">
+          <div className="flex items-center gap-2">
+            <Wrench size={16} className="text-[#bd00ff]" />
+            <h4 className="font-bold text-xs uppercase tracking-wider text-gray-700 m-0">Itemized Replacement Parts & Materials</h4>
+          </div>
+          <span className="text-[11px] font-semibold text-gray-500">
+            {activeMaterials.length} item(s)
+          </span>
         </div>
 
+        {activeMaterials.length > 0 ? (
+          <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-2xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase text-[10px]">
+                  <th className="py-2 px-3 text-center w-12">Qty</th>
+                  <th className="py-2 px-3">Part / Material</th>
+                  <th className="py-2 px-3 text-right w-24">Unit Price</th>
+                  <th className="py-2 px-3 text-right w-24">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {activeMaterials.map((item, idx) => (
+                  <tr key={item.id || idx} className="hover:bg-purple-50/20">
+                    <td className="py-2 px-3 text-center font-bold text-gray-700">{item.qty}x</td>
+                    <td className="py-2 px-3 font-medium text-gray-900">{item.description}</td>
+                    <td className="py-2 px-3 text-right font-mono text-gray-600">
+                      ₱{(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono font-bold text-gray-900">
+                      ₱{(item.total || (item.qty * item.unitPrice) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-3 bg-gray-50 rounded-xl text-center text-xs text-gray-400">
+            No itemized replacement parts recorded.
+          </div>
+        )}
+
         {/* Read-Only Cost & Payment Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gradient-to-r from-purple-50/60 to-gray-50 p-3 rounded-xl border border-purple-100/80">
           <div>
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Total Repair Cost</span>
-            <span className="font-black text-lg text-[#bd00ff] font-mono">₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span className="font-black text-base text-[#bd00ff] font-mono">₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
           <div>
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Payment Method</span>
-            <span className="font-bold text-gray-900 text-sm">
-              {currentMethod === 'Split' ? 'Split Payment (Cash + GCash)' : `${currentMethod} Payment`}
+            <span className="font-bold text-gray-900 text-xs">
+              {currentMethod === 'Split' ? 'Split (Cash + GCash)' : `${currentMethod} Payment`}
+            </span>
+          </div>
+          <div>
+            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Amount / Downpayment</span>
+            <span className="font-bold text-gray-900 font-mono text-xs">
+              ₱{totalAmountPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
           <div>
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Balance Due</span>
-            <span className={`font-black text-lg font-mono ${balanceDue > 0 ? 'text-amber-700' : 'text-green-600'}`}>
+            <span className={`font-black text-base font-mono ${balanceDue > 0 ? 'text-amber-700' : 'text-green-600'}`}>
               ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -269,6 +377,7 @@ export default function MaterialBreakdownEditor({
   // Editable view
   return (
     <div className="flex flex-col gap-4 font-['Inter'] w-full">
+      
       {/* Title & Action */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
@@ -301,7 +410,7 @@ export default function MaterialBreakdownEditor({
             {activeMaterials.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-5 text-center text-gray-400 font-medium">
-                  No parts added yet. Click <span className="text-[#bd00ff] font-bold">"+ Add Part / Material"</span> to itemize replacement parts (e.g. LCD, Battery, Flex cable).
+                  No parts added yet. Click <span className="text-[#bd00ff] font-bold">&quot;+ Add Part / Material&quot;</span> to itemize replacement parts (e.g. LCD, Battery, Flex cable).
                 </td>
               </tr>
             ) : (
@@ -432,12 +541,84 @@ export default function MaterialBreakdownEditor({
           </div>
         </div>
 
-        {/* 2. Dynamic Payment Inputs & Calculation Rows */}
+        {/* 2. Branch-Specific GCash Card (Displayed when GCash or Split is active) */}
+        {(currentMethod === 'GCash' || currentMethod === 'Split') && (
+          <div className="p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50/60 border border-blue-200 rounded-2xl flex flex-col gap-3 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-[#005ce6] uppercase tracking-wider flex items-center gap-1.5">
+                <Smartphone size={15} />
+                {branchGcash.name} GCash Account
+              </span>
+              <span className="text-[10px] font-extrabold bg-blue-100 text-[#005ce6] px-2.5 py-0.5 rounded-full">
+                Verified Branch Terminal
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-3 bg-white border border-blue-100 rounded-xl gap-3 shadow-2xs">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* QR Thumbnail */}
+                {branchGcash.gcashQrCode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(true)}
+                    className="w-14 h-14 rounded-xl border-2 border-blue-200 bg-white flex items-center justify-center p-1 shrink-0 hover:scale-105 transition-transform cursor-pointer overflow-hidden shadow-2xs group relative"
+                    title="Click to view full QR code"
+                  >
+                    <img src={branchGcash.gcashQrCode} alt="GCash QR" className="w-full h-full object-contain" />
+                    <div className="absolute inset-0 bg-blue-600/10 group-hover:bg-blue-600/20 flex items-center justify-center">
+                      <QrCode size={14} className="text-blue-600 opacity-80" />
+                    </div>
+                  </button>
+                )}
+
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Account Name</span>
+                  <span className="text-xs font-extrabold text-gray-900 truncate">
+                    {branchGcash.gcashName}
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-xs font-mono font-bold text-[#005ce6]">
+                      {branchGcash.gcashNumber}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={handleCopyGcash}
+                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#005ce6] rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border border-blue-200 shadow-2xs"
+                  title="Copy GCash Number"
+                >
+                  {copiedGcash ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                  <span>{copiedGcash ? 'Copied' : 'Copy Number'}</span>
+                </button>
+
+                {branchGcash.gcashQrCode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowQrModal(true)}
+                    className="px-3 py-1.5 bg-[#005ce6] hover:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors border-none shadow-xs"
+                    title="Enlarge QR Code"
+                  >
+                    <QrCode size={14} />
+                    <span>View QR Code</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 3. Cash Payment Inputs */}
         {currentMethod === 'Cash' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
-            {/* Cash Received */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-gray-200">
+            {/* Downpayment / Cash Received */}
             <div className="flex flex-col gap-1">
-              <label className="font-bold text-xs text-gray-700">Cash Received (₱)</label>
+              <label className="font-bold text-xs text-gray-700">
+                Downpayment / Cash Received (₱)
+              </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400 text-xs">₱</span>
                 <input
@@ -447,21 +628,30 @@ export default function MaterialBreakdownEditor({
                   placeholder="0.00"
                   value={activeCashStr}
                   onChange={(e) => handleCashChange(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm"
+                  className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm transition-all"
                 />
               </div>
-              <div className="flex gap-1 mt-0.5">
+              <div className="flex flex-wrap gap-1 mt-1">
                 <button
                   type="button"
                   onClick={() => handleCashChange(String(totalRepairCost))}
-                  className="text-[10px] font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded cursor-pointer border border-purple-100"
+                  className="text-[10px] font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded cursor-pointer border border-purple-100 transition-colors"
                 >
-                  Exact (₱{totalRepairCost.toLocaleString()})
+                  Full (₱{totalRepairCost.toLocaleString()})
                 </button>
+                {totalRepairCost > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleCashChange(String(halfCost))}
+                    className="text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded cursor-pointer border border-amber-100 transition-colors"
+                  >
+                    50% (₱{halfCost.toLocaleString()})
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleCashChange('0')}
-                  className="text-[10px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded cursor-pointer border border-gray-200"
+                  className="text-[10px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded cursor-pointer border border-gray-200 transition-colors"
                 >
                   ₱0
                 </button>
@@ -478,28 +668,35 @@ export default function MaterialBreakdownEditor({
 
             {/* Balance Due */}
             <div className={`flex flex-col justify-center p-3 rounded-xl border ${
-              balanceDue > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+              balanceDue > 0 ? (isDownpayment ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200') : 'bg-emerald-50 border-emerald-200'
             }`}>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">Balance Due (₱)</span>
-                {isFullyPaid && (
-                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                {isFullyPaid ? (
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                     <CheckCircle2 size={10} /> Fully Paid
                   </span>
-                )}
+                ) : isDownpayment ? (
+                  <span className="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    Downpayment Paid
+                  </span>
+                ) : null}
               </div>
-              <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+              <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? (isDownpayment ? 'text-purple-900' : 'text-amber-800') : 'text-emerald-700'}`}>
                 ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
         )}
 
+        {/* 4. GCash Payment Inputs */}
         {currentMethod === 'GCash' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
-            {/* GCash Amount Paid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-4 rounded-xl border border-gray-200">
+            {/* GCash Amount / Downpayment Paid */}
             <div className="flex flex-col gap-1">
-              <label className="font-bold text-xs text-gray-700">GCash Amount Paid (₱)</label>
+              <label className="font-bold text-xs text-gray-700">
+                Downpayment / GCash Amount Paid (₱)
+              </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-blue-500 text-xs">₱</span>
                 <input
@@ -509,21 +706,30 @@ export default function MaterialBreakdownEditor({
                   placeholder="0.00"
                   value={activeGcashStr}
                   onChange={(e) => handleGcashChange(e.target.value)}
-                  className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-blue-500 text-sm"
+                  className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-blue-500 text-sm transition-all"
                 />
               </div>
-              <div className="flex gap-1 mt-0.5">
+              <div className="flex flex-wrap gap-1 mt-1">
                 <button
                   type="button"
                   onClick={() => handleGcashChange(String(totalRepairCost))}
-                  className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer border border-blue-100"
+                  className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer border border-blue-100 transition-colors"
                 >
                   Full (₱{totalRepairCost.toLocaleString()})
                 </button>
+                {totalRepairCost > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleGcashChange(String(halfCost))}
+                    className="text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded cursor-pointer border border-amber-100 transition-colors"
+                  >
+                    50% (₱{halfCost.toLocaleString()})
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleGcashChange('0')}
-                  className="text-[10px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded cursor-pointer border border-gray-200"
+                  className="text-[10px] font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded cursor-pointer border border-gray-200 transition-colors"
                 >
                   ₱0
                 </button>
@@ -532,29 +738,36 @@ export default function MaterialBreakdownEditor({
 
             {/* Balance Due */}
             <div className={`flex flex-col justify-center p-3 rounded-xl border ${
-              balanceDue > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+              balanceDue > 0 ? (isDownpayment ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200') : 'bg-emerald-50 border-emerald-200'
             }`}>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">Balance Due (₱)</span>
-                {isFullyPaid && (
-                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                {isFullyPaid ? (
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                     <CheckCircle2 size={10} /> Fully Paid
                   </span>
-                )}
+                ) : isDownpayment ? (
+                  <span className="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                    Downpayment Paid
+                  </span>
+                ) : null}
               </div>
-              <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+              <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? (isDownpayment ? 'text-purple-900' : 'text-amber-800') : 'text-emerald-700'}`}>
                 ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
         )}
 
+        {/* 5. Split Payment Inputs */}
         {currentMethod === 'Split' && (
-          <div className="flex flex-col gap-3 bg-white p-3.5 rounded-xl border border-gray-200">
+          <div className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-gray-200">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Cash Component */}
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-xs text-gray-700">Cash Payment (₱)</label>
+                <label className="font-bold text-xs text-gray-700">
+                  Cash Downpayment / Payment (₱)
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-purple-500 text-xs">₱</span>
                   <input
@@ -564,14 +777,32 @@ export default function MaterialBreakdownEditor({
                     placeholder="0.00"
                     value={activeCashStr}
                     onChange={(e) => handleCashChange(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm"
+                    className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm transition-all"
                   />
+                </div>
+                <div className="flex gap-1 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCashChange(String(halfCost))}
+                    className="text-[10px] font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded cursor-pointer border border-purple-100"
+                  >
+                    50% (₱{halfCost.toLocaleString()})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCashChange('0')}
+                    className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded cursor-pointer border border-gray-200"
+                  >
+                    ₱0
+                  </button>
                 </div>
               </div>
 
               {/* GCash Component */}
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-xs text-gray-700">GCash Payment (₱)</label>
+                <label className="font-bold text-xs text-gray-700">
+                  GCash Downpayment / Payment (₱)
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-blue-500 text-xs">₱</span>
                   <input
@@ -581,8 +812,24 @@ export default function MaterialBreakdownEditor({
                     placeholder="0.00"
                     value={activeGcashStr}
                     onChange={(e) => handleGcashChange(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-blue-500 text-sm"
+                    className="w-full pl-7 pr-3 py-2 bg-gray-50 focus:bg-white border border-gray-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-blue-500 text-sm transition-all"
                   />
+                </div>
+                <div className="flex gap-1 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => handleGcashChange(String(halfCost))}
+                    className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded cursor-pointer border border-blue-100"
+                  >
+                    50% (₱{halfCost.toLocaleString()})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleGcashChange('0')}
+                    className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded cursor-pointer border border-gray-200"
+                  >
+                    ₱0
+                  </button>
                 </div>
               </div>
             </div>
@@ -597,17 +844,21 @@ export default function MaterialBreakdownEditor({
               </div>
 
               <div className={`flex flex-col justify-center p-2.5 rounded-xl border ${
-                balanceDue > 0 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'
+                balanceDue > 0 ? (isDownpayment ? 'bg-purple-50 border-purple-200' : 'bg-amber-50 border-amber-200') : 'bg-emerald-50 border-emerald-200'
               }`}>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-gray-700">Balance Due (₱)</span>
-                  {isFullyPaid && (
-                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                  {isFullyPaid ? (
+                    <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                       <CheckCircle2 size={10} /> Fully Paid
                     </span>
-                  )}
+                  ) : isDownpayment ? (
+                    <span className="text-[9px] font-black text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                      Downpayment Paid
+                    </span>
+                  ) : null}
                 </div>
-                <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-800' : 'text-emerald-700'}`}>
+                <span className={`text-base font-black font-mono mt-0.5 ${balanceDue > 0 ? (isDownpayment ? 'text-purple-900' : 'text-amber-800') : 'text-emerald-700'}`}>
                   ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
@@ -616,7 +867,66 @@ export default function MaterialBreakdownEditor({
         )}
 
       </div>
+
+      {/* Enlarged QR Code Modal for Customer / Cashier Scanning */}
+      {showQrModal && branchGcash?.gcashQrCode && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 max-w-sm w-full flex flex-col items-center text-center gap-4 shadow-2xl border border-blue-100 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#005ce6] text-white flex items-center justify-center font-black text-sm">
+                  G
+                </div>
+                <span className="font-extrabold text-xs uppercase tracking-wider text-gray-900">
+                  {branchGcash.name} GCash QR
+                </span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 border-none cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="w-64 h-64 bg-white border-2 border-dashed border-blue-300 rounded-2xl p-2 flex items-center justify-center overflow-hidden shadow-inner">
+              <img src={branchGcash.gcashQrCode} alt="Branch GCash QR" className="w-full h-full object-contain" />
+            </div>
+
+            <div className="flex flex-col items-center gap-1 w-full bg-blue-50/70 p-3 rounded-2xl border border-blue-100">
+              <span className="font-extrabold text-gray-900 text-xs truncate max-w-full">{branchGcash.gcashName}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-bold text-[#005ce6] text-sm">{branchGcash.gcashNumber}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyGcash}
+                  className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors cursor-pointer"
+                  title="Copy Number"
+                >
+                  {copiedGcash ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                </button>
+              </div>
+              <span className="text-[10px] text-gray-500 mt-1">Scan using customer GCash App to transfer payment</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-colors cursor-pointer border-none"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
-
