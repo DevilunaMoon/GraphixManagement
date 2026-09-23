@@ -86,6 +86,8 @@ interface StructuredRepairDetails {
   imei?: string | null;
   problem?: string;
   problemDescription?: string;
+  suggestedRepair?: string;
+  suggestionForRepair?: string;
   isWorking?: string;
   hasPhysicalDamage?: string;
   branch?: string;
@@ -137,6 +139,8 @@ export default function AdminMonitoring() {
   const [addProblem, setAddProblem] = useState('Broken LCD/Screen');
   const [addCustomProblem, setAddCustomProblem] = useState('');
   const [addProblemDescription, setAddProblemDescription] = useState('');
+  const [addSuggestedRepair, setAddSuggestedRepair] = useState('');
+  const [addSuggestionForRepair, setAddSuggestionForRepair] = useState('');
   const [addIsWorking, setAddIsWorking] = useState('Yes');
   const [addHasPhysicalDamage, setAddHasPhysicalDamage] = useState('No');
   const [addBranch, setAddBranch] = useState<string>('Tagoloan');
@@ -180,6 +184,8 @@ export default function AdminMonitoring() {
   const [editProblem, setEditProblem] = useState('Broken LCD/Screen');
   const [editCustomProblem, setEditCustomProblem] = useState('');
   const [editProblemDescription, setEditProblemDescription] = useState('');
+  const [editSuggestedRepair, setEditSuggestedRepair] = useState('');
+  const [editSuggestionForRepair, setEditSuggestionForRepair] = useState('');
   const [editIsWorking, setEditIsWorking] = useState('Yes');
   const [editHasPhysicalDamage, setEditHasPhysicalDamage] = useState('No');
   const [editBranch, setEditBranch] = useState('Tagoloan');
@@ -398,6 +404,8 @@ export default function AdminMonitoring() {
       }
 
       setEditProblemDescription(parsed.problemDescription || '');
+      setEditSuggestedRepair(parsed.suggestedRepair || '');
+      setEditSuggestionForRepair(parsed.suggestionForRepair || '');
       setEditIsWorking(parsed.isWorking || 'Yes');
       setEditHasPhysicalDamage(parsed.hasPhysicalDamage || 'No');
       setEditCustomerPhone(parsed.customerPhone || '');
@@ -421,6 +429,8 @@ export default function AdminMonitoring() {
       setEditProblem('Broken LCD/Screen');
       setEditCustomProblem('');
       setEditProblemDescription(device.cause || '');
+      setEditSuggestedRepair('');
+      setEditSuggestionForRepair('');
       setEditIsWorking('Yes');
       setEditHasPhysicalDamage('No');
       setEditCustomerPhone('');
@@ -559,6 +569,8 @@ export default function AdminMonitoring() {
       imei: addImei.trim() || null,
       problem: finalProblem,
       problemDescription: addProblemDescription.trim(),
+      suggestedRepair: addSuggestedRepair.trim(),
+      suggestionForRepair: addSuggestionForRepair.trim(),
       isWorking: addIsWorking,
       hasPhysicalDamage: addHasPhysicalDamage,
       branch: addBranch || 'Tagoloan',
@@ -619,6 +631,8 @@ export default function AdminMonitoring() {
         setAddPhotoPreviews([]);
         setAddImei('');
         setAddProblemDescription('');
+        setAddSuggestedRepair('');
+        setAddSuggestionForRepair('');
       } else {
         const errorData = await res.json();
         alert('Error: ' + errorData.error);
@@ -674,6 +688,8 @@ export default function AdminMonitoring() {
       imei: editImei.trim() || null,
       problem: finalProblem,
       problemDescription: editProblemDescription.trim(),
+      suggestedRepair: editSuggestedRepair.trim(),
+      suggestionForRepair: editSuggestionForRepair.trim(),
       isWorking: editIsWorking,
       hasPhysicalDamage: editHasPhysicalDamage,
       branch: editBranch,
@@ -1268,6 +1284,28 @@ export default function AdminMonitoring() {
                     className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none"
                   />
                 </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-semibold text-xs text-gray-700">Suggested Repair</label>
+                  <textarea 
+                    rows={3}
+                    value={editSuggestedRepair}
+                    onChange={(e) => setEditSuggestedRepair(e.target.value)}
+                    placeholder="e.g. Replace the damaged LCD/screen with a compatible replacement part."
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-semibold text-xs text-gray-700">Suggestion for Repair</label>
+                  <textarea 
+                    rows={3}
+                    value={editSuggestionForRepair}
+                    onChange={(e) => setEditSuggestionForRepair(e.target.value)}
+                    placeholder="e.g. Replace the damaged part and test the device after repair to ensure it is functioning properly."
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none"
+                  />
+                </div>
               </div>
 
               {/* 4. Device Condition & Photos Section */}
@@ -1736,6 +1774,28 @@ export default function AdminMonitoring() {
                     className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none" 
                   />
                 </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-semibold text-xs text-gray-700">Suggested Repair</label>
+                  <textarea 
+                    rows={3}
+                    value={addSuggestedRepair} 
+                    onChange={(e) => setAddSuggestedRepair(e.target.value)} 
+                    placeholder="e.g. Replace the damaged LCD/screen with a compatible replacement part." 
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none" 
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-semibold text-xs text-gray-700">Suggestion for Repair</label>
+                  <textarea 
+                    rows={3}
+                    value={addSuggestionForRepair} 
+                    onChange={(e) => setAddSuggestionForRepair(e.target.value)} 
+                    placeholder="e.g. Replace the damaged part and test the device after repair to ensure it is functioning properly." 
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none" 
+                  />
+                </div>
               </div>
 
               {/* 4. Device Condition & Multi-Photo Upload */}
@@ -1999,6 +2059,18 @@ export default function AdminMonitoring() {
                 <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
                   <div><strong className="text-black">Reported Issue:</strong> {parsed?.problem ? `${parsed.problem} - ${parsed.problemDescription || ''}` : (deviceToView.cause || 'Diagnostic required')}</div>
                 </div>
+
+                {parsed?.suggestedRepair && (
+                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                    <div><strong className="text-black">Suggested Repair:</strong> {parsed.suggestedRepair}</div>
+                  </div>
+                )}
+
+                {parsed?.suggestionForRepair && (
+                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                    <div><strong className="text-black">Suggestion for Repair:</strong> {parsed.suggestionForRepair}</div>
+                  </div>
+                )}
 
                 {cleanNotes && (
                   <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">

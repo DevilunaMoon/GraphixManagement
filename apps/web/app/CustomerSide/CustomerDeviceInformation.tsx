@@ -256,12 +256,26 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
                           {/* Reported Problem & Description */}
                           <div className="flex flex-col gap-1 sm:col-span-2">
                             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Reported Issue / Problem</span>
-                            <div className="bg-white border border-gray-200/70 rounded-xl p-4 mt-1 shadow-sm">
+                            <div className="bg-white border border-gray-200/70 rounded-xl p-4 mt-1 shadow-sm flex flex-col gap-3">
                               {parsed ? (
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="font-bold text-purple-900 text-sm">{parsed.problem}</span>
-                                  <p className="text-sm text-gray-700 leading-relaxed m-0">{parsed.problemDescription}</p>
-                                </div>
+                                <>
+                                  <div className="flex flex-col gap-1.5">
+                                    <span className="font-bold text-purple-900 text-sm">{parsed.problem}</span>
+                                    <p className="text-sm text-gray-700 leading-relaxed m-0">{parsed.problemDescription}</p>
+                                  </div>
+                                  {parsed.suggestedRepair && (
+                                    <div className="pt-2 border-t border-gray-100 flex flex-col gap-1">
+                                      <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Suggested Repair</span>
+                                      <p className="text-sm text-gray-700 leading-relaxed m-0">{parsed.suggestedRepair}</p>
+                                    </div>
+                                  )}
+                                  {parsed.suggestionForRepair && (
+                                    <div className="pt-2 border-t border-gray-100 flex flex-col gap-1">
+                                      <span className="text-xs font-bold text-purple-700 uppercase tracking-wider">Suggestion for Repair</span>
+                                      <p className="text-sm text-gray-700 leading-relaxed m-0">{parsed.suggestionForRepair}</p>
+                                    </div>
+                                  )}
+                                </>
                               ) : (
                                 <span className="text-base text-gray-700 leading-relaxed">{device.cause || 'No specific cause recorded.'}</span>
                               )}

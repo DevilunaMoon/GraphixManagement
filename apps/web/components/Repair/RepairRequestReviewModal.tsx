@@ -52,6 +52,8 @@ export default function RepairRequestReviewModal({
     imei?: string;
     problem?: string;
     problemDescription?: string;
+    suggestedRepair?: string;
+    suggestionForRepair?: string;
     isWorking?: string;
     hasPhysicalDamage?: string;
     physicalDamageDescription?: string;
@@ -98,6 +100,8 @@ export default function RepairRequestReviewModal({
   const imei = parsedDetails?.imei || 'None provided';
   const problem = parsedDetails?.problem || request.cause?.split(':')[0] || request.cause || 'General Issue';
   const problemDescription = parsedDetails?.problemDescription || request.cause?.split(':').slice(1).join(':').trim() || request.cause || 'No detailed description provided.';
+  const suggestedRepair = parsedDetails?.suggestedRepair;
+  const suggestionForRepair = parsedDetails?.suggestionForRepair;
   const isWorking = parsedDetails?.isWorking || 'Unknown';
   const hasPhysicalDamage = parsedDetails?.hasPhysicalDamage || 'Unknown';
   const physicalDamageDescription = parsedDetails?.physicalDamageDescription || '';
@@ -290,13 +294,37 @@ export default function RepairRequestReviewModal({
             </div>
 
             {/* Reported Problem & Description */}
-            <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-200 flex flex-col gap-2">
-              <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
-                Reported Problem: {problem}
-              </span>
-              <p className="text-sm text-gray-800 leading-relaxed bg-white p-4 rounded-xl border border-purple-100 m-0">
-                "{problemDescription}"
-              </p>
+            <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-200 flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                  Reported Problem: {problem}
+                </span>
+                <p className="text-sm text-gray-800 leading-relaxed bg-white p-4 rounded-xl border border-purple-100 m-0">
+                  "{problemDescription}"
+                </p>
+              </div>
+
+              {suggestedRepair && (
+                <div className="flex flex-col gap-1 pt-2 border-t border-purple-200/60">
+                  <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                    Suggested Repair
+                  </span>
+                  <p className="text-sm text-gray-800 leading-relaxed bg-white p-3.5 rounded-xl border border-purple-100 m-0">
+                    {suggestedRepair}
+                  </p>
+                </div>
+              )}
+
+              {suggestionForRepair && (
+                <div className="flex flex-col gap-1 pt-2 border-t border-purple-200/60">
+                  <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">
+                    Suggestion for Repair
+                  </span>
+                  <p className="text-sm text-gray-800 leading-relaxed bg-white p-3.5 rounded-xl border border-purple-100 m-0">
+                    {suggestionForRepair}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Uploaded Photos Gallery */}
