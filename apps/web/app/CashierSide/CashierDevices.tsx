@@ -1066,7 +1066,7 @@ export default function CashierDevices() {
             </span>
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
-            Organized by Product Name/Model with variant Product IDs and live stock tracking for {userBranch} branch.
+            Organized by Product Name/Model with internal storage units and live stock tracking for {userBranch} branch.
           </p>
         </div>
 
@@ -1119,7 +1119,7 @@ export default function CashierDevices() {
           <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
           <input 
             type="text" 
-            placeholder="Search Model, Product ID, Specs..." 
+            placeholder="Search Model, Storage, Specs..." 
             value={searchQuery} 
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -1457,8 +1457,8 @@ export default function CashierDevices() {
                                   <table className="w-full text-xs text-left">
                                     <thead>
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
-                                        <th className="py-2.5 px-3">Variant (Capacity)</th>
-                                        <th className="py-2.5 px-3">Product ID</th>
+                                        <th className="py-2.5 px-3">Unit</th>
+                                        <th className="py-2.5 px-3">Internal Storage</th>
                                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
                                         <th className="py-2.5 px-3 text-center">Active Branch Stock</th>
                                         <th className="py-2.5 px-3 text-right">Price</th>
@@ -1479,9 +1479,9 @@ export default function CashierDevices() {
                                               {prod.name} – {v.name}
                                             </td>
                                             <td className="py-3 px-3">
-                                              <code className="bg-purple-100 text-purple-800 font-mono font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
-                                                {v.productId}
-                                              </code>
+                                              <span className="font-semibold text-gray-800">
+                                                {v.name || 'Standard'}
+                                              </span>
                                             </td>
                                             <td className="py-3 px-3 text-center">
                                               <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
@@ -2203,7 +2203,7 @@ export default function CashierDevices() {
                       <th className="py-3 px-3">IMEI</th>
                       <th className="py-3 px-3">Product Name</th>
                       <th className="py-3 px-3">Condition</th>
-                      <th className="py-3 px-3">Product ID</th>
+                      <th className="py-3 px-3">Internal Storage</th>
                       <th className="py-3 px-3">Status</th>
                       <th className="py-3 px-3">Date Added</th>
                     </tr>
@@ -2218,7 +2218,7 @@ export default function CashierDevices() {
                             {u.device?.isPreOwned ? 'Pre-Owned' : 'New'}
                           </span>
                         </td>
-                        <td className="py-3 px-3 font-mono text-gray-600">{u.productId || u.variation?.productId || '—'}</td>
+                        <td className="py-3 px-3 font-semibold text-gray-800">{u.variation?.name || u.productId || '—'}</td>
                         <td className="py-3 px-3">
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${u.status === 'Available' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'}`}>
                             {u.status}
@@ -2462,8 +2462,8 @@ export default function CashierDevices() {
                   <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
-                        <th className="py-2.5 px-3">Variant (Capacity)</th>
-                        <th className="py-2.5 px-3">Product ID (Auto/Custom)</th>
+                        <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
                         <th className="py-2.5 px-3 text-right">Price (₱)</th>
                         <th className="py-2.5 px-2 text-center"></th>

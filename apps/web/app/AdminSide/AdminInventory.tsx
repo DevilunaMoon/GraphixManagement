@@ -205,7 +205,7 @@ export default function AdminInventory() {
     });
   };
 
-  // Dynamic Variants for Add Product (Storage Variants with Product IDs & Branch Stocks)
+  // Dynamic Variants for Add Product (Storage Units & Branch Stocks)
   const [newDeviceBranch, setNewDeviceBranch] = useState<string>('Tagoloan');
   const [addVariants, setAddVariants] = useState<{
     type: string;
@@ -1089,7 +1089,7 @@ export default function AdminInventory() {
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.text("Product Model", 16, y);
-      doc.text("Variant (Product ID)", 70, y);
+      doc.text("Unit / Internal Storage", 70, y);
       doc.text("Tagoloan", 125, y);
       doc.text("Villanueva", 145, y);
       doc.text("Jasaan", 168, y);
@@ -1128,7 +1128,7 @@ export default function AdminInventory() {
     try {
       const res = await fetch('/api/devices?limit=500');
       const allDevices: any[] = await res.json();
-      let csvContent = "Model Name,Variant Capacity,Product ID,Tagoloan Stock,Villanueva Stock,Jasaan Stock,Total Stock,Price,Cost\n";
+      let csvContent = "Model Name,Unit,Internal Storage,Tagoloan Stock,Villanueva Stock,Jasaan Stock,Total Stock,Price,Cost\n";
 
       (Array.isArray(allDevices) ? allDevices : []).forEach(d => {
         const variants = d.variations && d.variations.length > 0 ? d.variations : [{ name: 'Standard', productId: `${d.name}-STD`, tagoloanStock: d.tagoloanStock, villanuevaStock: d.villanuevaStock, jasaanStock: d.jasaanStock, price: d.price, cost: d.cost }];
@@ -1176,8 +1176,8 @@ export default function AdminInventory() {
           </div>
           <p className="text-sm text-gray-500 mt-0.5">
             {isSuperAdmin 
-              ? 'Organized by Product Name/Model with variant Product IDs and live stock tracking across Tagoloan, Villanueva, and Jasaan.'
-              : `Organized by Product Name/Model with variant Product IDs and live stock tracking for ${userBranch} branch.`
+              ? 'Organized by Product Name/Model with internal storage units and live stock tracking across Tagoloan, Villanueva, and Jasaan.'
+              : `Organized by Product Name/Model with internal storage units and live stock tracking for ${userBranch} branch.`
             }
           </p>
         </div>
@@ -1263,7 +1263,7 @@ export default function AdminInventory() {
           <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
           <input 
             type="text" 
-            placeholder="Search Model, Product ID, Specs..." 
+            placeholder="Search Model, Storage, Specs..." 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
             className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400" 
@@ -1638,8 +1638,8 @@ export default function AdminInventory() {
                                   <table className="w-full text-xs text-left">
                                     <thead>
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
-                                        <th className="py-2.5 px-3">Variant (Capacity)</th>
-                                        <th className="py-2.5 px-3">Product ID</th>
+                                        <th className="py-2.5 px-3">Unit</th>
+                                        <th className="py-2.5 px-3">Internal Storage</th>
                                         {isSuperAdmin ? (
                                           <>
                                             <th className="py-2.5 px-3 text-center">Tagoloan</th>
@@ -1671,9 +1671,9 @@ export default function AdminInventory() {
                                               {prod.name} – {v.name}
                                             </td>
                                             <td className="py-3 px-3">
-                                              <code className="bg-purple-100 text-purple-800 font-mono font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
-                                                {v.productId}
-                                              </code>
+                                              <span className="font-semibold text-gray-800">
+                                                {v.name || 'Standard'}
+                                              </span>
                                             </td>
                                             {isSuperAdmin ? (
                                               <>
@@ -1842,7 +1842,7 @@ export default function AdminInventory() {
                 if (vars.length === 0) return null;
                 return (
                   <div>
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Select Variant (Product ID)</label>
+                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Select Unit / Storage</label>
                     <select
                       value={transferVariationId}
                       onChange={(e) => setTransferVariationId(e.target.value)}
@@ -1957,7 +1957,7 @@ export default function AdminInventory() {
 
               <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs flex flex-col gap-1">
                 <span className="font-bold text-purple-900">{adjustItem.device.name} – {adjustItem.variant?.name || 'Standard'}</span>
-                <span className="text-purple-700 font-mono">Product ID: {adjustItem.variant?.productId || `${adjustItem.device.name}-STD`}</span>
+                <span className="text-purple-700 font-medium">Internal Storage: <span className="font-bold">{adjustItem.variant?.name || 'Standard'}</span></span>
               </div>
 
               <div>
@@ -2183,7 +2183,7 @@ export default function AdminInventory() {
                 <Search size={16} className="text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search IMEI or Product ID..."
+                  placeholder="Search IMEI or Storage..."
                   value={unitsSearch}
                   onChange={(e) => setUnitsSearch(e.target.value)}
                   className="w-full bg-white border border-gray-300 rounded-xl px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-purple-500"
@@ -2264,7 +2264,7 @@ export default function AdminInventory() {
                       <th className="py-3 px-3">IMEI / Serial Number</th>
                       <th className="py-3 px-3">Product Model</th>
                       <th className="py-3 px-3">Condition</th>
-                      <th className="py-3 px-3">Product ID</th>
+                      <th className="py-3 px-3">Internal Storage</th>
                       <th className="py-3 px-3">Branch</th>
                       <th className="py-3 px-3 text-center">Status</th>
                       <th className="py-3 px-3">Registered Date</th>
@@ -2287,8 +2287,8 @@ export default function AdminInventory() {
                           </span>
                         </td>
                         <td className="py-3 px-3">
-                          <span className="font-mono text-purple-700 font-semibold">
-                            {u.productId || u.variation?.productId || '—'}
+                          <span className="font-semibold text-gray-800">
+                            {u.variation?.name || u.productId || '—'}
                           </span>
                         </td>
                         <td className="py-3 px-3 font-bold text-gray-800">
@@ -2467,8 +2467,8 @@ export default function AdminInventory() {
                   <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
-                        <th className="py-2.5 px-3">Variant (Capacity)</th>
-                        <th className="py-2.5 px-3">Product ID (Auto/Custom)</th>
+                        <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">Tagoloan Stock</th>
                         <th className="py-2.5 px-3 text-center">Villanueva Stock</th>
                         <th className="py-2.5 px-3 text-center">Jasaan Stock</th>
@@ -2792,8 +2792,8 @@ export default function AdminInventory() {
                   <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
-                        <th className="py-2.5 px-3">Variant Name</th>
-                        <th className="py-2.5 px-3">Product ID</th>
+                        <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">Tagoloan</th>
                         <th className="py-2.5 px-3 text-center">Villanueva</th>
                         <th className="py-2.5 px-3 text-center">Jasaan</th>
