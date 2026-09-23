@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2 } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
@@ -58,6 +58,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [imeiStatus, setImeiStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
@@ -102,7 +103,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&branch=${encodeURIComponent(selectedBranch)}`);
+        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&branch=${encodeURIComponent(selectedBranch)}&imeiStatus=${encodeURIComponent(imeiStatus)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.transactions)) {
@@ -124,7 +125,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchTerm, filterDate, type, selectedBranch]);
+  }, [currentPage, searchTerm, filterDate, type, selectedBranch, imeiStatus]);
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
@@ -187,6 +188,29 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                 placeholder="Filter date..."
               />
             </div>
+
+            {/* IMEI Status Dropdown */}
+            <div className="relative min-w-[200px] w-full sm:w-auto">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
+                <Smartphone size={16} />
+              </div>
+              <select
+                value={imeiStatus}
+                onChange={(e) => {
+                  setImeiStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full h-[48px] pl-9 pr-8 bg-gray-50 border-2 border-gray-100 hover:border-purple-300 focus:border-purple-500 focus:bg-white rounded-2xl text-xs font-bold text-gray-800 outline-none transition-all cursor-pointer appearance-none"
+              >
+                <option value="all">All</option>
+                <option value="pending">IMEI: Pending Pickup</option>
+                <option value="assigned">IMEI: Assigned</option>
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
+                ▼
+              </div>
+            </div>
+
             <div className="relative w-full md:w-72">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 

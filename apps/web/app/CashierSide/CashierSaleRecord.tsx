@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, UserCircle2, Search, ReceiptText, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, UserCircle2, Search, ReceiptText, CheckCircle2, Smartphone } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
 import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
@@ -60,6 +60,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [imeiStatus, setImeiStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [imeiModalTarget, setImeiModalTarget] = useState<Transaction | null>(null);
@@ -107,7 +108,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}`);
+        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&imeiStatus=${encodeURIComponent(imeiStatus)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.transactions)) {
@@ -129,7 +130,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchTerm, filterDate, type]);
+  }, [currentPage, searchTerm, filterDate, type, imeiStatus]);
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
@@ -158,7 +159,7 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto items-stretch sm:items-center flex-wrap">
           <DatePicker 
             value={filterDate}
             onChange={(val) => {
@@ -168,6 +169,29 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
             className="w-full sm:w-40 md:w-48 h-[48px] px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-purple-500 focus-within:bg-white outline-none transition-all text-sm font-semibold text-gray-600"
             placeholder="Filter date..."
           />
+
+          {/* IMEI Status Dropdown */}
+          <div className="relative min-w-[200px] w-full sm:w-auto">
+            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
+              <Smartphone size={16} />
+            </div>
+            <select
+              value={imeiStatus}
+              onChange={(e) => {
+                setImeiStatus(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full h-[48px] pl-9 pr-8 bg-gray-50 border-2 border-gray-100 hover:border-purple-300 focus:border-purple-500 focus:bg-white rounded-2xl text-xs font-bold text-gray-800 outline-none transition-all cursor-pointer appearance-none"
+            >
+              <option value="all">All</option>
+              <option value="pending">IMEI: Pending Pickup</option>
+              <option value="assigned">IMEI: Assigned</option>
+            </select>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
+              ▼
+            </div>
+          </div>
+
           <div className="relative flex-1 sm:max-w-[300px]">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input 

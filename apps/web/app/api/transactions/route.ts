@@ -18,60 +18,71 @@ export async function GET(req: Request) {
     const search = searchParams.get('search') || '';
     const date = searchParams.get('date') || '';
     const branchParam = searchParams.get('branch');
+    const imeiStatus = searchParams.get('imeiStatus') || 'all';
     
-    // Build where clause
-    const whereClause: any = {};
+    // Build where clause with clean AND conditions
+    const andConditions: any[] = [];
     if (isSuperAdmin) {
       if (branchParam && branchParam !== 'all') {
-        whereClause.branch = branchParam;
+        andConditions.push({ branch: branchParam });
       }
     } else {
-      whereClause.branch = session.branch || 'Tagoloan';
+      andConditions.push({ branch: session.branch || 'Tagoloan' });
     }
 
     if (type === 'downpayment') {
-      whereClause.paymentType = 'Downpayment';
+      andConditions.push({ paymentType: 'Downpayment' });
     } else if (type === 'full') {
-      whereClause.paymentType = { in: ['Full', 'Cash', 'GCash', 'Split', 'Online', 'Buy Now (Full Payment)'] };
+      andConditions.push({ paymentType: { in: ['Full', 'Cash', 'GCash', 'Split', 'Online', 'Buy Now (Full Payment)'] } });
     }
 
     if (search) {
-      whereClause.OR = [
-        {
-          id: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          imei: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          referenceId: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          user: {
-            name: {
+      andConditions.push({
+        OR: [
+          {
+            id: {
               contains: search,
               mode: 'insensitive'
             }
-          }
-        },
-        {
-          device: {
-            name: {
+          },
+          {
+            imei: {
               contains: search,
               mode: 'insensitive'
             }
+          },
+          {
+            referenceId: {
+              contains: search,
+              mode: 'insensitive'
+            }
+          },
+          {
+            user: {
+              name: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            }
+          },
+          {
+            user: {
+              email: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            }
+          },
+          {
+            device: {
+              name: {
+                contains: search,
+                mode: 'insensitive'
+              }
+            }
           }
-        }
-      ];
+        ]
+      });
     }
 
     if (date) {
@@ -79,11 +90,44 @@ export async function GET(req: Request) {
       startDate.setHours(0, 0, 0, 0);
       const endDate = new Date(date);
       endDate.setHours(23, 59, 59, 999);
-      whereClause.createdAt = {
-        gte: startDate,
-        lte: endDate
-      };
+      andConditions.push({
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      });
     }
+
+    if (imeiStatus === 'assigned' || imeiStatus === 'IMEI: Assigned') {
+      andConditions.push({
+        imei: { not: null },
+        NOT: [
+          { imei: '' },
+          { imei: 'Pending Pickup' },
+          { imei: 'pending' },
+          { imei: 'null' },
+          { imei: 'undefined' }
+        ]
+      });
+    } else if (imeiStatus === 'pending' || imeiStatus === 'IMEI: Pending Pickup') {
+      andConditions.push({
+        OR: [
+          { imei: null },
+          { imei: '' },
+          { imei: 'Pending Pickup' },
+          { imei: 'null' },
+          { imei: 'undefined' }
+        ],
+        device: {
+          OR: [
+            { name: { contains: 'iPhone', mode: 'insensitive' } },
+            { name: { contains: 'Apple', mode: 'insensitive' } }
+          ]
+        }
+      });
+    }
+
+    const whereClause = andConditions.length > 0 ? { AND: andConditions } : {};
 
     // Build branch sequence lookup map across all purchases ordered by createdAt ascending
     const branchSeqMap = new Map<string, string>();
