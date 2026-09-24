@@ -268,7 +268,6 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
         <header className={`bg-gradient-to-r ${styles.gradient} text-white p-4 md:px-8 h-[80px] flex justify-between items-center shadow-sm transition-all duration-300`}>
           <div>
             <h1 className="text-[20px] font-bold tracking-wide uppercase">Point of Sale System</h1>
-            <p className="text-[13px] text-white/90 hidden sm:block mt-0.5">Welcome back. Here is your operational dashboard.</p>
           </div>
           <div className="flex gap-3 items-center">
             {/* Branch Badge */}

@@ -333,12 +333,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       }`}>
         <header className={`bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 flex justify-between items-center shadow-sm transition-all duration-300`}>
           <div>
-            <h1 className="text-2xl font-bold mb-1">
+            <h1 className="text-2xl font-bold">
               {isSuperAdmin ? "Super Admin Portal" : "Dashboard Overview"}
             </h1>
-            <p className="text-sm text-white/90">
-              Welcome Back {adminName}. {isSuperAdmin ? "System-wide multi-branch management" : "Here's the daily summary"}
-            </p>
           </div>
           <div className="flex items-center gap-3">
             {isSuperAdmin ? (
