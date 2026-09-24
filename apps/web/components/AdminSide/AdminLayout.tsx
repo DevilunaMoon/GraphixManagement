@@ -25,7 +25,8 @@ import {
   Bell,
   Building2,
   ScrollText,
-  Crown
+  Crown,
+  KeyRound
 } from 'lucide-react';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [isGadgetRepairOpen, setIsGadgetRepairOpen] = useState(false);
   const [adminName, setAdminName] = useState('Admin');
   const [branchName, setBranchName] = useState('Tagoloan');
+  const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -78,6 +81,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         if (data.loggedIn) {
           if (data.name) setAdminName(data.name);
           if (data.branch) setBranchName(data.branch);
+          if (data.image) setAdminAvatar(data.image);
         }
       })
       .catch(err => console.error("Failed to fetch admin status", err));
@@ -370,6 +374,86 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 </span>
               )}
             </Link>
+
+            {/* Profile Dropdown / Quick Access */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                title="Admin Profile"
+                className={`relative text-white hover:scale-110 transition-all p-2 cursor-pointer rounded-full border border-white/20 flex items-center justify-center overflow-hidden ${
+                  isProfileMenuOpen ? 'bg-white/30 ring-2 ring-white/50' : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                {adminAvatar ? (
+                  <img src={adminAvatar} alt={adminName} className="w-[22px] h-[22px] rounded-full object-cover" />
+                ) : (
+                  <User size={22} />
+                )}
+              </button>
+
+              {isProfileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-purple-100 py-3 z-50 text-gray-900 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0 text-[#9b1fe8] font-bold text-base shadow-sm">
+                        {adminAvatar ? (
+                          <img src={adminAvatar} alt={adminName} className="w-full h-full object-cover" />
+                        ) : (
+                          adminName.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-gray-900 truncate">{adminName}</p>
+                        <span className="inline-block text-[11px] font-bold text-[#9b1fe8] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60 mt-0.5">
+                          {isSuperAdmin ? 'Super Admin' : 'Branch Admin'}
+                        </span>
+                        {!isSuperAdmin && (
+                          <p className="text-[11px] text-gray-500 font-semibold truncate mt-1">
+                            {branchName} Branch
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-1.5 space-y-0.5">
+                      <Link
+                        href="/admin/profile"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
+                      >
+                        <User size={16} className="text-[#9b1fe8]" />
+                        My Profile
+                      </Link>
+                      <Link
+                        href="/admin/change-password"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
+                      >
+                        <KeyRound size={16} className="text-[#9b1fe8]" />
+                        Change Password
+                      </Link>
+                    </div>
+
+                    <div className="pt-1 mt-1 border-t border-gray-100 p-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          setIsLogoutModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <button 
               onClick={() => setIsLogoutModalOpen(true)}
               title="Log Out"

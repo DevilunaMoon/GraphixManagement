@@ -8,10 +8,15 @@ export async function GET() {
     if (session) {
       let name = "Admin";
       let branch = session.branch || "Tagoloan";
+      let image: string | null = null;
+      let email: string | null = null;
+
       if (session.userId) {
         const user = await prisma.user.findUnique({ where: { id: session.userId } });
         if (user && user.name) name = user.name;
         if (user && user.branch) branch = user.branch;
+        if (user && user.image) image = user.image;
+        if (user && user.email) email = user.email;
       }
 
       const isSuperAdmin = session.role === 'SUPER_ADMIN';
@@ -23,10 +28,13 @@ export async function GET() {
 
       return NextResponse.json({ 
         loggedIn: true, 
+        userId: session.userId,
         role: session.role, 
         isSuperAdmin,
         branch, 
         name,
+        email,
+        image,
         branches
       });
     }
