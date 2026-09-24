@@ -7,10 +7,8 @@ import {
   Building2, 
   Package, 
   ShoppingCart, 
-  TrendingUp, 
   Award, 
   Smartphone, 
-  Layers, 
   Sparkles,
   Info
 } from 'lucide-react';
@@ -22,8 +20,6 @@ const BEST_SELLER_COLORS = [
   '#10b981', // 3rd: Vibrant Emerald Green
   '#f97316', // 4th: Vibrant Warm Orange
   '#f43f5e', // 5th: Vibrant Coral Red
-  '#8b5cf6', // 6th: Indigo / Purple
-  '#ec4899', // 7th: Pink
 ];
 
 const formatCurrency = (val: number) => {
@@ -85,23 +81,34 @@ export default function YearlyBestSellersSection({
 
   const totalUnits = activeBranchData?.totalUnitsSold ?? products.reduce((sum, p) => sum + p.unitsSold, 0);
 
-  // Calculate percentages for pie slices
+  // Calculate percentages for all products
   const productsWithPercentage = products.map((p) => ({
     ...p,
     percentage: totalUnits > 0 ? Math.round((p.unitsSold / totalUnits) * 100) : 0
   }));
 
-  // Build conic gradient for pie chart
+  // Top 5 products for card display and pie chart
+  const top5Products = productsWithPercentage.slice(0, 5);
+  const top5TotalUnits = top5Products.reduce((sum, p) => sum + p.unitsSold, 0);
+
+  // Build conic gradient for Top 5 pie chart
   let gradientStr = '';
-  if (totalUnits > 0 && productsWithPercentage.length > 0) {
+  if (totalUnits > 0 && top5Products.length > 0) {
     let currentPct = 0;
-    const slices = productsWithPercentage.map((p, idx) => {
+    const slices = top5Products.map((p, idx) => {
       const color = BEST_SELLER_COLORS[idx % BEST_SELLER_COLORS.length];
+      const slicePct = (p.unitsSold / totalUnits) * 100;
       const start = currentPct;
-      const end = currentPct + ((p.unitsSold / totalUnits) * 100);
+      const end = currentPct + slicePct;
       currentPct = end;
       return `${color} ${start.toFixed(1)}% ${end.toFixed(1)}%`;
     });
+
+    // If top 5 don't make up 100% of branch units, fill remaining with subtle lavender gray
+    if (currentPct < 99.9) {
+      slices.push(`#e2e8f0 ${currentPct.toFixed(1)}% 100%`);
+    }
+
     gradientStr = `conic-gradient(${slices.join(', ')})`;
   }
 
@@ -174,7 +181,7 @@ export default function YearlyBestSellersSection({
 
         {/* Pie Chart & Legends */}
         <div className="flex flex-col items-center">
-          {productsWithPercentage.length === 0 || totalUnits === 0 ? (
+          {top5Products.length === 0 || totalUnits === 0 ? (
             <div className="h-[220px] w-full flex flex-col items-center justify-center text-gray-400 gap-2 bg-purple-50/20 rounded-xl border border-dashed border-purple-100 p-4">
               <Package size={28} className="text-purple-300" />
               <p className="text-sm font-semibold text-gray-500">No completed sales recorded</p>
@@ -184,7 +191,7 @@ export default function YearlyBestSellersSection({
             <div className="w-full flex flex-col gap-4">
               {/* Conic-gradient Pie Chart Container */}
               <div 
-                className="flex justify-center my-2 cursor-pointer transition-transform hover:scale-105"
+                className="flex justify-center my-1 cursor-pointer transition-transform hover:scale-105"
                 onClick={() => setIsModalOpen(true)}
                 title="Click to view full branch best seller breakdown"
               >
@@ -199,13 +206,11 @@ export default function YearlyBestSellersSection({
                 </div>
               </div>
 
-              {/* Legends list */}
-              <div className="flex flex-col gap-2.5 max-h-[190px] overflow-y-auto pr-1">
-                {productsWithPercentage.map((product, idx) => {
+              {/* Legends list for Top 5 */}
+              <div className="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-1">
+                {top5Products.map((product, idx) => {
                   const color = BEST_SELLER_COLORS[idx % BEST_SELLER_COLORS.length];
                   const prodName = product.productModel || (product as any).name || 'Product';
-                  const prodVariant = product.variant && product.variant !== 'Standard' ? product.variant : null;
-                  const isPreOwned = product.condition === 'Pre-Owned' || (product as any).isPreOwned;
 
                   return (
                     <div 
@@ -219,14 +224,9 @@ export default function YearlyBestSellersSection({
                           style={{ backgroundColor: color }} 
                         />
                         <div className="truncate">
-                          <span className="font-bold text-gray-800 group-hover:text-purple-700 transition-colors block truncate">
+                          <span className="font-bold text-gray-800 group-hover:text-purple-700 transition-colors block truncate" title={prodName}>
                             {prodName}
                           </span>
-                          {(prodVariant || isPreOwned) && (
-                            <span className="text-[10px] text-gray-500 font-medium block truncate">
-                              {prodVariant ? prodVariant : ''} {isPreOwned ? '• Pre-Owned' : ''}
-                            </span>
-                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 text-right">
@@ -249,7 +249,7 @@ export default function YearlyBestSellersSection({
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
           <span className="flex items-center gap-1 text-[11px]">
             <Sparkles size={12} className="text-[#bd00ff]" />
-            Ranked by total units
+            {products.length > 5 ? `Top 5 of ${products.length} models` : 'Ranked by total units'}
           </span>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -313,11 +313,11 @@ function BestSellerDetailsModal({
       onClick={onClose}
     >
       <div 
-        className="bg-[#FAF7FF] rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-[#FAF7FF] rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-white px-6 py-5 border-b border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white px-6 py-5 border-b border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 shrink-0">
               <Award size={24} />
@@ -436,23 +436,22 @@ function BestSellerDetailsModal({
                 <p className="text-xs text-gray-400 mt-1">There are no completed orders recorded for {branchName} in this timeframe.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse min-w-[700px]">
                   <thead>
                     <tr className="bg-purple-50/40 text-[11px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100">
                       <th className="py-3.5 px-4 text-center w-14">Rank</th>
-                      <th className="py-3.5 px-4">Product Info</th>
-                      <th className="py-3.5 px-4">Variant / Storage</th>
-                      <th className="py-3.5 px-4">Condition</th>
-                      <th className="py-3.5 px-4 text-right">Units Sold</th>
-                      <th className="py-3.5 px-4 text-right">Total Revenue</th>
-                      <th className="py-3.5 px-4 text-right">Share</th>
+                      <th className="py-3.5 px-4 min-w-[200px]">Product Info</th>
+                      <th className="py-3.5 px-4 min-w-[150px]">Variant / Storage</th>
+                      <th className="py-3.5 px-4 min-w-[110px]">Condition</th>
+                      <th className="py-3.5 px-4 text-right min-w-[100px]">Units Sold</th>
+                      <th className="py-3.5 px-4 text-right min-w-[130px]">Total Revenue</th>
+                      <th className="py-3.5 px-4 text-right min-w-[80px]">Share</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
                     {products.map((p, idx) => {
                       const rank = idx + 1;
-                      const isTop3 = rank <= 3;
                       const rankBadge = rank === 1 
                         ? 'bg-amber-100 text-amber-800 border-amber-300' 
                         : rank === 2 
@@ -490,7 +489,7 @@ function BestSellerDetailsModal({
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-bold text-gray-900 truncate hover:text-purple-700 transition-colors">
+                                <p className="font-bold text-gray-900 truncate hover:text-purple-700 transition-colors" title={prodName}>
                                   {prodName}
                                 </p>
                                 <span className="text-[11px] text-gray-400 font-medium block">
@@ -503,7 +502,10 @@ function BestSellerDetailsModal({
                           {/* Variant / Storage */}
                           <td className="py-3.5 px-4">
                             {prodVariant ? (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                              <span 
+                                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200 max-w-[200px] truncate"
+                                title={prodVariant}
+                              >
                                 {prodVariant}
                               </span>
                             ) : (
@@ -525,18 +527,18 @@ function BestSellerDetailsModal({
                           </td>
 
                           {/* Units Sold */}
-                          <td className="py-3.5 px-4 text-right font-black text-gray-900">
+                          <td className="py-3.5 px-4 text-right font-black text-gray-900 whitespace-nowrap">
                             <span>{p.unitsSold.toLocaleString()}</span>
                             <span className="text-xs text-gray-400 font-medium ml-1">pcs</span>
                           </td>
 
                           {/* Revenue */}
-                          <td className="py-3.5 px-4 text-right font-black text-[#bd00ff]">
+                          <td className="py-3.5 px-4 text-right font-black text-[#bd00ff] whitespace-nowrap">
                             {formatCurrency(revenue)}
                           </td>
 
                           {/* Percentage Share */}
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <span className="text-xs font-extrabold text-gray-800 bg-purple-50 px-2 py-1 rounded-md border border-purple-100">
                               {p.percentage || (totalUnits > 0 ? Math.round((p.unitsSold / totalUnits) * 100) : 0)}%
                             </span>
@@ -552,7 +554,7 @@ function BestSellerDetailsModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-white px-6 py-4 border-t border-purple-100 flex items-center justify-between">
+        <div className="bg-white px-6 py-4 border-t border-purple-100 flex items-center justify-between shrink-0">
           <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
             <Info size={14} className="text-[#bd00ff]" />
             <span>Sales data calculated from verified completed transactions only.</span>

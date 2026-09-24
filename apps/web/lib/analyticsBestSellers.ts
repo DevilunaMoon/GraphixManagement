@@ -21,19 +21,76 @@ export interface BranchBestSellersSummary {
 export function parseVariantLabel(variations: string | null | undefined): string {
   if (!variations) return 'Standard';
   const trimmed = variations.trim();
-  if (trimmed.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      const parts: string[] = [];
-      if (parsed.storage && parsed.storage !== '—') parts.push(parsed.storage);
-      if (parsed.color && parsed.color !== '—') parts.push(parsed.color);
-      if (parsed.name && !parts.includes(parsed.name)) parts.push(parsed.name);
-      return parts.length > 0 ? parts.join(' • ') : 'Standard';
-    } catch {
-      return variations;
-    }
+  if (
+    !trimmed || 
+    trimmed === '—' || 
+    trimmed === '-' || 
+    trimmed === 'null' || 
+    trimmed === 'undefined' || 
+    trimmed === '[]' || 
+    trimmed === '{}'
+  ) {
+    return 'Standard';
   }
-  return variations;
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    // Array of variation objects (e.g. [{ type: 'Color', name: 'Red' }, { type: 'Storage', name: '128' }])
+    if (Array.isArray(parsed)) {
+      const labels: string[] = [];
+      for (const item of parsed) {
+        if (!item) continue;
+        if (typeof item === 'string') {
+          const cleanStr = item.trim();
+          if (cleanStr && cleanStr !== '—' && cleanStr !== '-') labels.push(cleanStr);
+        } else if (typeof item === 'object') {
+          const type = (item.type || item.key || '').toLowerCase();
+          let name = String(item.name ?? item.value ?? item.label ?? '').trim();
+          if (!name || name === '—' || name === '-') continue;
+
+          // If type is storage and name is numeric like "128" or "256", append "GB"
+          if (type.includes('storage') && /^\d+$/.test(name)) {
+            name = `${name}GB`;
+          }
+          labels.push(name);
+        }
+      }
+      return labels.length > 0 ? labels.join(' • ') : 'Standard';
+    }
+
+    // Single object (e.g. { storage: '128GB', color: 'Red' })
+    if (parsed && typeof parsed === 'object') {
+      const labels: string[] = [];
+      if (parsed.storage && parsed.storage !== '—' && parsed.storage !== '-') {
+        let storage = String(parsed.storage).trim();
+        if (/^\d+$/.test(storage)) storage = `${storage}GB`;
+        labels.push(storage);
+      }
+      if (parsed.color && parsed.color !== '—' && parsed.color !== '-') {
+        labels.push(String(parsed.color).trim());
+      }
+      if (parsed.name && !labels.includes(parsed.name) && parsed.name !== '—' && parsed.name !== '-') {
+        labels.push(String(parsed.name).trim());
+      }
+
+      if (labels.length > 0) return labels.join(' • ');
+
+      for (const val of Object.values(parsed)) {
+        if (typeof val === 'string' && val !== '—' && val !== '-') labels.push(val.trim());
+        else if (val && typeof val === 'object' && (val as any).name) labels.push(String((val as any).name).trim());
+      }
+      return labels.length > 0 ? labels.join(' • ') : 'Standard';
+    }
+  } catch {
+    // If not valid JSON, clean up potential raw array/object fragments
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      return 'Standard';
+    }
+    return trimmed;
+  }
+
+  return trimmed || 'Standard';
 }
 
 export function calculateBranchBestSellers(
@@ -70,7 +127,7 @@ export function calculateBranchBestSellers(
   const productAggregators: Record<string, Record<string, {
     productId: string;
     productModel: string;
-    variant: string;
+    variantSet: Set<string>;
     condition: 'New' | 'Pre-Owned';
     image: string | null;
     unitsSold: number;
@@ -97,16 +154,15 @@ export function calculateBranchBestSellers(
     branchSummary.totalRevenue += revenue;
     branchSummary.totalOrders += 1;
 
-    const deviceId = p.deviceId || p.device?.id || 'unknown';
+    const deviceId = p.deviceId || p.device?.id || p.device?.name || 'unknown';
     const variantLabel = parseVariantLabel(p.variations);
-    const key = `${deviceId}__${variantLabel}`;
 
-    if (!branchAggregator[key]) {
+    if (!branchAggregator[deviceId]) {
       const img = p.device?.image || (p.device?.images && p.device?.images[0]) || null;
-      branchAggregator[key] = {
+      branchAggregator[deviceId] = {
         productId: deviceId,
         productModel: p.device?.name || 'Unknown Product',
-        variant: variantLabel,
+        variantSet: new Set<string>(),
         condition: p.device?.isPreOwned ? 'Pre-Owned' : 'New',
         image: img,
         unitsSold: 0,
@@ -114,10 +170,13 @@ export function calculateBranchBestSellers(
       };
     }
 
-    const item = branchAggregator[key];
+    const item = branchAggregator[deviceId];
     if (item) {
       item.unitsSold += units;
       item.totalRevenue += revenue;
+      if (variantLabel && variantLabel !== 'Standard') {
+        item.variantSet.add(variantLabel);
+      }
     }
   });
 
@@ -127,14 +186,26 @@ export function calculateBranchBestSellers(
     if (!branchSummary || !branchAggregator) return;
 
     const prods = Object.values(branchAggregator);
+    // Sort descending by units sold, then total revenue
     prods.sort((a, b) => b.unitsSold - a.unitsSold || b.totalRevenue - a.totalRevenue);
 
     const branchTotalUnits = branchSummary.totalUnitsSold;
-    branchSummary.products = prods.map((prod, idx) => ({
-      rank: idx + 1,
-      ...prod,
-      percentage: branchTotalUnits > 0 ? Math.round((prod.unitsSold / branchTotalUnits) * 100) : 0
-    }));
+    branchSummary.products = prods.map((prod, idx) => {
+      const variantList = Array.from(prod.variantSet);
+      const displayVariant = variantList.length > 0 ? variantList.join(', ') : 'Standard';
+
+      return {
+        rank: idx + 1,
+        productId: prod.productId,
+        productModel: prod.productModel,
+        variant: displayVariant,
+        condition: prod.condition,
+        image: prod.image,
+        unitsSold: prod.unitsSold,
+        totalRevenue: prod.totalRevenue,
+        percentage: branchTotalUnits > 0 ? Math.round((prod.unitsSold / branchTotalUnits) * 100) : 0
+      };
+    });
   });
 
   return branchMap;
