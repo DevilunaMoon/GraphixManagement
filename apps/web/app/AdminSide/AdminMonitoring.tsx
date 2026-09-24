@@ -320,6 +320,39 @@ export default function AdminMonitoring() {
     return progress;
   };
 
+  const renderProgressBadge = (progress: string) => {
+    const prog = (progress || '').toLowerCase();
+    let badgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
+    let dotClass = 'bg-purple-500';
+    
+    if (prog === 'completed' || prog === '100%') {
+      badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      dotClass = 'bg-emerald-500';
+    } else if (prog === 'repairing' || prog === '50%' || prog === '75%') {
+      badgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
+      dotClass = 'bg-amber-500';
+    } else if (prog === 'diagnostic' || prog === 'diagnosis' || prog === '25%' || prog === '0%') {
+      badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+      dotClass = 'bg-blue-500';
+    } else if (prog === 'accepted') {
+      badgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
+      dotClass = 'bg-purple-500';
+    } else if (prog === 'pending') {
+      badgeClass = 'bg-orange-50 text-orange-700 border-orange-200';
+      dotClass = 'bg-orange-500';
+    } else if (prog === 'rejected' || prog === 'cancelled') {
+      badgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+      dotClass = 'bg-rose-500';
+    }
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badgeClass} shadow-2xs`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`}></span>
+        {formatProgress(progress)}
+      </span>
+    );
+  };
+
   const openCompleteModal = (device: DeviceProgress) => {
     setDeviceToComplete(device);
     setCompleteModalOpen(true);
@@ -798,19 +831,23 @@ export default function AdminMonitoring() {
   };
 
   return (
-    <main className="flex-1 flex flex-col p-3 md:p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white overflow-hidden font-['Inter'] overflow-y-auto w-auto">
+    <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8 gap-6 bg-[#FAF7FF] min-h-screen font-['Inter'] w-full overflow-y-auto">
+      <div className="bg-white rounded-2xl border border-[#E9D8FD] shadow-[0_4px_24px_rgba(147,51,234,0.04)] p-5 md:p-7 flex flex-col gap-6 w-full">
         
         {/* Header and Search */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#bd00ff] pb-4">
-          <h2 className="text-2xl font-bold text-black border-none">Devices Monitoring</h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-[#F3E8FF]">
+          <div>
+            <h2 className="text-2xl font-bold text-[#1F1728] tracking-tight">Devices Monitoring</h2>
+            <p className="text-xs text-[#7e6a99] mt-0.5 font-medium">Track real-time repair progress, customer devices, and service records</p>
+          </div>
           
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="flex items-center border border-[#bd00ff] rounded-lg px-4 py-2 bg-white w-full md:w-[300px]">
-              <Search size={20} className="text-gray-400" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center border border-[#E9D8FD] rounded-xl px-3.5 py-2 bg-[#FAF7FF]/60 hover:bg-white focus-within:bg-white focus-within:border-[#9333EA] focus-within:ring-2 focus-within:ring-[#9333EA]/15 transition-all w-full sm:w-[280px] md:w-[320px]">
+              <Search size={18} className="text-[#8b7aa8] shrink-0" />
               <input 
                 type="text" 
                 placeholder="Search by Device Name..." 
-                className="border-none outline-none pl-3 text-sm w-full text-black placeholder-gray-400 bg-transparent font-medium"
+                className="border-none outline-none pl-2.5 text-sm w-full text-[#1F1728] placeholder-[#8b7aa8] bg-transparent font-medium"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -818,46 +855,47 @@ export default function AdminMonitoring() {
 
             <button 
               onClick={() => setAddModalOpen(true)}
-              className="bg-[#bd00ff] hover:bg-[#9c00d6] text-white px-5 py-2.5 rounded-lg font-bold transition-colors shadow-sm whitespace-nowrap w-full md:w-auto cursor-pointer border-none"
+              className="bg-[#9333EA] hover:bg-[#7e22ce] active:scale-[0.98] text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-xs hover:shadow-[0_4px_12px_rgba(147,51,234,0.25)] flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
             >
-              Add Request Form +
+              <Plus size={16} className="stroke-[2.5]" />
+              <span>Add Request Form</span>
             </button>
           </div>
         </div>
 
         {/* Devices Table */}
-        <div className="w-full mt-2">
+        <div className="w-full">
           {isLoading ? (
-            <div className="w-full py-20 flex flex-col items-center justify-center gap-4 border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm">
-              <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
-              <p className="text-[#666] font-semibold animate-pulse text-lg">Loading devices...</p>
+            <div className="w-full py-20 flex flex-col items-center justify-center gap-4 rounded-2xl border border-[#E9D8FD] bg-[#FAF7FF]/40">
+              <div className="w-10 h-10 border-3 border-purple-200 border-t-[#9333EA] rounded-full animate-spin"></div>
+              <p className="text-[#7e6a99] font-medium text-sm animate-pulse">Loading repair requests...</p>
             </div>
           ) : paginatedDevices.length > 0 ? (
-            <div className="overflow-x-auto w-full border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+            <div className="overflow-x-auto w-full rounded-2xl border border-[#E9D8FD] bg-white">
+              <table className="w-full text-left border-collapse min-w-[720px]">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-[#bd00ff]/20 text-gray-700">
-                    <th className="p-4 font-bold text-center w-28 text-[1.05rem]">Device</th>
-                    <th className="p-4 font-bold text-[1.05rem]">Device & Customer</th>
-                    {isSuperAdmin && <th className="p-4 font-bold text-center text-[1.05rem]">Branch</th>}
-                    <th className="p-4 font-bold text-center text-[1.05rem]">Progress</th>
-                    <th className="p-4 font-bold text-center text-[1.05rem]">Actions</th>
+                  <tr className="bg-[#FAF7FF] border-b border-[#E9D8FD] text-[#5b4a7a]">
+                    <th className="py-3.5 px-4 font-semibold text-center w-24 text-xs uppercase tracking-wider">Device</th>
+                    <th className="py-3.5 px-5 font-semibold text-xs uppercase tracking-wider">Device & Customer</th>
+                    {isSuperAdmin && <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Branch</th>}
+                    <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Progress</th>
+                    <th className="py-3.5 px-5 font-semibold text-center text-xs uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-[#F3E8FF]">
                   {paginatedDevices.map(device => (
-                    <tr key={device.id} className="border-b border-gray-100/80 hover:bg-purple-50/50 transition-colors group">
-                      <td className="p-4 flex justify-center align-middle">
-                        <div className="h-16 w-16 shrink-0 rounded-full border border-gray-200 flex justify-center items-center overflow-hidden bg-white shadow-sm group-hover:border-[#bd00ff]/40 transition-colors">
+                    <tr key={device.id} className="hover:bg-[#FAF7FF]/70 transition-colors group">
+                      <td className="py-4 px-4 text-center align-middle">
+                        <div className="h-14 w-14 mx-auto shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF] group-hover:border-[#C084FC] transition-colors">
                           {device.image ? (
                             <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
                           ) : (
-                            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">No Img</span>
+                            <span className="text-[10px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
                           )}
                         </div>
                       </td>
-                      <td className="p-4 font-bold text-[1.1rem] text-black align-middle">
-                        <div>{device.deviceName}</div>
+                      <td className="py-4 px-5 align-middle">
+                        <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug">{device.deviceName}</div>
                         {device.ownerName ? (
                           <button
                             type="button"
@@ -865,27 +903,31 @@ export default function AdminMonitoring() {
                               e.stopPropagation();
                               setCustomerDetailsTarget({ name: device.ownerName });
                             }}
-                            className="text-xs text-purple-700 hover:text-purple-900 hover:underline font-semibold mt-0.5 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                            className="text-xs text-[#7e22ce] hover:text-[#581c87] hover:underline font-medium mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
                             title="Click to view complete customer details"
                           >
-                            <span>👤</span> {device.ownerName}
+                            <User size={13} className="text-[#9333EA]" />
+                            <span>{device.ownerName}</span>
                           </button>
                         ) : (
-                          <div className="text-xs text-gray-400 font-normal mt-0.5">Walk-in Customer</div>
+                          <div className="text-xs text-[#8b7aa8] font-normal mt-1 flex items-center gap-1">
+                            <User size={13} className="text-[#8b7aa8]" />
+                            <span>Walk-in Customer</span>
+                          </div>
                         )}
                       </td>
                       {isSuperAdmin && (
-                        <td className="p-4 align-middle text-center">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-[#bd00ff] border border-purple-200">
-                            <Building2 size={12} />
+                        <td className="py-4 px-4 align-middle text-center">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF5FF] text-[#7e22ce] border border-[#E9D8FD]">
+                            <Building2 size={12} className="text-[#9333EA]" />
                             {device.branch || 'Tagoloan'}
                           </span>
                         </td>
                       )}
-                      <td className="p-4 align-middle text-center">
-                        <span className={`font-bold text-lg ${getProgressColor(device.progress)}`}>{formatProgress(device.progress)}</span>
+                      <td className="py-4 px-4 align-middle text-center">
+                        {renderProgressBadge(device.progress)}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="py-4 px-5 align-middle">
                         <div className="flex gap-2 justify-center items-center">
                           {device.progress?.toLowerCase() === 'pending' && (
                             <button 
@@ -893,7 +935,7 @@ export default function AdminMonitoring() {
                                 setRequestToReview(device);
                                 setReviewRequestModalOpen(true);
                               }}
-                              className="px-3 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl font-bold text-xs shadow-sm flex items-center gap-1 cursor-pointer border-none"
+                              className="px-3 py-1.5 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer border-none transition-all hover:shadow"
                               title="Review Customer Repair Request"
                             >
                               <Eye size={13} />
@@ -905,17 +947,17 @@ export default function AdminMonitoring() {
                               setDeviceToView(device);
                               setViewDetailsOpen(true);
                             }}
-                            className="w-9 h-9 rounded-full flex justify-center items-center bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white transition-all shadow-sm border border-[#bd00ff]/30 cursor-pointer"
+                            className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer"
                             title="View Intake & Material Breakdown"
                           >
                             <Receipt size={16} />
                           </button>
                           <button 
                             onClick={() => openEditModal(device)}
-                            className="w-9 h-9 rounded-full flex justify-center items-center bg-[#bd00ff] text-white hover:bg-[#9c00d6] hover:scale-105 transition-all shadow-sm cursor-pointer border-none"
+                            className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none"
                             title="Edit Progress"
                           >
-                            <Pencil size={16} />
+                            <Pencil size={15} />
                           </button>
                         </div>
                       </td>
@@ -925,38 +967,42 @@ export default function AdminMonitoring() {
               </table>
             </div>
           ) : (
-            <div className="w-full py-12 text-center flex flex-col items-center justify-center border-2 border-[#bd00ff] rounded-2xl bg-white shadow-sm gap-2">
-               <AlertCircle className="text-gray-400 w-12 h-12 mb-2" />
-               <span className="text-gray-500 font-bold text-lg">No tracking requests available.</span>
-               <span className="text-gray-400 text-sm">Add a new request form to see it here.</span>
+            <div className="w-full py-16 text-center flex flex-col items-center justify-center rounded-2xl border border-[#E9D8FD] bg-[#FAF7FF]/30 gap-2">
+               <div className="w-12 h-12 rounded-2xl bg-[#FAF5FF] border border-[#E9D8FD] flex items-center justify-center text-[#9333EA] mb-1">
+                 <AlertCircle size={22} />
+               </div>
+               <span className="text-[#1F1728] font-bold text-base">No tracking requests available</span>
+               <span className="text-[#8b7aa8] text-xs max-w-xs">Add a new request form to start monitoring devices and repairs in real time.</span>
             </div>
           )}
         </div>
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex justify-center w-full mt-6">
-            <div className="flex items-center justify-center gap-6 bg-white px-6 py-2 rounded-full shadow-sm border border-gray-100 mx-auto">
+          <div className="flex justify-center w-full pt-2">
+            <div className="flex items-center justify-center gap-4 bg-[#FAF7FF] px-4 py-2 rounded-xl border border-[#E9D8FD]">
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="bg-transparent border-none text-black cursor-pointer hover:text-[#bd00ff] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-black flex justify-center items-center p-0"
+                className="w-8 h-8 rounded-lg bg-white border border-[#E9D8FD] text-[#5b4a7a] hover:text-[#9333EA] hover:border-[#9333EA] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#5b4a7a] disabled:hover:border-[#E9D8FD] flex justify-center items-center cursor-pointer transition-all shadow-2xs"
               >
-                <ChevronLeft size={24} />
+                <ChevronLeft size={16} />
               </button>
-              <span className="font-bold text-lg text-black">
-                {currentPage}/{totalPages}
+              <span className="font-semibold text-xs text-[#5b4a7a] px-2">
+                Page <span className="text-[#1F1728] font-bold">{currentPage}</span> of <span className="text-[#1F1728] font-bold">{totalPages}</span>
               </span>
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="bg-transparent border-none text-black cursor-pointer hover:text-[#bd00ff] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-black flex justify-center items-center p-0"
+                className="w-8 h-8 rounded-lg bg-white border border-[#E9D8FD] text-[#5b4a7a] hover:text-[#9333EA] hover:border-[#9333EA] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#5b4a7a] disabled:hover:border-[#E9D8FD] flex justify-center items-center cursor-pointer transition-all shadow-2xs"
               >
-                <ChevronRight size={24} />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
         )}
+
+      </div>
 
       {/* Complete Confirmation Modal */}
       {completeModalOpen && (
