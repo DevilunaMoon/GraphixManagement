@@ -187,38 +187,7 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
           {/* Right Column: Main Profile Fields & Stats */}
           <section className="flex-1 flex flex-col gap-6">
             
-            {/* System Performance Stats Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100 flex items-center gap-4">
-                <div className="p-3 bg-purple-50 text-[#bd00ff] rounded-xl shrink-0">
-                  <Briefcase size={24} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-black">{(stats?.salesCount || 0).toLocaleString()}</span>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">POS Checkouts</span>
-                </div>
-              </div>
 
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100 flex items-center gap-4">
-                <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl shrink-0">
-                  <DollarSign size={24} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-black">₱{(stats?.salesRevenue || 0).toLocaleString()}</span>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Revenue Processed</span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100 flex items-center gap-4">
-                <div className="p-3 bg-amber-50 text-amber-500 rounded-xl shrink-0">
-                  <Wrench size={24} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-2xl font-black text-black">{(stats?.activeRepairs || 0).toLocaleString()}</span>
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Repairs</span>
-                </div>
-              </div>
-            </div>
 
             {/* 1. Profile Information Card (Editable Details) */}
             <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-purple-200/80 flex flex-col">
