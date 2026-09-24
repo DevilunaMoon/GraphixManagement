@@ -119,7 +119,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       ]
     },
     { href: '/admin/accounts', label: 'User Management', icon: User },
-    { href: '/admin/inventory', label: 'Inventory Management', icon: Box },
+    { href: '/admin/inventory', label: 'Product Inventory', icon: Box },
     { 
       label: 'Gadget Repair', 
       icon: Wrench,
