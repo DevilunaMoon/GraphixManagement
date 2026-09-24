@@ -136,30 +136,34 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Cashier Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 h-screen bg-gradient-to-b ${styles.gradient} text-white flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.1)] ${
+        style={{
+          background: 'linear-gradient(180deg, #faf5ff 0%, #ede4ff 100%)',
+          borderRight: '1px solid #e4d8fb'
+        }}
+        className={`fixed top-0 left-0 h-screen flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.06)] ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${isCollapsed ? 'md:w-[80px]' : 'w-[240px]'}`}
       >
         {/* Desktop Shrink Toggle Button */}
         <button 
           onClick={toggleCollapse}
-          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-gray-900 rounded-full p-1.5 shadow-md border border-gray-100 hover:scale-110 hover:text-[var(--theme-primary,purple)] transition-transform z-50 outline-none cursor-pointer"
+          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-[#7e22ce] rounded-full p-1.5 shadow-md border border-[#e4d8fb] hover:scale-110 hover:text-[#9b1fe8] transition-all z-50 outline-none cursor-pointer"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
-          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} /> : <ChevronLeft size={18} strokeWidth={3} />}
+          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} className="text-[#7e22ce]" /> : <ChevronLeft size={18} strokeWidth={3} className="text-[#7e22ce]" />}
         </button>
 
         {/* Brand Header inside Sidebar */}
-        <div className={`p-5 flex ${isCollapsed ? 'flex-col items-center' : 'items-center gap-3'} border-b border-white/10 h-[80px]`}>
+        <div className={`p-5 flex ${isCollapsed ? 'flex-col items-center' : 'items-center gap-3'} border-b border-[#e4d8fb] h-[80px]`}>
           <img 
             src="/Images/graphix-logo.jpg" 
             alt="Graphix Logo" 
             onClick={() => router.push('/cashier/dashboard')}
-            className={`${isCollapsed ? 'w-[35px] h-[35px] mt-1' : 'w-[35px] h-[35px]'} rounded-full border-2 border-white object-cover shadow-sm cursor-pointer hover:scale-105 transition-transform`} 
+            className={`${isCollapsed ? 'w-[35px] h-[35px] mt-1' : 'w-[35px] h-[35px]'} rounded-full border-2 border-[#e4d8fb] object-cover shadow-sm cursor-pointer hover:scale-105 transition-transform`} 
           />
-          {!isCollapsed && <span className="text-[20px] font-black tracking-wide uppercase">Graphix</span>}
+          {!isCollapsed && <span className="text-[20px] font-black tracking-wide uppercase text-[#3b1d6b]">Graphix</span>}
           {!isCollapsed && (
-            <button onClick={toggleSidebar} className="md:hidden text-white ml-auto bg-transparent border-none cursor-pointer">
+            <button onClick={toggleSidebar} className="md:hidden text-[#7e22ce] ml-auto bg-transparent border-none cursor-pointer">
               <X size={22} />
             </button>
           )}
@@ -179,28 +183,28 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
                       setIsOrderHistoryOpen(!isOrderHistoryOpen);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full cursor-pointer bg-transparent border-none ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'text-left px-5 py-3.5 border-b border-white/5'} flex items-center font-semibold transition-all hover:bg-white/10 hover:text-white ${
+                    className={`w-full cursor-pointer bg-transparent border-none ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'text-left px-5 py-3.5 border-b border-[#e4d8fb]/40'} flex items-center font-semibold transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] ${
                       isAnySubActive && !isOrderHistoryOpen
                         ? isCollapsed 
-                          ? 'bg-white/20 text-white shadow-sm' 
-                          : 'bg-white/15 text-white border-l-4 border-l-white' 
+                          ? 'bg-white text-[#7e22ce] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
+                          : 'bg-white text-[#7e22ce] border-l-4 border-l-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
                         : isCollapsed
-                          ? 'text-white/70'
-                          : 'text-white/70 border-l-4 border-l-transparent'
+                          ? 'text-[#5b4a7a]'
+                          : 'text-[#5b4a7a] border-l-4 border-l-transparent'
                     }`}
                   >
                     <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-start pl-2 gap-3'} items-center w-full transition-all duration-300 relative text-left`}>
-                      <Icon size={isCollapsed ? 22 : 20} strokeWidth={2} />
+                      <Icon size={isCollapsed ? 22 : 20} strokeWidth={2} className={`${isCollapsed ? "mx-auto" : ""} ${isAnySubActive && !isOrderHistoryOpen ? 'text-[#9b1fe8]' : 'text-[#5b4a7a]'}`} />
                       {!isCollapsed && (
                         <div className="flex items-center justify-between flex-1">
-                          <span className="text-[15px] tracking-wide text-white">{item.label}</span>
-                          {isOrderHistoryOpen ? <ChevronUp size={16} className="text-white" /> : <ChevronDown size={16} className="text-white" />}
+                          <span className={`text-[15px] tracking-wide ${isAnySubActive && !isOrderHistoryOpen ? 'text-[#7e22ce] font-bold' : 'text-[#5b4a7a]'}`}>{item.label}</span>
+                          {isOrderHistoryOpen ? <ChevronUp size={16} className="text-[#8b7aa8]" /> : <ChevronDown size={16} className="text-[#8b7aa8]" />}
                         </div>
                       )}
                     </div>
                   </button>
                   {!isCollapsed && isOrderHistoryOpen && (
-                    <div className="flex flex-col bg-black/10">
+                    <div className="flex flex-col bg-[#ede4ff]/50">
                       {item.subItems.map((sub: any) => {
                         const isSubActive = pathname === sub.href;
                         return (
@@ -210,8 +214,8 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
                             onClick={() => setIsSidebarOpen(false)}
                             className={`pl-14 py-3 text-[14px] font-semibold transition-colors border-l-4 text-left ${
                               isSubActive 
-                                ? 'text-white bg-white/10 border-white shadow-sm font-bold' 
-                                : 'text-white/60 hover:text-white hover:bg-white/5 border-transparent'
+                                ? 'text-[#7e22ce] bg-white border-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)] font-bold' 
+                                : 'text-[#5b4a7a] hover:text-[#7e22ce] hover:bg-[rgba(155,31,232,0.08)] border-transparent'
                             }`}
                           >
                             {sub.label}
@@ -233,24 +237,24 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
                    setIsSidebarOpen(false);
                 }}
                 title={isCollapsed ? item.label : undefined}
-                className={`w-full cursor-pointer bg-transparent border-none ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'text-left px-5 py-3.5 border-b border-white/5'} flex items-center font-semibold transition-all hover:bg-white/10 hover:text-white ${
+                className={`w-full cursor-pointer bg-transparent border-none ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'text-left px-5 py-3.5 border-b border-[#e4d8fb]/40'} flex items-center font-semibold transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] ${
                   isActive 
                     ? isCollapsed 
-                      ? 'bg-white/20 text-white shadow-sm' 
-                      : 'bg-white/15 text-white border-l-4 border-l-white' 
+                      ? 'bg-white text-[#7e22ce] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
+                      : 'bg-white text-[#7e22ce] border-l-4 border-l-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
                     : isCollapsed
-                      ? 'text-white/70'
-                      : 'text-white/70 border-l-4 border-l-transparent'
+                      ? 'text-[#5b4a7a]'
+                      : 'text-[#5b4a7a] border-l-4 border-l-transparent'
                 }`}
               >
                 <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-start pl-2 gap-3'} items-center w-full transition-all duration-300 relative text-left`}>
-                  <Icon size={isCollapsed ? 22 : 20} strokeWidth={2} />
+                  <Icon size={isCollapsed ? 22 : 20} strokeWidth={2} className={`${isCollapsed ? "mx-auto" : ""} ${isActive ? 'text-[#9b1fe8]' : 'text-[#5b4a7a]'}`} />
                   {item.label === 'Notifications' && unreadCount > 0 && (
                     <span className={`absolute bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md ${isCollapsed ? 'top-[-8px] right-[4px] w-4 h-4' : 'top-1/2 -translate-y-1/2 right-4 w-5 h-5'}`}>
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
-                  {!isCollapsed && <span className="text-[15px] tracking-wide text-white">{item.label}</span>}
+                  {!isCollapsed && <span className={`text-[15px] tracking-wide ${isActive ? 'text-[#7e22ce] font-bold' : 'text-[#5b4a7a]'}`}>{item.label}</span>}
                 </div>
               </button>
             );

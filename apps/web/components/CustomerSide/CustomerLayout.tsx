@@ -181,31 +181,35 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
 
       {/* Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 h-screen bg-gradient-to-b ${styles.gradient} text-white flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.1)] ${
+        style={{
+          background: 'linear-gradient(180deg, #faf5ff 0%, #ede4ff 100%)',
+          borderRight: '1px solid #e4d8fb'
+        }}
+        className={`fixed top-0 left-0 h-screen flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.06)] ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${isCollapsed ? 'w-[260px] md:w-[80px]' : 'w-[260px]'}`}
       >
         {/* Desktop Shrink Toggle Button */}
         <button 
           onClick={toggleCollapse}
-          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-gray-900 rounded-full p-1.5 shadow-md border border-gray-100 hover:scale-110 hover:text-[var(--theme-primary,purple)] transition-transform z-50 cursor-pointer"
+          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-[#7e22ce] rounded-full p-1.5 shadow-md border border-[#e4d8fb] hover:scale-110 hover:text-[#9b1fe8] transition-all z-50 cursor-pointer"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
-          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} /> : <ChevronLeft size={18} strokeWidth={3} />}
+          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} className="text-[#7e22ce]" /> : <ChevronLeft size={18} strokeWidth={3} className="text-[#7e22ce]" />}
         </button>
 
-        <div className={`p-6 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-white/10 h-[85px]`}>
+        <div className={`p-6 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-[#e4d8fb] h-[85px]`}>
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/customer/dashboard')}>
-            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-white object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
+            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-[#e4d8fb] object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="text-2xl font-extrabold tracking-wide leading-none">Graphix</span>
-                <span className="text-xs font-medium text-white/80 mt-1 truncate max-w-[130px]">Customer Portal</span>
+                <span className="text-2xl font-extrabold tracking-wide leading-none text-[#3b1d6b]">Graphix</span>
+                <span className="text-xs font-medium text-[#8b7aa8] mt-1 truncate max-w-[130px]">Customer Portal</span>
               </div>
             )}
           </div>
           {!isCollapsed && (
-            <button onClick={toggleSidebar} className="md:hidden text-white bg-transparent border-none">
+            <button onClick={toggleSidebar} className="md:hidden text-[#7e22ce] bg-transparent border-none">
               <X size={24} />
             </button>
           )}
@@ -228,18 +232,18 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                 href={item.href} 
                 onClick={() => setIsSidebarOpen(false)}
                 title={isCollapsed ? item.label : undefined}
-                className={`flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white no-underline relative ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                className={`flex items-center text-lg font-medium transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] no-underline relative ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-[#e4d8fb]/40 text-[#5b4a7a]'} ${
                   isActive 
                     ? isCollapsed 
-                      ? 'bg-white/20 text-white shadow-sm' 
-                      : 'bg-white/15 text-white border-l-4 border-l-white' 
+                      ? 'bg-white text-[#7e22ce] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
+                      : 'bg-white text-[#7e22ce] border-l-4 border-l-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
                     : isCollapsed
-                      ? 'text-white/70'
-                      : 'text-white/70 border-l-4 border-l-transparent'
+                      ? 'text-[#5b4a7a]'
+                      : 'text-[#5b4a7a] border-l-4 border-l-transparent'
                 }`}
               >
                 <div className="relative flex items-center justify-center">
-                  <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                  <Icon size={22} className={`${isCollapsed ? "mx-auto" : ""} ${isActive ? 'text-[#9b1fe8]' : 'text-[#5b4a7a]'}`} />
                   {isCollapsed && item.label === 'Notifications' && unreadCount > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black flex items-center justify-center rounded-full border border-purple-800">
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -248,7 +252,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                 </div>
                 {!isCollapsed && (
                   <div className="flex items-center justify-between flex-1">
-                    <span>{item.label}</span>
+                    <span className={isActive ? 'text-[#7e22ce] font-semibold' : 'text-[#5b4a7a]'}>{item.label}</span>
                     {item.label === 'Notifications' && unreadCount > 0 && (
                       <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-extrabold rounded-full shadow-sm mr-2">
                         {unreadCount}
@@ -260,8 +264,6 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             );
           })}
         </nav>
-
-
       </aside>
 
       {/* Main Content Area */}

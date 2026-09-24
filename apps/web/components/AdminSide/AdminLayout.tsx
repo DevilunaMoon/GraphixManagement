@@ -189,38 +189,42 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Admin Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 h-screen bg-gradient-to-b ${styles.gradient} text-white flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.1)] ${
+        style={{
+          background: 'linear-gradient(180deg, #faf5ff 0%, #ede4ff 100%)',
+          borderRight: '1px solid #e4d8fb'
+        }}
+        className={`fixed top-0 left-0 h-screen flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.06)] ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${isCollapsed ? 'w-[260px] md:w-[80px]' : 'w-[260px]'}`}
       >
         {/* Desktop Shrink Toggle Button */}
         <button 
           onClick={toggleCollapse}
-          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-gray-900 rounded-full p-1.5 shadow-md border border-gray-100 hover:scale-110 hover:text-[var(--theme-primary,purple)] transition-transform z-50"
+          className="hidden md:flex absolute -right-3.5 top-[23px] bg-white text-[#7e22ce] rounded-full p-1.5 shadow-md border border-[#e4d8fb] hover:scale-110 hover:text-[#9b1fe8] transition-all z-50 cursor-pointer"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
-          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} /> : <ChevronLeft size={18} strokeWidth={3} />}
+          {isCollapsed ? <ChevronRight size={18} strokeWidth={3} className="text-[#7e22ce]" /> : <ChevronLeft size={18} strokeWidth={3} className="text-[#7e22ce]" />}
         </button>
 
-        <div className={`p-6 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-white/10 h-[85px]`}>
+        <div className={`p-6 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-[#e4d8fb] h-[85px]`}>
           <div className="flex items-center gap-3">
-            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-white object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
+            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full border-2 border-[#e4d8fb] object-cover shadow-sm transition-all ${isCollapsed ? 'w-[35px] h-[35px]' : 'w-[45px] h-[45px]'}`} />
             {!isCollapsed && (
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-2xl font-extrabold tracking-wide leading-none">Graphix</span>
+                  <span className="text-2xl font-extrabold tracking-wide leading-none text-[#3b1d6b]">Graphix</span>
                   {isSuperAdmin && (
                     <span className="px-1.5 py-0.5 bg-amber-400 text-slate-900 text-[10px] font-black rounded uppercase tracking-wider flex items-center gap-0.5">
                       <Crown size={10} /> Super
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-medium text-white/80 mt-1 truncate max-w-[130px]">{adminName}</span>
+                <span className="text-xs font-medium text-[#8b7aa8] mt-1 truncate max-w-[130px]">{adminName}</span>
               </div>
             )}
           </div>
           {!isCollapsed && (
-            <button onClick={toggleSidebar} className="md:hidden text-white">
+            <button onClick={toggleSidebar} className="md:hidden text-[#7e22ce] bg-transparent border-none">
               <X size={24} />
             </button>
           )}
@@ -242,33 +246,35 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       setIsOpen(!isOpen);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`cursor-pointer flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                    className={`cursor-pointer flex items-center text-lg font-medium transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-[#e4d8fb]/40 text-[#5b4a7a]'} ${
                       isAnySubActive && !isOpen
                         ? isCollapsed 
-                          ? 'bg-white/20 text-white shadow-sm' 
-                          : 'bg-white/15 text-white border-l-4 border-l-white' 
+                          ? 'bg-white text-[#7e22ce] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
+                          : 'bg-white text-[#7e22ce] border-l-4 border-l-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
                         : isCollapsed
-                          ? 'text-white/70'
-                          : 'text-white/70 border-l-4 border-l-transparent'
+                          ? 'text-[#5b4a7a]'
+                          : 'text-[#5b4a7a] border-l-4 border-l-transparent'
                     }`}
                   >
-                    <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                    <Icon size={22} className={`${isCollapsed ? "mx-auto" : ""} ${isAnySubActive && !isOpen ? 'text-[#9b1fe8]' : 'text-[#5b4a7a]'}`} />
                     {!isCollapsed && (
                       <div className="flex items-center justify-between flex-1">
-                        <span>{item.label}</span>
-                        {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        <span className={isAnySubActive && !isOpen ? 'text-[#7e22ce] font-semibold' : 'text-[#5b4a7a]'}>{item.label}</span>
+                        {isOpen ? <ChevronUp size={18} className="text-[#8b7aa8]" /> : <ChevronDown size={18} className="text-[#8b7aa8]" />}
                       </div>
                     )}
                   </div>
                   {!isCollapsed && isOpen && (
-                    <div className="flex flex-col bg-black/10">
+                    <div className="flex flex-col bg-[#ede4ff]/50">
                       {item.subItems.map((sub: any) => (
                         <Link
                           key={sub.href}
                           href={sub.href}
                           onClick={() => setIsSidebarOpen(false)}
                           className={`pl-14 py-3 text-sm font-medium transition-colors ${
-                            pathname === sub.href ? 'text-white bg-white/5 border-l-4 border-white' : 'text-white/60 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
+                            pathname === sub.href 
+                              ? 'text-[#7e22ce] bg-white border-l-4 border-[#9b1fe8] font-bold shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
+                              : 'text-[#5b4a7a] hover:text-[#7e22ce] hover:bg-[rgba(155,31,232,0.08)] border-l-4 border-transparent'
                           }`}
                         >
                           {sub.label}
@@ -287,18 +293,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 href={item.href} 
                 onClick={() => setIsSidebarOpen(false)}
                 title={isCollapsed ? item.label : undefined}
-                className={`relative flex items-center text-lg font-medium transition-all hover:bg-white/10 hover:text-white ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-white/5 text-white/80'} ${
+                className={`relative flex items-center text-lg font-medium transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-[#e4d8fb]/40 text-[#5b4a7a]'} ${
                   isActive 
                     ? isCollapsed 
-                      ? 'bg-white/20 text-white shadow-sm' 
-                      : 'bg-white/15 text-white border-l-4 border-l-white' 
+                      ? 'bg-white text-[#7e22ce] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
+                      : 'bg-white text-[#7e22ce] border-l-4 border-l-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
                     : isCollapsed
-                      ? 'text-white/70'
-                      : 'text-white/70 border-l-4 border-l-transparent'
+                      ? 'text-[#5b4a7a]'
+                      : 'text-[#5b4a7a] border-l-4 border-l-transparent'
                 }`}
               >
                 <div className="relative flex items-center justify-center">
-                  <Icon size={22} className={isCollapsed ? "mx-auto" : ""} />
+                  <Icon size={22} className={`${isCollapsed ? "mx-auto" : ""} ${isActive ? 'text-[#9b1fe8]' : 'text-[#5b4a7a]'}`} />
                   {item.label === 'Notifications' && unreadCount > 0 && isCollapsed && (
                     <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -307,7 +313,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
                 {!isCollapsed && (
                   <div className="flex items-center justify-between flex-1">
-                    <span>{item.label}</span>
+                    <span className={isActive ? 'text-[#7e22ce] font-semibold' : 'text-[#5b4a7a]'}>{item.label}</span>
                     {item.label === 'Notifications' && unreadCount > 0 && (
                       <span className="bg-red-500 text-white text-xs font-black px-2 py-0.5 rounded-full shadow-sm">
                         {unreadCount > 99 ? '99+' : unreadCount}
