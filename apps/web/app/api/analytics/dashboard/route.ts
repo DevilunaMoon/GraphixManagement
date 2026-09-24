@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
+import { calculateBranchBestSellers } from '../../../../lib/analyticsBestSellers';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +19,12 @@ export async function GET(req: Request) {
 
     // Strict branch scoping:
     // Super Admin can view specific branch or all branches.
-    // Branch Admin / Cashier are strictly locked to their assigned branch.
+    // Branch Admin / Cashier are strictly locked to their authenticated assigned branch.
     let targetBranch: string | null = null;
+    const allowedBranches: string[] = isSuperAdmin 
+      ? ['Tagoloan', 'Villanueva', 'Jasaan'] 
+      : [(session.branch || 'Tagoloan').trim()];
+
     if (isSuperAdmin) {
       if (branchQuery && branchQuery !== 'all') {
         targetBranch = branchQuery.trim();
@@ -28,7 +33,9 @@ export async function GET(req: Request) {
       targetBranch = (session.branch || 'Tagoloan').trim();
     }
 
-    const branchWhere: any = targetBranch ? { branch: { equals: targetBranch, mode: 'insensitive' as const } } : {};
+    const branchWhere: any = isSuperAdmin 
+      ? (targetBranch ? { branch: { equals: targetBranch, mode: 'insensitive' as const } } : {})
+      : { branch: { equals: targetBranch, mode: 'insensitive' as const } };
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -41,14 +48,15 @@ export async function GET(req: Request) {
     const startOfYear = new Date(currentYear, 0, 1);
 
     // Only count completed/successful/paid transactions (exclude cancelled/voided/unpaid)
-    const validPurchasesWhere: any = {
-      ...branchWhere,
+    // For Super Admin, query across all system branches to support full branchBestSellers & branchComparison
+    const purchasesWhere: any = {
+      ...(isSuperAdmin ? {} : branchWhere),
       status: { notIn: ['Cancelled', 'Voided', 'Failed', 'Unpaid', 'Pending Pickup'] }
     };
 
     // 1. Fetch all valid purchases for the branch/system
-    const allPurchases = await prisma.purchase.findMany({
-      where: validPurchasesWhere,
+    const allSystemPurchases = await prisma.purchase.findMany({
+      where: purchasesWhere,
       select: {
         id: true,
         amount: true,
@@ -58,21 +66,29 @@ export async function GET(req: Request) {
         quantity: true,
         branch: true,
         status: true,
+        variations: true,
         device: {
           select: {
+            id: true,
             name: true,
-            price: true
+            price: true,
+            image: true,
+            images: true,
+            isPreOwned: true,
+            type: true
           }
         }
       }
     });
 
     // 2. Fetch all completed repairs
+    const repairsWhere: any = {
+      ...(isSuperAdmin ? {} : branchWhere),
+      status: { equals: 'Completed', mode: 'insensitive' }
+    };
+
     const allTimeRepairs = await prisma.repairRequest.findMany({
-      where: { 
-        ...branchWhere, 
-        status: { equals: 'Completed', mode: 'insensitive' } 
-      },
+      where: repairsWhere,
       select: { 
         id: true,
         repairCost: true, 
@@ -97,6 +113,15 @@ export async function GET(req: Request) {
         .filter(t => t && t.trim() !== '')
     ).size;
 
+    // Filter purchases/repairs for the active view
+    const activePurchases = targetBranch 
+      ? allSystemPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
+      : allSystemPurchases;
+
+    const activeCompletedRepairs = targetBranch
+      ? allTimeRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
+      : allTimeRepairs;
+
     let todaySales = 0;
     let yesterdaySales = 0;
     let weeklySales = 0;
@@ -109,7 +134,7 @@ export async function GET(req: Request) {
 
     const monthlyData = Array(12).fill(0);
 
-    allPurchases.forEach(p => {
+    activePurchases.forEach(p => {
       const amt = p.amount || 0;
       totalRetail += amt;
       const createdAt = new Date(p.createdAt);
@@ -135,7 +160,7 @@ export async function GET(req: Request) {
       }
     });
 
-    allTimeRepairs.forEach(r => {
+    activeCompletedRepairs.forEach(r => {
       if (r.repairCost) {
         const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
         if (!isNaN(num)) {
@@ -155,26 +180,40 @@ export async function GET(req: Request) {
       }
     });
 
-    // Yearly Best Sellers (Top 5 Products based on completed purchases for current year, or all time)
-    const currentYearPurchases = allPurchases.filter(p => new Date(p.createdAt) >= startOfYear);
-    const targetPurchases = currentYearPurchases.length > 0 ? currentYearPurchases : allPurchases;
+    // Yearly Best Sellers Calculation:
+    // Filter purchases from the start of the current year (or all time if no sales this year)
+    const currentYearPurchases = allSystemPurchases.filter(p => new Date(p.createdAt) >= startOfYear);
+    const targetPurchases = currentYearPurchases.length > 0 ? currentYearPurchases : allSystemPurchases;
 
-    const productSalesMap: Record<string, { name: string, sold: number }> = {};
-    targetPurchases.forEach(p => {
-      const id = p.deviceId;
-      if (!productSalesMap[id]) {
-        productSalesMap[id] = { name: p.device?.name || 'Unknown Device', sold: 0 };
-      }
-      productSalesMap[id].sold += (p.quantity || 1);
-    });
+    // Calculate branch-specific best sellers
+    const branchBestSellers = calculateBranchBestSellers(targetPurchases, allowedBranches);
 
-    const topProducts = Object.values(productSalesMap)
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 5);
+    // Legacy fallback topProducts
+    let topProducts: Array<{ name: string; sold: number }> = [];
+    const targetBranchSummary = targetBranch ? branchBestSellers[targetBranch] : undefined;
+    if (targetBranchSummary) {
+      topProducts = targetBranchSummary.products.slice(0, 5).map(p => ({
+        name: p.productModel,
+        sold: p.unitsSold
+      }));
+    } else {
+      const combinedMap: Record<string, { name: string; sold: number }> = {};
+      Object.values(branchBestSellers).forEach(bSummary => {
+        bSummary.products.forEach(p => {
+          const existing = combinedMap[p.productId];
+          if (!existing) {
+            combinedMap[p.productId] = { name: p.productModel, sold: p.unitsSold };
+          } else {
+            existing.sold += p.unitsSold;
+          }
+        });
+      });
+      topProducts = Object.values(combinedMap).sort((a, b) => b.sold - a.sold).slice(0, 5);
+    }
 
     // Centralized Inventory & Units Statistics
-    const totalUnitsSold = allPurchases.reduce((sum, p) => sum + (p.quantity || 1), 0);
-    const totalOrders = allPurchases.length;
+    const totalUnitsSold = activePurchases.reduce((sum, p) => sum + (p.quantity || 1), 0);
+    const totalOrders = activePurchases.length;
 
     const inventoryWhere: any = targetBranch ? { branch: { equals: targetBranch, mode: 'insensitive' as const } } : {};
     const [inventoryAggregate, lowStockCount, activeUsers] = await Promise.all([
@@ -208,7 +247,7 @@ export async function GET(req: Request) {
         branchStats[b] = { branch: b, revenue: 0, unitsSold: 0, transactions: 0 };
       });
 
-      allPurchases.forEach(p => {
+      allSystemPurchases.forEach(p => {
         const bName = p.branch || 'Tagoloan';
         const matchKey = systemBranches.find(s => s.toLowerCase() === bName.toLowerCase()) || bName;
         if (!branchStats[matchKey]) {
@@ -269,6 +308,7 @@ export async function GET(req: Request) {
         activeTechnicians
       },
       topProducts,
+      branchBestSellers,
       branchComparison,
       isSuperAdmin,
       assignedBranch: session.branch || 'Tagoloan'
@@ -278,3 +318,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch dashboard analytics' }, { status: 500 });
   }
 }
+

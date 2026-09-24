@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
+import { calculateBranchBestSellers } from '../../../../lib/analyticsBestSellers';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +21,12 @@ export async function GET(req: Request) {
 
     // Strict branch scoping:
     // Super Admin can view specific branch or 'all'.
-    // Branch Admin and Cashier are strictly locked to their assigned branch.
+    // Branch Admin and Cashier are strictly locked to their authenticated assigned branch.
     let targetBranch: string | null = null;
+    const allowedBranches: string[] = isSuperAdmin 
+      ? ['Tagoloan', 'Villanueva', 'Jasaan'] 
+      : [(session.branch || 'Tagoloan').trim()];
+
     if (isSuperAdmin) {
       if (branchQuery && branchQuery !== 'all') {
         targetBranch = branchQuery.trim();
@@ -30,7 +35,9 @@ export async function GET(req: Request) {
       targetBranch = (session.branch || 'Tagoloan').trim();
     }
 
-    const branchWhere: any = targetBranch ? { branch: { equals: targetBranch, mode: 'insensitive' } } : {};
+    const branchWhere: any = isSuperAdmin 
+      ? (targetBranch ? { branch: { equals: targetBranch, mode: 'insensitive' } } : {})
+      : { branch: { equals: targetBranch, mode: 'insensitive' } };
 
     const now = new Date();
     
@@ -79,41 +86,99 @@ export async function GET(req: Request) {
 
     // Only count completed/successful/paid transactions (exclude cancelled/voided/unpaid)
     const validPurchasesWhere: any = {
-      ...branchWhere,
+      ...(isSuperAdmin ? {} : branchWhere),
       status: { notIn: ['Cancelled', 'Voided', 'Failed', 'Unpaid', 'Pending Pickup'] }
     };
 
     // Fetch all successful purchases for general stats
-    const allPurchases = await prisma.purchase.findMany({
+    const allSystemPurchases = await prisma.purchase.findMany({
       where: validPurchasesWhere,
-      include: { device: { select: { name: true, price: true } } }
+      select: {
+        id: true,
+        amount: true,
+        createdAt: true,
+        source: true,
+        deviceId: true,
+        quantity: true,
+        branch: true,
+        status: true,
+        variations: true,
+        paymentType: true,
+        device: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            image: true,
+            images: true,
+            isPreOwned: true,
+            type: true
+          }
+        }
+      }
     });
 
-    // Fetch filtered purchases for date-specific metrics (Payment Methods, etc.)
-    const filteredPurchases = await prisma.purchase.findMany({
-      where: {
-        ...validPurchasesWhere,
-        ...dateWhere
-      },
-      include: { device: { select: { name: true, price: true } } }
+    // Fetch filtered purchases for date-specific metrics
+    const filteredPurchasesWhere: any = {
+      ...validPurchasesWhere,
+      ...dateWhere
+    };
+
+    const allFilteredPurchases = await prisma.purchase.findMany({
+      where: filteredPurchasesWhere,
+      select: {
+        id: true,
+        amount: true,
+        createdAt: true,
+        source: true,
+        deviceId: true,
+        quantity: true,
+        branch: true,
+        status: true,
+        variations: true,
+        paymentType: true,
+        device: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            image: true,
+            images: true,
+            isPreOwned: true,
+            type: true
+          }
+        }
+      }
     });
+
+    const activeFilteredPurchases = targetBranch 
+      ? allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
+      : allFilteredPurchases;
 
     // Fetch completed repairs
+    const repairsWhere: any = {
+      ...(isSuperAdmin ? {} : branchWhere),
+      status: 'Completed'
+    };
+
     const allRepairs = await prisma.repairRequest.findMany({
-      where: { ...branchWhere, status: 'Completed' }
+      where: repairsWhere
     });
 
     const filteredRepairs = await prisma.repairRequest.findMany({
       where: {
-        ...branchWhere,
-        status: 'Completed',
+        ...repairsWhere,
         ...dateWhere
       }
     });
 
+    const activeFilteredRepairs = targetBranch 
+      ? filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
+      : filteredRepairs;
+
     // Workload
     const activeRepairs = await prisma.repairRequest.findMany({
-      where: { ...branchWhere, status: { not: 'Completed' } }
+      where: { ...(isSuperAdmin ? (targetBranch ? { branch: targetBranch } : {}) : branchWhere), status: { not: 'Completed' } }
     });
 
     const pendingRepairs = activeRepairs.length;
@@ -133,7 +198,15 @@ export async function GET(req: Request) {
     let onlineCount = 0;
     let physicalCount = 0;
 
-    allPurchases.forEach(p => {
+    const activeAllPurchases = targetBranch 
+      ? allSystemPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
+      : allSystemPurchases;
+
+    const activeAllRepairs = targetBranch 
+      ? allRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
+      : allRepairs;
+
+    activeAllPurchases.forEach(p => {
       const amt = p.amount || 0;
       totalRetail += amt;
       allTimeSales += amt;
@@ -152,7 +225,7 @@ export async function GET(req: Request) {
       }
     });
 
-    allRepairs.forEach(r => {
+    activeAllRepairs.forEach(r => {
       if (r.repairCost) {
         const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
         if (!isNaN(num)) {
@@ -175,7 +248,7 @@ export async function GET(req: Request) {
     let gcashAmount = 0;
     let gcashCount = 0;
 
-    filteredPurchases.forEach(p => {
+    activeFilteredPurchases.forEach(p => {
       const amt = p.amount || 0;
       const pType = (p.paymentType || '').toLowerCase();
       const pSource = (p.source || '').toLowerCase();
@@ -190,7 +263,6 @@ export async function GET(req: Request) {
         gcashAmount += amt;
         gcashCount += 1;
       } else {
-        // Default online checkout uses GCash; in-store default is Cash
         if (pSource === 'in-store' || pSource === 'in-store pos') {
           cashAmount += amt;
           cashCount += 1;
@@ -201,8 +273,7 @@ export async function GET(req: Request) {
       }
     });
 
-    // Also include filtered repairs into Payment Methods (Repairs in-store default to Cash, online to GCash)
-    filteredRepairs.forEach(r => {
+    activeFilteredRepairs.forEach(r => {
       if (r.repairCost) {
         const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
         if (!isNaN(num)) {
@@ -213,14 +284,12 @@ export async function GET(req: Request) {
     });
 
     // 3. Calculate Branch Performance
-    // Defined branch list
     const systemBranches = ['Tagoloan', 'Villanueva', 'Jasaan'];
     let branchPerformance: Array<{ branch: string; revenue: number; orders: number }> = [];
 
     if (isSuperAdmin) {
       if (targetBranch) {
-        // Super Admin selected a single branch
-        const branchPurchases = filteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
+        const branchPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
         const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
 
         let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -235,26 +304,9 @@ export async function GET(req: Request) {
           orders: branchPurchases.length + branchRepairs.length
         }];
       } else {
-        // Super Admin viewing All Branches
-        // Fetch all purchases for all branches in date range
-        const allBranchesPurchases = await prisma.purchase.findMany({
-          where: {
-            status: { notIn: ['Cancelled', 'Voided', 'Failed', 'Unpaid', 'Pending Pickup'] },
-            ...dateWhere
-          },
-          include: { device: { select: { price: true } } }
-        });
-
-        const allBranchesRepairs = await prisma.repairRequest.findMany({
-          where: {
-            status: 'Completed',
-            ...dateWhere
-          }
-        });
-
         branchPerformance = systemBranches.map(bName => {
-          const bPurchases = allBranchesPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
-          const bRepairs = allBranchesRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
+          const bPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
+          const bRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
 
           let rev = bPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
           rev += bRepairs.reduce((sum, r) => {
@@ -270,9 +322,8 @@ export async function GET(req: Request) {
         });
       }
     } else {
-      // Branch Admin: strictly their assigned branch ONLY
       const assignedBranch = (session.branch || 'Tagoloan').trim();
-      const branchPurchases = filteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
+      const branchPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
       const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
 
       let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -288,21 +339,31 @@ export async function GET(req: Request) {
       }];
     }
 
-    // Calculate Top 5 Products for THIS YEAR
-    const thisYearPurchases = allPurchases.filter(p => new Date(p.createdAt) >= currentYearStart);
-    const productSalesMap: Record<string, { name: string, sold: number }> = {};
+    // 4. Calculate Branch-Specific Best Sellers for the current filter timeframe
+    const branchBestSellers = calculateBranchBestSellers(allFilteredPurchases, allowedBranches);
 
-    thisYearPurchases.forEach(p => {
-      const id = p.deviceId;
-      if (!productSalesMap[id]) {
-        productSalesMap[id] = { name: p.device?.name || 'Unknown Device', sold: 0 };
-      }
-      productSalesMap[id].sold += p.quantity;
-    });
-
-    const topProductsThisYear = Object.values(productSalesMap)
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 5);
+    // Legacy fallback topProductsThisYear
+    let topProductsThisYear: Array<{ name: string; sold: number }> = [];
+    const targetBranchSummary = targetBranch ? branchBestSellers[targetBranch] : undefined;
+    if (targetBranchSummary) {
+      topProductsThisYear = targetBranchSummary.products.slice(0, 5).map(p => ({
+        name: p.productModel,
+        sold: p.unitsSold
+      }));
+    } else {
+      const combinedMap: Record<string, { name: string; sold: number }> = {};
+      Object.values(branchBestSellers).forEach(bSummary => {
+        bSummary.products.forEach(p => {
+          const existing = combinedMap[p.productId];
+          if (!existing) {
+            combinedMap[p.productId] = { name: p.productModel, sold: p.unitsSold };
+          } else {
+            existing.sold += p.unitsSold;
+          }
+        });
+      });
+      topProductsThisYear = Object.values(combinedMap).sort((a, b) => b.sold - a.sold).slice(0, 5);
+    }
 
     return NextResponse.json({
       sales: {
@@ -338,6 +399,7 @@ export async function GET(req: Request) {
         activeTechnicians
       },
       topProductsThisYear,
+      branchBestSellers,
       isSuperAdmin,
       assignedBranch: session.branch || 'Tagoloan'
     });
@@ -346,3 +408,4 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch all-time analytics' }, { status: 500 });
   }
 }
+

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
 import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Building2 } from 'lucide-react';
+import YearlyBestSellersSection from '../../components/AdminSide/YearlyBestSellersSection';
 
 const formatCurrency = (val: number) => {
   return '₱' + (val || 0).toLocaleString('en-PH', {
@@ -187,14 +188,14 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Yearly Best Sellers Pie Chart */}
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-1 flex flex-col">
-            <div className="mb-4">
-              <h3 className="text-xl font-bold text-[#111] mb-1">Yearly Best Sellers</h3>
-              <p className="text-sm text-[#666]">By Units Sold</p>
-            </div>
-            <BestSellersPieChart products={dashboardData?.topProducts || []} />
-          </div>
+          {/* Yearly Best Sellers Section */}
+          <YearlyBestSellersSection 
+            branchBestSellers={dashboardData?.branchBestSellers}
+            topProducts={dashboardData?.topProducts || []}
+            isSuperAdmin={isSuperAdmin}
+            currentBranch={selectedBranch}
+            timeframeLabel="By Units Sold"
+          />
         </div>
 
         {/* Lower Section Grid: Cards on left, Table on right */}
@@ -454,64 +455,4 @@ function ChartBar({ label, height, value }: { label: string, height: string, val
   );
 }
 
-const BEST_SELLER_COLORS = [
-  '#bd00ff', // 1st: Primary Graphix Purple (Highest Seller - Kept Exact)
-  '#00b4d8', // 2nd: Vibrant Sky Blue
-  '#10b981', // 3rd: Vibrant Emerald Green
-  '#f97316', // 4th: Vibrant Warm Orange
-  '#f43f5e', // 5th: Vibrant Coral Red
-];
 
-function BestSellersPieChart({ products }: { products: { name: string, sold: number }[] }) {
-  if (products === undefined || products === null) {
-    return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">Loading data...</div>;
-  }
-
-  if (products.length === 0) {
-    return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">No sales yet</div>;
-  }
-
-  // Sort descending by units sold to ensure rank 1 always receives the primary color dynamically
-  const sortedProducts = [...products].sort((a, b) => b.sold - a.sold);
-  const total = sortedProducts.reduce((sum, p) => sum + p.sold, 0);
-  
-  if (total === 0) {
-    return <div className="h-[250px] flex items-center justify-center text-gray-400 font-semibold">No sales yet</div>;
-  }
-
-  let currentPercentage = 0;
-  const gradientStops = sortedProducts.map((p, i) => {
-    const percentage = (p.sold / total) * 100;
-    const start = currentPercentage;
-    const end = currentPercentage + percentage;
-    currentPercentage = end;
-    const color = BEST_SELLER_COLORS[i % BEST_SELLER_COLORS.length];
-    return `${color} ${start}% ${end}%`;
-  }).join(', ');
-
-  return (
-    <div className="flex flex-col h-full justify-between items-center w-full gap-6 mt-4">
-      <div 
-        className="w-[180px] h-[180px] rounded-full shadow-lg border-[6px] border-white transition-transform hover:scale-105 duration-300 cursor-pointer"
-        style={{ background: `conic-gradient(${gradientStops})` }}
-      ></div>
-      <div className="w-full flex flex-col gap-3">
-        {sortedProducts.map((p, i) => {
-          const itemColor = BEST_SELLER_COLORS[i % BEST_SELLER_COLORS.length];
-          return (
-            <div key={i} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 rounded-full shadow-sm shrink-0" style={{ backgroundColor: itemColor }}></span>
-                <span className="font-semibold text-gray-700 truncate max-w-[130px]" title={p.name}>{p.name}</span>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-gray-400 text-xs">{p.sold} sold</span>
-                <span className="font-black text-[#111] w-12 text-right">{((p.sold / total) * 100).toFixed(0)}%</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
