@@ -1440,16 +1440,6 @@ export default function CashierDevices() {
                         </td>
                         <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* POS Sale Button */}
-                            <button
-                              onClick={() => openPosModal(prod)}
-                              disabled={(prod.stock || 0) <= 0}
-                              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold text-xs transition-all border-none cursor-pointer shadow-xs ${(prod.stock || 0) > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-                              title="Sell in POS"
-                            >
-                              <ShoppingCart size={14} />
-                              <span>POS Sale</span>
-                            </button>
                             <button 
                               onClick={() => handleOpenAddDiscount(prod)} 
                               className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
@@ -1571,14 +1561,6 @@ export default function CashierDevices() {
                                             </td>
                                             <td className="py-3 px-3 text-right">
                                               <div className="flex items-center justify-end gap-1.5">
-                                                <button
-                                                  onClick={() => openPosModal(prod, v)}
-                                                  disabled={vBranchStock <= 0}
-                                                  className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 ${vBranchStock > 0 ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
-                                                  title="Sell unit in POS"
-                                                >
-                                                  <ShoppingCart size={12} /> Sell
-                                                </button>
                                                 <button
                                                   onClick={() => {
                                                     setAdjustItem({ device: prod, variant: v });
