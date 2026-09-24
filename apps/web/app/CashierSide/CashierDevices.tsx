@@ -1152,29 +1152,6 @@ export default function CashierDevices() {
             <History size={16} className="text-purple-600" />
             <span>Stock History</span>
           </button>
-
-          {/* Physical Units / IMEI Button */}
-          <button
-            onClick={() => setUnitsModalOpen(true)}
-            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-gray-300 cursor-pointer"
-            title="View physical IMEI unit records for assigned branch"
-          >
-            <Smartphone size={16} className="text-purple-600" />
-            <span>Unit IMEIs</span>
-          </button>
-
-          {/* Active Discounts Management Button */}
-          <button
-            onClick={() => {
-              fetchDiscountsList();
-              setDiscountsListModalOpen(true);
-            }}
-            className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-rose-200 cursor-pointer shadow-xs"
-            title="View active, scheduled, and expired discounts"
-          >
-            <Percent size={16} className="text-rose-600" />
-            <span>Discounts</span>
-          </button>
         </div>
       </div>
 
