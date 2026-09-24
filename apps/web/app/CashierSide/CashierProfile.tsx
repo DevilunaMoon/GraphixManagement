@@ -1,7 +1,24 @@
 "use client";
 
 import { useState } from 'react';
-import { UserCircle2, Pencil, KeyRound, HelpCircle, Briefcase, DollarSign, Wrench, Calendar, Landmark, CheckCircle } from 'lucide-react';
+import { 
+  UserCircle2, 
+  KeyRound, 
+  HelpCircle, 
+  Briefcase, 
+  DollarSign, 
+  Wrench, 
+  Calendar, 
+  Landmark, 
+  CheckCircle,
+  Building2,
+  Lock,
+  ShieldCheck,
+  BadgeCheck,
+  ArrowRight,
+  Sparkles,
+  Info
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 import DatePicker from '../../components/ui/DatePicker';
@@ -21,10 +38,22 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Derive official staff properties
   const empId = user?.id ? `EMP-${user.id.substring(user.id.length - 6).toUpperCase()}` : 'EMP-001928';
+  
+  const rawBranch = user?.branch || 'Tagoloan';
+  const branchName = rawBranch.toLowerCase().includes('branch') ? rawBranch : `${rawBranch} Branch`;
+
   const hireDate = user?.createdAt 
-    ? new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-    : 'June 15, 2025';
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : 'April 30, 2026';
+
+  const roleName = user?.role 
+    ? (user.role.toUpperCase() === 'CASHIER' ? 'Cashier' : user.role)
+    : 'Cashier';
+
+  const statusName = user?.status || 'Active';
+  const isActive = statusName.toLowerCase() === 'active';
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -64,27 +93,32 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
   };
 
   return (
-    <main className="flex-1 p-2 sm:p-5 font-['Inter'] flex justify-center overflow-y-auto">
+    <main className="flex-1 p-3 sm:p-6 font-['Inter'] flex justify-center overflow-y-auto">
       <div className="w-full max-w-6xl flex flex-col gap-6">
         
         <div className="w-full flex flex-col lg:flex-row gap-6">
           {/* Left Column: ID Badge & Sub-Nav */}
           <aside className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0">
             
-            {/* Holographic Styled Digital ID Card */}
+            {/* Holographic Styled Digital Staff ID Card */}
             <div className="relative overflow-hidden bg-gradient-to-tr from-[#6d28d9] via-[#4c1d95] to-[#1e1b4b] rounded-3xl p-6 shadow-xl border border-white/10 text-white flex flex-col items-center gap-5">
               {/* Decorative Holographic Circle Backgrounds */}
-              <div className="absolute -top-16 -right-16 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl" />
-              <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-indigo-500/30 rounded-full blur-xl" />
+              <div className="absolute -top-16 -right-16 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-indigo-500/30 rounded-full blur-xl pointer-events-none" />
               
+              {/* Card Header */}
               <div className="w-full flex justify-between items-center pb-3 border-b border-white/10">
                 <div className="flex items-center gap-1.5">
                   <Landmark size={16} className="text-purple-300" />
                   <span className="text-xs font-bold uppercase tracking-widest text-purple-200">Graphix POS ID</span>
                 </div>
-                <div className="flex items-center gap-1 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Active</span>
+                <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${
+                  isActive 
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' 
+                    : 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+                  <span className="text-[10px] font-black uppercase tracking-wider">{statusName}</span>
                 </div>
               </div>
 
@@ -98,18 +132,30 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
               </div>
 
               {/* ID Details */}
-              <div className="flex flex-col items-center text-center gap-1 w-full">
-                <span className="text-xl font-bold tracking-tight text-white">{userName}</span>
-                <span className="text-xs font-semibold text-purple-300 bg-white/10 px-2.5 py-1 rounded-md uppercase tracking-wider">
-                  Store Cashier
+              <div className="flex flex-col items-center text-center gap-1.5 w-full">
+                <span className="text-xl font-bold tracking-tight text-white truncate max-w-[240px]" title={userName}>
+                  {userName}
+                </span>
+                <span className="text-xs font-bold text-purple-200 bg-white/15 px-3 py-1 rounded-full uppercase tracking-wider border border-white/10">
+                  CASHIER
                 </span>
               </div>
 
-              {/* Card Bottom Details */}
-              <div className="w-full grid grid-cols-2 gap-4 mt-2 pt-4 border-t border-white/10 text-xs font-medium text-purple-200">
+              {/* Card Bottom Details Grid */}
+              <div className="w-full grid grid-cols-2 gap-3 mt-1 pt-4 border-t border-white/10 text-xs font-medium text-purple-200">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-purple-400 font-semibold uppercase text-[9px] tracking-wider">Staff ID</span>
                   <span className="font-bold text-white font-mono">{empId}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-purple-400 font-semibold uppercase text-[9px] tracking-wider">Branch</span>
+                  <span className="font-bold text-white truncate" title={branchName}>{branchName}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-purple-400 font-semibold uppercase text-[9px] tracking-wider">Status</span>
+                  <span className={`font-bold uppercase ${isActive ? 'text-emerald-300' : 'text-rose-300'}`}>
+                    {statusName}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-purple-400 font-semibold uppercase text-[9px] tracking-wider">Joined Date</span>
@@ -141,7 +187,7 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
           {/* Right Column: Main Profile Fields & Stats */}
           <section className="flex-1 flex flex-col gap-6">
             
-            {/* System Performance Stats */}
+            {/* System Performance Stats Row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100 flex items-center gap-4">
                 <div className="p-3 bg-purple-50 text-[#bd00ff] rounded-xl shrink-0">
@@ -174,11 +220,17 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
               </div>
             </div>
 
-            {/* Profile Form Details */}
-            <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-[#bd00ff] flex flex-col">
-              <div className="border-b border-gray-100 pb-4 mb-6">
-                <h2 className="text-2xl font-bold text-black m-0">Staff Profile</h2>
-                <p className="text-gray-400 m-0 mt-1 font-semibold text-sm">Manage and protect your store credentials</p>
+            {/* 1. Profile Information Card (Editable Details) */}
+            <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-purple-200/80 flex flex-col">
+              <div className="border-b border-gray-100 pb-4 mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-black m-0">Profile Information</h2>
+                  <p className="text-gray-400 m-0 mt-1 font-semibold text-sm">Manage and update your personal staff credentials</p>
+                </div>
+                <span className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-[#bd00ff] bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+                  <Sparkles size={13} />
+                  Editable
+                </span>
               </div>
 
               <div className="flex flex-col-reverse md:flex-row gap-8">
@@ -187,12 +239,13 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
                   
                   {/* Name field */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-                    <label className="sm:w-[120px] text-left sm:text-right text-gray-500 font-bold text-sm shrink-0">Username</label>
+                    <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">Username</label>
                     <div className="flex-1">
                       <input 
                         type="text" 
                         value={userName}
                         onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Enter your username"
                         className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors font-semibold"
                       />
                     </div>
@@ -200,19 +253,22 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
 
                   {/* Email field */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-                    <label className="sm:w-[120px] text-left sm:text-right text-gray-500 font-bold text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
+                    <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
                       Email Address
                       <HelpCircle size={14} className="text-gray-400 cursor-help" />
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-800 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-25 text-center shadow-lg leading-normal font-medium">
-                        Your registered staff email cannot be updated.
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-gray-900 text-white text-xs px-3 py-2 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-25 text-center shadow-xl leading-normal font-medium">
+                        Your registered staff email cannot be updated directly.
                       </div>
                     </label>
-                    <div className="flex-1 text-black font-semibold pl-1">{user?.email || 'cashier@graphix.com'}</div>
+                    <div className="flex-1 text-gray-800 font-semibold pl-1 bg-gray-50/80 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                      <span>{user?.email || 'cashier@graphix.com'}</span>
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Primary</span>
+                    </div>
                   </div>
 
                   {/* Phone field */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-                    <label className="sm:w-[120px] text-left sm:text-right text-gray-500 font-bold text-sm shrink-0">Phone Number</label>
+                    <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">Phone Number</label>
                     <div className="flex-1 flex gap-4 items-center pl-1">
                       <span className="text-black font-semibold">{phone || 'None'}</span>
                       <button 
@@ -226,7 +282,7 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
 
                   {/* Gender field */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-                    <label className="sm:w-[120px] text-left sm:text-right text-gray-500 font-bold text-sm shrink-0">Gender</label>
+                    <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">Gender</label>
                     <div className="flex-1">
                       <select 
                         value={gender} 
@@ -242,7 +298,7 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
 
                   {/* DOB field */}
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full mb-2">
-                    <label className="sm:w-[120px] text-left sm:text-right text-gray-500 font-bold text-sm shrink-0">Date of Birth</label>
+                    <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">Date of Birth</label>
                     <div className="flex-1">
                       <DatePicker 
                         value={dob} 
@@ -255,15 +311,16 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
                 </div>
 
                 {/* Avatar Upload Container */}
-                <div className="flex flex-col items-center gap-4 shrink-0 md:border-l md:border-gray-100 md:pl-8">
-                  <div className="w-[120px] h-[120px] bg-gray-50 rounded-full flex justify-center items-center overflow-hidden border border-gray-200">
+                <div className="flex flex-col items-center gap-4 shrink-0 md:border-l md:border-gray-100 md:pl-8 justify-center">
+                  <div className="w-[120px] h-[120px] bg-gray-50 rounded-full flex justify-center items-center overflow-hidden border-2 border-purple-200 shadow-xs">
                     {avatar ? (
                       <img src={avatar} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       <UserCircle2 size={90} className="text-gray-400" />
                     )}
                   </div>
-                  <label className="px-5 py-2 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all text-xs">
+                  <label className="px-5 py-2.5 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all text-xs flex items-center gap-1.5 shadow-sm">
+                    <Sparkles size={13} />
                     Upload Photo
                     <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                   </label>
@@ -275,13 +332,136 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="w-full sm:w-auto px-10 py-3 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors border-none cursor-pointer disabled:opacity-50 shadow-sm"
+                  className="w-full sm:w-auto px-10 py-3 bg-[#bd00ff] text-white font-bold rounded-xl hover:bg-[#9c00d6] transition-colors border-none cursor-pointer disabled:opacity-50 shadow-md shadow-purple-500/20"
                 >
-                  {isSaving ? "Saving..." : "Save Changes"}
+                  {isSaving ? "Saving Changes..." : "Save Changes"}
                 </button>
               </div>
 
             </div>
+
+            {/* 2. Staff Account Information Card (Read-Only) */}
+            <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-purple-200/80 flex flex-col">
+              <div className="border-b border-gray-100 pb-4 mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-black m-0 flex items-center gap-2">
+                    <span>Account Information</span>
+                  </h2>
+                  <p className="text-gray-400 m-0 mt-1 font-semibold text-sm">
+                    Official staff assignment and verified store records
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                  <Lock size={12} className="text-gray-400" />
+                  Read-Only
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Staff ID */}
+                <div className="bg-[#FAF7FF] p-4 rounded-2xl border border-purple-100 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-purple-600 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Staff ID</span>
+                    <BadgeCheck size={18} />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-gray-900 font-mono tracking-tight">{empId}</p>
+                    <p className="text-[11px] text-purple-600 font-semibold mt-0.5">System Identifier</p>
+                  </div>
+                </div>
+
+                {/* Role */}
+                <div className="bg-[#FAF7FF] p-4 rounded-2xl border border-purple-100 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-[#bd00ff] mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Role</span>
+                    <Briefcase size={18} />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-sm font-black bg-purple-100 text-[#bd00ff] border border-purple-200">
+                      {roleName}
+                    </div>
+                    <p className="text-[11px] text-gray-500 font-semibold mt-1">POS & Sales Operator</p>
+                  </div>
+                </div>
+
+                {/* Assigned Branch */}
+                <div className="bg-[#FAF7FF] p-4 rounded-2xl border border-purple-100 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-blue-600 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Assigned Branch</span>
+                    <Building2 size={18} />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-gray-900 truncate" title={branchName}>
+                      {branchName}
+                    </p>
+                    <p className="text-[11px] text-blue-600 font-semibold mt-0.5">Verified Location</p>
+                  </div>
+                </div>
+
+                {/* Account Status */}
+                <div className="bg-[#FAF7FF] p-4 rounded-2xl border border-purple-100 flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-emerald-600 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Account Status</span>
+                    <CheckCircle size={18} />
+                  </div>
+                  <div>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-black border ${
+                      isActive 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                      {statusName}
+                    </span>
+                    <p className="text-[11px] text-gray-400 font-semibold mt-1">Terminal Access Enabled</p>
+                  </div>
+                </div>
+
+                {/* Joined Date */}
+                <div className="bg-[#FAF7FF] p-4 rounded-2xl border border-purple-100 flex flex-col justify-between sm:col-span-2 lg:col-span-2">
+                  <div className="flex items-center justify-between text-indigo-600 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Joined Date</span>
+                    <Calendar size={18} />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black text-gray-900">{hireDate}</p>
+                    <p className="text-[11px] text-gray-400 font-semibold mt-0.5">Account Registration Date</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informational Footer Note */}
+              <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500 font-medium">
+                <Info size={15} className="text-[#bd00ff] shrink-0" />
+                <span>
+                  Staff ID, role assignments, and branch locations are managed and authorized by the Super Admin.
+                </span>
+              </div>
+            </div>
+
+            {/* 3. Security & Password Section */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-[#bd00ff] flex items-center justify-center shrink-0 border border-purple-100">
+                  <KeyRound size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 m-0">Password & Security</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 m-0 mt-0.5 font-medium">
+                    Ensure your cashier portal password meets company security guidelines
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/cashier/change-password')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-sm transition-colors border border-purple-200/60 shadow-xs cursor-pointer shrink-0"
+              >
+                <span>Change Password</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+
           </section>
         </div>
 
@@ -289,17 +469,20 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
 
       {/* Save Success Alert Modal */}
       {isSaveModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-center items-center">
-          <div className="bg-white rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center gap-5 animate-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center shadow-sm">
-              <CheckCircle size={28} />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-5 animate-in zoom-in-95 duration-200 border border-purple-100">
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shadow-xs border border-emerald-100">
+              <CheckCircle size={32} />
             </div>
-            <p className="text-lg font-bold text-gray-900 m-0 text-center">Changes saved successfully!</p>
+            <div className="text-center">
+              <h3 className="text-xl font-black text-gray-900 m-0">Changes Saved!</h3>
+              <p className="text-sm text-gray-500 mt-1 font-medium">Your profile information has been updated successfully.</p>
+            </div>
             <button 
               onClick={() => setIsSaveModalOpen(false)}
-              className="w-full py-3 bg-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:bg-[#9c00d6] transition-colors shadow-md"
+              className="w-full py-3 bg-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:bg-[#9c00d6] transition-colors shadow-md shadow-purple-500/20"
             >
-              Close
+              Done
             </button>
           </div>
         </div>
@@ -307,29 +490,29 @@ export default function CashierProfile({ user, stats }: { user?: any; stats?: an
 
       {/* Phone Number Updater Modal */}
       {isPhoneModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-center items-center">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col gap-1.5 border-b border-gray-100 pb-3">
-              <h3 className="text-xl font-bold text-gray-900 m-0">Update Phone Number</h3>
-              <p className="text-gray-500 m-0 text-xs font-semibold">Enter your active contact number below</p>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 border border-purple-100">
+            <div className="flex flex-col gap-1 border-b border-gray-100 pb-3">
+              <h3 className="text-xl font-black text-gray-900 m-0">Update Phone Number</h3>
+              <p className="text-gray-500 m-0 text-xs font-semibold">Enter your active staff contact number</p>
             </div>
             <input 
               type="text" 
               placeholder="e.g. 09123456789" 
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
-              className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] text-black font-semibold uppercase tracking-wider transition-colors"
+              className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] text-black font-semibold tracking-wider transition-colors"
             />
-            <div className="flex gap-4 w-full">
+            <div className="flex gap-3 w-full">
               <button 
                 onClick={() => setIsPhoneModalOpen(false)}
-                className="flex-1 py-3 bg-gray-50 border border-gray-200 text-gray-600 font-bold rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                className="flex-1 py-2.5 bg-gray-50 border border-gray-200 text-gray-600 font-bold rounded-xl cursor-pointer hover:bg-gray-100 transition-colors text-sm"
               >
                 Cancel
               </button>
               <button 
                 onClick={handlePhoneUpdate}
-                className="flex-1 py-3 bg-[#bd00ff] border-none text-white font-bold rounded-xl cursor-pointer hover:bg-[#9c00d6] transition-colors shadow-md"
+                className="flex-1 py-2.5 bg-[#bd00ff] border-none text-white font-bold rounded-xl cursor-pointer hover:bg-[#9c00d6] transition-colors shadow-md shadow-purple-500/20 text-sm"
               >
                 Update
               </button>

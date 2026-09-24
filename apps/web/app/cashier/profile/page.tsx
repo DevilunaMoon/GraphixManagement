@@ -21,6 +21,8 @@ export default async function Page() {
           gender: true,
           dateOfBirth: true,
           role: true,
+          branch: true,
+          status: true,
           createdAt: true,
         }
       } as any);
