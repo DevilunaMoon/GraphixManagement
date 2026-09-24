@@ -182,9 +182,9 @@ export default function YearlyBestSellersSection({
             </button>
           </div>
 
-          {/* Super Admin Branch Switcher Tabs: All Branches beside Tagoloan, Villanueva, Jasaan */}
+          {/* Super Admin Branch Switcher Tabs: All Branches, Tagoloan, Villanueva, Jasaan */}
           {isSuperAdmin && (
-            <div className="flex items-center gap-1.5 p-1 bg-purple-50/70 rounded-xl border border-purple-100 mb-4 overflow-x-auto">
+            <div className="grid grid-cols-4 gap-1 p-1 bg-purple-50/80 rounded-xl border border-purple-100/90 mb-4 w-full">
               {SUPER_ADMIN_BRANCH_BUTTONS.map((bName) => {
                 const isActive = activeBranch.toLowerCase() === bName.toLowerCase();
                 const bSold = getBranchData(bName)?.totalUnitsSold ?? 0;
@@ -192,16 +192,17 @@ export default function YearlyBestSellersSection({
                   <button
                     key={bName}
                     onClick={() => setActiveBranch(bName)}
-                    className={`flex-1 min-w-[80px] py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                    className={`py-1.5 px-1 rounded-lg text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer truncate ${
                       isActive
-                        ? 'bg-white text-[#bd00ff] shadow-xs border border-purple-200/60'
-                        : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
+                        ? 'bg-white text-[#bd00ff] shadow-xs border border-purple-200/80 font-extrabold'
+                        : 'text-gray-600 hover:text-purple-700 hover:bg-white/60'
                     }`}
+                    title={bName}
                   >
-                    <span>{bName}</span>
+                    <span className="truncate">{bName}</span>
                     {bSold > 0 && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                        isActive ? 'bg-purple-100 text-purple-700' : 'bg-gray-200/80 text-gray-700'
+                      <span className={`text-[9px] px-1 py-0.2 rounded-full font-bold shrink-0 ${
+                        isActive ? 'bg-purple-100 text-purple-700' : 'bg-gray-200/80 text-gray-600'
                       }`}>
                         {bSold}
                       </span>
