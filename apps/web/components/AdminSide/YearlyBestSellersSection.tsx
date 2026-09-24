@@ -10,7 +10,8 @@ import {
   Award, 
   Smartphone, 
   Sparkles,
-  Info
+  Info,
+  Globe
 } from 'lucide-react';
 import { BranchBestSellersSummary, BestSellerProduct } from '../../lib/analyticsBestSellers';
 
@@ -37,7 +38,8 @@ interface YearlyBestSellersSectionProps {
   timeframeLabel?: string;
 }
 
-const ALL_BRANCHES = ['Tagoloan', 'Villanueva', 'Jasaan'];
+const SUPER_ADMIN_BRANCH_BUTTONS = ['All Branches', 'Tagoloan', 'Villanueva', 'Jasaan'];
+const INDIVIDUAL_BRANCHES = ['Tagoloan', 'Villanueva', 'Jasaan'];
 
 export default function YearlyBestSellersSection({
   branchBestSellers = {},
@@ -46,10 +48,10 @@ export default function YearlyBestSellersSection({
   currentBranch = 'Tagoloan',
   timeframeLabel = 'By Units Sold'
 }: YearlyBestSellersSectionProps) {
-  // Determine active branch tab for Super Admin; default to selected currentBranch or 'Tagoloan'
+  // Determine active branch tab for Super Admin; default to 'Tagoloan' or 'All Branches'
   const [activeBranch, setActiveBranch] = useState<string>(() => {
     if (!isSuperAdmin) return currentBranch || 'Tagoloan';
-    if (currentBranch && ALL_BRANCHES.includes(currentBranch)) return currentBranch;
+    if (currentBranch && SUPER_ADMIN_BRANCH_BUTTONS.includes(currentBranch)) return currentBranch;
     return 'Tagoloan';
   });
 
@@ -62,7 +64,49 @@ export default function YearlyBestSellersSection({
     }
   }, [currentBranch, isSuperAdmin]);
 
-  const activeBranchData: BranchBestSellersSummary | undefined = branchBestSellers[activeBranch];
+  // Helper to retrieve or calculate branch data
+  const getBranchData = (branchKey: string): BranchBestSellersSummary | undefined => {
+    if (branchBestSellers[branchKey]) return branchBestSellers[branchKey];
+    
+    // Dynamic client-side fallback calculation for 'All Branches' if not provided directly
+    if (branchKey === 'All Branches' || branchKey === 'All') {
+      const branches = INDIVIDUAL_BRANCHES;
+      const totalUnits = branches.reduce((sum, b) => sum + (branchBestSellers[b]?.totalUnitsSold || 0), 0);
+      const totalRevenue = branches.reduce((sum, b) => sum + (branchBestSellers[b]?.totalRevenue || 0), 0);
+      const totalOrders = branches.reduce((sum, b) => sum + (branchBestSellers[b]?.totalOrders || 0), 0);
+      
+      const prodMap: Record<string, BestSellerProduct> = {};
+      branches.forEach(b => {
+        branchBestSellers[b]?.products.forEach(p => {
+          if (!prodMap[p.productId]) {
+            prodMap[p.productId] = { ...p, unitsSold: 0, totalRevenue: 0 };
+          }
+          const item = prodMap[p.productId];
+          if (item) {
+            item.unitsSold += p.unitsSold;
+            item.totalRevenue += (p.totalRevenue || 0);
+          }
+        });
+      });
+
+      const prods = Object.values(prodMap).sort((a, b) => b.unitsSold - a.unitsSold || b.totalRevenue - a.totalRevenue);
+      return {
+        branch: 'All Branches',
+        totalUnitsSold: totalUnits,
+        totalRevenue: totalRevenue,
+        totalOrders: totalOrders,
+        products: prods.map((p, idx) => ({
+          ...p,
+          rank: idx + 1,
+          percentage: totalUnits > 0 ? Math.round((p.unitsSold / totalUnits) * 100) : 0
+        }))
+      };
+    }
+
+    return undefined;
+  };
+
+  const activeBranchData = getBranchData(activeBranch);
 
   // Derive products list: use activeBranchData.products, or fallback to topProducts if branchBestSellers is not yet loaded
   const products: BestSellerProduct[] = activeBranchData?.products || (
@@ -89,7 +133,6 @@ export default function YearlyBestSellersSection({
 
   // Top 5 products for card display and pie chart
   const top5Products = productsWithPercentage.slice(0, 5);
-  const top5TotalUnits = top5Products.reduce((sum, p) => sum + p.unitsSold, 0);
 
   // Build conic gradient for Top 5 pie chart
   let gradientStr = '';
@@ -111,6 +154,8 @@ export default function YearlyBestSellersSection({
 
     gradientStr = `conic-gradient(${slices.join(', ')})`;
   }
+
+  const isAllBranches = activeBranch === 'All Branches' || activeBranch === 'All';
 
   return (
     <>
@@ -137,17 +182,17 @@ export default function YearlyBestSellersSection({
             </button>
           </div>
 
-          {/* Super Admin Branch Switcher Tabs */}
+          {/* Super Admin Branch Switcher Tabs: All Branches beside Tagoloan, Villanueva, Jasaan */}
           {isSuperAdmin && (
             <div className="flex items-center gap-1.5 p-1 bg-purple-50/70 rounded-xl border border-purple-100 mb-4 overflow-x-auto">
-              {ALL_BRANCHES.map((bName) => {
+              {SUPER_ADMIN_BRANCH_BUTTONS.map((bName) => {
                 const isActive = activeBranch.toLowerCase() === bName.toLowerCase();
-                const bSold = branchBestSellers[bName]?.totalUnitsSold ?? 0;
+                const bSold = getBranchData(bName)?.totalUnitsSold ?? 0;
                 return (
                   <button
                     key={bName}
                     onClick={() => setActiveBranch(bName)}
-                    className={`flex-1 min-w-[75px] py-1.5 px-2.5 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 min-w-[80px] py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-white text-[#bd00ff] shadow-xs border border-purple-200/60'
                         : 'text-gray-600 hover:text-purple-700 hover:bg-white/50'
@@ -170,8 +215,12 @@ export default function YearlyBestSellersSection({
           {/* Branch Subheader for clarity */}
           <div className="mb-4 pb-2 border-b border-purple-50 flex items-center justify-between text-xs">
             <span className="font-bold text-gray-800 flex items-center gap-1.5">
-              <Building2 size={13} className="text-[#bd00ff]" />
-              {activeBranch} Branch — Best Sellers
+              {isAllBranches ? (
+                <Globe size={13} className="text-[#bd00ff]" />
+              ) : (
+                <Building2 size={13} className="text-[#bd00ff]" />
+              )}
+              {isAllBranches ? 'All Branches — Best Sellers' : `${activeBranch} Branch — Best Sellers`}
             </span>
             <span className="text-gray-500 font-medium">
               {totalUnits} {totalUnits === 1 ? 'unit' : 'units'} sold
@@ -271,7 +320,7 @@ export default function YearlyBestSellersSection({
           timeframeLabel={timeframeLabel}
           isSuperAdmin={isSuperAdmin}
           onSelectBranch={(branch) => setActiveBranch(branch)}
-          allBranches={ALL_BRANCHES}
+          allBranches={SUPER_ADMIN_BRANCH_BUTTONS}
         />
       )}
     </>
@@ -306,6 +355,7 @@ function BestSellerDetailsModal({
   const totalUnits = summaryData?.totalUnitsSold ?? products.reduce((sum, p) => sum + p.unitsSold, 0);
   const totalRevenue = summaryData?.totalRevenue ?? products.reduce((sum, p) => sum + (p.totalRevenue || 0), 0);
   const totalOrders = summaryData?.totalOrders ?? 0;
+  const isAllBranches = branchName === 'All Branches' || branchName === 'All';
 
   return (
     <div 
@@ -325,7 +375,7 @@ function BestSellerDetailsModal({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
-                  {branchName} Branch
+                  {isAllBranches ? 'All Branches' : `${branchName} Branch`}
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
                   Best Sellers
@@ -340,12 +390,12 @@ function BestSellerDetailsModal({
           <div className="flex items-center gap-3 self-end sm:self-auto">
             {/* Super Admin Branch Switcher in Modal */}
             {isSuperAdmin && (
-              <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200">
+              <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 overflow-x-auto">
                 {allBranches.map((b) => (
                   <button
                     key={b}
                     onClick={() => onSelectBranch(b)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       branchName.toLowerCase() === b.toLowerCase()
                         ? 'bg-white text-[#bd00ff] shadow-xs'
                         : 'text-gray-600 hover:text-purple-700'
@@ -373,11 +423,13 @@ function BestSellerDetailsModal({
             <div className="bg-white p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-purple-600 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Branch</span>
-                <Building2 size={18} />
+                {isAllBranches ? <Globe size={18} /> : <Building2 size={18} />}
               </div>
               <div>
                 <p className="text-lg font-black text-gray-900 truncate">{branchName}</p>
-                <p className="text-[11px] text-gray-400 font-medium">Verified Location</p>
+                <p className="text-[11px] text-gray-400 font-medium">
+                  {isAllBranches ? 'System-Wide' : 'Verified Location'}
+                </p>
               </div>
             </div>
 

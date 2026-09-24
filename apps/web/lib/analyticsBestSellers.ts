@@ -208,5 +208,76 @@ export function calculateBranchBestSellers(
     });
   });
 
+  // Calculate 'All Branches' summary if user has multi-branch access (Super Admin)
+  if (allowedBranches.length > 1) {
+    const allUnits = allowedBranches.reduce((sum, b) => sum + (branchMap[b]?.totalUnitsSold || 0), 0);
+    const allRevenue = allowedBranches.reduce((sum, b) => sum + (branchMap[b]?.totalRevenue || 0), 0);
+    const allOrders = allowedBranches.reduce((sum, b) => sum + (branchMap[b]?.totalOrders || 0), 0);
+
+    const combinedAggregator: Record<string, {
+      productId: string;
+      productModel: string;
+      variantSet: Set<string>;
+      condition: 'New' | 'Pre-Owned';
+      image: string | null;
+      unitsSold: number;
+      totalRevenue: number;
+    }> = {};
+
+    allowedBranches.forEach(b => {
+      const aggregator = productAggregators[b];
+      if (!aggregator) return;
+      Object.values(aggregator).forEach(item => {
+        if (!combinedAggregator[item.productId]) {
+          combinedAggregator[item.productId] = {
+            productId: item.productId,
+            productModel: item.productModel,
+            variantSet: new Set(item.variantSet),
+            condition: item.condition,
+            image: item.image,
+            unitsSold: 0,
+            totalRevenue: 0
+          };
+        }
+        const comb = combinedAggregator[item.productId];
+        if (comb) {
+          comb.unitsSold += item.unitsSold;
+          comb.totalRevenue += item.totalRevenue;
+          item.variantSet.forEach(v => comb.variantSet.add(v));
+        }
+      });
+    });
+
+    const allProds = Object.values(combinedAggregator);
+    allProds.sort((a, b) => b.unitsSold - a.unitsSold || b.totalRevenue - a.totalRevenue);
+
+    const allProductsSummary: BestSellerProduct[] = allProds.map((prod, idx) => {
+      const variantList = Array.from(prod.variantSet);
+      const displayVariant = variantList.length > 0 ? variantList.join(', ') : 'Standard';
+      return {
+        rank: idx + 1,
+        productId: prod.productId,
+        productModel: prod.productModel,
+        variant: displayVariant,
+        condition: prod.condition,
+        image: prod.image,
+        unitsSold: prod.unitsSold,
+        totalRevenue: prod.totalRevenue,
+        percentage: allUnits > 0 ? Math.round((prod.unitsSold / allUnits) * 100) : 0
+      };
+    });
+
+    const allSummary: BranchBestSellersSummary = {
+      branch: 'All Branches',
+      totalUnitsSold: allUnits,
+      totalRevenue: allRevenue,
+      totalOrders: allOrders,
+      products: allProductsSummary
+    };
+
+    branchMap['All Branches'] = allSummary;
+    branchMap['All'] = allSummary;
+  }
+
   return branchMap;
 }
