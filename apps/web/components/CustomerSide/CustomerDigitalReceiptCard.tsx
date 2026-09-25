@@ -39,12 +39,16 @@ export interface DigitalReceiptData {
 
 interface CustomerDigitalReceiptCardProps {
   data?: DigitalReceiptData;
+  title?: string;
+  subtitle?: string;
   onDownload?: () => void;
   onReturnToDashboard?: () => void;
 }
 
 export default function CustomerDigitalReceiptCard({
   data,
+  title = 'Official Sales & Purchase Receipt',
+  subtitle = 'Customer receipt generator & itemized breakdown',
   onDownload,
   onReturnToDashboard
 }: CustomerDigitalReceiptCardProps) {
@@ -351,8 +355,8 @@ export default function CustomerDigitalReceiptCard({
             <Receipt size={22} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-black m-0">Repair Billing & Service Receipt</h2>
-            <p className="text-xs text-gray-500 m-0">Customer receipt generator & itemized breakdown</p>
+            <h2 className="text-xl font-bold text-black m-0">{title}</h2>
+            <p className="text-xs text-gray-500 m-0">{subtitle}</p>
           </div>
         </div>
       </div>
