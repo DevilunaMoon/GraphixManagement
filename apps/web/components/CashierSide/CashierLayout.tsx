@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User, Settings } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { BranchProvider, useBranch } from '../../context/BranchContext';
 
@@ -108,6 +108,7 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
       ]
     },
     { href: '/cashier/profile', label: 'My Profile', icon: User },
+    { href: '/cashier/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
