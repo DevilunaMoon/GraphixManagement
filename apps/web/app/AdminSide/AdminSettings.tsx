@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, HelpCircle } from 'lucide-react';
+import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
 export default function AdminSettings() {
@@ -31,6 +31,20 @@ export default function AdminSettings() {
             label="Themes"
             sublabel="Customize dashboard color theme and aesthetics"
             onClick={() => navigate('/admin/themes')}
+          />
+          
+          <SettingsItem 
+            icon={
+              <div className="relative inline-block">
+                <MessageSquarePlus className="text-[#BF00FF] w-7 h-7" />
+              </div>
+            }
+            label="Customer Support Questions"
+            sublabel={isSuperAdmin 
+              ? "View, monitor, and answer customer support inquiries across all branches"
+              : "View and respond to customer inquiries submitted to your assigned branch"
+            }
+            onClick={() => navigate('/admin/support')}
           />
           
           <SettingsItem 

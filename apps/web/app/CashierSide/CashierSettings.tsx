@@ -22,7 +22,10 @@ import {
   CreditCard,
   Wrench,
   CheckCircle2,
-  Lock
+  Lock,
+  Loader2,
+  X,
+  MessageSquare
 } from 'lucide-react';
 
 export default function CashierSettings({ initialUser }: { initialUser?: any }) {
@@ -38,7 +41,10 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
   // Help & Support state
   const [faqSearch, setFaqSearch] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
-  const [activeHelpTab, setActiveHelpTab] = useState<'faqs' | 'guide' | 'contact'>('faqs');
+  const [activeHelpTab, setActiveHelpTab] = useState<'faqs' | 'guide' | 'contact' | 'questions'>('faqs');
+  const [supportQuestions, setSupportQuestions] = useState<any[]>([]);
+  const [loadingSupportQuestions, setLoadingSupportQuestions] = useState(false);
+  const [activeQuestionModal, setActiveQuestionModal] = useState<any>(null);
 
   // Terms & Privacy tab
   const [activePolicyTab, setActivePolicyTab] = useState<'terms' | 'privacy'>('terms');
@@ -94,6 +100,26 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
         }
       })
       .catch(err => console.error('Failed to fetch FAQs:', err));
+  }, []);
+
+  // Fetch Support Questions (Assigned branch questions for cashier read-only)
+  const fetchSupportQuestions = async () => {
+    setLoadingSupportQuestions(true);
+    try {
+      const res = await fetch('/api/support/questions');
+      const data = await res.json();
+      if (data && Array.isArray(data.questions)) {
+        setSupportQuestions(data.questions);
+      }
+    } catch (err) {
+      console.error('Failed to fetch support questions for cashier:', err);
+    } finally {
+      setLoadingSupportQuestions(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSupportQuestions();
   }, []);
 
   // Fetch Policies
@@ -331,7 +357,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
               </div>
 
               {/* Tabs */}
-              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start md:self-auto">
+              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start md:self-auto flex-wrap">
                 <button
                   onClick={() => setActiveHelpTab('faqs')}
                   className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -341,6 +367,16 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                   }`}
                 >
                   FAQs
+                </button>
+                <button
+                  onClick={() => setActiveHelpTab('questions')}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeHelpTab === 'questions' 
+                      ? 'bg-white text-[#BF00FF] shadow-xs' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Customer Inquiries ({supportQuestions.length})
                 </button>
                 <button
                   onClick={() => setActiveHelpTab('guide')}
@@ -504,6 +540,158 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
               </div>
             )}
 
+            {/* TAB: CUSTOMER INQUIRIES (Cashier Read-Only) */}
+            {activeHelpTab === 'questions' && (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900">
+                      Customer Inquiries for {assignedBranch} Branch
+                    </span>
+                    <span className="px-2.5 py-0.5 bg-purple-50 text-[#BF00FF] font-extrabold text-xs rounded-full border border-purple-200">
+                      Read Only
+                    </span>
+                  </div>
+                  <button
+                    onClick={fetchSupportQuestions}
+                    className="text-xs font-bold text-[#BF00FF] hover:underline bg-transparent border-none cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {loadingSupportQuestions ? (
+                  <div className="py-12 flex justify-center items-center gap-2 text-gray-400 font-semibold text-sm">
+                    <Loader2 size={20} className="animate-spin text-[#BF00FF]" />
+                    <span>Loading inquiries...</span>
+                  </div>
+                ) : supportQuestions.length === 0 ? (
+                  <div className="p-8 bg-gray-50 border border-gray-200 rounded-2xl text-center text-gray-500 font-medium text-sm">
+                    No customer support inquiries submitted to {assignedBranch} Branch yet.
+                  </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-2xs">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          <th className="py-3 px-4">Customer</th>
+                          <th className="py-3 px-4">Subject</th>
+                          <th className="py-3 px-4">Branch</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4">Date</th>
+                          <th className="py-3 px-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                        {supportQuestions.map((q) => (
+                          <tr key={q.id} className="hover:bg-purple-50/30 transition-colors">
+                            <td className="py-3 px-4 font-bold text-gray-900">{q.customerName}</td>
+                            <td className="py-3 px-4 max-w-xs truncate font-semibold">{q.subject}</td>
+                            <td className="py-3 px-4 whitespace-nowrap">{q.branchName} Branch</td>
+                            <td className="py-3 px-4 whitespace-nowrap">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                q.status === 'Answered'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : q.status === 'Closed'
+                                  ? 'bg-gray-100 text-gray-600'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                                {q.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap">
+                              {new Date(q.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 px-4 text-right whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={() => setActiveQuestionModal(q)}
+                                className="px-3 py-1 bg-purple-50 hover:bg-[#BF00FF] text-[#BF00FF] hover:text-white font-bold text-xs rounded-lg border border-purple-200 transition-colors cursor-pointer"
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* Cashier Read-Only Conversation Modal */}
+      {activeQuestionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl border border-gray-100 flex flex-col gap-4 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-hidden">
+            <div className="flex items-start justify-between pb-3.5 border-b border-gray-100">
+              <div className="flex flex-col gap-1 min-w-0 pr-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-lg font-black text-gray-900 m-0 truncate">
+                    {activeQuestionModal.subject}
+                  </h3>
+                  <span className="px-2.5 py-0.5 bg-purple-50 text-[#BF00FF] text-xs font-bold rounded-full border border-purple-200">
+                    {activeQuestionModal.branchName} Branch
+                  </span>
+                  <span className="px-2.5 py-0.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">
+                    Read Only
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 font-medium">
+                  Customer: <strong className="text-gray-800">{activeQuestionModal.customerName}</strong> • {new Date(activeQuestionModal.createdAt).toLocaleString()}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveQuestionModal(null)}
+                className="w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 flex items-center justify-center cursor-pointer border-none bg-transparent"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3.5 bg-gray-50 rounded-2xl border border-gray-200 max-h-[380px]">
+              {activeQuestionModal.replies && activeQuestionModal.replies.length > 0 ? (
+                activeQuestionModal.replies.map((msg: any, idx: number) => {
+                  const isStaff = msg.senderRole === 'ADMIN' || msg.senderRole === 'SUPER_ADMIN';
+                  const isSuper = msg.senderRole === 'SUPER_ADMIN';
+                  return (
+                    <div
+                      key={msg.id || idx}
+                      className={`flex flex-col gap-1 max-w-[85%] ${
+                        isStaff ? 'self-end items-end' : 'self-start'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 px-1 text-[11px] font-bold text-gray-700">
+                        <span>{isSuper ? 'Super Admin' : (isStaff ? `${activeQuestionModal.branchName} Branch Admin` : activeQuestionModal.customerName)}</span>
+                        <span className="text-[10px] text-gray-400 font-normal">
+                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className={`p-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                        isStaff
+                          ? 'bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white shadow-xs'
+                          : 'bg-white border border-gray-200 text-gray-900 shadow-xs'
+                      }`}>
+                        {msg.message}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-4 bg-white rounded-xl border text-sm text-gray-700">
+                  {activeQuestionModal.question}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3 text-center text-xs font-semibold text-gray-500 border border-gray-200">
+              Cashiers have read-only view. Responses are handled by Branch Admin & Super Admin.
+            </div>
           </div>
         </div>
       )}

@@ -35,6 +35,8 @@ model User {
   repairRequests   RepairRequest[]
   cartItems        CartItem[]
   notifications    Notification[]
+  customerQuestions CustomerQuestion[]
+  questionReplies   CustomerQuestionReply[]
 
   @@index([name])
   @@index([branch])
@@ -371,6 +373,53 @@ model FAQ {
 
   @@index([isActive])
   @@index([createdAt])
+}
+
+model CustomerQuestion {
+  id         String                  @id @default(cuid())
+  questionId String                  @unique // e.g. QST-T26-A1 (internal only, never exposed in UI)
+  customerId String
+  customer   User                    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  branchId   String?
+  branchName String                  // e.g. "Tagoloan"
+  subject    String
+  question   String
+  orderId    String?
+  status     String                  @default("Pending") // "Pending" | "Answered" | "Closed"
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  replies    CustomerQuestionReply[]
+
+  @@index([customerId])
+  @@index([branchName])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CustomerQuestionReply {
+  id         String           @id @default(cuid())
+  questionId String
+  question   CustomerQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderName String
+  senderRole String           // "CUSTOMER" | "ADMIN" | "SUPER_ADMIN"
+  message    String
+  createdAt  DateTime         @default(now())
+
+  @@index([questionId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model QuestionSequence {
+  id         String   @id @default(cuid())
+  branchCode String   // "T", "V", "J"
+  year       Int      // 2026, 2027
+  lastNumber Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([branchCode, year])
 }
 
 
