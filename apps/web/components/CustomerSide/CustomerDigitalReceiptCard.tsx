@@ -311,7 +311,6 @@ export default function CustomerDigitalReceiptCard({
     link.click();
     URL.revokeObjectURL(url);
   };
-
   const receiptRef = useRef<HTMLDivElement>(null);
 
   // Action 4: Download 80mm styled visual PDF matching the on-screen receipt exactly
@@ -330,23 +329,33 @@ export default function CustomerDigitalReceiptCard({
       const canvas = await html2canvas(element, {
         scale: 3,
         useCORS: true,
-        backgroundColor: '#fafaf9',
+        backgroundColor: '#ffffff',
         logging: false,
         scrollY: 0,
         scrollX: 0
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const imgWidth = 80; // Standard 80mm POS receipt width in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // 80mm standard POS receipt with 3mm margin for clean card border visibility
+      const margin = 3; // 3mm margin
+      const pageWidth = 80; // 80mm
+      const contentWidth = pageWidth - (margin * 2); // 74mm
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+      const pageHeight = contentHeight + (margin * 2);
 
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [imgWidth, imgHeight]
+        format: [pageWidth, pageHeight]
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      // Pure white page background
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      // Place the receipt card with proper margins so borders and rounded corners are 100% visible
+      pdf.addImage(imgData, 'PNG', margin, margin, contentWidth, contentHeight, undefined, 'FAST');
       pdf.save(`GraphiX_Store_Receipt_${shortTransId.replace('#', '')}.pdf`);
     } catch (err) {
       console.error('Error generating 80mm PDF receipt:', err);
@@ -418,7 +427,7 @@ export default function CustomerDigitalReceiptCard({
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white rounded-xl text-xs font-bold transition-all cursor-pointer border-none shadow-md hover:shadow-lg disabled:opacity-50"
             >
               <Download size={14} />
-              {isExportingPDF ? 'Exporting PDF...' : 'Download PDF'}
+              {isExportingPDF ? 'Exporting PDF...' : 'Download PDF Receipt'}
             </button>
           )}
         </div>
@@ -429,7 +438,7 @@ export default function CustomerDigitalReceiptCard({
         <div 
           ref={receiptRef}
           id="onscreen-thermal-receipt" 
-          className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed"
+          className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-7 shadow-xs font-sans text-xs text-gray-900 leading-relaxed"
         >
           
           {/* Header & Store Info */}
@@ -440,14 +449,14 @@ export default function CustomerDigitalReceiptCard({
             <p className="text-xs font-bold text-gray-800 m-0 mt-0.5">
               {branchLocation}
             </p>
-            <p className="text-[11px] text-gray-500 m-0 mt-0.5 font-sans">
+            <p className="text-[11px] text-gray-500 m-0 mt-0.5">
               {machineId}
             </p>
             <p className="text-[11px] text-gray-600 m-0 mt-0.5">
               {timestamp}
             </p>
             {isGcashOrder ? (
-              <p className={`text-[10px] font-black rounded px-2 py-0.5 mt-1.5 inline-block border uppercase tracking-tight ${
+              <p className={`text-[10px] font-black rounded px-2.5 py-0.5 mt-1.5 inline-block border uppercase tracking-tight ${
                 isLocked 
                   ? 'text-blue-800 bg-blue-50 border-blue-300' 
                   : 'text-emerald-800 bg-emerald-50 border-emerald-300'
@@ -455,7 +464,7 @@ export default function CustomerDigitalReceiptCard({
                 {isLocked ? 'GCASH PAYMENT (FOR CASHIER VERIFICATION)' : 'OFFICIAL SALES INVOICE (VERIFIED PAID)'}
               </p>
             ) : isCashOrder ? (
-              <p className="text-[10px] font-black text-amber-800 bg-amber-50 rounded px-2 py-0.5 mt-1.5 inline-block border border-amber-300 uppercase tracking-tight">
+              <p className="text-[10px] font-black text-amber-800 bg-amber-50 rounded px-2.5 py-0.5 mt-1.5 inline-block border border-amber-300 uppercase tracking-tight">
                 {isLocked ? 'UNVERIFIED RESERVATION (8H CLAIM LIMIT)' : 'OFFICIAL SALES INVOICE (VERIFIED PAID)'}
               </p>
             ) : null}
@@ -463,21 +472,21 @@ export default function CustomerDigitalReceiptCard({
 
           {/* Invoice Header */}
           <div className="py-2.5 border-b border-dashed border-gray-300 text-center">
-            <span className="font-black text-xs tracking-wider block">
+            <span className="font-extrabold text-xs tracking-wider block text-gray-900 uppercase">
               {isLocked 
                 ? (isGcashOrder ? 'GCASH PAYMENT PROOF (FOR VERIFICATION)' : 'RESERVATION CLAIM SLIP (UNPAID)') 
                 : 'SALES INVOICE'}
             </span>
-            <span className="font-bold text-xs text-purple-700">{shortTransId}</span>
+            <span className="font-bold text-xs text-[#7e22ce] font-mono mt-0.5 block">{shortTransId}</span>
           </div>
 
           {/* Cart Item Breakdown */}
           <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-2.5">
             {resolvedItems.map((item, idx) => (
               <div key={idx} className="flex flex-col gap-0.5">
-                <div className="flex justify-between items-start font-black text-black">
+                <div className="flex justify-between items-start font-bold text-black text-xs">
                   <span className="truncate pr-2">{item.name.toUpperCase()}</span>
-                  <span className="shrink-0 font-bold">
+                  <span className="shrink-0 font-bold font-mono">
                     {item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V
                   </span>
                 </div>
@@ -485,7 +494,7 @@ export default function CustomerDigitalReceiptCard({
                   <span className="truncate pr-2">
                     Item: {item.quantity}x {item.variations ? `(${item.variations})` : ''}
                   </span>
-                  <span className="shrink-0">
+                  <span className="shrink-0 font-mono">
                     {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -506,34 +515,34 @@ export default function CustomerDigitalReceiptCard({
           <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1.5">
             <div className="flex justify-between items-center font-black text-black text-sm">
               <span>Total</span>
-              <span>Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-mono">Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
 
             {paymentMethod === 'Cash' ? (
               <>
                 <div className="flex justify-between items-center text-gray-700">
                   <span>Cash</span>
-                  <span>Php {(tenderedCash || grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-mono">Php {(tenderedCash || grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-gray-900">
                   <span>Change</span>
-                  <span>Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-mono">Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex justify-between items-center text-gray-700">
                   <span>GCash</span>
-                  <span>Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="font-mono">Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-gray-900">
                   <span>Change</span>
-                  <span>Php 0.00</span>
+                  <span className="font-mono">Php 0.00</span>
                 </div>
               </>
             )}
 
-            <div className="text-center font-black py-1 tracking-wider text-[11px] text-gray-800">
+            <div className="text-center font-bold py-1 tracking-wider text-[11px] text-gray-800 font-mono">
               *** {totalItemCount} ITEM(S) ***
             </div>
           </div>
@@ -542,19 +551,19 @@ export default function CustomerDigitalReceiptCard({
           <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[11px] text-gray-600">
             <div className="flex justify-between items-center">
               <span>VATable Sales</span>
-              <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-mono">{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>VAT Amount</span>
-              <span>{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-mono">{vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>VAT Exempt Sales</span>
-              <span>0.00</span>
+              <span className="font-mono">0.00</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Zero Rated Sales</span>
-              <span>0.00</span>
+              <span className="font-mono">0.00</span>
             </div>
           </div>
 
@@ -564,21 +573,21 @@ export default function CustomerDigitalReceiptCard({
               <span className="font-bold">Sold To:</span>
               <span className="font-semibold text-black">{customerName}</span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-2">
               <span>Email:</span>
-              <span className="truncate max-w-[200px]">{customerEmail}</span>
+              <span className="text-right text-gray-800 font-medium break-all">{customerEmail}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Phone:</span>
-              <span className="font-semibold text-black">{cleanPhone}</span>
+              <span className="font-semibold text-black font-mono">{cleanPhone}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Store Agent:</span>
-              <span>{storeAgent}</span>
+              <span className="font-medium text-gray-800">{storeAgent}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Global Trans No.</span>
-              <span className="font-bold text-purple-700">{shortTransId}</span>
+              <span className="font-bold text-[#7e22ce] font-mono">{shortTransId}</span>
             </div>
           </div>
 
