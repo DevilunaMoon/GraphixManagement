@@ -82,6 +82,11 @@ function CustomerPaymentContent() {
   );
   const [customerProfile, setCustomerProfile] = useState<{ name: string; email: string; phone: string } | null>(null);
 
+  // Branch Inventory Availability States
+  const [branchAvailability, setBranchAvailability] = useState<any[]>([]);
+  const [hasAnyAvailableBranch, setHasAnyAvailableBranch] = useState(true);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+
   // GCash States
   const [gcashRef, setGcashRef] = useState<string>('');
   const [copiedNumber, setCopiedNumber] = useState(false);
@@ -204,6 +209,7 @@ function CustomerPaymentContent() {
             setSubtotal(calcSubtotal);
             setTotalDiscount(calcDiscount);
             setFinalTotal(Math.max(0, calcSubtotal - calcDiscount));
+            await checkBranchAvailability(parsedItems, null, null, cartItemIdsParam);
           }
         } else if (deviceId) {
           const res = await fetch(`/api/devices/${deviceId}`);
@@ -247,6 +253,7 @@ function CustomerPaymentContent() {
             setSubtotal(basePrice * parsedQty);
             setTotalDiscount(unitDiscount * parsedQty);
             setFinalTotal(effectivePrice * parsedQty);
+            await checkBranchAvailability([singleItem], device.id, variationIds, null);
           }
         } else {
           // Default checkout context matching "Secure Payment" standard (Vivo Y31d - ₱28,998.00)
@@ -263,6 +270,7 @@ function CustomerPaymentContent() {
           setSubtotal(28998);
           setTotalDiscount(0);
           setFinalTotal(28998);
+          await checkBranchAvailability([defaultItem]);
         }
       } catch (err) {
         console.error('Error fetching checkout data:', err);
@@ -273,6 +281,64 @@ function CustomerPaymentContent() {
 
     fetchCheckoutData();
   }, [deviceId, variationIds, cartItemIdsParam, quantityParam]);
+
+  const checkBranchAvailability = async (
+    checkoutItems: PurchasedItem[],
+    explicitDeviceId?: string | null,
+    explicitVarIds?: string | null,
+    explicitCartItemIds?: string | null
+  ) => {
+    try {
+      setCheckingAvailability(true);
+      const payload: any = {};
+      if (explicitCartItemIds || cartItemIdsParam) {
+        payload.cartItemIds = (explicitCartItemIds || cartItemIdsParam)?.split(',').filter(Boolean);
+      } else if (explicitDeviceId || deviceId) {
+        const itemQty = checkoutItems[0]?.quantity || parseInt(quantityParam || '1', 10) || 1;
+        const vIds = explicitVarIds || variationIds;
+        payload.items = [{
+          deviceId: explicitDeviceId || deviceId,
+          quantity: itemQty,
+          variationIds: vIds ? vIds.split(',').filter(Boolean) : undefined,
+          variations: checkoutItems[0]?.variations || undefined
+        }];
+      } else if (checkoutItems && checkoutItems.length > 0) {
+        payload.items = checkoutItems.map(i => ({
+          deviceId: i.id,
+          quantity: i.quantity,
+          variations: i.variations
+        }));
+      }
+
+      const res = await fetch('/api/branches/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.branches)) {
+          setBranchAvailability(data.branches);
+          setHasAnyAvailableBranch(Boolean(data.hasAvailableBranch));
+
+          // If current selected branch is not available, switch to first available branch
+          const currentClean = cleanBranchName(selectedBranch).toLowerCase();
+          const currentAvail = data.branches.find((b: any) => cleanBranchName(b.displayName || b.branchName).toLowerCase() === currentClean);
+
+          if (!currentAvail || !currentAvail.isAvailable) {
+            if (data.firstAvailableBranch) {
+              setSelectedBranch(data.firstAvailableBranch);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check branch availability:', err);
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
 
   const handleCopyGcashNumber = () => {
     navigator.clipboard.writeText(cleanGcashDigits || activeGcashNumber);
@@ -351,6 +417,18 @@ function CustomerPaymentContent() {
   };
 
   const handlePlaceOrder = async () => {
+    // 0. Verify branch availability before submission
+    const currentClean = cleanBranchName(selectedBranch).toLowerCase();
+    const currentAvail = branchAvailability.find(
+      ba => cleanBranchName(ba.displayName || ba.branchName).toLowerCase() === currentClean
+    );
+
+    if (currentAvail && !currentAvail.isAvailable) {
+      setReceiptError(currentAvail.reason || `The selected pickup branch (${cleanBranchName(selectedBranch)}) cannot fulfill your current order. Please select an available branch.`);
+      await checkBranchAvailability(items, deviceId, variationIds, cartItemIdsParam);
+      return;
+    }
+
     if (method === 'gcash' && !receiptFile) {
       setReceiptError('Please upload your GCash payment receipt to submit for verification.');
       uploadAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -556,7 +634,7 @@ function CustomerPaymentContent() {
           <div className="lg:col-span-7 flex flex-col gap-6">
 
             {/* Section 0: Pickup Branch Location */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <label className="font-extrabold text-gray-800 text-sm tracking-wide flex items-center gap-1.5">
                   <MapPin size={16} className="text-[#bd00ff]" />
@@ -576,21 +654,74 @@ function CustomerPaymentContent() {
                       { id: 'villanueva', displayName: 'Villanueva', fullName: 'Villanueva Branch' },
                       { id: 'jasaan', displayName: 'Jasaan', fullName: 'Jasaan Branch' }
                     ]
-                ).map((b) => (
-                  <button
-                    key={b.id || b.fullName}
-                    type="button"
-                    onClick={() => setSelectedBranch(b.fullName)}
-                    className={`py-3 px-3 rounded-2xl border text-xs font-bold transition-all text-center cursor-pointer ${
-                      cleanBranchName(selectedBranch).toLowerCase() === b.displayName.toLowerCase()
-                        ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] shadow-xs'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {b.displayName}
-                  </button>
-                ))}
+                ).map((b) => {
+                  const availInfo = branchAvailability.find(
+                    ba => cleanBranchName(ba.displayName || ba.branchName).toLowerCase() === b.displayName.toLowerCase()
+                  );
+                  const isAvailable = availInfo ? availInfo.isAvailable : true;
+                  const isSelected = cleanBranchName(selectedBranch).toLowerCase() === b.displayName.toLowerCase();
+
+                  return (
+                    <button
+                      key={b.id || b.fullName}
+                      type="button"
+                      disabled={!isAvailable}
+                      onClick={() => {
+                        if (isAvailable) {
+                          setSelectedBranch(b.fullName);
+                        }
+                      }}
+                      className={`py-3 px-2.5 rounded-2xl border text-xs font-bold transition-all text-center relative flex flex-col items-center justify-center gap-0.5 ${
+                        !isAvailable
+                          ? 'border-gray-200 bg-gray-50/70 text-gray-400 opacity-60 cursor-not-allowed shadow-none'
+                          : isSelected
+                            ? 'border-[#bd00ff] bg-purple-50 text-[#bd00ff] shadow-xs cursor-pointer'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 cursor-pointer'
+                      }`}
+                      title={!isAvailable ? (availInfo?.reason || `${b.displayName} is unavailable for this order`) : `Select ${b.displayName} Branch`}
+                    >
+                      <span className="truncate w-full">{b.displayName}</span>
+                      {!isAvailable && (
+                        <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-tight">
+                          Unavailable
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Reasons for unavailable branches */}
+              {branchAvailability.some(ba => !ba.isAvailable && ba.reason) && (
+                <div className="flex flex-col gap-1.5 mt-0.5">
+                  {branchAvailability
+                    .filter(ba => !ba.isAvailable && ba.reason)
+                    .map((ba) => (
+                      <div
+                        key={ba.branchId || ba.displayName}
+                        className="flex items-start gap-2 text-[11px] text-amber-800 bg-amber-50/80 border border-amber-200/70 rounded-xl px-3 py-2 leading-relaxed animate-in fade-in"
+                      >
+                        <AlertCircle size={13} className="text-amber-600 shrink-0 mt-0.5" />
+                        <span>
+                          <strong className="font-bold text-amber-950">{ba.displayName}:</strong> {ba.reason}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Prominent warning if NO branches can fulfill the order */}
+              {!hasAnyAvailableBranch && !checkingAvailability && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3 text-xs shadow-xs animate-in fade-in mt-1">
+                  <AlertCircle className="text-rose-600 shrink-0 mt-0.5" size={18} />
+                  <div>
+                    <p className="font-bold text-sm text-rose-950 m-0">No Pickup Branch Available</p>
+                    <p className="mt-1 text-rose-800 m-0 leading-relaxed">
+                      One or more items in your order are currently unavailable in all branches. Please adjust your order quantity or remove the unavailable item before continuing.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Section 1: Payment Method Selection */}
@@ -1050,40 +1181,68 @@ function CustomerPaymentContent() {
               </label>
 
               {/* Submit / Place Order Button */}
-              <button
-                type="button"
-                disabled={submitting || !agreedTerms || loading}
-                onClick={handlePlaceOrder}
-                className={`w-full py-4 px-6 rounded-2xl font-black text-sm tracking-wide text-white transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                  method === 'gcash'
-                    ? (!receiptFile ? 'bg-[#005ce6] hover:bg-[#0047b3] shadow-blue-500/20' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20')
-                    : 'bg-[#bd00ff] hover:bg-[#9c00d6] shadow-purple-500/25'
-                }`}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span>Processing Order...</span>
-                  </>
-                ) : method === 'gcash' ? (
-                  !receiptFile ? (
-                    <>
-                      <UploadCloud size={18} />
-                      <span>Upload GCash Receipt</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck size={18} />
-                      <span>Submit Payment for Verification</span>
-                    </>
-                  )
-                ) : (
-                  <>
-                    <ShoppingBag size={18} />
-                    <span>Place Order (Cash on Pickup)</span>
-                  </>
-                )}
-              </button>
+              {(() => {
+                const currentClean = cleanBranchName(selectedBranch).toLowerCase();
+                const currentAvail = branchAvailability.find(
+                  ba => cleanBranchName(ba.displayName || ba.branchName).toLowerCase() === currentClean
+                );
+                const isCurrentBranchValid = currentAvail ? currentAvail.isAvailable : true;
+                const isBlocked = submitting || !agreedTerms || loading || !hasAnyAvailableBranch || checkingAvailability || !isCurrentBranchValid;
+
+                return (
+                  <button
+                    type="button"
+                    disabled={isBlocked}
+                    onClick={handlePlaceOrder}
+                    className={`w-full py-4 px-6 rounded-2xl font-black text-sm tracking-wide text-white transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50 disabled:cursor-not-allowed ${
+                      !hasAnyAvailableBranch || !isCurrentBranchValid
+                        ? 'bg-gray-400 cursor-not-allowed shadow-none'
+                        : method === 'gcash'
+                          ? (!receiptFile ? 'bg-[#005ce6] hover:bg-[#0047b3] shadow-blue-500/20' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20')
+                          : 'bg-[#bd00ff] hover:bg-[#9c00d6] shadow-purple-500/25'
+                    }`}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Processing Order...</span>
+                      </>
+                    ) : checkingAvailability ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Checking Stock Availability...</span>
+                      </>
+                    ) : !hasAnyAvailableBranch ? (
+                      <>
+                        <AlertCircle size={18} />
+                        <span>No Pickup Branch Available</span>
+                      </>
+                    ) : !isCurrentBranchValid ? (
+                      <>
+                        <AlertCircle size={18} />
+                        <span>Selected Branch Unavailable</span>
+                      </>
+                    ) : method === 'gcash' ? (
+                      !receiptFile ? (
+                        <>
+                          <UploadCloud size={18} />
+                          <span>Upload GCash Receipt</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck size={18} />
+                          <span>Submit Payment for Verification</span>
+                        </>
+                      )
+                    ) : (
+                      <>
+                        <ShoppingBag size={18} />
+                        <span>Place Order (Cash on Pickup)</span>
+                      </>
+                    )}
+                  </button>
+                );
+              })()}
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-gray-400 font-medium pt-1">
                 <ShieldCheck size={14} className="text-emerald-500" />

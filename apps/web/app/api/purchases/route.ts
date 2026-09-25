@@ -204,24 +204,135 @@ export async function POST(req: Request) {
 
         const deviceMap = new Map(devices.map(d => [d.id, d]));
 
-        // Validate stock for all items
+        // Validate stock for all items at the selected branch
         for (const item of cartItems) {
           const device = deviceMap.get(item.deviceId);
           if (!device) {
             throw new Error('Product not found in inventory');
           }
-          if (device.stock < item.quantity) {
-            throw new Error(`Insufficient stock for "${device.name}". Only ${device.stock} left in stock.`);
+
+          let parsedVars: any[] = [];
+          if (item.variations) {
+            try {
+              parsedVars = typeof item.variations === 'string' ? JSON.parse(item.variations) : item.variations;
+            } catch (e) {}
+          }
+
+          if (parsedVars.length > 0) {
+            for (const pv of parsedVars) {
+              const varId = pv.id || pv;
+              const bStock = await tx.branchStock.findFirst({
+                where: {
+                  deviceId: item.deviceId,
+                  variationId: varId,
+                  branch: { equals: operatingBranch, mode: 'insensitive' }
+                }
+              });
+
+              const availableStock = bStock ? bStock.stock : ((device.branch?.toLowerCase() === operatingBranch.toLowerCase()) ? (pv.stock ?? device.stock) : 0);
+              const varName = pv.name ? ` (${pv.name})` : '';
+
+              if (availableStock < item.quantity) {
+                if (availableStock <= 0) {
+                  throw new Error(`"${device.name}${varName}" is out of stock at ${operatingBranch} Branch. Please select another pickup branch.`);
+                }
+                throw new Error(`Only ${availableStock} ${availableStock === 1 ? 'unit' : 'units'} of "${device.name}${varName}" ${availableStock === 1 ? 'is' : 'are'} available at ${operatingBranch} Branch, but you requested ${item.quantity}.`);
+              }
+            }
+          } else {
+            const bStock = await tx.branchStock.findFirst({
+              where: {
+                deviceId: item.deviceId,
+                variationId: null,
+                branch: { equals: operatingBranch, mode: 'insensitive' }
+              }
+            });
+
+            const availableStock = bStock ? bStock.stock : ((device.branch?.toLowerCase() === operatingBranch.toLowerCase()) ? device.stock : 0);
+            if (availableStock < item.quantity) {
+              if (availableStock <= 0) {
+                throw new Error(`"${device.name}" is out of stock at ${operatingBranch} Branch. Please select another pickup branch.`);
+              }
+              throw new Error(`Only ${availableStock} ${availableStock === 1 ? 'unit' : 'units'} of "${device.name}" ${availableStock === 1 ? 'is' : 'are'} available at ${operatingBranch} Branch, but you requested ${item.quantity}.`);
+            }
           }
         }
 
-        // Decrement stock for all target devices
+        // Decrement stock for all target devices and branch stocks
         for (const item of cartItems) {
+          const device = deviceMap.get(item.deviceId);
+          let parsedVars: any[] = [];
+          if (item.variations) {
+            try {
+              parsedVars = typeof item.variations === 'string' ? JSON.parse(item.variations) : item.variations;
+            } catch (e) {}
+          }
+
+          if (parsedVars.length > 0) {
+            for (const pv of parsedVars) {
+              const varId = pv.id || pv;
+              const bStock = await tx.branchStock.findFirst({
+                where: {
+                  deviceId: item.deviceId,
+                  variationId: varId,
+                  branch: { equals: operatingBranch, mode: 'insensitive' }
+                }
+              });
+
+              if (bStock) {
+                await tx.branchStock.update({
+                  where: { id: bStock.id },
+                  data: {
+                    stock: { decrement: item.quantity },
+                    sold: { increment: item.quantity }
+                  }
+                });
+              }
+            }
+          } else {
+            const bStock = await tx.branchStock.findFirst({
+              where: {
+                deviceId: item.deviceId,
+                variationId: null,
+                branch: { equals: operatingBranch, mode: 'insensitive' }
+              }
+            });
+
+            if (bStock) {
+              await tx.branchStock.update({
+                where: { id: bStock.id },
+                data: {
+                  stock: { decrement: item.quantity },
+                  sold: { increment: item.quantity }
+                }
+              });
+            }
+          }
+
+          // Decrement aggregate device stock
           await tx.device.update({
             where: { id: item.deviceId },
             data: {
               stock: { decrement: item.quantity },
               sold: { increment: item.quantity }
+            }
+          });
+
+          // Create stock movement record
+          await tx.stockMovement.create({
+            data: {
+              type: 'SALE',
+              deviceId: item.deviceId,
+              variationId: parsedVars[0]?.id || null,
+              productId: `${device?.name || 'Item'}-CART`,
+              productName: device?.name || 'Item',
+              branch: operatingBranch,
+              quantity: item.quantity,
+              previousStock: device?.stock || 0,
+              newStock: Math.max(0, (device?.stock || 0) - item.quantity),
+              notes: `Cart Purchase #${cleanRefId} (${source || 'Online'})`,
+              performedBy: session.name || session.email || 'Customer',
+              userRole: session.role
             }
           });
         }
@@ -349,33 +460,79 @@ export async function POST(req: Request) {
       const targetProdId = variationRecord?.productId || `${device.name}-STD`;
       const targetName = variationRecord ? `${device.name} (${variationRecord.name})` : device.name;
 
-      // Locate branch stock
-      const branchStock = await tx.branchStock.findFirst({
-        where: {
-          deviceId: deviceId,
-          variationId: varId,
-          branch: operatingBranch
+      // Validate all selected variations at the operating branch
+      if (parsedVars.length > 0) {
+        for (const pv of parsedVars) {
+          const vRec = device.variations.find(v => v.id === pv.id || (v.name && pv.name && v.name.toLowerCase() === pv.name.toLowerCase()));
+          const vId = vRec?.id || pv.id;
+          const bStock = await tx.branchStock.findFirst({
+            where: {
+              deviceId: deviceId,
+              variationId: vId,
+              branch: { equals: operatingBranch, mode: 'insensitive' }
+            }
+          });
+
+          const currentStock = bStock ? bStock.stock : ((device.branch?.toLowerCase() === operatingBranch.toLowerCase()) ? (pv.stock ?? device.stock) : 0);
+          const vLabel = pv.name ? ` (${pv.name})` : '';
+
+          if (currentStock < reqQty) {
+            if (currentStock <= 0) {
+              throw new Error(`"${device.name}${vLabel}" is out of stock at ${operatingBranch} Branch. Please select another pickup branch.`);
+            }
+            throw new Error(`Only ${currentStock} ${currentStock === 1 ? 'unit' : 'units'} of "${device.name}${vLabel}" ${currentStock === 1 ? 'is' : 'are'} available at ${operatingBranch} Branch, but you requested ${reqQty}.`);
+          }
         }
-      });
 
-      const currentBStock = branchStock ? branchStock.stock : (device.stock || 0);
+        // Decrement branch stocks for all variations
+        for (const pv of parsedVars) {
+          const vRec = device.variations.find(v => v.id === pv.id || (v.name && pv.name && v.name.toLowerCase() === pv.name.toLowerCase()));
+          const vId = vRec?.id || pv.id;
+          const bStock = await tx.branchStock.findFirst({
+            where: {
+              deviceId: deviceId,
+              variationId: vId,
+              branch: { equals: operatingBranch, mode: 'insensitive' }
+            }
+          });
 
-      if (currentBStock < reqQty) {
-        throw new Error(`Insufficient stock for "${targetName}" in ${operatingBranch} branch. Only ${currentBStock} left in stock.`);
-      }
-
-      // Decrement branch-specific stock atomically
-      let previousStockVal = currentBStock;
-      let newStockVal = Math.max(0, currentBStock - reqQty);
-
-      if (branchStock) {
-        await tx.branchStock.update({
-          where: { id: branchStock.id },
-          data: {
-            stock: { decrement: reqQty },
-            sold: { increment: reqQty }
+          if (bStock) {
+            await tx.branchStock.update({
+              where: { id: bStock.id },
+              data: {
+                stock: { decrement: reqQty },
+                sold: { increment: reqQty }
+              }
+            });
+          }
+        }
+      } else {
+        // No variations
+        const bStock = await tx.branchStock.findFirst({
+          where: {
+            deviceId: deviceId,
+            variationId: null,
+            branch: { equals: operatingBranch, mode: 'insensitive' }
           }
         });
+
+        const currentStock = bStock ? bStock.stock : ((device.branch?.toLowerCase() === operatingBranch.toLowerCase()) ? device.stock : 0);
+        if (currentStock < reqQty) {
+          if (currentStock <= 0) {
+            throw new Error(`"${device.name}" is out of stock at ${operatingBranch} Branch. Please select another pickup branch.`);
+          }
+          throw new Error(`Only ${currentStock} ${currentStock === 1 ? 'unit' : 'units'} of "${device.name}" ${currentStock === 1 ? 'is' : 'are'} available at ${operatingBranch} Branch, but you requested ${reqQty}.`);
+        }
+
+        if (bStock) {
+          await tx.branchStock.update({
+            where: { id: bStock.id },
+            data: {
+              stock: { decrement: reqQty },
+              sold: { increment: reqQty }
+            }
+          });
+        }
       }
 
       // Also update aggregate device stock
@@ -397,8 +554,8 @@ export async function POST(req: Request) {
           productName: targetName,
           branch: operatingBranch,
           quantity: reqQty,
-          previousStock: previousStockVal,
-          newStock: newStockVal,
+          previousStock: device.stock || 0,
+          newStock: Math.max(0, (device.stock || 0) - reqQty),
           notes: `Purchase #${cleanRefId} (${source || 'In-Store POS'})`,
           performedBy: session.name || session.email || 'Customer',
           userRole: session.role
