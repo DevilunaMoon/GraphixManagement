@@ -168,23 +168,44 @@ export default function CustomerDigitalReceiptCard({
   const shortTransId = formatDisplayInvoiceId(transactionId, branchLocation);
   const storeAgent = 'ONLINE CHECKOUT';
 
-  // Build exact plain text receipt for Copy & Download .txt
-  const separator = '--------------------------------------------------';
-  const doubleSeparator = '==================================================';
+  // Build exact plain text receipt for Copy, Download .txt, and PDF Export
+  const LINE_WIDTH = 40;
+  const separator = '-'.repeat(LINE_WIDTH);
+  const doubleSeparator = '='.repeat(LINE_WIDTH);
 
-  let receiptText = `${doubleSeparator}\n                  GRAPHIX STORE\n                 ${branchLocation}\n              ${machineId}\n              ${timestamp}\n${separator}\nSALES INVOICE\n${shortTransId}\n${paymentMethod === 'Cash' ? 'TERMS: CASH ON PICKUP (8-HOUR CLAIM LIMIT)\n' : ''}${separator}\n`;
+  const centerText = (text: string, width = LINE_WIDTH): string => {
+    const clean = text.trim();
+    if (clean.length >= width) return clean;
+    const leftPad = Math.floor((width - clean.length) / 2);
+    return ' '.repeat(leftPad) + clean;
+  };
+
+  const padRow = (left: string, right: string, width = LINE_WIDTH): string => {
+    const available = width - left.length - right.length;
+    if (available <= 0) return `${left} ${right}`;
+    return left + ' '.repeat(available) + right;
+  };
+
+  let receiptText = `${doubleSeparator}\n` +
+    `${centerText('GRAPHIX STORE')}\n` +
+    `${centerText(branchLocation)}\n` +
+    `${centerText(machineId)}\n` +
+    `${centerText(timestamp)}\n` +
+    `${separator}\n` +
+    `SALES INVOICE\n` +
+    `${shortTransId}\n` +
+    `${paymentMethod === 'Cash' ? 'TERMS: CASH ON PICKUP (8-HOUR CLAIM LIMIT)\n' : ''}` +
+    `${separator}\n`;
 
   resolvedItems.forEach((item) => {
     const itemName = item.name.toUpperCase();
     const itemTotalStr = `${item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V`;
-    const line1Pad = Math.max(1, 50 - itemName.length - itemTotalStr.length);
-    receiptText += `${itemName}${' '.repeat(line1Pad)}${itemTotalStr}\n`;
+    receiptText += `${padRow(itemName, itemTotalStr)}\n`;
 
     const varPart = item.variations ? ` (${item.variations})` : '';
     const line2Left = `Item: ${item.quantity}x${varPart}`;
     const line2Right = `${item.quantity} @ ${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
-    receiptText += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
+    receiptText += `${padRow(line2Left, line2Right)}\n`;
 
     if (item.imei || data?.imei) {
       receiptText += `IMEI: ${item.imei || data?.imei}\n`;
@@ -194,37 +215,32 @@ export default function CustomerDigitalReceiptCard({
   });
 
   const totalStr = `Php ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const totalPad = Math.max(1, 50 - 'Total'.length - totalStr.length);
-  receiptText += `${separator}\nTotal${' '.repeat(totalPad)}${totalStr}\n`;
+  receiptText += `${separator}\n${padRow('Total', totalStr)}\n`;
 
   if (paymentMethod === 'Cash') {
     const cashStr = `Php ${(tenderedCash || grandTotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const cashPad = Math.max(1, 50 - 'Cash'.length - cashStr.length);
-    receiptText += `Cash${' '.repeat(cashPad)}${cashStr}\n`;
+    receiptText += `${padRow('Cash', cashStr)}\n`;
 
     const changeStr = `Php ${changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const changePad = Math.max(1, 50 - 'Change'.length - changeStr.length);
-    receiptText += `Change${' '.repeat(changePad)}${changeStr}\n`;
+    receiptText += `${padRow('Change', changeStr)}\n`;
   } else {
     const gcashStr = `Php ${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    const gcashPad = Math.max(1, 50 - 'GCash'.length - gcashStr.length);
-    receiptText += `GCash${' '.repeat(gcashPad)}${gcashStr}\n`;
+    receiptText += `${padRow('GCash', gcashStr)}\n`;
 
     const changeStr = `Php 0.00`;
-    const changePad = Math.max(1, 50 - 'Change'.length - changeStr.length);
-    receiptText += `Change${' '.repeat(changePad)}${changeStr}\n`;
+    receiptText += `${padRow('Change', changeStr)}\n`;
   }
 
   receiptText += `*** ${totalItemCount} ITEM(S) ***\n${separator}\n`;
 
   const vatableStr = vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  receiptText += `VATable Sales${' '.repeat(Math.max(1, 50 - 'VATable Sales'.length - vatableStr.length))}${vatableStr}\n`;
+  receiptText += `${padRow('VATable Sales', vatableStr)}\n`;
 
   const vatAmtStr = vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  receiptText += `VAT Amount${' '.repeat(Math.max(1, 50 - 'VAT Amount'.length - vatAmtStr.length))}${vatAmtStr}\n`;
+  receiptText += `${padRow('VAT Amount', vatAmtStr)}\n`;
 
-  receiptText += `VAT Exempt Sales${' '.repeat(Math.max(1, 50 - 'VAT Exempt Sales'.length - '0.00'.length))}0.00\n`;
-  receiptText += `Zero Rated Sales${' '.repeat(Math.max(1, 50 - 'Zero Rated Sales'.length - '0.00'.length))}0.00\n`;
+  receiptText += `${padRow('VAT Exempt Sales', '0.00')}\n`;
+  receiptText += `${padRow('Zero Rated Sales', '0.00')}\n`;
   receiptText += `${separator}\n`;
 
   receiptText += `Sold To: ${customerName}\n`;
@@ -234,7 +250,7 @@ export default function CustomerDigitalReceiptCard({
   receiptText += `Global Trans No. ${shortTransId}\n`;
   receiptText += `${separator}\n`;
   receiptText += `Thank you for shopping at GraphiX Store!\nKeep this receipt for warranty claims.\n`;
-  receiptText += `${doubleSeparator}`;
+  receiptText += `${doubleSeparator}\n`;
 
   // Action 1: Copy Receipt
   const handleCopyReceipt = async () => {
@@ -296,7 +312,7 @@ export default function CustomerDigitalReceiptCard({
     URL.revokeObjectURL(url);
   };
 
-  // Action 4: Download 80mm thermal-style PDF
+  // Action 4: Download 80mm thermal-style PDF without clipping
   const handleDownloadPDF = async () => {
     if (onDownload) {
       onDownload();
@@ -309,15 +325,28 @@ export default function CustomerDigitalReceiptCard({
     try {
       setIsExportingPDF(true);
       element.style.display = 'block';
-      element.style.position = 'absolute';
+      element.style.position = 'fixed';
       element.style.left = '-9999px';
       element.style.top = '0';
+      element.style.zIndex = '-999';
 
-      const content = element.firstElementChild as HTMLElement;
+      const content = (element.firstElementChild as HTMLElement) || element;
+      const measuredHeight = content.scrollHeight || content.offsetHeight;
+      const measuredWidth = content.scrollWidth || content.offsetWidth || 320;
+
       const canvas = await html2canvas(content, {
         scale: 3,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: measuredWidth,
+        height: measuredHeight,
+        windowWidth: measuredWidth,
+        windowHeight: measuredHeight + 100,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0
       });
 
       element.style.display = 'none';
@@ -325,7 +354,7 @@ export default function CustomerDigitalReceiptCard({
       element.style.left = '';
       element.style.top = '';
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const imgWidth = 80; // 80mm thermal width
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -335,7 +364,7 @@ export default function CustomerDigitalReceiptCard({
         format: [imgWidth, imgHeight]
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save(`GraphiX_Store_Receipt_${shortTransId.replace('#', '')}.pdf`);
     } catch (err) {
       console.error('Error generating 80mm PDF:', err);
@@ -611,17 +640,30 @@ export default function CustomerDigitalReceiptCard({
       </div>
 
       {/* 5. Hidden 80mm Thermal Receipt for High-Res PDF Export */}
-      <div id="thermal-80mm-printable" className="hidden print:block" style={{ display: 'none' }}>
+      <div 
+        id="thermal-80mm-printable" 
+        style={{ 
+          display: 'none', 
+          position: 'fixed', 
+          left: '-9999px', 
+          top: '0', 
+          width: '320px', 
+          backgroundColor: '#ffffff', 
+          zIndex: -999 
+        }}
+      >
         <div style={{
           fontFamily: "'Courier New', Courier, monospace",
-          width: "80mm",
-          color: "#000",
-          background: "#fff",
-          fontSize: "12px",
-          lineHeight: "1.35",
-          padding: "4mm",
+          width: "320px",
+          boxSizing: "border-box",
+          color: "#000000",
+          backgroundColor: "#ffffff",
+          fontSize: "11px",
+          lineHeight: "1.4",
+          padding: "16px 14px 28px 14px",
           margin: "0 auto",
-          whiteSpace: "pre-wrap"
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word"
         }}>
           {receiptText}
         </div>
