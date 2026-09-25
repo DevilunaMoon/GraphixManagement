@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
 import CountdownTimer from '../../components/Common/CountdownTimer';
+import { generateProductInventoryPDF } from '../../lib/inventory-pdf';
 
 type VariantData = {
   id?: string;
@@ -1035,53 +1036,32 @@ export default function CashierDevices() {
   // PDF Export
   const downloadPDF = async () => {
     try {
-      const res = await fetch(`/api/devices?branch=${encodeURIComponent(userBranch)}&limit=1000`);
+      let url = `/api/devices?branch=${encodeURIComponent(userBranch)}&limit=1000`;
+      if (selectedCondition !== 'all') {
+        url += `&condition=${encodeURIComponent(selectedCondition)}`;
+      }
+      if (selectedCategory !== 'All' && selectedCategory !== 'All Categories') {
+        url += `&categoryId=${encodeURIComponent(selectedCategory)}`;
+      }
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
       const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
 
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text(`GRAPHIX MANAGEMENT - INVENTORY REPORT (${userBranch.toUpperCase()} BRANCH)`, 14, 20);
-
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Generated on: ${new Date().toLocaleString()} | Cashier View`, 14, 26);
-
-      let y = 36;
-      doc.setFont("helvetica", "bold");
-      doc.setFillColor(92, 0, 153);
-      doc.rect(14, y - 6, 182, 8, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.text("Product Model", 16, y - 1);
-      doc.text("Brand/Category", 75, y - 1);
-      doc.text("Condition", 115, y - 1);
-      doc.text("Stock (Branch)", 140, y - 1);
-      doc.text("Price", 175, y - 1);
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      y += 6;
-
-      allDevices.forEach((d: any) => {
-        if (y > 275) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(String(d.name || '').slice(0, 32), 16, y);
-        doc.text(String(d.category?.name || d.type || 'Standard').slice(0, 20), 75, y);
-        doc.text(d.isPreOwned ? 'Pre-Owned' : 'New', 115, y);
-        doc.text(`${d.stock || 0} pcs`, 140, y);
-        doc.text(`₱ ${Number(d.price || 0).toLocaleString()}`, 175, y);
-        y += 7;
+      await generateProductInventoryPDF({
+        devices: allDevices,
+        branch: userBranch,
+        userRole: userRole || 'Cashier',
+        conditionFilter: selectedCondition,
+        searchQuery: searchQuery,
+        categoryFilter: selectedCategory
       });
-
-      doc.save(`Graphix_${userBranch}_Inventory_Report.pdf`);
     } catch (e) {
-      console.error(e);
-      alert("Failed to export PDF");
+      console.error("Failed to export Product Inventory PDF", e);
+      alert("Failed to export Product Inventory PDF");
     }
   };
 

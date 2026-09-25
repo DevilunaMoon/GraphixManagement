@@ -11,6 +11,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
 import CountdownTimer from '../../components/Common/CountdownTimer';
+import { generateProductInventoryPDF } from '../../lib/inventory-pdf';
 
 type VariantData = {
   id?: string;
@@ -1137,56 +1138,38 @@ export default function AdminInventory() {
   // Export PDF & Excel
   const downloadPDF = async () => {
     try {
-      const res = await fetch('/api/devices?limit=500');
-      const allDevices: any[] = await res.json();
-      const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF();
+      const activeBranch = isSuperAdmin ? selectedBranch : userBranch;
+      let url = `/api/devices?limit=1000`;
+      if (activeBranch && activeBranch !== 'all') {
+        url += `&branch=${encodeURIComponent(activeBranch)}`;
+      }
+      if (selectedCondition !== 'all') {
+        url += `&condition=${encodeURIComponent(selectedCondition)}`;
+      }
+      if (selectedCategory !== 'All' && selectedCategory !== 'All Categories') {
+        url += `&categoryId=${encodeURIComponent(selectedCategory)}`;
+      }
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
+      }
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(15);
-      doc.text("GRAPHIX MANAGEMENT - MULTI-BRANCH INVENTORY REPORT", 14, 18);
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.text(`Generated on: ${new Date().toLocaleString()} | Branch Filter: ${selectedBranch.toUpperCase()}`, 14, 24);
+      const res = await fetch(url);
+      const data = await res.json();
+      const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
 
-      let y = 35;
-      doc.setFillColor(92, 0, 153);
-      doc.rect(14, y - 5, 182, 7, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.text("Product Model", 16, y);
-      doc.text("Unit / Internal Storage", 70, y);
-      doc.text("Tagoloan", 125, y);
-      doc.text("Villanueva", 145, y);
-      doc.text("Jasaan", 168, y);
+      const roleLabel = isSuperAdmin ? 'Super Admin' : (userRole || 'Branch Admin');
 
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "normal");
-      y += 8;
-
-      (Array.isArray(allDevices) ? allDevices : []).forEach((d) => {
-        if (y > 275) { doc.addPage(); y = 20; }
-        const variants = d.variations && d.variations.length > 0 ? d.variations : [{ name: 'Standard', productId: `${d.name}-STD`, tagoloanStock: d.tagoloanStock, villanuevaStock: d.villanuevaStock, jasaanStock: d.jasaanStock }];
-
-        variants.forEach((v: any, vIdx: number) => {
-          if (vIdx === 0) {
-            doc.setFont("helvetica", "bold");
-            doc.text(String(d.name || '').substring(0, 25), 16, y);
-            doc.setFont("helvetica", "normal");
-          }
-          doc.text(`${v.name} (${v.productId || ''})`.substring(0, 28), 70, y);
-          doc.text(String(v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0), 128, y);
-          doc.text(String(v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0), 150, y);
-          doc.text(String(v.jasaanStock ?? v.branchStocks?.Jasaan ?? 0), 172, y);
-          y += 6;
-        });
-        y += 2;
+      await generateProductInventoryPDF({
+        devices: allDevices,
+        branch: activeBranch || 'All Branches',
+        userRole: roleLabel,
+        conditionFilter: selectedCondition,
+        searchQuery: searchQuery,
+        categoryFilter: selectedCategory
       });
-
-      doc.save(`Graphix_Inventory_Report_${selectedBranch}.pdf`);
     } catch (e) {
       console.error("Failed to generate PDF", e);
-      alert("Failed to export PDF file");
+      alert("Failed to export Product Inventory PDF");
     }
   };
 
