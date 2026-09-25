@@ -312,50 +312,32 @@ export default function CustomerDigitalReceiptCard({
     URL.revokeObjectURL(url);
   };
 
-  // Action 4: Download 80mm thermal-style PDF without clipping
+  const receiptRef = useRef<HTMLDivElement>(null);
+
+  // Action 4: Download 80mm styled visual PDF matching the on-screen receipt exactly
   const handleDownloadPDF = async () => {
     if (onDownload) {
       onDownload();
       return;
     }
 
-    const element = document.getElementById('thermal-80mm-printable');
+    const element = receiptRef.current || document.getElementById('onscreen-thermal-receipt');
     if (!element) return;
 
     try {
       setIsExportingPDF(true);
-      element.style.display = 'block';
-      element.style.position = 'fixed';
-      element.style.left = '-9999px';
-      element.style.top = '0';
-      element.style.zIndex = '-999';
 
-      const content = (element.firstElementChild as HTMLElement) || element;
-      const measuredHeight = content.scrollHeight || content.offsetHeight;
-      const measuredWidth = content.scrollWidth || content.offsetWidth || 320;
-
-      const canvas = await html2canvas(content, {
+      const canvas = await html2canvas(element, {
         scale: 3,
         useCORS: true,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#fafaf9',
         logging: false,
-        width: measuredWidth,
-        height: measuredHeight,
-        windowWidth: measuredWidth,
-        windowHeight: measuredHeight + 100,
-        x: 0,
-        y: 0,
-        scrollX: 0,
-        scrollY: 0
+        scrollY: 0,
+        scrollX: 0
       });
 
-      element.style.display = 'none';
-      element.style.position = '';
-      element.style.left = '';
-      element.style.top = '';
-
       const imgData = canvas.toDataURL('image/png', 1.0);
-      const imgWidth = 80; // 80mm thermal width
+      const imgWidth = 80; // Standard 80mm POS receipt width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       const pdf = new jsPDF({
@@ -367,8 +349,8 @@ export default function CustomerDigitalReceiptCard({
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save(`GraphiX_Store_Receipt_${shortTransId.replace('#', '')}.pdf`);
     } catch (err) {
-      console.error('Error generating 80mm PDF:', err);
-      window.print();
+      console.error('Error generating 80mm PDF receipt:', err);
+      handlePrint();
     } finally {
       setIsExportingPDF(false);
     }
@@ -444,7 +426,11 @@ export default function CustomerDigitalReceiptCard({
 
       {/* 3. On-screen 80mm Thermal Receipt Card */}
       <div className="flex justify-center w-full">
-        <div className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed">
+        <div 
+          ref={receiptRef}
+          id="onscreen-thermal-receipt" 
+          className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed"
+        >
           
           {/* Header & Store Info */}
           <div className="text-center pb-3 border-b border-dashed border-gray-300">
@@ -625,7 +611,7 @@ export default function CustomerDigitalReceiptCard({
             className="flex-1 flex justify-center items-center gap-2 py-3.5 px-4 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-sm rounded-xl cursor-pointer transition-all shadow-md hover:shadow-lg disabled:opacity-50 border-none"
           >
             <Download size={18} />
-            {isExportingPDF ? 'Exporting PDF...' : 'Download PDF Receipt (80mm)'}
+            {isExportingPDF ? 'Exporting PDF...' : 'Download PDF Receipt'}
           </button>
         )}
         {onReturnToDashboard && (
@@ -637,36 +623,6 @@ export default function CustomerDigitalReceiptCard({
             Return to Dashboard
           </button>
         )}
-      </div>
-
-      {/* 5. Hidden 80mm Thermal Receipt for High-Res PDF Export */}
-      <div 
-        id="thermal-80mm-printable" 
-        style={{ 
-          display: 'none', 
-          position: 'fixed', 
-          left: '-9999px', 
-          top: '0', 
-          width: '320px', 
-          backgroundColor: '#ffffff', 
-          zIndex: -999 
-        }}
-      >
-        <div style={{
-          fontFamily: "'Courier New', Courier, monospace",
-          width: "320px",
-          boxSizing: "border-box",
-          color: "#000000",
-          backgroundColor: "#ffffff",
-          fontSize: "11px",
-          lineHeight: "1.4",
-          padding: "16px 14px 28px 14px",
-          margin: "0 auto",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word"
-        }}>
-          {receiptText}
-        </div>
       </div>
 
     </div>
