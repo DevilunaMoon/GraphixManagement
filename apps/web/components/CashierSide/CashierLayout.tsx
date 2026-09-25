@@ -270,16 +270,30 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
             <h1 className="text-[20px] font-bold tracking-wide uppercase">Point of Sale System</h1>
           </div>
           <div className="flex gap-3 items-center">
-            {/* Branch Badge */}
+            {/* 1. Branch Badge */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/30">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               {cashier?.branch || 'Tagoloan'} Branch
             </div>
 
-            {/* Cashier Profile Quick Link */}
+            {/* 2. Notifications Button */}
+            <Link
+              href="/cashier/notifications"
+              title="Notifications"
+              className="relative text-white hover:scale-105 transition-transform p-2.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg shadow-sm outline-none border border-white/20 flex items-center justify-center"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+
+            {/* 3. Cashier Profile Button */}
             <button 
               onClick={() => router.push('/cashier/profile')}
-              className="flex items-center gap-2 text-white hover:scale-105 transition-transform p-1.5 cursor-pointer bg-white/10 rounded-lg shadow-sm outline-none border border-white/20"
+              className="flex items-center gap-2 text-white hover:scale-105 transition-transform p-1.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg shadow-sm outline-none border border-white/20"
               title="View Profile"
             >
               {cashier?.image ? (
@@ -291,17 +305,11 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
               )}
               <span className="text-sm font-semibold pr-1 hidden md:inline">{cashier?.name || 'Cashier'}</span>
             </button>
-             {/* Themes configuration button */}
+
+            {/* 4. Logout Button */}
             <button 
-              onClick={() => router.push('/cashier/themes')}
-              className="text-white hover:scale-105 transition-transform p-2.5 cursor-pointer bg-white/10 rounded-lg shadow-sm outline-none border-none"
-              title="Themes"
-            >
-              <Paintbrush size={20} />
-            </button>
-             <button 
               onClick={() => setIsLogoutModalOpen(true)}
-              className="text-white hover:scale-105 transition-transform p-2.5 cursor-pointer bg-white/10 rounded-lg shadow-sm outline-none border-none"
+              className="text-white hover:scale-105 transition-transform p-2.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg shadow-sm outline-none border border-white/20 flex items-center justify-center"
               title="Logout"
             >
               <LogOut size={20} />
