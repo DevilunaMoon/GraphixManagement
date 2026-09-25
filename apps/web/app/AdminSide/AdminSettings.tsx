@@ -70,8 +70,12 @@ export default function AdminSettings() {
 
           <SettingsItem 
             icon={<FileText className="text-[#BF00FF] w-7 h-7" />}
-            label="General Terms and Conditions"
-            sublabel="View store policies, warranty terms, and service agreements"
+            label="Terms & Privacy"
+            badge={!isSuperAdmin ? "View Only" : undefined}
+            sublabel={isSuperAdmin 
+              ? "Manage and edit store policies, terms & conditions, and privacy guidelines"
+              : "View store policies, warranty terms, and privacy guidelines"
+            }
             onClick={() => navigate('/admin/terms')}
           />
 
