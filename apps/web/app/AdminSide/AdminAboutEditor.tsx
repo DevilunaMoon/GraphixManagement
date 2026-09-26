@@ -10,6 +10,7 @@ import { useBranch } from '../../context/BranchContext';
 
 interface FacebookBranch {
   id: string;
+  branch?: string;
   title: string;
   link: string;
   image: string;
@@ -34,23 +35,48 @@ const DEFAULT_DOWNPAYMENT = `Online downpayments are not accepted on this websit
 const INITIAL_BRANCHES: FacebookBranch[] = [
   {
     id: 'branch-1',
-    title: 'Graphix Main Store',
-    link: 'https://www.facebook.com',
+    branch: 'Tagoloan',
+    title: 'Tagoloan Branch',
+    link: 'https://www.facebook.com/Graphixtagoloan',
     image: '/Images/storefront-bg.jpg'
   },
   {
     id: 'branch-2',
+    branch: 'Jasaan',
     title: 'Jasaan Branch',
-    link: 'https://www.facebook.com',
+    link: 'https://www.facebook.com/profile.php?id=61587565422103',
     image: '/Images/storefront-bg.jpg'
   },
   {
     id: 'branch-3',
+    branch: 'Villanueva',
     title: 'Villanueva Branch',
-    link: 'https://www.facebook.com',
+    link: 'https://www.facebook.com/GraceGeraldizoSaludares',
     image: '/Images/storefront-bg.jpg'
   }
 ];
+
+/**
+ * Match a branch entry by branch field, title, id, or index
+ */
+const matchBranch = (b: FacebookBranch, targetBranchName: string, index?: number): boolean => {
+  if (!b || !targetBranchName) return false;
+  const target = targetBranchName.toLowerCase().trim();
+  const bBranch = String(b.branch || '').toLowerCase().trim();
+  const bTitle = String(b.title || '').toLowerCase().trim();
+  const bId = String(b.id || '').toLowerCase().trim();
+
+  if (target === 'tagoloan') {
+    return bBranch === 'tagoloan' || bTitle.includes('tagoloan') || bTitle.includes('main') || bId.includes('tagoloan') || bId === 'branch-1' || index === 0;
+  }
+  if (target === 'jasaan') {
+    return bBranch === 'jasaan' || bTitle.includes('jasaan') || bId.includes('jasaan') || bId === 'branch-2' || index === 1;
+  }
+  if (target === 'villanueva') {
+    return bBranch === 'villanueva' || bTitle.includes('villanueva') || bId.includes('villanueva') || bId === 'branch-3' || index === 2;
+  }
+  return bBranch === target || bTitle.includes(target) || bId.includes(target);
+};
 
 /**
  * Client-side image compression helper using HTML Canvas
@@ -292,8 +318,9 @@ export default function AdminAboutEditor() {
             if (fbLinkRec || fbImgRec || fbTitleRec) {
               setBranches([{
                 id: 'branch-legacy',
-                title: fbTitleRec?.content || 'Graphix Main Store',
-                link: fbLinkRec?.content || 'https://www.facebook.com',
+                branch: 'Tagoloan',
+                title: fbTitleRec?.content || 'Tagoloan Branch',
+                link: fbLinkRec?.content || 'https://www.facebook.com/Graphixtagoloan',
                 image: fbImgRec?.content || '/Images/storefront-bg.jpg'
               }]);
             } else {
@@ -310,6 +337,7 @@ export default function AdminAboutEditor() {
   };
 
   const handleAddBranch = () => {
+    if (!isSuperAdmin) return;
     const newBranch: FacebookBranch = {
       id: `branch-${Date.now()}`,
       title: `Graphix Branch ${branches.length + 1}`,
@@ -324,6 +352,7 @@ export default function AdminAboutEditor() {
   };
 
   const handleRemoveBranch = (id: string) => {
+    if (!isSuperAdmin) return;
     if (branches.length === 1) {
       setToastMessage({ type: 'error', text: 'At least one Facebook store branch must be maintained.' });
       return;
@@ -382,38 +411,57 @@ export default function AdminAboutEditor() {
     setSaving(true);
     setToastMessage(null);
 
-    const itemsToSave = [
-      { type: 'ABOUT_MAIN', content: mainText },
-      { type: 'ABOUT_PURCHASE', content: purchasePolicy },
-      { type: 'ABOUT_DOWNPAYMENT', content: downpaymentPolicy },
-      { type: 'ABOUT_FACEBOOK_BRANCHES', content: JSON.stringify(branches) }
-    ];
-
     try {
-      const res = await fetch('/api/policies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ policies: itemsToSave })
-      });
+      if (isSuperAdmin) {
+        // Super Admin: Full Save for all policies and all branches
+        const itemsToSave = [
+          { type: 'ABOUT_MAIN', content: mainText },
+          { type: 'ABOUT_PURCHASE', content: purchasePolicy },
+          { type: 'ABOUT_DOWNPAYMENT', content: downpaymentPolicy },
+          { type: 'ABOUT_FACEBOOK_BRANCHES', content: JSON.stringify(branches) }
+        ];
 
-      if (res.ok) {
-        setToastMessage({ type: 'success', text: 'About page contents and all Facebook store branches updated successfully!' });
-      } else {
-        // Fallback to sequential saves if needed
-        let allOk = true;
-        for (const item of itemsToSave) {
-          const sRes = await fetch('/api/policies', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(item)
-          });
-          if (!sRes.ok) allOk = false;
-        }
+        const res = await fetch('/api/policies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ policies: itemsToSave })
+        });
 
-        if (allOk) {
+        if (res.ok) {
           setToastMessage({ type: 'success', text: 'About page contents and all Facebook store branches updated successfully!' });
         } else {
-          setToastMessage({ type: 'error', text: 'Some fields failed to save. Please try again.' });
+          const errData = await res.json();
+          setToastMessage({ type: 'error', text: errData.error || 'Failed to save changes.' });
+        }
+      } else {
+        // Branch Admin: Save ONLY the assigned branch Facebook store details
+        const assignedBranchData = branches.find((b, idx) => matchBranch(b, effectiveBranch, idx)) || {
+          id: `branch-${effectiveBranch.toLowerCase()}`,
+          branch: effectiveBranch,
+          title: `${effectiveBranch} Branch`,
+          link: 'https://www.facebook.com',
+          image: '/Images/storefront-bg.jpg'
+        };
+
+        const res = await fetch('/api/policies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'ABOUT_FACEBOOK_BRANCHES',
+            branchData: assignedBranchData
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setToastMessage({ 
+            type: 'success', 
+            text: data.message || `Facebook store details for ${effectiveBranch} Branch updated successfully!` 
+          });
+          fetchPolicies();
+        } else {
+          const errData = await res.json();
+          setToastMessage({ type: 'error', text: errData.error || 'Failed to save branch details.' });
         }
       }
     } catch (err) {
@@ -624,9 +672,16 @@ export default function AdminAboutEditor() {
 
             {/* Section 1: Main Platform Overview */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-lg border-b border-gray-100 pb-3">
-                <Info size={22} />
-                <span>Main About Overview</span>
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-lg">
+                  <Info size={22} />
+                  <span>Main About Overview</span>
+                </div>
+                {!isSuperAdmin && (
+                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
+                    Super Admin Only
+                  </span>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Customer Page Main Text</label>
@@ -634,7 +689,10 @@ export default function AdminAboutEditor() {
                   rows={6}
                   value={mainText}
                   onChange={(e) => setMainText(e.target.value)}
-                  className="w-full p-4 border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all"
+                  disabled={!isSuperAdmin}
+                  className={`w-full p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
+                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
+                  }`}
                   placeholder="Enter main platform description..."
                 />
               </div>
@@ -642,9 +700,16 @@ export default function AdminAboutEditor() {
 
             {/* Section 2: Purchase & Downpayment Policies */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <div className="flex items-center gap-2 text-purple-700 font-bold text-lg border-b border-gray-100 pb-3">
-                <ShoppingBag size={22} />
-                <span>Purchase & Downpayment Policies</span>
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-purple-700 font-bold text-lg">
+                  <ShoppingBag size={22} />
+                  <span>Purchase & Downpayment Policies</span>
+                </div>
+                {!isSuperAdmin && (
+                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
+                    Super Admin Only
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col gap-2">
@@ -653,7 +718,10 @@ export default function AdminAboutEditor() {
                   rows={3}
                   value={purchasePolicy}
                   onChange={(e) => setPurchasePolicy(e.target.value)}
-                  className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all"
+                  disabled={!isSuperAdmin}
+                  className={`w-full p-3.5 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
+                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
+                  }`}
                   placeholder="Enter online purchase policy statement..."
                 />
               </div>
@@ -664,36 +732,66 @@ export default function AdminAboutEditor() {
                   rows={4}
                   value={downpaymentPolicy}
                   onChange={(e) => setDownpaymentPolicy(e.target.value)}
-                  className="w-full p-3.5 border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff] text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all"
+                  disabled={!isSuperAdmin}
+                  className={`w-full p-3.5 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
+                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
+                  }`}
                   placeholder="Enter in-store downpayment notice..."
                 />
               </div>
             </div>
 
-            {/* Section 3: Multiple Facebook Store Branches */}
+            {/* Section 3: Facebook Store Branches */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                 <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
                   <Facebook size={22} />
-                  <span>Facebook Store Branches ({branches.length})</span>
+                  <span>
+                    {isSuperAdmin 
+                      ? `Facebook Store Branches (${branches.length})` 
+                      : `Facebook Store Branch — ${effectiveBranch} Branch`}
+                  </span>
+                  {!isSuperAdmin && (
+                    <span className="ml-1 px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold rounded-full">
+                      Assigned Branch
+                    </span>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddBranch}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 border-none cursor-pointer"
-                >
-                  <Plus size={16} /> Add Branch
-                </button>
+                {isSuperAdmin ? (
+                  <button
+                    type="button"
+                    onClick={handleAddBranch}
+                    className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 border-none cursor-pointer"
+                  >
+                    <Plus size={16} /> Add Branch
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-full">
+                    <Building2 size={14} /> {effectiveBranch} Admin
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col gap-6">
-                {branches.map((branch, idx) => (
+                {(isSuperAdmin 
+                  ? branches 
+                  : (branches.filter((b, idx) => matchBranch(b, effectiveBranch, idx)).length > 0
+                      ? branches.filter((b, idx) => matchBranch(b, effectiveBranch, idx))
+                      : [{
+                          id: `branch-${effectiveBranch.toLowerCase()}`,
+                          branch: effectiveBranch,
+                          title: `${effectiveBranch} Branch`,
+                          link: 'https://www.facebook.com',
+                          image: '/Images/storefront-bg.jpg'
+                        }]
+                    )
+                ).map((branch, idx) => (
                   <div key={branch.id} className="bg-blue-50/40 p-4 rounded-xl border border-blue-100 flex flex-col gap-3 relative">
                     <div className="flex items-center justify-between border-b border-blue-100/80 pb-2">
                       <span className="font-extrabold text-xs text-blue-800 uppercase tracking-wide flex items-center gap-1.5">
-                        <Building2 size={16} /> Branch #{idx + 1}
+                        <Building2 size={16} /> {isSuperAdmin ? `Branch #${idx + 1}` : `${effectiveBranch} Branch (Assigned Branch)`}
                       </span>
-                      {branches.length > 1 && (
+                      {isSuperAdmin && branches.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveBranch(branch.id)}
@@ -778,13 +876,15 @@ export default function AdminAboutEditor() {
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddBranch}
-                className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl border border-dashed border-gray-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Plus size={16} /> Add Another Store Branch Field
-              </button>
+              {isSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={handleAddBranch}
+                  className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl border border-dashed border-gray-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus size={16} /> Add Another Store Branch Field
+                </button>
+              )}
             </div>
           </div>
 

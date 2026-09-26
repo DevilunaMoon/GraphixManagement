@@ -5,6 +5,7 @@ import { Info, ShoppingBag, Store, CreditCard, Facebook, ExternalLink, Building2
 
 interface FacebookBranch {
   id: string;
+  branch?: string;
   title: string;
   link: string;
   image: string;
@@ -19,20 +20,23 @@ const DEFAULT_DOWNPAYMENT = `Online downpayments are not accepted on this websit
 const INITIAL_BRANCHES: FacebookBranch[] = [
   {
     id: 'branch-1',
-    title: 'Graphix Main Store',
-    link: 'https://www.facebook.com',
+    branch: 'Tagoloan',
+    title: 'Tagoloan Branch',
+    link: 'https://www.facebook.com/Graphixtagoloan',
     image: '/Images/storefront-bg.jpg'
   },
   {
     id: 'branch-2',
+    branch: 'Jasaan',
     title: 'Jasaan Branch',
-    link: 'https://www.facebook.com',
+    link: 'https://www.facebook.com/profile.php?id=61587565422103',
     image: '/Images/storefront-bg.jpg'
   },
   {
     id: 'branch-3',
+    branch: 'Villanueva',
     title: 'Villanueva Branch',
-    link: 'https://www.facebook.com',
+    link: 'https://www.facebook.com/GraceGeraldizoSaludares',
     image: '/Images/storefront-bg.jpg'
   }
 ];
