@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { GRAPHIX_LOGO_BASE64 } from './graphix-logo-base64';
 
 export interface InventoryDeviceItem {
   id?: string;
@@ -300,34 +301,49 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
 
   // Helper: Draw Main Document Header & Summary Cards on Page 1
   function drawFirstPageHeader(): number {
+    const logoX = margin;
+    const logoY = 12.5;
+    const logoSize = 16; // 16x16 mm
+
+    // Render Official Graphix Logo
+    if (GRAPHIX_LOGO_BASE64) {
+      try {
+        doc.addImage(GRAPHIX_LOGO_BASE64, 'JPEG', logoX, logoY, logoSize, logoSize);
+      } catch (err) {
+        console.warn('Could not render Graphix logo in PDF:', err);
+      }
+    }
+
+    const titleX = logoX + logoSize + 4;
+
     // Brand Title
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
+    doc.setFontSize(15);
     doc.setTextColor(92, 0, 153); // Graphix Purple
-    doc.text('GRAPHIX MANAGEMENT', margin, 18);
+    doc.text('GRAPHIX MANAGEMENT', titleX, 17.5);
 
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(15, 23, 42); // Slate 900
-    doc.text('PRODUCT INVENTORY', margin, 24);
+    doc.text('PRODUCT INVENTORY', titleX, 23);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(92, 0, 153);
-    doc.text(branchDisplay, margin, 30);
+    doc.text(branchDisplay, titleX, 28);
 
     // Meta (Right aligned)
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(100, 116, 139); // Slate 500
-    doc.text(generatedMeta, pageWidth - margin, 24, { align: 'right' });
+    doc.text(generatedMeta, pageWidth - margin, 23, { align: 'right' });
 
     // Subtle horizontal divider line
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.4);
-    doc.line(margin, 34, pageWidth - margin, 34);
+    doc.line(margin, 31.5, pageWidth - margin, 31.5);
 
     // Summary Section (4 Cards)
-    const cardY = 37;
+    const cardY = 34.5;
     const cardHeight = 15;
     const cardWidth = (printableWidth - 9) / 4; // 4 cards with 3mm gaps
 
@@ -360,7 +376,7 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
       doc.text(card.val, cardX + 3.5, cardY + 11);
     });
 
-    return cardY + cardHeight + 6; // Y position for table header
+    return cardY + cardHeight + 5; // Y position for table header (54.5mm)
   }
 
   // Helper: Draw Repeated Table Header
@@ -391,10 +407,17 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
 
   // Helper: Subsequent Page Header
   function drawSubsequentPageHeader(): number {
+    const miniLogoSize = 6;
+    if (GRAPHIX_LOGO_BASE64) {
+      try {
+        doc.addImage(GRAPHIX_LOGO_BASE64, 'JPEG', margin, 9.5, miniLogoSize, miniLogoSize);
+      } catch (err) {}
+    }
+
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(92, 0, 153);
-    doc.text('GRAPHIX MANAGEMENT — PRODUCT INVENTORY', margin, 14);
+    doc.text('GRAPHIX MANAGEMENT — PRODUCT INVENTORY', margin + miniLogoSize + 2.5, 14);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
