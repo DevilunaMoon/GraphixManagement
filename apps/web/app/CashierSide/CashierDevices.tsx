@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { 
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
-  History, Smartphone, Building2, Package, Layers,
+  History, Smartphone, Building2, Package, Layers, MoreVertical,
   Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, ShoppingCart, ReceiptText
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -36,6 +36,9 @@ export default function CashierDevices() {
   const { styles } = useTheme();
   const { userBranch: contextBranch, userRole } = useBranch();
   const userBranch = contextBranch || 'Tagoloan';
+
+  // Action Menu State
+  const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
 
   // Search, Filter & Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -1443,28 +1446,68 @@ export default function CashierDevices() {
                           )}
                         </td>
                         <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button 
-                              onClick={() => handleOpenAddDiscount(prod)} 
-                              className="text-rose-600 hover:text-rose-800 p-2 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                              title="Manage Discount"
+                          <div className="relative inline-block text-left">
+                            <button
+                              type="button"
+                              onClick={() => setActiveActionMenuId(activeActionMenuId === prod.id ? null : prod.id)}
+                              className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                                activeActionMenuId === prod.id
+                                  ? 'bg-[#bd00ff] text-white border-[#bd00ff] shadow-sm'
+                                  : 'text-gray-500 hover:text-purple-900 hover:bg-purple-50 border-transparent hover:border-purple-200'
+                              }`}
+                              title="Product Actions"
                             >
-                              <Percent size={17} />
+                              <MoreVertical size={18} />
                             </button>
-                            <button 
-                              onClick={() => handleEditClick(prod)} 
-                              className="text-purple-600 hover:text-purple-800 p-2 hover:bg-purple-100 rounded-lg transition-colors cursor-pointer"
-                              title="Edit Model & Variants"
-                            >
-                              <Pencil size={17} />
-                            </button>
-                            <button 
-                              onClick={() => { setProductToDelete(prod.id); setDeleteModalOpen(true); }} 
-                              className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
-                              title="Delete Product"
-                            >
-                              <Trash2 size={17} />
-                            </button>
+
+                            {activeActionMenuId === prod.id && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-40" 
+                                  onClick={(e) => { e.stopPropagation(); setActiveActionMenuId(null); }} 
+                                />
+                                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-2xl shadow-xl border border-purple-200/80 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      handleEditClick(prod);
+                                    }}
+                                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Pencil size={15} className="text-purple-600" />
+                                    <span>Edit Product</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      handleOpenAddDiscount(prod);
+                                    }}
+                                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Percent size={15} className="text-rose-600" />
+                                    <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
+                                  </button>
+
+                                  <div className="my-1 border-t border-gray-100" />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      setProductToDelete(prod.id);
+                                      setDeleteModalOpen(true);
+                                    }}
+                                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Trash2 size={15} className="text-rose-600" />
+                                    <span>Delete Product</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
