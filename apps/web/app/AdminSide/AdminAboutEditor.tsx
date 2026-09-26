@@ -4,14 +4,25 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, Save, Info, ShoppingBag, Store, CreditCard, 
   Facebook, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle, RefreshCw,
-  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon, Zap
+  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon, Zap, Camera, Eye, X, ChevronLeft, ChevronRight, ShieldCheck
 } from 'lucide-react';
+import { useBranch } from '../../context/BranchContext';
 
 interface FacebookBranch {
   id: string;
   title: string;
   link: string;
   image: string;
+}
+
+interface BranchDocumentationItem {
+  id: string;
+  branch: string;
+  photoUrl: string;
+  title?: string | null;
+  caption?: string | null;
+  uploadedBy?: string | null;
+  createdAt: string;
 }
 
 const DEFAULT_MAIN = `This website revolutionizes the traditional e-commerce model by seamlessly integrating online retail with a transparent, service-based repair platform. Unlike standard online stores that simply sell products, this site offers a unique device monitoring feature that empowers customers by providing real-time, visual updates on their phone's repair progress. This level of transparency bridges the trust gap often found in service industries, allowing users to see their device being worked on from anywhere. By combining the convenience of purchasing accessories or repair parts with the peace of mind that comes from complete visibility into the service process, this site creates a customer-centric ecosystem that prioritizes both convenience and trust in the tech repair space.`;
@@ -93,10 +104,31 @@ const compressImageFile = (file: File, maxWidth = 1200, quality = 0.75): Promise
 };
 
 export default function AdminAboutEditor() {
+  const { isSuperAdmin, userRole, userBranch } = useBranch();
+  const effectiveBranch = userBranch || 'Tagoloan';
+
   const [mainText, setMainText] = useState(DEFAULT_MAIN);
   const [purchasePolicy, setPurchasePolicy] = useState(DEFAULT_PURCHASE);
   const [downpaymentPolicy, setDownpaymentPolicy] = useState(DEFAULT_DOWNPAYMENT);
   const [branches, setBranches] = useState<FacebookBranch[]>(INITIAL_BRANCHES);
+
+  // Branch Documentation state
+  const [branchPhotos, setBranchPhotos] = useState<BranchDocumentationItem[]>([]);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+  const [superAdminSelectedBranch, setSuperAdminSelectedBranch] = useState('Tagoloan');
+
+  // Upload modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadCaption, setUploadCaption] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isSubmittingPhoto, setIsSubmittingPhoto] = useState(false);
+
+  // Photo viewer / delete modal state
+  const [photoToView, setPhotoToView] = useState<BranchDocumentationItem | null>(null);
+  const [photoToDelete, setPhotoToDelete] = useState<BranchDocumentationItem | null>(null);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState(false);
 
   const [uploadingBranchId, setUploadingBranchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -105,7 +137,123 @@ export default function AdminAboutEditor() {
 
   useEffect(() => {
     fetchPolicies();
-  }, []);
+    fetchBranchDocumentation();
+  }, [isSuperAdmin, userBranch, superAdminSelectedBranch]);
+
+  const fetchBranchDocumentation = async () => {
+    setIsLoadingPhotos(true);
+    try {
+      const branchToQuery = isSuperAdmin ? superAdminSelectedBranch : effectiveBranch;
+      const res = await fetch(`/api/branch-documentation?branch=${encodeURIComponent(branchToQuery)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.photos)) {
+          setBranchPhotos(data.photos);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load branch documentation:', err);
+    } finally {
+      setIsLoadingPhotos(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      const file = files[0];
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setImagePreviewUrl(url);
+    }
+  };
+
+  const handleSubmitPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setToastMessage({ type: 'error', text: 'Please select an image file to upload.' });
+      return;
+    }
+
+    setIsSubmittingPhoto(true);
+    setToastMessage(null);
+
+    try {
+      // 1. Compress image client-side
+      const compressedBlob = await compressImageFile(selectedFile);
+      const formData = new FormData();
+      formData.append('file', compressedBlob, selectedFile.name);
+      formData.append('folder', `branch-documentation/${effectiveBranch.toLowerCase()}`);
+
+      // 2. Upload to Cloudinary
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        const errData = await uploadRes.json();
+        throw new Error(errData.error || 'Failed to upload photo image');
+      }
+
+      const uploadData = await uploadRes.json();
+      const photoUrl = uploadData.url;
+
+      // 3. Save documentation record in DB
+      const saveRes = await fetch('/api/branch-documentation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          photoUrl,
+          title: uploadTitle.trim() || null,
+          caption: uploadCaption.trim() || null
+        })
+      });
+
+      if (!saveRes.ok) {
+        const errData = await saveRes.json();
+        throw new Error(errData.error || 'Failed to save branch documentation');
+      }
+
+      setToastMessage({ type: 'success', text: `Photo uploaded successfully to ${effectiveBranch} Branch!` });
+      setIsUploadModalOpen(false);
+      setUploadTitle('');
+      setUploadCaption('');
+      setSelectedFile(null);
+      setImagePreviewUrl(null);
+      fetchBranchDocumentation();
+    } catch (err: any) {
+      console.error('Error submitting branch photo:', err);
+      setToastMessage({ type: 'error', text: err?.message || 'Failed to upload photo' });
+    } finally {
+      setIsSubmittingPhoto(false);
+    }
+  };
+
+  const handleConfirmDeletePhoto = async () => {
+    if (!photoToDelete) return;
+    setIsDeletingPhoto(true);
+
+    try {
+      const res = await fetch(`/api/branch-documentation/${photoToDelete.id}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        setToastMessage({ type: 'success', text: 'Photo deleted successfully.' });
+        setPhotoToDelete(null);
+        fetchBranchDocumentation();
+      } else {
+        const errData = await res.json();
+        setToastMessage({ type: 'error', text: errData.error || 'Failed to delete photo' });
+      }
+    } catch (err) {
+      console.error('Error deleting photo:', err);
+      setToastMessage({ type: 'error', text: 'An error occurred while deleting photo.' });
+    } finally {
+      setIsDeletingPhoto(false);
+    }
+  };
 
   const fetchPolicies = async () => {
     setLoading(true);
@@ -324,8 +472,143 @@ export default function AdminAboutEditor() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Left Column: Form Controls */}
-          <form onSubmit={handleSave} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
             
+            {/* Section 0: Branch Documentation */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-lg">
+                  <Camera size={22} />
+                  <span>
+                    {isSuperAdmin 
+                      ? 'Branch Documentation' 
+                      : `Branch Documentation — ${effectiveBranch} Branch`}
+                  </span>
+                </div>
+                {isSuperAdmin ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-bold rounded-full">
+                    <ShieldCheck size={14} /> Super Admin (View Only)
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsUploadModalOpen(true);
+                      setSelectedFile(null);
+                      setImagePreviewUrl(null);
+                      setUploadTitle('');
+                      setUploadCaption('');
+                    }}
+                    className="px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 border-none cursor-pointer shadow-sm"
+                  >
+                    <Plus size={16} /> Upload Photo
+                  </button>
+                )}
+              </div>
+
+              <p className="text-gray-500 text-xs font-medium m-0 leading-relaxed">
+                {isSuperAdmin 
+                  ? 'Browse uploaded photos and documentation representing each branch across the Graphix network. Super Admin has view-only access.'
+                  : 'Upload and manage photos that represent your assigned Graphix branch. These photos will appear in the Branch Showcase on the customer homepage.'}
+              </p>
+
+              {/* Super Admin Branch Switcher Tabs */}
+              {isSuperAdmin && (
+                <div className="flex items-center gap-2 p-1 bg-gray-50 rounded-xl border border-gray-200">
+                  {['Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setSuperAdminSelectedBranch(b)}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all border-none cursor-pointer ${
+                        superAdminSelectedBranch.toLowerCase() === b.toLowerCase()
+                          ? 'bg-[#bd00ff] text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 bg-transparent'
+                      }`}
+                    >
+                      {b} Branch
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Photos Gallery */}
+              {isLoadingPhotos ? (
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 size={28} className="animate-spin text-[#bd00ff]" />
+                </div>
+              ) : branchPhotos.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {branchPhotos.map((photo) => (
+                    <div 
+                      key={photo.id}
+                      className="group relative bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:border-purple-300 transition-all flex flex-col"
+                    >
+                      <div 
+                        className="relative aspect-video w-full overflow-hidden bg-gray-200 cursor-pointer"
+                        onClick={() => setPhotoToView(photo)}
+                      >
+                        <img 
+                          src={photo.photoUrl} 
+                          alt={photo.title || 'Branch photo'} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setPhotoToView(photo); }}
+                            className="p-1.5 bg-white/90 hover:bg-white text-gray-900 rounded-lg shadow-sm border-none cursor-pointer"
+                            title="View Photo"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          {!isSuperAdmin && (
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setPhotoToDelete(photo); }}
+                              className="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-sm border-none cursor-pointer"
+                              title="Delete Photo"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-2.5 flex flex-col gap-1 bg-white">
+                        <span className="font-bold text-xs text-gray-900 truncate">
+                          {photo.title || `${photo.branch} Photo`}
+                        </span>
+                        {photo.caption && (
+                          <span className="text-[10px] text-gray-500 line-clamp-1">
+                            {photo.caption}
+                          </span>
+                        )}
+                        <span className="text-[9px] text-gray-400">
+                          {new Date(photo.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 flex flex-col items-center gap-2">
+                  <Camera size={32} className="text-gray-300" />
+                  <span className="text-xs font-bold text-gray-500">
+                    No branch photos uploaded yet for {isSuperAdmin ? `${superAdminSelectedBranch} Branch` : `${effectiveBranch} Branch`}.
+                  </span>
+                  {!isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setIsUploadModalOpen(true)}
+                      className="mt-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] text-xs font-bold rounded-lg border border-purple-200 cursor-pointer transition-colors"
+                    >
+                      + Upload First Photo
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Section 1: Main Platform Overview */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
               <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-lg border-b border-gray-100 pb-3">
@@ -490,7 +773,7 @@ export default function AdminAboutEditor() {
                 <Plus size={16} /> Add Another Store Branch Field
               </button>
             </div>
-          </form>
+          </div>
 
           {/* Right Column: Live Customer Page Preview */}
           <div className="flex flex-col gap-4">
@@ -503,6 +786,36 @@ export default function AdminAboutEditor() {
 
             <div className="bg-[#f4f5f7] p-4 rounded-2xl border border-gray-200 flex flex-col gap-6 shadow-inner max-h-[850px] overflow-y-auto">
               
+              {/* Preview 0: Branch Showcase */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border-t-8 border-purple-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-purple-50 rounded-full flex justify-center items-center border border-purple-100 text-[#bd00ff] shrink-0">
+                    <Camera size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-extrabold text-gray-900 m-0">Our Branches Showcase</h3>
+                    <p className="text-xs text-gray-400 font-medium m-0 mt-0.5">Explore latest photos and documentation</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {['Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
+                    <div key={b} className="bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex flex-col">
+                      <div className="h-16 bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-400">
+                        {b === (isSuperAdmin ? superAdminSelectedBranch : effectiveBranch) && branchPhotos.length > 0 ? (
+                          <img src={branchPhotos[0]?.photoUrl} alt={b} className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{b} Photo</span>
+                        )}
+                      </div>
+                      <div className="p-1.5 text-center bg-white">
+                        <span className="text-[10px] font-bold text-gray-800 truncate block">{b} Branch</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Preview 1: About Main */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border-t-8 border-[#bd00ff]">
                 <div className="flex items-center gap-3 mb-4">
@@ -603,6 +916,198 @@ export default function AdminAboutEditor() {
         </div>
 
       </div>
+
+      {/* Upload Branch Photo Modal */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl flex flex-col gap-6 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 bg-purple-50 text-[#bd00ff] rounded-xl flex items-center justify-center">
+                  <Camera size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 m-0">Upload Branch Photo</h3>
+                  <span className="text-xs font-bold text-[#bd00ff]">{effectiveBranch} Branch</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsUploadModalOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition border-none cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPhoto} className="flex flex-col gap-4">
+              {/* File input */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-700 uppercase">Select Image *</label>
+                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-[#bd00ff] rounded-2xl p-4 bg-gray-50 transition-colors">
+                  {imagePreviewUrl ? (
+                    <div className="relative w-full h-44 rounded-xl overflow-hidden bg-black/5 flex items-center justify-center">
+                      <img src={imagePreviewUrl} alt="Upload preview" className="w-full h-full object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedFile(null); setImagePreviewUrl(null); }}
+                        className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-lg hover:bg-black/80 transition cursor-pointer border-none"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center gap-2 cursor-pointer py-6 w-full">
+                      <Upload size={32} className="text-purple-500" />
+                      <span className="text-xs font-bold text-gray-700">Click to choose a photo</span>
+                      <span className="text-[10px] text-gray-400">JPG, PNG, WebP (Auto-compressed)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Title */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase">Photo Title (Optional)</label>
+                <input
+                  type="text"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g. Store Interior & Service Counter"
+                  className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] text-xs font-medium text-gray-800"
+                />
+              </div>
+
+              {/* Caption */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 uppercase">Caption / Description (Optional)</label>
+                <textarea
+                  rows={2}
+                  value={uploadCaption}
+                  onChange={(e) => setUploadCaption(e.target.value)}
+                  placeholder="e.g. Our welcoming technician workstation at Tagoloan."
+                  className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] text-xs font-medium text-gray-800 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsUploadModalOpen(false)}
+                  disabled={isSubmittingPhoto}
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition border-none cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPhoto || !selectedFile}
+                  className="px-6 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white text-xs font-extrabold rounded-xl transition flex items-center gap-2 border-none cursor-pointer disabled:opacity-50 shadow-md"
+                >
+                  {isSubmittingPhoto ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={16} />
+                      <span>Upload to {effectiveBranch}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Photo Preview Modal */}
+      {photoToView && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPhotoToView(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 size={18} className="text-[#bd00ff]" />
+                <span className="font-extrabold text-sm text-gray-900">{photoToView.branch} Branch Documentation</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhotoToView(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg border-none bg-transparent cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="max-h-[60vh] bg-black flex items-center justify-center overflow-hidden">
+              <img src={photoToView.photoUrl} alt={photoToView.title || 'Photo'} className="max-h-[60vh] w-auto object-contain" />
+            </div>
+            <div className="p-5 flex flex-col gap-2 bg-white">
+              <h4 className="font-extrabold text-base text-gray-900 m-0">
+                {photoToView.title || `${photoToView.branch} Branch Photo`}
+              </h4>
+              {photoToView.caption && (
+                <p className="text-xs text-gray-600 m-0 leading-relaxed font-medium">
+                  {photoToView.caption}
+                </p>
+              )}
+              <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-100 mt-2">
+                <span>Uploaded: {new Date(photoToView.createdAt).toLocaleString()}</span>
+                {photoToView.uploadedBy && <span>By: {photoToView.uploadedBy}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {photoToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl flex flex-col gap-4 text-center animate-in zoom-in-95">
+            <div className="w-14 h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 size={26} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-gray-900 m-0">Delete Branch Photo?</h3>
+              <p className="text-xs text-gray-500 mt-1 m-0">
+                Are you sure you want to delete this photo from {photoToDelete.branch} branch? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setPhotoToDelete(null)}
+                disabled={isDeletingPhoto}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition border-none cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeletePhoto}
+                disabled={isDeletingPhoto}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold rounded-xl transition border-none cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingPhoto ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

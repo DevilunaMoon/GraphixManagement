@@ -422,4 +422,19 @@ model QuestionSequence {
   @@unique([branchCode, year])
 }
 
+model BranchDocumentation {
+  id         String   @id @default(cuid())
+  branch     String   // "Tagoloan" | "Villanueva" | "Jasaan"
+  branchId   String?
+  uploadedBy String?
+  photoUrl   String
+  title      String?
+  caption    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([branch])
+  @@index([createdAt])
+}
+
 

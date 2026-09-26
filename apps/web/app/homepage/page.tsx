@@ -7,7 +7,8 @@ import {
   MonitorSmartphone, ShoppingBag,
   ShieldCheck, Clock,
   ArrowRight, Sparkles, ArrowUp,
-  Facebook, ExternalLink, Building2
+  Facebook, ExternalLink, Building2,
+  Camera, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,6 +53,43 @@ export default function HomePage() {
   const [loadingPolicy, setLoadingPolicy] = useState(false);
 
   const [facebookBranches, setFacebookBranches] = useState<FacebookBranch[]>(INITIAL_BRANCHES);
+
+  // Branch Documentation Showcase State
+  const [latestBranchPhotos, setLatestBranchPhotos] = useState<Record<string, any>>({});
+  const [branchPhotosMap, setBranchPhotosMap] = useState<Record<string, any[]>>({
+    Tagoloan: [],
+    Villanueva: [],
+    Jasaan: []
+  });
+  const [activeBranchModal, setActiveBranchModal] = useState<string | null>(null);
+  const [modalPhotoIndex, setModalPhotoIndex] = useState(0);
+
+  useEffect(() => {
+    const fetchBranchDocumentation = async () => {
+      try {
+        const res = await fetch('/api/branch-documentation');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.latestByBranch) {
+            setLatestBranchPhotos(data.latestByBranch);
+          }
+          if (Array.isArray(data.photos)) {
+            const map: Record<string, any[]> = { Tagoloan: [], Villanueva: [], Jasaan: [] };
+            data.photos.forEach((p: any) => {
+              const rawB = p.branch || 'Tagoloan';
+              const bKey = rawB.charAt(0).toUpperCase() + rawB.slice(1).toLowerCase();
+              if (!map[bKey]) map[bKey] = [];
+              map[bKey].push(p);
+            });
+            setBranchPhotosMap(map);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load branch documentation:', err);
+      }
+    };
+    fetchBranchDocumentation();
+  }, []);
 
   const openPolicyModal = async (e: React.MouseEvent, type: string) => {
     e.preventDefault();
@@ -423,43 +461,92 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* About Section */}
+      {/* About Section -> Our Branches Showcase */}
       <section id="about" className="py-24 bg-gray-900 text-white border-y border-gray-800">
         <div className="max-w-7xl mx-auto px-6 flex flex-col gap-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="flex flex-col gap-6">
-              <div className="inline-flex w-max items-center gap-2 px-4 py-2 bg-white/10 rounded-lg font-bold text-sm text-[#e0b0ff]">
-                Why Choose Us
-              </div>
-              <h3 className="text-4xl md:text-5xl font-black text-white leading-tight">
-                Bridging the gap between service & transparency.
-              </h3>
-              <p className="text-lg text-gray-400 leading-relaxed max-w-lg">
-                We eliminated the anxiety of device repairs. Our system provides real-time, step-by-step visibility into your electronics' status.
-              </p>
-              <div className="flex gap-8 mt-6">
-                <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
-                  <span className="text-4xl font-black">24<span className="text-[#e0b0ff]">/7</span></span>
-                  <span className="text-gray-400 font-bold uppercase text-xs mt-1">Visibility</span>
-                </div>
-                <div className="flex flex-col bg-white/5 p-6 rounded-2xl border border-white/10 flex-1">
-                  <span className="text-4xl font-black">100<span className="text-[#e0b0ff]">%</span></span>
-                  <span className="text-gray-400 font-bold uppercase text-xs mt-1">Guarantee</span>
-                </div>
-              </div>
+          
+          {/* Section Header: Our Branches */}
+          <div className="flex flex-col gap-4 text-center max-w-3xl mx-auto">
+            <div className="inline-flex w-max mx-auto items-center gap-2 px-4 py-1.5 bg-purple-500/15 rounded-full font-extrabold text-xs text-[#e0b0ff] border border-purple-400/20 uppercase tracking-wider">
+              <Building2 size={15} /> Store Locations
             </div>
-            <div className="bg-[#111111] border border-gray-800 rounded-3xl p-4 shadow-xl flex flex-col w-full h-[400px] overflow-hidden relative">
-              <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3945.6080787723067!2d124.75142957478778!3d8.53737499150564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x32ffef54dd5fc27f%3A0xa3526601c268e1b1!2sGraphix!5e0!3m2!1sen!2sph!4v1778072713852!5m2!1sen!2sph" 
-                width="100%" 
-                height="100%" 
-                style={{ border: 0, borderRadius: '1rem' }} 
-                allowFullScreen={true} 
-                loading="lazy" 
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Store Location"
-              ></iframe>
-            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-white leading-tight m-0 tracking-tight">
+              Our Branches
+            </h2>
+            <p className="text-base md:text-lg text-gray-300 leading-relaxed font-medium m-0">
+              Explore our Graphix branches and see their latest photos and documentation.
+            </p>
+          </div>
+
+          {/* Exactly 3 Branch Categories: Tagoloan, Villanueva, Jasaan */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { name: 'Tagoloan', title: 'Tagoloan Branch', desc: 'Main Tech Center & Storefront' },
+              { name: 'Villanueva', title: 'Villanueva Branch', desc: 'Authorized Service & Sales Hub' },
+              { name: 'Jasaan', title: 'Jasaan Branch', desc: 'Express Repair & Device Depot' }
+            ].map((branch) => {
+              const latestPhoto = latestBranchPhotos[branch.name];
+              const branchPhotosList = branchPhotosMap[branch.name] || [];
+              const photosCount = branchPhotosList.length || (latestPhoto ? 1 : 0);
+
+              return (
+                <div
+                  key={branch.name}
+                  onClick={() => {
+                    setActiveBranchModal(branch.name);
+                    setModalPhotoIndex(0);
+                  }}
+                  className="bg-[#111111] border border-gray-800 hover:border-[#bd00ff]/70 rounded-3xl overflow-hidden shadow-2xl transition-all duration-300 hover:-translate-y-1.5 cursor-pointer group flex flex-col"
+                >
+                  <div className="relative w-full h-64 bg-gray-950 overflow-hidden">
+                    {latestPhoto?.photoUrl ? (
+                      <>
+                        <img
+                          src={latestPhoto.photoUrl}
+                          alt={latestPhoto.title || `${branch.title} photo`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gray-900/90">
+                        <Camera size={42} className="text-gray-600 mb-2 group-hover:text-[#bd00ff] transition-colors" />
+                        <span className="text-sm font-bold text-gray-400">No branch photos available yet.</span>
+                        <span className="text-xs text-gray-600 mt-1">Documentation coming soon</span>
+                      </div>
+                    )}
+
+                    <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/10 flex items-center gap-1.5 shadow-sm">
+                      <Camera size={13} className="text-[#e0b0ff]" />
+                      <span>{photosCount} {photosCount === 1 ? 'Photo' : 'Photos'}</span>
+                    </div>
+
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="inline-flex items-center gap-1.5 bg-[#8b00cc] text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full mb-1.5 shadow-sm">
+                        <Building2 size={11} /> Branch Showcase
+                      </div>
+                      <h3 className="text-2xl font-black text-white m-0 group-hover:text-[#e0b0ff] transition-colors tracking-tight">
+                        {branch.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="p-5 bg-[#141414] border-t border-gray-800 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-400 font-medium m-0">{branch.desc}</p>
+                      {latestPhoto?.title && (
+                        <p className="text-[11px] text-[#e0b0ff] truncate max-w-[200px] mt-1 m-0 font-semibold">
+                          Latest: {latestPhoto.title}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs font-extrabold text-[#e0b0ff] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                      View Photos <ArrowRight size={14} />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Facebook Store Branches Showcase */}
@@ -602,6 +689,151 @@ export default function HomePage() {
           <p>&copy; {new Date().getFullYear()} Graphix Management System.</p>
         </div>
       </footer>
+
+      {/* Branch Photo Showcase Modal */}
+      {activeBranchModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setActiveBranchModal(null)}
+        >
+          <div
+            className="bg-gray-900 border border-gray-800 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl animate-in zoom-in-95 text-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-800 flex items-center justify-between bg-black/40">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-[#e0b0ff] flex items-center justify-center border border-purple-500/30">
+                  <Building2 size={22} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-white m-0">
+                    {activeBranchModal} Branch Documentation
+                  </h3>
+                  <span className="text-xs text-gray-400 font-medium">
+                    Official store photos & facilities
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveBranchModal(null)}
+                className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition border-none bg-transparent cursor-pointer"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Content */}
+            {(() => {
+              const currentPhotos = branchPhotosMap[activeBranchModal] || [];
+              const hasPhotos = currentPhotos.length > 0;
+              const currentPhoto = hasPhotos ? currentPhotos[modalPhotoIndex] || currentPhotos[0] : null;
+
+              if (!hasPhotos || !currentPhoto) {
+                return (
+                  <div className="py-24 px-6 flex flex-col items-center justify-center text-center gap-4">
+                    <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center text-gray-500">
+                      <Camera size={36} />
+                    </div>
+                    <div className="max-w-md">
+                      <h4 className="text-xl font-bold text-white mb-1">No branch photos available yet.</h4>
+                      <p className="text-sm text-gray-400">
+                        The {activeBranchModal} Branch team has not uploaded documentation photos yet. Please check back soon!
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex flex-col flex-1 overflow-y-auto">
+                  {/* Main Image Stage */}
+                  <div className="relative w-full h-[380px] sm:h-[460px] bg-black flex items-center justify-center overflow-hidden select-none">
+                    <img
+                      src={currentPhoto.photoUrl}
+                      alt={currentPhoto.title || `${activeBranchModal} Photo`}
+                      className="max-h-full max-w-full object-contain"
+                    />
+
+                    {/* Navigation Arrows */}
+                    {currentPhotos.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setModalPhotoIndex((prev) => (prev > 0 ? prev - 1 : currentPhotos.length - 1))}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 text-white rounded-full transition border border-white/20 cursor-pointer shadow-lg"
+                          title="Previous Photo"
+                        >
+                          <ChevronLeft size={24} />
+                        </button>
+                        <button
+                          onClick={() => setModalPhotoIndex((prev) => (prev < currentPhotos.length - 1 ? prev + 1 : 0))}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 hover:bg-black/90 text-white rounded-full transition border border-white/20 cursor-pointer shadow-lg"
+                          title="Next Photo"
+                        >
+                          <ChevronRight size={24} />
+                        </button>
+                      </>
+                    )}
+
+                    {/* Counter Indicator */}
+                    <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/10">
+                      {modalPhotoIndex + 1} of {currentPhotos.length}
+                    </div>
+                  </div>
+
+                  {/* Photo Details & Thumbnails */}
+                  <div className="p-6 bg-gray-900 border-t border-gray-800 flex flex-col gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h4 className="text-lg font-bold text-white m-0">
+                          {currentPhoto.title || `${activeBranchModal} Branch Photo`}
+                        </h4>
+                        {currentPhoto.caption && (
+                          <p className="text-sm text-gray-400 mt-1 m-0 font-medium">
+                            {currentPhoto.caption}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
+                        Uploaded: {new Date(currentPhoto.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </span>
+                    </div>
+
+                    {/* Thumbnails if multiple */}
+                    {currentPhotos.length > 1 && (
+                      <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1">
+                        {currentPhotos.map((p, idx) => (
+                          <button
+                            key={p.id || idx}
+                            onClick={() => setModalPhotoIndex(idx)}
+                            className={`relative w-20 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer p-0 bg-transparent ${
+                              modalPhotoIndex === idx
+                                ? 'border-[#bd00ff] ring-2 ring-[#bd00ff]/30 scale-105'
+                                : 'border-gray-800 opacity-60 hover:opacity-100'
+                            }`}
+                          >
+                            <img src={p.photoUrl} alt="thumbnail" className="w-full h-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-800 bg-black/40 flex justify-end">
+              <button
+                onClick={() => setActiveBranchModal(null)}
+                className="px-6 py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold text-sm rounded-xl transition border border-gray-700 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {policyModalOpen && (
         <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
