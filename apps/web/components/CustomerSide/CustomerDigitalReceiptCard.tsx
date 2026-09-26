@@ -324,40 +324,352 @@ export default function CustomerDigitalReceiptCard({
       setIsExportingPDF(true);
 
       const pageWidth = 80; // 80mm POS standard width
-      const cardMarginX = 2.5;
-      const cardMarginY = 3;
-      const cardWidth = pageWidth - (cardMarginX * 2); // 75mm
-      const leftPad = 6.5; // left text coordinate (mm)
-      const rightPad = 73.5; // right text coordinate (mm)
+      const cardMarginX = 2; // 2mm card margin
+      const cardMarginY = 2.5; // 2.5mm top/bottom margin
+      const cardWidth = pageWidth - (cardMarginX * 2); // 76mm
+      const leftPad = 5.5; // inner content left (mm)
+      const rightPad = 74.5; // inner content right (mm)
       const centerX = 40; // center coordinate (mm)
 
-      // Measure height dynamically based on item count
-      let estimatedContentHeight = 6; // top card padding
-      estimatedContentHeight += 24; // header info & badge
-      estimatedContentHeight += 3; // divider
-      estimatedContentHeight += 9; // invoice title & short ID
-      estimatedContentHeight += 3; // divider
+      // Function to render content (dryRun to calculate exact height or live to draw)
+      const renderContent = (doc: jsPDF | null, startY: number): number => {
+        let y = startY;
 
-      resolvedItems.forEach(item => {
-        estimatedContentHeight += 8; // product name & total & variations
-        if (item.imei || data?.imei) {
-          estimatedContentHeight += 3.5;
+        // Helper for drawing dashed divider
+        const drawDivider = (divY: number) => {
+          if (doc) {
+            doc.setDrawColor(209, 213, 219);
+            doc.setLineWidth(0.35);
+            doc.setLineDashPattern([1, 1], 0);
+            doc.line(leftPad, divY, rightPad, divY);
+          }
+        };
+
+        // 1. Store Header
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10.5);
+          doc.setTextColor(0, 0, 0);
+          doc.text('GRAPHIX STORE', centerX, y, { align: 'center' });
         }
-      });
-      estimatedContentHeight += 3; // divider
+        y += 4.2;
 
-      estimatedContentHeight += 18; // total, cash/gcash, change, item count
-      estimatedContentHeight += 3; // divider
-      estimatedContentHeight += 15; // 4 VAT lines
-      estimatedContentHeight += 3; // divider
-      estimatedContentHeight += 18; // 5 customer lines
-      estimatedContentHeight += 3; // divider
-      estimatedContentHeight += 10; // 2 footer lines
-      estimatedContentHeight += 6; // bottom padding
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(31, 41, 55);
+          doc.text(branchLocation, centerX, y, { align: 'center' });
+        }
+        y += 3.6;
 
-      const cardHeight = estimatedContentHeight;
+        if (doc) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(107, 114, 128);
+          doc.text(machineId, centerX, y, { align: 'center' });
+        }
+        y += 3.4;
+
+        if (doc) {
+          doc.setFontSize(7);
+          doc.setTextColor(75, 85, 99);
+          doc.text(timestamp, centerX, y, { align: 'center' });
+        }
+        y += 2.5;
+
+        // Badge
+        const badgeHeight = 4.2;
+        const badgeY = y;
+        if (doc) {
+          doc.setLineWidth(0.25);
+          doc.setLineDashPattern([], 0);
+
+          if (isGcashOrder) {
+            if (isLocked) {
+              doc.setFillColor(239, 246, 255);
+              doc.setDrawColor(147, 197, 253);
+              const bw = 62;
+              doc.roundedRect(centerX - (bw / 2), badgeY, bw, badgeHeight, 1, 1, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(5.8);
+              doc.setTextColor(30, 64, 175);
+              doc.text('GCASH PAYMENT (FOR CASHIER VERIFICATION)', centerX, badgeY + 3, { align: 'center' });
+            } else {
+              doc.setFillColor(236, 253, 245);
+              doc.setDrawColor(110, 231, 183);
+              const bw = 54;
+              doc.roundedRect(centerX - (bw / 2), badgeY, bw, badgeHeight, 1, 1, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6);
+              doc.setTextColor(6, 95, 70);
+              doc.text('OFFICIAL SALES INVOICE (VERIFIED PAID)', centerX, badgeY + 3, { align: 'center' });
+            }
+          } else if (isCashOrder) {
+            if (isLocked) {
+              doc.setFillColor(254, 243, 199);
+              doc.setDrawColor(252, 211, 77);
+              const bw = 56;
+              doc.roundedRect(centerX - (bw / 2), badgeY, bw, badgeHeight, 1, 1, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(5.8);
+              doc.setTextColor(146, 64, 14);
+              doc.text('UNVERIFIED RESERVATION (8H CLAIM LIMIT)', centerX, badgeY + 3, { align: 'center' });
+            } else {
+              doc.setFillColor(254, 243, 199);
+              doc.setDrawColor(252, 211, 77);
+              const bw = 54;
+              doc.roundedRect(centerX - (bw / 2), badgeY, bw, badgeHeight, 1, 1, 'FD');
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6);
+              doc.setTextColor(146, 64, 14);
+              doc.text('OFFICIAL SALES INVOICE (VERIFIED PAID)', centerX, badgeY + 3, { align: 'center' });
+            }
+          }
+        }
+        y += badgeHeight + 3;
+
+        // Divider
+        drawDivider(y);
+        y += 4.5;
+
+        // 2. Invoice Title & ID
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(15, 23, 42);
+          const invoiceTitle = isLocked
+            ? (isGcashOrder ? 'GCASH PAYMENT PROOF (FOR VERIFICATION)' : 'RESERVATION CLAIM SLIP (UNPAID)')
+            : 'SALES INVOICE';
+          doc.text(invoiceTitle, centerX, y, { align: 'center' });
+        }
+        y += 3.8;
+
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(126, 34, 206);
+          doc.text(shortTransId, centerX, y, { align: 'center' });
+        }
+        y += 3.5;
+
+        // Divider
+        drawDivider(y);
+        y += 4.2;
+
+        // 3. Cart Items Breakdown
+        resolvedItems.forEach((item) => {
+          if (doc) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(0, 0, 0);
+            const nameText = item.name.toUpperCase();
+            const safeName = doc.splitTextToSize(nameText, 44);
+            doc.text(safeName[0] || nameText, leftPad, y);
+
+            const itemTotalStr = `${item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V`;
+            doc.text(itemTotalStr, rightPad, y, { align: 'right' });
+          }
+          y += 3.5;
+
+          if (doc) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(75, 85, 99);
+            const varStr = item.variations ? `(${item.variations})` : '';
+            const itemQtyVar = `Item: ${item.quantity}x ${varStr}`.trim();
+            const safeVar = doc.splitTextToSize(itemQtyVar, 44);
+            doc.text(safeVar[0] || itemQtyVar, leftPad, y);
+
+            const unitPriceStr = `${item.quantity} @ ${item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            doc.text(unitPriceStr, rightPad, y, { align: 'right' });
+          }
+          y += 3.5;
+
+          if (item.imei || data?.imei) {
+            if (doc) {
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6.5);
+              doc.setTextColor(31, 41, 55);
+              doc.text(`IMEI: ${item.imei || data?.imei}`, leftPad, y);
+            }
+            y += 3.2;
+          }
+        });
+
+        // Divider
+        drawDivider(y);
+        y += 4.2;
+
+        // 4. Financial Totals & Payment Method
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(0, 0, 0);
+          doc.text('Total', leftPad, y);
+          doc.text(`Php ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, y, { align: 'right' });
+        }
+        y += 3.8;
+
+        if (paymentMethod === 'Cash') {
+          if (doc) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(55, 65, 81);
+            doc.text('Cash', leftPad, y);
+            doc.text(`Php ${(tenderedCash || grandTotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, y, { align: 'right' });
+          }
+          y += 3.5;
+
+          if (doc) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text('Change', leftPad, y);
+            doc.text(`Php ${changeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, y, { align: 'right' });
+          }
+          y += 4;
+        } else {
+          if (doc) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            doc.setTextColor(55, 65, 81);
+            doc.text('GCash', leftPad, y);
+            doc.text(`Php ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, y, { align: 'right' });
+          }
+          y += 3.5;
+
+          if (doc) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text('Change', leftPad, y);
+            doc.text('Php 0.00', rightPad, y, { align: 'right' });
+          }
+          y += 4;
+        }
+
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(31, 41, 55);
+          doc.text(`*** ${totalItemCount} ITEM(S) ***`, centerX, y, { align: 'center' });
+        }
+        y += 3.5;
+
+        // Divider
+        drawDivider(y);
+        y += 4;
+
+        // 5. BIR 12% Tax Breakdown
+        if (doc) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(75, 85, 99);
+
+          doc.text('VATable Sales', leftPad, y);
+          doc.text(vatableSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.text('VAT Amount', leftPad, y);
+          doc.text(vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.text('VAT Exempt Sales', leftPad, y);
+          doc.text('0.00', rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.text('Zero Rated Sales', leftPad, y);
+          doc.text('0.00', rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        // Divider
+        drawDivider(y);
+        y += 4;
+
+        // 6. Customer & Audit Details
+        if (doc) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7);
+          doc.setTextColor(55, 65, 81);
+          doc.text('Sold To:', leftPad, y);
+          doc.setTextColor(0, 0, 0);
+          doc.text(customerName, rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(75, 85, 99);
+          doc.text('Email:', leftPad, y);
+          doc.setTextColor(31, 41, 55);
+          doc.text(customerEmail, rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.setTextColor(75, 85, 99);
+          doc.text('Phone:', leftPad, y);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(0, 0, 0);
+          doc.text(cleanPhone, rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(75, 85, 99);
+          doc.text('Store Agent:', leftPad, y);
+          doc.setTextColor(31, 41, 55);
+          doc.text(storeAgent, rightPad, y, { align: 'right' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.setTextColor(75, 85, 99);
+          doc.text('Global Trans No.', leftPad, y);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(126, 34, 206);
+          doc.text(shortTransId, rightPad, y, { align: 'right' });
+        }
+        y += 3.5;
+
+        // Divider
+        drawDivider(y);
+        y += 4.5;
+
+        // 7. Footer Note
+        if (doc) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(107, 114, 128);
+          doc.text('Thank you for shopping at GraphiX Store!', centerX, y, { align: 'center' });
+        }
+        y += 3.2;
+
+        if (doc) {
+          doc.setFontSize(6.5);
+          doc.setTextColor(156, 163, 175);
+          doc.text('Keep this receipt for warranty claims.', centerX, y, { align: 'center' });
+        }
+        y += 3.5;
+
+        return y;
+      };
+
+      // 1. Dry run to calculate exact content height
+      const startContentY = cardMarginY + 6;
+      const endContentY = renderContent(null, startContentY);
+      const cardHeight = (endContentY - cardMarginY) + 2; // Snug bottom border with exact padding
       const pageHeight = cardHeight + (cardMarginY * 2);
 
+      // 2. Live document creation with exact dimensions
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -375,277 +687,8 @@ export default function CustomerDigitalReceiptCard({
       pdf.setLineDashPattern([1.2, 1.2], 0);
       pdf.roundedRect(cardMarginX, cardMarginY, cardWidth, cardHeight, 3.5, 3.5, 'FD');
 
-      // Helper for dashed dividers
-      const drawDivider = (y: number) => {
-        pdf.setDrawColor(209, 213, 219);
-        pdf.setLineWidth(0.35);
-        pdf.setLineDashPattern([1, 1], 0);
-        pdf.line(leftPad, y, rightPad, y);
-      };
-
-      let curY = cardMarginY + 6.5;
-
-      // 1. Store Header
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(10.5);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('GRAPHIX STORE', centerX, curY, { align: 'center' });
-      curY += 4.2;
-
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(8);
-      pdf.setTextColor(31, 41, 55); // gray-800
-      pdf.text(branchLocation, centerX, curY, { align: 'center' });
-      curY += 3.6;
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(7);
-      pdf.setTextColor(107, 114, 128); // gray-500
-      pdf.text(machineId, centerX, curY, { align: 'center' });
-      curY += 3.4;
-
-      pdf.setFontSize(7);
-      pdf.setTextColor(75, 85, 99); // gray-600
-      pdf.text(timestamp, centerX, curY, { align: 'center' });
-      curY += 2.5;
-
-      // Status Badge
-      const badgeHeight = 4.2;
-      const badgeY = curY;
-      pdf.setLineWidth(0.25);
-      pdf.setLineDashPattern([], 0); // Solid border for badge
-
-      if (isGcashOrder) {
-        if (isLocked) {
-          pdf.setFillColor(239, 246, 255); // blue-50
-          pdf.setDrawColor(147, 197, 253); // blue-300
-          const badgeWidth = 62;
-          pdf.roundedRect(centerX - (badgeWidth / 2), badgeY, badgeWidth, badgeHeight, 1, 1, 'FD');
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(5.8);
-          pdf.setTextColor(30, 64, 175); // blue-800
-          pdf.text('GCASH PAYMENT (FOR CASHIER VERIFICATION)', centerX, badgeY + 3, { align: 'center' });
-        } else {
-          pdf.setFillColor(236, 253, 245); // emerald-50
-          pdf.setDrawColor(110, 231, 183); // emerald-300
-          const badgeWidth = 54;
-          pdf.roundedRect(centerX - (badgeWidth / 2), badgeY, badgeWidth, badgeHeight, 1, 1, 'FD');
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(6);
-          pdf.setTextColor(6, 95, 70); // emerald-800
-          pdf.text('OFFICIAL SALES INVOICE (VERIFIED PAID)', centerX, badgeY + 3, { align: 'center' });
-        }
-      } else if (isCashOrder) {
-        if (isLocked) {
-          pdf.setFillColor(254, 243, 199); // amber-50
-          pdf.setDrawColor(252, 211, 77); // amber-300
-          const badgeWidth = 56;
-          pdf.roundedRect(centerX - (badgeWidth / 2), badgeY, badgeWidth, badgeHeight, 1, 1, 'FD');
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(5.8);
-          pdf.setTextColor(146, 64, 14); // amber-800
-          pdf.text('UNVERIFIED RESERVATION (8H CLAIM LIMIT)', centerX, badgeY + 3, { align: 'center' });
-        } else {
-          pdf.setFillColor(254, 243, 199); // amber-50
-          pdf.setDrawColor(252, 211, 77); // amber-300
-          const badgeWidth = 54;
-          pdf.roundedRect(centerX - (badgeWidth / 2), badgeY, badgeWidth, badgeHeight, 1, 1, 'FD');
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(6);
-          pdf.setTextColor(146, 64, 14); // amber-800
-          pdf.text('OFFICIAL SALES INVOICE (VERIFIED PAID)', centerX, badgeY + 3, { align: 'center' });
-        }
-      }
-      curY += badgeHeight + 3;
-
-      // Divider
-      drawDivider(curY);
-      curY += 4.5;
-
-      // 2. Invoice Title & ID
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(8);
-      pdf.setTextColor(15, 23, 42);
-      const invoiceTitle = isLocked
-        ? (isGcashOrder ? 'GCASH PAYMENT PROOF (FOR VERIFICATION)' : 'RESERVATION CLAIM SLIP (UNPAID)')
-        : 'SALES INVOICE';
-      pdf.text(invoiceTitle, centerX, curY, { align: 'center' });
-      curY += 3.8;
-
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(126, 34, 206); // Graphix purple #7e22ce
-      pdf.text(shortTransId, centerX, curY, { align: 'center' });
-      curY += 3.5;
-
-      // Divider
-      drawDivider(curY);
-      curY += 4.2;
-
-      // 3. Cart Items Breakdown
-      resolvedItems.forEach((item) => {
-        // Line 1: Product Name & Price
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(0, 0, 0);
-        const nameText = item.name.toUpperCase();
-        const safeName = pdf.splitTextToSize(nameText, 44);
-        pdf.text(safeName[0] || nameText, leftPad, curY);
-
-        const itemTotalStr = `${item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V`;
-        pdf.text(itemTotalStr, rightPad, curY, { align: 'right' });
-        curY += 3.5;
-
-        // Line 2: Variations & Unit Price
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(7);
-        pdf.setTextColor(75, 85, 99);
-        const varStr = item.variations ? `(${item.variations})` : '';
-        const itemQtyVar = `Item: ${item.quantity}x ${varStr}`.trim();
-        const safeVar = pdf.splitTextToSize(itemQtyVar, 44);
-        pdf.text(safeVar[0] || itemQtyVar, leftPad, curY);
-
-        const unitPriceStr = `${item.quantity} @ ${item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        pdf.text(unitPriceStr, rightPad, curY, { align: 'right' });
-        curY += 3.5;
-
-        if (item.imei || data?.imei) {
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(6.5);
-          pdf.setTextColor(31, 41, 55);
-          pdf.text(`IMEI: ${item.imei || data?.imei}`, leftPad, curY);
-          curY += 3.2;
-        }
-      });
-
-      // Divider
-      drawDivider(curY);
-      curY += 4.2;
-
-      // 4. Financial Totals & Payment Method
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(8.5);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Total', leftPad, curY);
-      pdf.text(`Php ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, curY, { align: 'right' });
-      curY += 3.8;
-
-      if (paymentMethod === 'Cash') {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(55, 65, 81);
-        pdf.text('Cash', leftPad, curY);
-        pdf.text(`Php ${(tenderedCash || grandTotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, curY, { align: 'right' });
-        curY += 3.5;
-
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(15, 23, 42);
-        pdf.text('Change', leftPad, curY);
-        pdf.text(`Php ${changeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, curY, { align: 'right' });
-        curY += 4;
-      } else {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(55, 65, 81);
-        pdf.text('GCash', leftPad, curY);
-        pdf.text(`Php ${grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, rightPad, curY, { align: 'right' });
-        curY += 3.5;
-
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(15, 23, 42);
-        pdf.text('Change', leftPad, curY);
-        pdf.text('Php 0.00', rightPad, curY, { align: 'right' });
-        curY += 4;
-      }
-
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text(`*** ${totalItemCount} ITEM(S) ***`, centerX, curY, { align: 'center' });
-      curY += 3.5;
-
-      // Divider
-      drawDivider(curY);
-      curY += 4;
-
-      // 5. BIR 12% Tax Breakdown
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(7);
-      pdf.setTextColor(75, 85, 99);
-
-      pdf.text('VATable Sales', leftPad, curY);
-      pdf.text(vatableSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.text('VAT Amount', leftPad, curY);
-      pdf.text(vatAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.text('VAT Exempt Sales', leftPad, curY);
-      pdf.text('0.00', rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.text('Zero Rated Sales', leftPad, curY);
-      pdf.text('0.00', rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      // Divider
-      drawDivider(curY);
-      curY += 4;
-
-      // 6. Customer & Audit Details
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(7);
-      pdf.setTextColor(55, 65, 81);
-      pdf.text('Sold To:', leftPad, curY);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(customerName, rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Email:', leftPad, curY);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text(customerEmail, rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Phone:', leftPad, curY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(cleanPhone, rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Store Agent:', leftPad, curY);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text(storeAgent, rightPad, curY, { align: 'right' });
-      curY += 3.2;
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Global Trans No.', leftPad, curY);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(126, 34, 206); // #7e22ce
-      pdf.text(shortTransId, rightPad, curY, { align: 'right' });
-      curY += 3.5;
-
-      // Divider
-      drawDivider(curY);
-      curY += 4.5;
-
-      // 7. Footer Note
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(7);
-      pdf.setTextColor(107, 114, 128);
-      pdf.text('Thank you for shopping at GraphiX Store!', centerX, curY, { align: 'center' });
-      curY += 3.2;
-
-      pdf.setFontSize(6.5);
-      pdf.setTextColor(156, 163, 175);
-      pdf.text('Keep this receipt for warranty claims.', centerX, curY, { align: 'center' });
+      // 3. Render content onto live document
+      renderContent(pdf, startContentY);
 
       pdf.save(`GraphiX_Store_Receipt_${shortTransId.replace('#', '')}.pdf`);
     } catch (err) {
