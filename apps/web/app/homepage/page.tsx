@@ -8,7 +8,8 @@ import {
   ShieldCheck, Clock,
   ArrowRight, Sparkles, ArrowUp,
   Facebook, ExternalLink, Building2,
-  Camera, ChevronLeft, ChevronRight
+  Camera, ChevronLeft, ChevronRight,
+  MapPin
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -120,6 +121,14 @@ export default function HomePage() {
 
   const [products, setProducts] = useState<any[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [selectedBestSellerBranch, setSelectedBestSellerBranch] = useState<string>('all');
+
+  const BEST_SELLER_BRANCH_TABS = [
+    { key: 'all', label: 'All Branches', icon: Building2 },
+    { key: 'Tagoloan', label: 'Tagoloan Branch', icon: MapPin },
+    { key: 'Villanueva', label: 'Villanueva Branch', icon: MapPin },
+    { key: 'Jasaan', label: 'Jasaan Branch', icon: MapPin },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -142,21 +151,41 @@ export default function HomePage() {
 
   useEffect(() => {
     const fetchDevices = async () => {
+      setIsLoadingProducts(true);
       try {
-        const response = await fetch('/api/devices/best-selling');
+        const url = selectedBestSellerBranch && selectedBestSellerBranch.toLowerCase() !== 'all'
+          ? `/api/devices/best-selling?branch=${encodeURIComponent(selectedBestSellerBranch)}`
+          : '/api/devices/best-selling';
+
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
           if (data && data.length > 0) {
-            const dbProducts = data.map((device: any) => ({
-              id: device.id,
-              name: device.name,
-              description: device.specs || 'Premium electronic device.',
-              price: device.price,
-              originalPrice: null,
-              image: device.image || '/Images/graphix-logo.jpg',
-              tag: device.stock > 0 ? 'Best Seller' : 'Out of Stock',
-              tagColor: device.stock > 0 ? 'purple' : 'gray'
-            }));
+            const dbProducts = data.map((device: any) => {
+              const stockCount = device.branchStockQuantity !== undefined ? device.branchStockQuantity : device.stock;
+              const isAvailable = stockCount > 0;
+              
+              let tagText = 'Best Seller';
+              if (!isAvailable) {
+                tagText = 'Out of Stock';
+              } else if (selectedBestSellerBranch && selectedBestSellerBranch.toLowerCase() !== 'all') {
+                tagText = `${selectedBestSellerBranch} Top Seller`;
+              }
+
+              return {
+                id: device.id,
+                name: device.name,
+                description: device.specs || 'Premium electronic device.',
+                price: device.price,
+                originalPrice: null,
+                image: device.image || '/Images/graphix-logo.jpg',
+                unitsSold: device.unitsSold || 0,
+                selectedBranch: device.selectedBranch,
+                stock: stockCount,
+                tag: tagText,
+                tagColor: isAvailable ? 'purple' : 'gray'
+              };
+            });
 
             setProducts(dbProducts);
           } else {
@@ -170,7 +199,7 @@ export default function HomePage() {
       }
     };
     fetchDevices();
-  }, []);
+  }, [selectedBestSellerBranch]);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -402,13 +431,38 @@ export default function HomePage() {
 
       {/* Featured Products Section */}
       <section className="px-6 py-20 bg-[#f3f4f8]">
-        <div className="max-w-7xl mx-auto flex flex-col gap-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between">
+        <div className="max-w-7xl mx-auto flex flex-col gap-8">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
-              <h2 className="text-[#8b00cc] font-black text-xl tracking-wide uppercase mb-2 flex items-center gap-2">
-                <ShoppingBag size={24} /> Storefront
-              </h2>
-              <h3 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight">Best Sellers</h3>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-[#8b00cc] rounded-lg text-xs font-black uppercase tracking-wider mb-2">
+                <ShoppingBag size={15} /> Storefront
+              </div>
+              <h3 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tight m-0">Best Sellers</h3>
+              <p className="text-sm text-gray-500 font-medium m-0 mt-1">
+                Explore top-selling smartphones and popular customer choices across Graphix branches.
+              </p>
+            </div>
+
+            {/* Branch Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-gray-200/80 shadow-xs">
+              {BEST_SELLER_BRANCH_TABS.map((tab) => {
+                const isActive = selectedBestSellerBranch.toLowerCase() === tab.key.toLowerCase();
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setSelectedBestSellerBranch(tab.key)}
+                    className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-[#8b00cc] hover:bg-[#bd00ff] text-white shadow-md shadow-purple-500/20 scale-[1.02]'
+                        : 'bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <tab.icon size={14} className={isActive ? "text-white" : "text-gray-400"} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -421,7 +475,7 @@ export default function HomePage() {
               <div
                 key={product.id}
                 onClick={() => router.push('/login')}
-                className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border md:border-gray-200 group"
+                className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border md:border-gray-200 group relative"
               >
                 <div className="aspect-square w-full bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
                   <img
@@ -430,7 +484,11 @@ export default function HomePage() {
                     className="w-full h-full object-contain p-1 md:p-0 transition-transform duration-300 md:group-hover:scale-105"
                   />
                   {product.tag && (
-                    <div className="absolute top-2 right-2 bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm uppercase tracking-wide">
+                    <div className={`absolute top-2 right-2 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wide border ${
+                      product.stock > 0 
+                        ? 'bg-purple-50 text-[#8b00cc] border-purple-200' 
+                        : 'bg-gray-100 text-gray-500 border-gray-200'
+                    }`}>
                       {product.tag}
                     </div>
                   )}
@@ -455,10 +513,19 @@ export default function HomePage() {
                 </div>
               </div>
             )) : (
-              <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 flex flex-col items-center justify-center py-16 text-gray-500">
-                <ShoppingBag size={48} className="text-gray-300 mb-4" />
-                <h3 className="text-xl font-bold text-gray-700">No products available</h3>
-                <p>Check back later for new inventory.</p>
+              <div className="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 flex flex-col items-center justify-center py-16 text-gray-500 bg-white rounded-2xl border border-dashed border-gray-200">
+                <ShoppingBag size={48} className="text-gray-300 mb-3" />
+                <h3 className="text-base font-bold text-gray-800 m-0">No Best Sellers Found</h3>
+                <p className="text-xs text-gray-500 m-0 mt-1">
+                  No recorded top sellers for {selectedBestSellerBranch === 'all' ? 'any branch' : `${selectedBestSellerBranch} Branch`} yet.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBestSellerBranch('all')}
+                  className="mt-4 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-[#8b00cc] text-xs font-bold rounded-xl border border-purple-200 transition-colors cursor-pointer"
+                >
+                  View All Branches
+                </button>
               </div>
             )}
           </div>
