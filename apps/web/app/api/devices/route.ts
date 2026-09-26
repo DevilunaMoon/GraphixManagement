@@ -382,6 +382,22 @@ export async function POST(req: Request) {
         }
       });
 
+      // Validate that none of the Product IDs collide with other devices
+      if (variations.length > 0) {
+        for (const v of variations) {
+          const prodId = formatProductId(name, v.name, v.productId);
+          const duplicateVar = await tx.deviceVariation.findFirst({
+            where: {
+              productId: { equals: prodId, mode: 'insensitive' },
+              ...(existingDevice ? { deviceId: { not: existingDevice.id } } : {})
+            }
+          });
+          if (duplicateVar) {
+            throw new Error(`Product ID "${prodId}" already exists. Please use a unique Product ID.`);
+          }
+        }
+      }
+
       if (existingDevice) {
         // Product already exists: synchronize variations and branch inventory
         let addedTotalStock = 0;
@@ -696,8 +712,8 @@ export async function POST(req: Request) {
     await triggerStockAlert({ deviceId: device.id });
 
     return NextResponse.json(device, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating device:', error);
-    return NextResponse.json({ error: 'Failed to create device' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to create device' }, { status: 400 });
   }
 }

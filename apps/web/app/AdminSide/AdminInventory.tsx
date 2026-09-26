@@ -1184,26 +1184,60 @@ export default function AdminInventory() {
 
   const downloadExcel = async () => {
     try {
-      const res = await fetch('/api/devices?limit=500');
-      const allDevices: any[] = await res.json();
-      let csvContent = "Model Name,Unit,Internal Storage,Tagoloan Stock,Villanueva Stock,Jasaan Stock,Total Stock,Price,Cost\n";
+      const res = await fetch(`/api/devices?limit=1000${selectedBranch !== 'all' ? `&branch=${encodeURIComponent(selectedBranch)}` : ''}`);
+      const data = await res.json();
+      const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
 
-      (Array.isArray(allDevices) ? allDevices : []).forEach(d => {
-        const variants = d.variations && d.variations.length > 0 ? d.variations : [{ name: 'Standard', productId: `${d.name}-STD`, tagoloanStock: d.tagoloanStock, villanuevaStock: d.villanuevaStock, jasaanStock: d.jasaanStock, price: d.price, cost: d.cost }];
-        variants.forEach((v: any) => {
-          const tStock = v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0;
-          const vStock = v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0;
-          const jStock = v.jasaanStock ?? v.branchStocks?.Jasaan ?? 0;
-          const tot = tStock + vStock + jStock;
-          csvContent += `"${d.name}","${v.name}","${v.productId || ''}",${tStock},${vStock},${jStock},${tot},${v.price || d.price},${v.cost || d.cost}\n`;
-        });
+      let csvContent = isSuperAdmin
+        ? `Product Model,Product ID,Internal Storage,Condition,Tagoloan Stock,Villanueva Stock,Jasaan Stock,Total Stock,Price,Cost\n`
+        : `Product Model,Product ID,Internal Storage,Condition,${userBranch} Stock,Price,Cost\n`;
+
+      allDevices.forEach((d: any) => {
+        const name = `"${(d.name || '').replace(/"/g, '""')}"`;
+        const condition = d.isPreOwned ? 'Pre-Owned' : 'New';
+
+        if (d.variations && d.variations.length > 0) {
+          d.variations.forEach((v: any) => {
+            const prodId = `"${(v.productId || generateAutoProductId(d.name, v.name)).replace(/"/g, '""')}"`;
+            const storage = `"${(v.name || 'Standard').replace(/"/g, '""')}"`;
+            const tStock = v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0;
+            const vStock = v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0;
+            const jStock = v.jasaanStock ?? v.branchStocks?.Jasaan ?? 0;
+            const tot = tStock + vStock + jStock;
+            const activeStock = userBranch === 'Villanueva' ? vStock : (userBranch === 'Jasaan' ? jStock : tStock);
+            const vPrice = v.price || d.price || 0;
+            const vCost = v.cost || d.cost || 0;
+
+            if (isSuperAdmin) {
+              csvContent += `${name},${prodId},${storage},${condition},${tStock},${vStock},${jStock},${tot},${vPrice},${vCost}\n`;
+            } else {
+              csvContent += `${name},${prodId},${storage},${condition},${activeStock},${vPrice},${vCost}\n`;
+            }
+          });
+        } else {
+          const prodId = `"${generateAutoProductId(d.name, 'STD').replace(/"/g, '""')}"`;
+          const storage = `"Standard"`;
+          const tStock = d.tagoloanStock ?? 0;
+          const vStock = d.villanuevaStock ?? 0;
+          const jStock = d.jasaanStock ?? 0;
+          const tot = d.stock ?? (tStock + vStock + jStock);
+          const activeStock = userBranch === 'Villanueva' ? vStock : (userBranch === 'Jasaan' ? jStock : tStock);
+          const price = d.price || 0;
+          const cost = d.cost || 0;
+
+          if (isSuperAdmin) {
+            csvContent += `${name},${prodId},${storage},${condition},${tStock},${vStock},${jStock},${tot},${price},${cost}\n`;
+          } else {
+            csvContent += `${name},${prodId},${storage},${condition},${activeStock},${price},${cost}\n`;
+          }
+        }
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `Inventory_Report_${selectedBranch}.csv`);
+      link.setAttribute("download", `Graphix_Inventory_Report_${selectedBranch}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1674,6 +1708,7 @@ export default function AdminInventory() {
                                     <thead>
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
                                         <th className="py-2.5 px-3">Unit</th>
+                                        <th className="py-2.5 px-3">Product ID</th>
                                         <th className="py-2.5 px-3">Internal Storage</th>
                                         {isSuperAdmin ? (
                                           <>
@@ -1699,11 +1734,17 @@ export default function AdminInventory() {
                                           : userBranch.toLowerCase() === 'jasaan'
                                           ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
                                           : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
+                                        const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
 
                                         return (
                                           <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
                                             <td className="py-3 px-3 font-bold text-gray-900">
                                               {prod.name} – {v.name}
+                                            </td>
+                                            <td className="py-3 px-3 font-mono font-bold text-[#5c0099]">
+                                              <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px]">
+                                                {displayProdId}
+                                              </span>
                                             </td>
                                             <td className="py-3 px-3">
                                               <span className="font-semibold text-gray-800">
@@ -2503,6 +2544,7 @@ export default function AdminInventory() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Product ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">Tagoloan Stock</th>
@@ -2526,6 +2568,19 @@ export default function AdminInventory() {
                               }}
                               className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
                               placeholder="32 GB"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.productId || ''}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.productId = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                             />
                           </td>
                           <td className="py-2 px-3">
@@ -2866,6 +2921,7 @@ export default function AdminInventory() {
                       <thead>
                         <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                           <th className="py-2.5 px-3">Unit</th>
+                          <th className="py-2.5 px-3">Product ID</th>
                           <th className="py-2.5 px-3">Color</th>
                           <th className="py-2.5 px-3">Internal Storage</th>
                           {isSuperAdmin ? (
@@ -2893,8 +2949,21 @@ export default function AdminInventory() {
                                   updated[idx]!.name = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-28 outline-none"
-                                placeholder="e.g. 32 GB, Red"
+                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                                placeholder="e.g. 32 GB"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={v.productId || ''}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.productId = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                                placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                               />
                             </td>
                             <td className="py-2 px-3">

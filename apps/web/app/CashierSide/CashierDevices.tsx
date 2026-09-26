@@ -1081,18 +1081,33 @@ export default function CashierDevices() {
       const data = await res.json();
       const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
 
-      let csvContent = `Product Name,Brand,Type,Condition,Branch Stock,Base Price,Discount %,Cost\n`;
+      let csvContent = `Product Model,Product ID,Color,Internal Storage,Condition,${userBranch} Stock,Price,Discount %,Cost\n`;
 
       allDevices.forEach((d: any) => {
         const name = `"${(d.name || '').replace(/"/g, '""')}"`;
-        const brand = `"${(d.category?.name || '').replace(/"/g, '""')}"`;
-        const type = `"${(d.type || 'Smartphone').replace(/"/g, '""')}"`;
         const condition = d.isPreOwned ? 'Pre-Owned' : 'New';
-        const stock = d.stock || 0;
-        const price = d.price || 0;
         const discount = d.discount || 0;
-        const cost = d.cost || 0;
-        csvContent += `${name},${brand},${type},${condition},${stock},${price},${discount},${cost}\n`;
+
+        if (d.variations && d.variations.length > 0) {
+          d.variations.forEach((v: any) => {
+            const prodId = `"${(v.productId || generateAutoProductId(d.name, v.name)).replace(/"/g, '""')}"`;
+            const { color, storage } = parseUnitDetails(d.name, v);
+            const colorStr = `"${color.replace(/"/g, '""')}"`;
+            const storageStr = `"${storage.replace(/"/g, '""')}"`;
+            const vStock = v.stock ?? 0;
+            const vPrice = v.price || d.price || 0;
+            const vCost = v.cost || d.cost || 0;
+            csvContent += `${name},${prodId},${colorStr},${storageStr},${condition},${vStock},${vPrice},${discount},${vCost}\n`;
+          });
+        } else {
+          const prodId = `"${generateAutoProductId(d.name, 'STD').replace(/"/g, '""')}"`;
+          const colorStr = `"—"`;
+          const storageStr = `"Standard"`;
+          const stock = d.stock || 0;
+          const price = d.price || 0;
+          const cost = d.cost || 0;
+          csvContent += `${name},${prodId},${colorStr},${storageStr},${condition},${stock},${price},${discount},${cost}\n`;
+        }
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1480,6 +1495,7 @@ export default function CashierDevices() {
                                     <thead>
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
                                         <th className="py-2.5 px-3">Unit</th>
+                                        <th className="py-2.5 px-3">Product ID</th>
                                         <th className="py-2.5 px-3">Color</th>
                                         <th className="py-2.5 px-3">Internal Storage</th>
                                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
@@ -1497,11 +1513,17 @@ export default function CashierDevices() {
                                           : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
 
                                         const { unitLabel, color, storage } = parseUnitDetails(prod.name, v);
+                                        const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
 
                                         return (
                                           <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
                                             <td className="py-3 px-3 font-bold text-gray-900">
                                               {unitLabel}
+                                            </td>
+                                            <td className="py-3 px-3 font-mono font-bold text-[#5c0099]">
+                                              <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px]">
+                                                {displayProdId}
+                                              </span>
                                             </td>
                                             <td className="py-3 px-3">
                                               {color !== '—' ? (
@@ -2507,6 +2529,7 @@ export default function CashierDevices() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Product ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
@@ -2528,6 +2551,19 @@ export default function CashierDevices() {
                               }}
                               className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
                               placeholder="32 GB"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.productId || ''}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.productId = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                             />
                           </td>
                           <td className="py-2 px-3">
@@ -2865,6 +2901,7 @@ export default function CashierDevices() {
                       <thead>
                         <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                           <th className="py-2.5 px-3">Unit</th>
+                          <th className="py-2.5 px-3">Product ID</th>
                           <th className="py-2.5 px-3">Color</th>
                           <th className="py-2.5 px-3">Internal Storage</th>
                           <th className="py-2.5 px-3 text-right">Base Price (₱)</th>
@@ -2884,8 +2921,21 @@ export default function CashierDevices() {
                                   updated[idx]!.name = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-28 outline-none"
-                                placeholder="e.g. 32 GB, Red"
+                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                                placeholder="e.g. 32 GB"
+                              />
+                            </td>
+                            <td className="py-2 px-3">
+                              <input
+                                type="text"
+                                value={v.productId || ''}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.productId = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                                placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                               />
                             </td>
                             <td className="py-2 px-3">

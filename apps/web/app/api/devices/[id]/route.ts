@@ -14,12 +14,23 @@ function formatProductId(modelName: string, variantName?: string, customProductI
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  const cleanVariant = (variantName || 'STD')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+  if (!variantName || !variantName.trim() || variantName.toLowerCase() === 'standard' || variantName.toLowerCase() === 'std') {
+    return `${cleanModel}-STD`;
+  }
 
+  const trimmedVariant = variantName.trim().toUpperCase();
+  const storageNumMatch = trimmedVariant.match(/^(\d+)\s*(GB|TB)$/i);
+  let cleanVariant = '';
+  if (storageNumMatch && storageNumMatch[1]) {
+    cleanVariant = storageNumMatch[1];
+  } else {
+    cleanVariant = trimmedVariant
+      .replace(/[^A-Z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  if (!cleanVariant) cleanVariant = 'STD';
   return `${cleanModel}-${cleanVariant}`;
 }
 
@@ -233,6 +244,22 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
       });
 
       if (variationsStr) {
+        if (variations.length > 0) {
+          // Validate that none of the Product IDs collide with other devices
+          for (const v of variations) {
+            const prodId = formatProductId(name || updatedDevice.name, v.name, v.productId);
+            const duplicateVar = await tx.deviceVariation.findFirst({
+              where: {
+                productId: { equals: prodId, mode: 'insensitive' },
+                deviceId: { not: id }
+              }
+            });
+            if (duplicateVar) {
+              throw new Error(`Product ID "${prodId}" already exists. Please use a unique Product ID.`);
+            }
+          }
+        }
+
         // Delete old variations and recreate with fresh branch stocks
         await tx.deviceVariation.deleteMany({ where: { deviceId: id } });
 
@@ -285,8 +312,8 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     await triggerStockAlert({ deviceId: id });
 
     return NextResponse.json(device);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating device:', error);
-    return NextResponse.json({ error: 'Failed to update device' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to update device' }, { status: 400 });
   }
 }
