@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { UserCircle2, Pencil, Receipt, KeyRound, Eye, EyeOff, Activity, AlertCircle } from 'lucide-react';
+import { UserCircle2, Pencil, Receipt, KeyRound, Eye, EyeOff, Activity, AlertCircle, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updatePassword } from '../../actions/user';
 import PasswordRequirements from '../../components/PasswordRequirements';
@@ -92,10 +92,17 @@ export default function CustomerChangePassword({ user }: { user?: any }) {
           
           <nav className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2">
             <button 
+              onClick={() => navigate('/customer/profile')}
+              className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
+            >
+              <User className="text-[#5b4a7a] group-hover:text-[#bd00ff] transition-colors" size={24} />
+              <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Profile</span>
+            </button>
+            <button 
               onClick={() => navigate('/customer/digital-receipt')}
               className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
             >
-              <Receipt className="text-[#01f0ff] group-hover:text-[#bd00ff] transition-colors" size={24} />
+              <Receipt className="text-[#5b4a7a] group-hover:text-[#bd00ff] transition-colors" size={24} />
               <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Digital Receipt</span>
             </button>
             <button 

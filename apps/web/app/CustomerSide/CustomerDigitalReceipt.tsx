@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Pencil, Receipt, KeyRound, ChevronDown, ChevronLeft, ChevronRight, UserCircle2 } from 'lucide-react';
+import { Pencil, Receipt, KeyRound, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface ReceiptItem {
@@ -95,6 +95,13 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
           
           <nav className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2">
             <button 
+              onClick={() => navigate('/customer/profile')}
+              className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
+            >
+              <User className="text-[#5b4a7a] group-hover:text-[#bd00ff] transition-colors" size={24} />
+              <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Profile</span>
+            </button>
+            <button 
               className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-[#bd00ff] bg-purple-50 cursor-pointer text-left transition-colors"
             >
               <Receipt className="text-[#bd00ff]" size={24} />
@@ -104,7 +111,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
               onClick={() => navigate('/customer/change-password')}
               className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
             >
-              <KeyRound className="text-[#01f0ff] group-hover:text-[#bd00ff] transition-colors" size={24} />
+              <KeyRound className="text-[#5b4a7a] group-hover:text-[#bd00ff] transition-colors" size={24} />
               <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Change Password</span>
             </button>
           </nav>
