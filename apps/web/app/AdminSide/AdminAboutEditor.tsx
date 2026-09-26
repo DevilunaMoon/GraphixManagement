@@ -484,6 +484,9 @@ export default function AdminAboutEditor() {
                       ? 'Branch Documentation' 
                       : `Branch Documentation — ${effectiveBranch} Branch`}
                   </span>
+                  <span className="ml-1.5 px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-extrabold rounded-full">
+                    {branchPhotos.length}/8 Photos
+                  </span>
                 </div>
                 {isSuperAdmin ? (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-bold rounded-full">
@@ -492,24 +495,34 @@ export default function AdminAboutEditor() {
                 ) : (
                   <button
                     type="button"
+                    disabled={branchPhotos.length >= 8}
                     onClick={() => {
+                      if (branchPhotos.length >= 8) {
+                        setToastMessage({ type: 'error', text: 'Maximum limit of 8 images reached for this branch. Please delete an existing photo first.' });
+                        return;
+                      }
                       setIsUploadModalOpen(true);
                       setSelectedFile(null);
                       setImagePreviewUrl(null);
                       setUploadTitle('');
                       setUploadCaption('');
                     }}
-                    className="px-3.5 py-1.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 border-none cursor-pointer shadow-sm"
+                    className={`px-3.5 py-1.5 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 border-none shadow-sm ${
+                      branchPhotos.length >= 8
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-[#bd00ff] hover:bg-[#9c00d6] text-white cursor-pointer'
+                    }`}
+                    title={branchPhotos.length >= 8 ? "Maximum of 8 photos reached" : "Upload Photo"}
                   >
-                    <Plus size={16} /> Upload Photo
+                    <Plus size={16} /> {branchPhotos.length >= 8 ? 'Max Limit (8/8)' : 'Upload Photo'}
                   </button>
                 )}
               </div>
 
               <p className="text-gray-500 text-xs font-medium m-0 leading-relaxed">
                 {isSuperAdmin 
-                  ? 'Browse uploaded photos and documentation representing each branch across the Graphix network. Super Admin has view-only access.'
-                  : 'Upload and manage photos that represent your assigned Graphix branch. These photos will appear in the Branch Showcase on the customer homepage.'}
+                  ? 'Browse uploaded photos and documentation representing each branch across the Graphix network (Maximum of 8 images per branch). Super Admin has view-only access.'
+                  : `Upload and manage photos that represent your assigned Graphix branch (Maximum of 8 images per branch, ${Math.max(0, 8 - branchPhotos.length)} slot(s) remaining). These photos will appear in the Branch Showcase on the customer homepage.`}
               </p>
 
               {/* Super Admin Branch Switcher Tabs */}
@@ -927,8 +940,15 @@ export default function AdminAboutEditor() {
                   <Camera size={22} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 m-0">Upload Branch Photo</h3>
-                  <span className="text-xs font-bold text-[#bd00ff]">{effectiveBranch} Branch</span>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-black text-gray-900 m-0">Upload Branch Photo</h3>
+                    <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-purple-50 text-[#bd00ff] border border-purple-200">
+                      {branchPhotos.length}/8 Used
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-gray-500">
+                    {effectiveBranch} Branch • {Math.max(0, 8 - branchPhotos.length)} slot(s) remaining (Max 8)
+                  </span>
                 </div>
               </div>
               <button
@@ -940,90 +960,100 @@ export default function AdminAboutEditor() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmitPhoto} className="flex flex-col gap-4">
-              {/* File input */}
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-700 uppercase">Select Image *</label>
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-[#bd00ff] rounded-2xl p-4 bg-gray-50 transition-colors">
-                  {imagePreviewUrl ? (
-                    <div className="relative w-full h-44 rounded-xl overflow-hidden bg-black/5 flex items-center justify-center">
-                      <img src={imagePreviewUrl} alt="Upload preview" className="w-full h-full object-contain" />
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedFile(null); setImagePreviewUrl(null); }}
-                        className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-lg hover:bg-black/80 transition cursor-pointer border-none"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center gap-2 cursor-pointer py-6 w-full">
-                      <Upload size={32} className="text-purple-500" />
-                      <span className="text-xs font-bold text-gray-700">Click to choose a photo</span>
-                      <span className="text-[10px] text-gray-400">JPG, PNG, WebP (Auto-compressed)</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
+            {branchPhotos.length >= 8 ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col gap-2 text-amber-800 text-xs">
+                <span className="font-black text-sm text-amber-900">Maximum Limit Reached (8/8)</span>
+                <span>This branch already has the maximum allowable 8 documentation photos. To upload a new photo, please close this dialog and delete an existing photo first.</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitPhoto} className="flex flex-col gap-4">
+                {/* File input */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-700 uppercase">Select Image *</label>
+                    <span className="text-[11px] font-semibold text-purple-600">Max 8 images per branch</span>
+                  </div>
+                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 hover:border-[#bd00ff] rounded-2xl p-4 bg-gray-50 transition-colors">
+                    {imagePreviewUrl ? (
+                      <div className="relative w-full h-44 rounded-xl overflow-hidden bg-black/5 flex items-center justify-center">
+                        <img src={imagePreviewUrl} alt="Upload preview" className="w-full h-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedFile(null); setImagePreviewUrl(null); }}
+                          className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-lg hover:bg-black/80 transition cursor-pointer border-none"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center gap-2 cursor-pointer py-6 w-full">
+                        <Upload size={32} className="text-purple-500" />
+                        <span className="text-xs font-bold text-gray-700">Click to choose a photo</span>
+                        <span className="text-[10px] text-gray-400">JPG, PNG, WebP (Auto-compressed)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              {/* Title */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase">Photo Title (Optional)</label>
-                <input
-                  type="text"
-                  value={uploadTitle}
-                  onChange={(e) => setUploadTitle(e.target.value)}
-                  placeholder="e.g. Store Interior & Service Counter"
-                  className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] text-xs font-medium text-gray-800"
-                />
-              </div>
+                {/* Title */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700 uppercase">Photo Title (Optional)</label>
+                  <input
+                    type="text"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    placeholder="e.g. Store Interior & Service Counter"
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] text-xs font-medium text-gray-800"
+                  />
+                </div>
 
-              {/* Caption */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 uppercase">Caption / Description (Optional)</label>
-                <textarea
-                  rows={2}
-                  value={uploadCaption}
-                  onChange={(e) => setUploadCaption(e.target.value)}
-                  placeholder="e.g. Our welcoming technician workstation at Tagoloan."
-                  className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] text-xs font-medium text-gray-800 resize-none"
-                />
-              </div>
+                {/* Caption */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700 uppercase">Caption / Description (Optional)</label>
+                  <textarea
+                    rows={2}
+                    value={uploadCaption}
+                    onChange={(e) => setUploadCaption(e.target.value)}
+                    placeholder="e.g. Our welcoming technician workstation at Tagoloan."
+                    className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#bd00ff] text-xs font-medium text-gray-800 resize-none"
+                  />
+                </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setIsUploadModalOpen(false)}
-                  disabled={isSubmittingPhoto}
-                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition border-none cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingPhoto || !selectedFile}
-                  className="px-6 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white text-xs font-extrabold rounded-xl transition flex items-center gap-2 border-none cursor-pointer disabled:opacity-50 shadow-md"
-                >
-                  {isSubmittingPhoto ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Uploading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={16} />
-                      <span>Upload to {effectiveBranch}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadModalOpen(false)}
+                    disabled={isSubmittingPhoto}
+                    className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition border-none cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPhoto || !selectedFile}
+                    className="px-6 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] text-white text-xs font-extrabold rounded-xl transition flex items-center gap-2 border-none cursor-pointer disabled:opacity-50 shadow-md"
+                  >
+                    {isSubmittingPhoto ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} />
+                        <span>Upload to {effectiveBranch}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
