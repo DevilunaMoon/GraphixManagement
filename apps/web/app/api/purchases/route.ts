@@ -13,6 +13,7 @@ export async function POST(req: Request) {
 
     const { 
       deviceId, 
+      variationId,
       amount, 
       quantity, 
       variations, 
@@ -451,14 +452,21 @@ export async function POST(req: Request) {
         } catch (e) {}
       }
 
+      if (variationId && (!parsedVars || parsedVars.length === 0)) {
+        const matchingVar = device.variations.find(v => v.id === variationId);
+        if (matchingVar) {
+          parsedVars = [matchingVar];
+        }
+      }
+
       const firstVar = Array.isArray(parsedVars) && parsedVars.length > 0 ? parsedVars[0] : null;
       const variationRecord = firstVar 
         ? device.variations.find(v => v.id === firstVar.id || (v.name && firstVar.name && v.name.toLowerCase() === firstVar.name.toLowerCase()))
-        : null;
+        : (device.variations.length === 1 ? device.variations[0] : null);
       
       const varId = variationRecord?.id || null;
       const targetProdId = variationRecord?.productId || `${device.name}-STD`;
-      const targetName = variationRecord ? `${device.name} (${variationRecord.name})` : device.name;
+      const targetName = variationRecord && variationRecord.name !== 'Standard' ? `${device.name} (${variationRecord.name})` : device.name;
 
       // Validate all selected variations at the operating branch
       if (parsedVars.length > 0) {
@@ -484,7 +492,7 @@ export async function POST(req: Request) {
           }
         }
 
-        // Decrement branch stocks for all variations
+        // Decrement branch stocks and variation stock for all variations
         for (const pv of parsedVars) {
           const vRec = device.variations.find(v => v.id === pv.id || (v.name && pv.name && v.name.toLowerCase() === pv.name.toLowerCase()));
           const vId = vRec?.id || pv.id;
@@ -505,13 +513,22 @@ export async function POST(req: Request) {
               }
             });
           }
+
+          if (vId) {
+            await tx.deviceVariation.update({
+              where: { id: vId },
+              data: {
+                stock: { decrement: reqQty }
+              }
+            }).catch(() => {});
+          }
         }
       } else {
         // No variations
         const bStock = await tx.branchStock.findFirst({
           where: {
             deviceId: deviceId,
-            variationId: null,
+            variationId: varId,
             branch: { equals: operatingBranch, mode: 'insensitive' }
           }
         });
@@ -532,6 +549,15 @@ export async function POST(req: Request) {
               sold: { increment: reqQty }
             }
           });
+        }
+
+        if (varId) {
+          await tx.deviceVariation.update({
+            where: { id: varId },
+            data: {
+              stock: { decrement: reqQty }
+            }
+          }).catch(() => {});
         }
       }
 

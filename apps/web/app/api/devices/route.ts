@@ -18,12 +18,23 @@ function formatProductId(modelName: string, variantName?: string, customProductI
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
   
-  const cleanVariant = (variantName || 'STD')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+  if (!variantName || !variantName.trim() || variantName.toLowerCase() === 'standard' || variantName.toLowerCase() === 'std') {
+    return `${cleanModel}-STD`;
+  }
 
+  const trimmedVariant = variantName.trim().toUpperCase();
+  const storageNumMatch = trimmedVariant.match(/^(\d+)\s*(GB|TB)$/i);
+  let cleanVariant = '';
+  if (storageNumMatch && storageNumMatch[1]) {
+    cleanVariant = storageNumMatch[1];
+  } else {
+    cleanVariant = trimmedVariant
+      .replace(/[^A-Z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  if (!cleanVariant) cleanVariant = 'STD';
   return `${cleanModel}-${cleanVariant}`;
 }
 
@@ -180,7 +191,6 @@ export async function GET(req: Request) {
         };
       })
       .filter((device) => {
-        // If an active branch is selected/viewed, only keep products that belong to this branch or have stock in this branch
         if (activeBranch) {
           return device.belongsToActiveBranch;
         }
@@ -360,6 +370,213 @@ export async function POST(req: Request) {
     const branches = ['Tagoloan', 'Villanueva', 'Jasaan'];
 
     const device = await prisma.$transaction(async (tx) => {
+      // Check if product already exists to avoid duplication (Section 17)
+      const existingDevice = await tx.device.findFirst({
+        where: {
+          name: { equals: name.trim(), mode: 'insensitive' },
+          isPreOwned: isPreOwned
+        },
+        include: {
+          variations: true,
+          branchStocks: true
+        }
+      });
+
+      if (existingDevice) {
+        // Product already exists: synchronize variations and branch inventory
+        let addedTotalStock = 0;
+
+        if (variations.length > 0) {
+          for (const v of variations) {
+            const prodId = formatProductId(name, v.name, v.productId);
+            const varStock = parseInt(v.stock || 0, 10);
+
+            // Compute branch stock values
+            const tagStock = isSuperAdmin 
+              ? (v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (operatingBranch === 'Tagoloan' ? varStock : 0))
+              : (operatingBranch === 'Tagoloan' ? (parseInt(v.tagoloanStock ?? v.stock ?? 0, 10)) : 0);
+
+            const vilStock = isSuperAdmin
+              ? (v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (operatingBranch === 'Villanueva' ? varStock : 0))
+              : (operatingBranch === 'Villanueva' ? (parseInt(v.villanuevaStock ?? v.stock ?? 0, 10)) : 0);
+
+            const jasStock = isSuperAdmin
+              ? (v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (operatingBranch === 'Jasaan' ? varStock : 0))
+              : (operatingBranch === 'Jasaan' ? (parseInt(v.jasaanStock ?? v.stock ?? 0, 10)) : 0);
+
+            const branchStockValues: Record<string, number> = {
+              Tagoloan: isNaN(tagStock) ? 0 : tagStock,
+              Villanueva: isNaN(vilStock) ? 0 : vilStock,
+              Jasaan: isNaN(jasStock) ? 0 : jasStock
+            };
+
+            const allocatedStock = isSuperAdmin ? (tagStock + vilStock + jasStock) : (branchStockValues[operatingBranch] || 0);
+            addedTotalStock += allocatedStock;
+
+            // Check if this specific variation exists on the device
+            let existingVar = existingDevice.variations.find(
+              ev => (ev.name && v.name && ev.name.toLowerCase() === v.name.toLowerCase()) ||
+                    (ev.productId && prodId && ev.productId.toUpperCase() === prodId.toUpperCase())
+            );
+
+            if (existingVar) {
+              // Update price/cost and add stock
+              await tx.deviceVariation.update({
+                where: { id: existingVar.id },
+                data: {
+                  price: parseFloat(v.price || priceStr),
+                  cost: parseFloat(v.cost || costStr),
+                  stock: { increment: allocatedStock }
+                }
+              });
+
+              // Update branch stocks
+              for (const b of branches) {
+                const existingBs = await tx.branchStock.findFirst({
+                  where: {
+                    deviceId: existingDevice.id,
+                    variationId: existingVar.id,
+                    branch: b
+                  }
+                });
+
+                if (existingBs) {
+                  const stockToAdd = isSuperAdmin ? (branchStockValues[b] || 0) : (b === operatingBranch ? (branchStockValues[b] || 0) : 0);
+                  if (stockToAdd > 0) {
+                    await tx.branchStock.update({
+                      where: { id: existingBs.id },
+                      data: {
+                        stock: { increment: stockToAdd }
+                      }
+                    });
+                  }
+                } else {
+                  await tx.branchStock.create({
+                    data: {
+                      deviceId: existingDevice.id,
+                      variationId: existingVar.id,
+                      branch: b,
+                      productId: prodId,
+                      stock: branchStockValues[b] || 0,
+                      sold: 0
+                    }
+                  });
+                }
+              }
+            } else {
+              // Create new variant on existing device
+              const createdVar = await tx.deviceVariation.create({
+                data: {
+                  deviceId: existingDevice.id,
+                  type: v.type || 'Storage',
+                  name: v.name,
+                  productId: prodId,
+                  price: parseFloat(v.price || priceStr),
+                  cost: parseFloat(v.cost || costStr),
+                  stock: allocatedStock
+                }
+              });
+
+              for (const b of branches) {
+                await tx.branchStock.create({
+                  data: {
+                    deviceId: existingDevice.id,
+                    variationId: createdVar.id,
+                    branch: b,
+                    productId: prodId,
+                    stock: branchStockValues[b] || 0,
+                    sold: 0
+                  }
+                });
+              }
+            }
+          }
+        } else {
+          // Standard item without capacity variations
+          const defaultProdId = formatProductId(name, 'STD');
+          const totalStock = parseInt(stockStr, 10);
+          addedTotalStock += totalStock;
+
+          let existingVar = existingDevice.variations.find(ev => ev.name === 'Standard' || ev.productId === defaultProdId);
+          if (existingVar) {
+            await tx.deviceVariation.update({
+              where: { id: existingVar.id },
+              data: {
+                stock: { increment: totalStock },
+                price: parseFloat(priceStr),
+                cost: parseFloat(costStr)
+              }
+            });
+
+            const existingBs = await tx.branchStock.findFirst({
+              where: {
+                deviceId: existingDevice.id,
+                variationId: existingVar.id,
+                branch: operatingBranch
+              }
+            });
+
+            if (existingBs) {
+              await tx.branchStock.update({
+                where: { id: existingBs.id },
+                data: { stock: { increment: totalStock } }
+              });
+            } else {
+              await tx.branchStock.create({
+                data: {
+                  deviceId: existingDevice.id,
+                  variationId: existingVar.id,
+                  branch: operatingBranch,
+                  productId: defaultProdId,
+                  stock: totalStock,
+                  sold: 0
+                }
+              });
+            }
+          } else {
+            const createdVar = await tx.deviceVariation.create({
+              data: {
+                deviceId: existingDevice.id,
+                type: 'Model',
+                name: 'Standard',
+                productId: defaultProdId,
+                price: parseFloat(priceStr),
+                cost: parseFloat(costStr),
+                stock: totalStock
+              }
+            });
+
+            for (const b of branches) {
+              const bStock = b === operatingBranch ? totalStock : 0;
+              await tx.branchStock.create({
+                data: {
+                  deviceId: existingDevice.id,
+                  variationId: createdVar.id,
+                  branch: b,
+                  productId: defaultProdId,
+                  stock: bStock,
+                  sold: 0
+                }
+              });
+            }
+          }
+        }
+
+        // Update existing device aggregate stock
+        const updatedDevice = await tx.device.update({
+          where: { id: existingDevice.id },
+          data: {
+            stock: { increment: addedTotalStock },
+            ...(specs ? { specs } : {}),
+            ...(primaryImage ? { image: primaryImage } : {}),
+            ...(imageUrls.length > 0 ? { images: imageUrls } : {})
+          }
+        });
+
+        return updatedDevice;
+      }
+
+      // New product creation
       const createdDevice = await tx.device.create({
         data: {
           name,
@@ -388,6 +605,27 @@ export async function POST(req: Request) {
           const prodId = formatProductId(name, v.name, v.productId);
           const varStock = parseInt(v.stock || 0, 10);
           
+          // Branch stock allocation
+          const tagStock = isSuperAdmin
+            ? (v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (operatingBranch === 'Tagoloan' ? varStock : 0))
+            : (operatingBranch === 'Tagoloan' ? (parseInt(v.tagoloanStock ?? v.stock ?? 0, 10)) : 0);
+
+          const vilStock = isSuperAdmin
+            ? (v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (operatingBranch === 'Villanueva' ? varStock : 0))
+            : (operatingBranch === 'Villanueva' ? (parseInt(v.villanuevaStock ?? v.stock ?? 0, 10)) : 0);
+
+          const jasStock = isSuperAdmin
+            ? (v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (operatingBranch === 'Jasaan' ? varStock : 0))
+            : (operatingBranch === 'Jasaan' ? (parseInt(v.jasaanStock ?? v.stock ?? 0, 10)) : 0);
+
+          const branchStockValues: Record<string, number> = {
+            Tagoloan: isNaN(tagStock) ? 0 : tagStock,
+            Villanueva: isNaN(vilStock) ? 0 : vilStock,
+            Jasaan: isNaN(jasStock) ? 0 : jasStock
+          };
+
+          const allocatedStock = isSuperAdmin ? (tagStock + vilStock + jasStock) : (branchStockValues[operatingBranch] || 0);
+
           const createdVar = await tx.deviceVariation.create({
             data: {
               deviceId: createdDevice.id,
@@ -396,20 +634,9 @@ export async function POST(req: Request) {
               productId: prodId,
               price: parseFloat(v.price || priceStr),
               cost: parseFloat(v.cost || costStr),
-              stock: varStock
+              stock: allocatedStock
             }
           });
-
-          // Branch stock allocation
-          const tagStock = v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (operatingBranch === 'Tagoloan' ? varStock : 0);
-          const vilStock = v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (operatingBranch === 'Villanueva' ? varStock : 0);
-          const jasStock = v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (operatingBranch === 'Jasaan' ? varStock : 0);
-
-          const branchStockValues: Record<string, number> = {
-            Tagoloan: isNaN(tagStock) ? 0 : tagStock,
-            Villanueva: isNaN(vilStock) ? 0 : vilStock,
-            Jasaan: isNaN(jasStock) ? 0 : jasStock
-          };
 
           for (const b of branches) {
             await tx.branchStock.create({
@@ -460,7 +687,7 @@ export async function POST(req: Request) {
 
     await logActivity({
       action: 'ADD_DEVICE',
-      description: `Added product '${name}' with multi-branch variant support (Initial Stock: ${stockStr})`,
+      description: `Added/synchronized product '${name}' with multi-branch variant support (Stock: ${stockStr})`,
       branch: operatingBranch,
       userId: session.userId,
       userRole: session.role

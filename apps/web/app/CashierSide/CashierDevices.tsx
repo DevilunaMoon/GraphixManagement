@@ -271,11 +271,20 @@ export default function CashierDevices() {
       .replace(/[^A-Z0-9]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
-    const cleanVar = (variantName || 'STD')
-      .toUpperCase()
-      .replace(/[^A-Z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+
+    const trimmedVariant = (variantName || 'STD').trim().toUpperCase();
+    const storageNumMatch = trimmedVariant.match(/^(\d+)\s*(GB|TB)$/i);
+    let cleanVar = '';
+    if (storageNumMatch && storageNumMatch[1]) {
+      cleanVar = storageNumMatch[1];
+    } else {
+      cleanVar = trimmedVariant
+        .replace(/[^A-Z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    if (!cleanVar) cleanVar = 'STD';
     return `${cleanModel}-${cleanVar}`;
   }
 

@@ -26,14 +26,20 @@ import { isIPhoneProduct } from '../../lib/imei';
 
 interface CartItem {
   id: string;
+  variantId?: string;
+  productId?: string;
   name: string;
+  baseName?: string;
   price: number;
+  originalPrice?: number;
   discount?: number;
   discountStartDate?: string | null;
   discountEndDate?: string | null;
-  image: string | null;
+  image?: string | null;
   stock: number;
   cartQty: number;
+  storage?: string;
+  isPreOwned?: boolean;
   downpayment?: string | null;
 }
 
@@ -241,12 +247,19 @@ export default function CashierPayment() {
       // Process each cart item as a purchase record
       for (const item of cartItems) {
         const itemTotal = item.price * item.cartQty;
-        const isIPhone = isIPhoneProduct(item.name);
+        const isIPhone = isIPhoneProduct(item.name) || isIPhoneProduct(item.baseName || '');
 
         // If iPhone with quantity > 1, create individual unit records for unique IMEI assignment
         const unitsToProcess = isIPhone ? item.cartQty : 1;
         const perUnitAmount = isIPhone ? Math.round(itemTotal / item.cartQty) : itemTotal;
         const perUnitQuantity = isIPhone ? 1 : item.cartQty;
+
+        const variationPayload = item.variantId ? [{
+          id: item.variantId,
+          name: item.storage && item.storage !== '—' ? item.storage : (item.name || 'Standard'),
+          productId: item.productId,
+          price: item.originalPrice || item.price
+        }] : undefined;
 
         for (let u = 0; u < unitsToProcess; u++) {
           const res = await fetch('/api/purchases', {
@@ -254,10 +267,13 @@ export default function CashierPayment() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               deviceId: item.id,
+              variationId: item.variantId || undefined,
+              variations: variationPayload,
               amount: perUnitAmount,
               quantity: perUnitQuantity,
               paymentType: paymentType, // 'Cash' | 'GCash' | 'Split'
               source: 'POS',
+              branch: branchInfo?.name || undefined,
               downpaymentAmount: 0,
               remainingBalance: 0,
               isSettled: true,
@@ -759,18 +775,35 @@ export default function CashierPayment() {
                             <div className="w-9 h-9 bg-purple-100 rounded-lg flex items-center justify-center text-[#bd00ff] font-bold text-xs shrink-0">P</div>
                           )}
                           <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-gray-900 text-xs truncate">
-                              {item.name} <strong className="text-[#bd00ff]">x{item.cartQty}</strong>
-                            </span>
-                            {discount > 0 ? (
-                              <span className="text-[10px] text-rose-600 font-bold">
-                                {discount}% OFF (₱{Number(item.price).toLocaleString()})
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-gray-900 text-xs truncate">
+                                {item.name} <strong className="text-[#bd00ff]">x{item.cartQty}</strong>
                               </span>
-                            ) : (
-                              <span className="text-[10px] text-gray-400 font-mono">
-                                ₱{Number(item.price).toLocaleString()} each
-                              </span>
-                            )}
+                              {item.storage && item.storage !== '—' && (
+                                <span className="bg-purple-100 text-[#9c00d6] text-[10px] font-bold px-1.5 py-0.2 rounded border border-purple-200">
+                                  {item.storage}
+                                </span>
+                              )}
+                              {item.isPreOwned && (
+                                <span className="bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-200 uppercase">
+                                  Pre-Owned
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
+                              {item.productId && (
+                                <span className="font-mono text-gray-400 font-bold">{item.productId}</span>
+                              )}
+                              {discount > 0 ? (
+                                <span className="text-rose-600 font-bold">
+                                  {discount}% OFF (₱{Number(item.price).toLocaleString()})
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 font-mono">
+                                  ₱{Number(item.price).toLocaleString()} each
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col items-end shrink-0 pl-2">

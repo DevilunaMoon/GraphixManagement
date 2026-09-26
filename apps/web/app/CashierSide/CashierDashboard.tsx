@@ -17,16 +17,21 @@ interface Product {
   discount?: number;
   discountStartDate?: string | null;
   discountEndDate?: string | null;
+  isPreOwned?: boolean;
 }
 
 interface FlattenedItem {
   id: string;
+  variantId?: string;
+  productId: string;
   cartKey: string;
   name: string;
   cartName: string;
   storage: string;
   price: number;
+  originalPrice: number;
   stock: number;
+  isPreOwned?: boolean;
   discount?: number;
   discountStartDate?: string | null;
   discountEndDate?: string | null;
@@ -34,12 +39,17 @@ interface FlattenedItem {
 
 interface CartItem {
   id: string;
+  variantId?: string;
+  productId?: string;
   name: string;
+  baseName: string;
   cartKey: string;
   price: number;
+  originalPrice: number;
   stock: number;
   cartQty: number;
   storage?: string;
+  isPreOwned?: boolean;
   discount?: number;
   discountStartDate?: string | null;
   discountEndDate?: string | null;
@@ -56,15 +66,47 @@ const getNumericStorage = (name: string): number => {
 const formatStorageLabel = (raw: string): string => {
   const trimmed = raw.trim();
   if (/gb|tb/i.test(trimmed)) return trimmed.toUpperCase();
-  return `${trimmed}GB`;
+  if (/^\d+$/.test(trimmed)) return `${trimmed} GB`;
+  return trimmed;
+};
+
+const formatAutoProductId = (modelName: string, variantName?: string, customProductId?: string): string => {
+  if (customProductId && customProductId.trim()) {
+    return customProductId.trim().toUpperCase();
+  }
+  const cleanModel = (modelName || 'DEVICE')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  
+  if (!variantName || !variantName.trim() || variantName.toLowerCase() === 'standard' || variantName.toLowerCase() === 'std') {
+    return `${cleanModel}-STD`;
+  }
+
+  const trimmedVariant = variantName.trim().toUpperCase();
+  const storageNumMatch = trimmedVariant.match(/^(\d+)\s*(GB|TB)$/i);
+  let cleanVariant = '';
+  if (storageNumMatch && storageNumMatch[1]) {
+    cleanVariant = storageNumMatch[1];
+  } else {
+    cleanVariant = trimmedVariant
+      .replace(/[^A-Z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  if (!cleanVariant) cleanVariant = 'STD';
+  return `${cleanModel}-${cleanVariant}`;
 };
 
 const flattenProductsIntoStorageRows = (products: Product[]): FlattenedItem[] => {
   const items: FlattenedItem[] = [];
 
   for (const product of products) {
-    const storageVars = (product.variations || []).filter(
-      (v: any) => v.type && String(v.type).toLowerCase() === 'storage'
+    const rawVars = product.variations || [];
+    const storageVars = rawVars.filter(
+      (v: any) => !v.type || String(v.type).toLowerCase() === 'storage' || String(v.type).toLowerCase() === 'unit'
     );
 
     if (storageVars.length > 0) {
@@ -76,29 +118,39 @@ const flattenProductsIntoStorageRows = (products: Product[]): FlattenedItem[] =>
         const storageLabel = formatStorageLabel(String(v.name));
         const itemPrice = (v.price && Number(v.price) > 0) ? Number(v.price) : product.price;
         const itemStock = (v.stock !== undefined && v.stock !== null) ? Number(v.stock) : product.stock;
+        const prodId = v.productId || formatAutoProductId(product.name, v.name);
 
         items.push({
           id: product.id,
-          cartKey: `${product.id}_${v.id || v.name}`,
+          variantId: v.id,
+          productId: prodId,
+          cartKey: `${product.id}_${v.id || prodId || v.name}`,
           name: product.name,
           cartName: `${product.name} (${storageLabel})`,
           storage: storageLabel,
           price: itemPrice,
+          originalPrice: itemPrice,
           stock: itemStock,
+          isPreOwned: product.isPreOwned,
           discount: product.discount,
           discountStartDate: product.discountStartDate,
           discountEndDate: product.discountEndDate
         });
       }
     } else {
+      const defaultProdId = (rawVars[0]?.productId) || formatAutoProductId(product.name, 'STD');
       items.push({
         id: product.id,
+        variantId: rawVars[0]?.id,
+        productId: defaultProdId,
         cartKey: product.id,
         name: product.name,
         cartName: product.name,
         storage: '—',
         price: product.price,
+        originalPrice: product.price,
         stock: product.stock,
+        isPreOwned: product.isPreOwned,
         discount: product.discount,
         discountStartDate: product.discountStartDate,
         discountEndDate: product.discountEndDate
@@ -186,12 +238,17 @@ export default function CashierDashboard() {
         ...prev,
         [item.cartKey]: {
           id: item.id,
+          variantId: item.variantId,
+          productId: item.productId,
           name: item.cartName,
+          baseName: item.name,
           cartKey: item.cartKey,
           price: effectivePrice,
+          originalPrice: item.price,
           stock: item.stock,
           cartQty: 1,
           storage: item.storage,
+          isPreOwned: item.isPreOwned,
           discount: item.discount,
           discountStartDate: item.discountStartDate,
           discountEndDate: item.discountEndDate
