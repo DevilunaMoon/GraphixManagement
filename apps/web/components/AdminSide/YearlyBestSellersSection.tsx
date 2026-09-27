@@ -360,35 +360,35 @@ function BestSellerDetailsModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div 
-        className="bg-[#FAF7FF] rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-[#FAF7FF] rounded-3xl w-full max-w-6xl max-h-[92vh] flex flex-col shadow-2xl border border-purple-200 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-white px-6 py-5 border-b border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+        <div className="bg-white px-5 sm:px-6 py-4 sm:py-5 border-b border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 shrink-0">
-              <Award size={24} />
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-purple-500/20 shrink-0">
+              <Award size={22} className="sm:w-6 sm:h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                <h2 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight m-0">
                   {isAllBranches ? 'All Branches' : `${branchName} Branch`}
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
                   Best Sellers
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
+              <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
                 Detailed performance overview • {timeframeLabel}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-auto">
+          <div className="flex items-center gap-2.5 self-end sm:self-auto">
             {/* Super Admin Branch Switcher in Modal */}
             {isSuperAdmin && (
               <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 overflow-x-auto">
@@ -396,10 +396,10 @@ function BestSellerDetailsModal({
                   <button
                     key={b}
                     onClick={() => onSelectBranch(b)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap border-none ${
                       branchName.toLowerCase() === b.toLowerCase()
                         ? 'bg-white text-[#bd00ff] shadow-xs'
-                        : 'text-gray-600 hover:text-purple-700'
+                        : 'text-gray-600 hover:text-purple-700 bg-transparent'
                     }`}
                   >
                     {b}
@@ -409,7 +409,7 @@ function BestSellerDetailsModal({
             )}
             <button 
               onClick={onClose}
-              className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-colors cursor-pointer border-none"
               title="Close modal"
             >
               <X size={20} />
@@ -418,66 +418,66 @@ function BestSellerDetailsModal({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex flex-col gap-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex flex-col gap-5 sm:gap-6">
           {/* Branch Summary Metrics Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-white p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-purple-600 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Branch</span>
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Branch</span>
                 {isAllBranches ? <Globe size={18} /> : <Building2 size={18} />}
               </div>
               <div>
-                <p className="text-lg font-black text-gray-900 truncate">{branchName}</p>
-                <p className="text-[11px] text-gray-400 font-medium">
+                <p className="text-base sm:text-lg font-black text-gray-900 truncate m-0">{branchName}</p>
+                <p className="text-[10px] sm:text-[11px] text-gray-400 font-medium m-0 mt-0.5">
                   {isAllBranches ? 'System-Wide' : 'Verified Location'}
                 </p>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-emerald-600 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Units Sold</span>
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Units Sold</span>
                 <Package size={18} />
               </div>
               <div>
-                <p className="text-xl font-black text-gray-900">{totalUnits.toLocaleString()} pcs</p>
-                <p className="text-[11px] text-emerald-600 font-bold">Completed sales</p>
+                <p className="text-lg sm:text-xl font-black text-gray-900 m-0">{totalUnits.toLocaleString()} pcs</p>
+                <p className="text-[10px] sm:text-[11px] text-emerald-600 font-bold m-0 mt-0.5">Completed sales</p>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-[#bd00ff] mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Total Revenue</span>
-                <span className="text-lg font-black">₱</span>
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Total Revenue</span>
+                <span className="text-base sm:text-lg font-black">₱</span>
               </div>
               <div>
-                <p className="text-xl font-black text-gray-900 truncate" title={formatCurrency(totalRevenue)}>
+                <p className="text-lg sm:text-xl font-black text-gray-900 truncate m-0" title={formatCurrency(totalRevenue)}>
                   {formatCurrency(totalRevenue)}
                 </p>
-                <p className="text-[11px] text-purple-600 font-bold">Gross Best Sellers</p>
+                <p className="text-[10px] sm:text-[11px] text-purple-600 font-bold m-0 mt-0.5">Gross Best Sellers</p>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
+            <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-purple-100/80 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-blue-600 mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Completed Orders</span>
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-gray-500">Completed Orders</span>
                 <ShoppingCart size={18} />
               </div>
               <div>
-                <p className="text-xl font-black text-gray-900">{totalOrders.toLocaleString()}</p>
-                <p className="text-[11px] text-blue-600 font-bold">Transactions</p>
+                <p className="text-lg sm:text-xl font-black text-gray-900 m-0">{totalOrders.toLocaleString()}</p>
+                <p className="text-[10px] sm:text-[11px] text-blue-600 font-bold m-0 mt-0.5">Transactions</p>
               </div>
             </div>
           </div>
 
           {/* Ranked Best Selling Products Table */}
-          <div className="bg-white rounded-2xl border border-purple-100 shadow-xs overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl border border-purple-100 shadow-xs overflow-hidden flex flex-col">
+            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-white">
               <div className="flex items-center gap-2">
                 <Award size={18} className="text-[#bd00ff]" />
-                <h3 className="font-black text-gray-900 text-base">Ranked Best-Selling Products</h3>
+                <h3 className="font-black text-gray-900 text-sm sm:text-base m-0">Ranked Best-Selling Products</h3>
               </div>
-              <span className="text-xs text-gray-500 font-semibold">
+              <span className="text-xs text-gray-500 font-bold bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
                 {products.length} {products.length === 1 ? 'Product Model' : 'Product Models'}
               </span>
             </div>
@@ -485,24 +485,24 @@ function BestSellerDetailsModal({
             {products.length === 0 ? (
               <div className="p-8 text-center text-gray-400">
                 <Package size={36} className="mx-auto mb-2 text-purple-300" />
-                <p className="font-bold text-gray-600">No Sales Data Found</p>
-                <p className="text-xs text-gray-400 mt-1">There are no completed orders recorded for {branchName} in this timeframe.</p>
+                <p className="font-bold text-gray-600 m-0">No Sales Data Found</p>
+                <p className="text-xs text-gray-400 mt-1 m-0">There are no completed orders recorded for {branchName} in this timeframe.</p>
               </div>
             ) : (
               <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse min-w-[700px]">
+                <table className="w-full text-left border-collapse min-w-[680px]">
                   <thead>
-                    <tr className="bg-purple-50/40 text-[11px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100">
-                      <th className="py-3.5 px-4 text-center w-14">Rank</th>
-                      <th className="py-3.5 px-4 min-w-[200px]">Product Info</th>
-                      <th className="py-3.5 px-4 min-w-[150px]">Variant / Storage</th>
-                      <th className="py-3.5 px-4 min-w-[110px]">Condition</th>
-                      <th className="py-3.5 px-4 text-right min-w-[100px]">Units Sold</th>
-                      <th className="py-3.5 px-4 text-right min-w-[130px]">Total Revenue</th>
-                      <th className="py-3.5 px-4 text-right min-w-[80px]">Share</th>
+                    <tr className="bg-purple-50/50 text-[11px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100">
+                      <th className="py-3 px-3.5 text-center w-12">Rank</th>
+                      <th className="py-3 px-3.5">Product Info</th>
+                      <th className="py-3 px-3">Variant / Storage</th>
+                      <th className="py-3 px-3 text-center">Condition</th>
+                      <th className="py-3 px-3.5 text-right whitespace-nowrap">Units Sold</th>
+                      <th className="py-3 px-3.5 text-right whitespace-nowrap">Total Revenue</th>
+                      <th className="py-3 px-3.5 text-right whitespace-nowrap">Share</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 text-sm">
+                  <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
                     {products.map((p, idx) => {
                       const rank = idx + 1;
                       const rankBadge = rank === 1 
@@ -521,16 +521,16 @@ function BestSellerDetailsModal({
                       return (
                         <tr key={`${p.productId}-${rank}`} className="hover:bg-purple-50/30 transition-colors">
                           {/* Rank */}
-                          <td className="py-3.5 px-4 text-center">
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-xl text-xs font-black border ${rankBadge}`}>
+                          <td className="py-3 px-3.5 text-center">
+                            <span className={`inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl text-xs font-black border ${rankBadge}`}>
                               #{rank}
                             </span>
                           </td>
 
                           {/* Product Info (Image + Model) */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center overflow-hidden shrink-0">
+                          <td className="py-3 px-3.5">
+                            <div className="flex items-center gap-2.5 sm:gap-3">
+                              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center overflow-hidden shrink-0">
                                 {p.image ? (
                                   <img 
                                     src={p.image} 
@@ -541,11 +541,11 @@ function BestSellerDetailsModal({
                                   <Smartphone size={18} className="text-purple-400" />
                                 )}
                               </div>
-                              <div className="min-w-0">
-                                <p className="font-bold text-gray-900 truncate hover:text-purple-700 transition-colors" title={prodName}>
+                              <div className="min-w-0 max-w-[200px] sm:max-w-[260px]">
+                                <p className="font-bold text-gray-900 truncate text-xs sm:text-sm m-0 hover:text-purple-700 transition-colors" title={prodName}>
                                   {prodName}
                                 </p>
-                                <span className="text-[11px] text-gray-400 font-medium block">
+                                <span className="text-[10px] text-gray-400 font-medium block truncate">
                                   Graphix Device Catalog
                                 </span>
                               </div>
@@ -553,46 +553,46 @@ function BestSellerDetailsModal({
                           </td>
 
                           {/* Variant / Storage */}
-                          <td className="py-3.5 px-4">
+                          <td className="py-3 px-3">
                             {prodVariant ? (
                               <span 
-                                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200 max-w-[200px] truncate"
+                                className="inline-block px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-800 border border-gray-200 max-w-[150px] sm:max-w-[180px] truncate"
                                 title={prodVariant}
                               >
                                 {prodVariant}
                               </span>
                             ) : (
-                              <span className="text-xs text-gray-400 italic">Standard</span>
+                              <span className="text-[11px] text-gray-400 italic">Standard</span>
                             )}
                           </td>
 
                           {/* Condition */}
-                          <td className="py-3.5 px-4">
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
                             {isPreOwned ? (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200 whitespace-nowrap">
                                 Pre-Owned
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap">
                                 Brand New
                               </span>
                             )}
                           </td>
 
                           {/* Units Sold */}
-                          <td className="py-3.5 px-4 text-right font-black text-gray-900 whitespace-nowrap">
-                            <span>{p.unitsSold.toLocaleString()}</span>
-                            <span className="text-xs text-gray-400 font-medium ml-1">pcs</span>
+                          <td className="py-3 px-3.5 text-right font-black text-gray-900 whitespace-nowrap">
+                            <span className="text-xs sm:text-sm">{p.unitsSold.toLocaleString()}</span>
+                            <span className="text-[10px] sm:text-xs text-gray-400 font-medium ml-1">pcs</span>
                           </td>
 
                           {/* Revenue */}
-                          <td className="py-3.5 px-4 text-right font-black text-[#bd00ff] whitespace-nowrap">
+                          <td className="py-3 px-3.5 text-right font-black text-[#bd00ff] whitespace-nowrap text-xs sm:text-sm">
                             {formatCurrency(revenue)}
                           </td>
 
                           {/* Percentage Share */}
-                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <span className="text-xs font-extrabold text-gray-800 bg-purple-50 px-2 py-1 rounded-md border border-purple-100">
+                          <td className="py-3 px-3.5 text-right whitespace-nowrap">
+                            <span className="text-xs font-black text-[#bd00ff] bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100">
                               {p.percentage || (totalUnits > 0 ? Math.round((p.unitsSold / totalUnits) * 100) : 0)}%
                             </span>
                           </td>
@@ -607,14 +607,14 @@ function BestSellerDetailsModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-white px-6 py-4 border-t border-purple-100 flex items-center justify-between shrink-0">
+        <div className="bg-white px-5 sm:px-6 py-3.5 sm:py-4 border-t border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
-            <Info size={14} className="text-[#bd00ff]" />
+            <Info size={14} className="text-[#bd00ff] shrink-0" />
             <span>Sales data calculated from verified completed transactions only.</span>
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-[#bd00ff] hover:from-purple-700 hover:to-purple-800 text-white font-bold text-sm shadow-md shadow-purple-500/20 transition-all cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-[#bd00ff] hover:from-purple-700 hover:to-purple-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-purple-500/20 transition-all cursor-pointer border-none self-end sm:self-auto"
           >
             Close Details
           </button>
