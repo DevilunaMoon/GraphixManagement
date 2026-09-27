@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
-import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Building2 } from 'lucide-react';
+import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Building2, ChevronDown } from 'lucide-react';
 import YearlyBestSellersSection from '../../components/AdminSide/YearlyBestSellersSection';
+import RepairDashboardView from '../../components/AdminSide/RepairDashboardView';
 
 const formatCurrency = (val: number) => {
   return '₱' + (val || 0).toLocaleString('en-PH', {
@@ -36,6 +37,7 @@ function getResponsiveNumberClass(val: string | number, variant: 'compact' | 'st
 
 export default function AdminDashboard() {
   const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
+  const [dashboardView, setDashboardView] = useState<'product' | 'repair'>('product');
   const [userCount, setUserCount] = useState<string | number>("...");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [selectedMonthData, setSelectedMonthData] = useState<{ month: string, units: string, trend: string, trendUp: boolean | null } | null>(null);
@@ -78,21 +80,52 @@ export default function AdminDashboard() {
 
   return (
     <>
-      <div className="flex flex-col gap-8 font-['Inter']">
-        {/* Centralized Multi-Branch Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatCard 
-            icon={<span className="text-xl font-bold">₱</span>}
-            label="Total Sales" 
-            value={totalRevenueValue} 
-            subText={
-              <span className="text-purple-700 font-semibold text-[11px] truncate block">
-                Today: {formatCurrency(dashboardData?.sales?.today || 0)}
-              </span>
-            }
-            iconBg="bg-emerald-100" 
-            iconColor="text-emerald-700" 
-          />
+      <div className="flex flex-col gap-6 font-['Inter']">
+        {/* Dashboard Content Header with View Dropdown Filter (placed within content area above Active Users column) */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              {dashboardView === 'product' ? 'Product Purchase Dashboard' : 'Repair Dashboard'}
+            </h2>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">
+              {dashboardView === 'product'
+                ? 'Real-time retail inventory, sales revenue, and device orders'
+                : 'Real-time repair tracking, technician workload, and service revenue'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-purple-500/15 shadow-sm">
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Dashboard View:</span>
+            <div className="relative">
+              <select
+                value={dashboardView}
+                onChange={(e) => setDashboardView(e.target.value as 'product' | 'repair')}
+                className="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-[#bd00ff] font-extrabold text-xs sm:text-sm py-1.5 pl-3 pr-8 rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer appearance-none transition-colors"
+              >
+                <option value="product">Product Purchase</option>
+                <option value="repair">Repair</option>
+              </select>
+              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#bd00ff] pointer-events-none" />
+            </div>
+          </div>
+        </div>
+
+        {dashboardView === 'product' ? (
+          <>
+            {/* Centralized Multi-Branch Metrics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <StatCard 
+                icon={<span className="text-xl font-bold">₱</span>}
+                label="Total Sales" 
+                value={totalRevenueValue} 
+                subText={
+                  <span className="text-purple-700 font-semibold text-[11px] truncate block">
+                    Today: {formatCurrency(dashboardData?.sales?.today || 0)}
+                  </span>
+                }
+                iconBg="bg-emerald-100" 
+                iconColor="text-emerald-700" 
+              />
           <StatCard 
             icon={<Package size={20} />} 
             label="Units Sold" 
@@ -356,6 +389,14 @@ export default function AdminDashboard() {
               })}
             </div>
           </div>
+        )}
+          </>
+        ) : (
+          <RepairDashboardView 
+            selectedBranch={selectedBranch}
+            setSelectedBranch={setSelectedBranch}
+            isSuperAdmin={isSuperAdmin}
+          />
         )}
       </div>
         

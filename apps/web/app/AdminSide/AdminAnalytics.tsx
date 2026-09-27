@@ -17,11 +17,13 @@ import {
   QrCode,
   Lock,
   Clock,
-  RefreshCw
+  RefreshCw,
+  ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import YearlyBestSellersSection from '../../components/AdminSide/YearlyBestSellersSection';
+import RepairAnalyticsView from '../../components/AdminSide/RepairAnalyticsView';
 
 const formatCurrency = (val: number) => {
   return '₱' + (val || 0).toLocaleString('en-PH', {
@@ -43,6 +45,7 @@ function getResponsiveNumberClass(val: string | number) {
 
 export default function AdminAnalytics() {
   const { selectedBranch, isSuperAdmin, userBranch } = useBranch();
+  const [analyticsView, setAnalyticsView] = useState<'product' | 'repair'>('product');
   const [userCount, setUserCount] = useState<string | number>("...");
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -151,9 +154,12 @@ export default function AdminAnalytics() {
         {/* Header & Controls */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-[1.6rem] font-bold text-[#111]">
-                {isSuperAdmin ? "Comprehensive Analytics" : `${userBranch || 'Tagoloan'} Branch Analytics`}
+                {analyticsView === 'product'
+                  ? isSuperAdmin ? "Comprehensive Product Analytics" : `${userBranch || 'Tagoloan'} Branch Product Analytics`
+                  : isSuperAdmin ? "Comprehensive Repair Analytics" : `${userBranch || 'Tagoloan'} Branch Repair Analytics`
+                }
               </h2>
               {!isSuperAdmin && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-200 text-[#5c0099] rounded-full text-xs font-black uppercase tracking-wider shadow-sm">
@@ -162,22 +168,53 @@ export default function AdminAnalytics() {
               )}
             </div>
             <p className="text-sm font-semibold text-gray-500 mt-1">
-              Performance metrics, payment methods breakdown, and branch volume
+              {analyticsView === 'product'
+                ? 'Product retail sales performance, device best sellers, payment methods breakdown, and branch volume'
+                : 'Repair workorder metrics, technician status distribution, repair revenue, and branch performance'
+              }
             </p>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <button 
-              onClick={handleDownload}
-              className={`flex items-center gap-2 bg-gradient-to-r ${styles.gradient} text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md hover:opacity-95 cursor-pointer border-none`}
-            >
-              <FileSpreadsheet size={16} />
-              <span>Export CSV Report</span>
-            </button>
+            {/* View Switcher Tabs */}
+            <div className="flex items-center bg-gray-100/90 p-1 rounded-xl border border-gray-200">
+              <button
+                onClick={() => setAnalyticsView('product')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                  analyticsView === 'product'
+                    ? 'bg-white text-[#bd00ff] shadow-xs font-black'
+                    : 'text-gray-600 hover:text-purple-700 bg-transparent'
+                }`}
+              >
+                Product Purchase
+              </button>
+              <button
+                onClick={() => setAnalyticsView('repair')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border-none ${
+                  analyticsView === 'repair'
+                    ? 'bg-white text-[#bd00ff] shadow-xs font-black'
+                    : 'text-gray-600 hover:text-purple-700 bg-transparent'
+                }`}
+              >
+                Repair
+              </button>
+            </div>
+
+            {analyticsView === 'product' && (
+              <button 
+                onClick={handleDownload}
+                className={`flex items-center gap-2 bg-gradient-to-r ${styles.gradient} text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md hover:opacity-95 cursor-pointer border-none`}
+              >
+                <FileSpreadsheet size={16} />
+                <span>Export CSV Report</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Date Filter Bar */}
+        {analyticsView === 'product' ? (
+          <>
+            {/* Date Filter Bar */}
         <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 mr-2 uppercase tracking-wide">
@@ -443,6 +480,20 @@ export default function AdminAnalytics() {
             </div>
           </div>
         </div>
+          </>
+        ) : (
+          <RepairAnalyticsView 
+            selectedBranch={selectedBranch}
+            isSuperAdmin={isSuperAdmin}
+            userBranch={userBranch}
+            dateFilter={dateFilter}
+            setDateFilter={setDateFilter}
+            customStartDate={customStartDate}
+            setCustomStartDate={setCustomStartDate}
+            customEndDate={customEndDate}
+            setCustomEndDate={setCustomEndDate}
+          />
+        )}
       </div>
 
       {selectedYearData && (
