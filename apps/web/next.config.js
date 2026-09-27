@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   transpilePackages: ["database"],
   serverExternalPackages: ["@prisma/client", "bcryptjs", "pg"],
   async headers() {

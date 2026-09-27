@@ -4,7 +4,9 @@ import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// Load the root .env file so Next.js can read the DATABASE_URL
+// Robustly load .env across monorepo locations
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 const globalForPrisma = global as unknown as { prisma_new: PrismaClient };
@@ -19,10 +21,14 @@ if (process.env.DATABASE_URL) {
 
 console.log("DEBUG: DATABASE_URL is", process.env.DATABASE_URL);
 
+const poolMax = process.env.DB_POOL_MAX 
+  ? parseInt(process.env.DB_POOL_MAX, 10) 
+  : (process.env.NODE_ENV === 'production' ? 10 : 5);
+
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 1, // Limit each serverless instance to 1 connection to prevent hitting pool_size: 15
-  idleTimeoutMillis: 10000,
+  max: poolMax,
+  idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
   ...(parsedPassword ? { password: parsedPassword } : {})
 });
