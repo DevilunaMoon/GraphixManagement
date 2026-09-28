@@ -4,12 +4,10 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Menu, X,
-  MonitorSmartphone, ShoppingBag,
-  ShieldCheck, Clock,
+  ShoppingBag, Wrench, Receipt, MapPin,
   ArrowRight, Sparkles, ArrowUp,
   Facebook, ExternalLink, Building2,
-  Camera, ChevronLeft, ChevronRight,
-  MapPin
+  Camera, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -247,24 +245,24 @@ export default function HomePage() {
 
   const features = [
     {
-      title: "Device Monitoring",
-      description: "Track the real-time repair and maintenance status of your electronic devices with complete transparency.",
-      icon: <MonitorSmartphone className="text-white" size={32} />
-    },
-    {
-      title: "Digital Marketplace",
-      description: "Browse and purchase a wide selection of premium electronics, cables, and accessories directly.",
+      title: "Shop Devices",
+      description: "Browse smartphones and devices with detailed specifications, storage options, prices, discounts, and branch availability.",
       icon: <ShoppingBag className="text-white" size={32} />
     },
     {
-      title: "Secure Data",
-      description: "Safe, secure, and fully documented transactions with digital receipts for every purchase or service.",
-      icon: <ShieldCheck className="text-white" size={32} />
+      title: "Repair Your Device",
+      description: "Submit a repair request and provide details about your device and its condition. Track your repair progress from submission to completion.",
+      icon: <Wrench className="text-white" size={32} />
     },
     {
-      title: "Efficiency",
-      description: "No more waiting in lines. Get live updates on your repair progress straight from the dashboard.",
-      icon: <Clock className="text-white" size={32} />
+      title: "Track Your Orders",
+      description: "View your purchases, pickup information, digital receipts, and order status in one place.",
+      icon: <Receipt className="text-white" size={32} />
+    },
+    {
+      title: "Find Your Branch",
+      description: "Explore Graphix branches and view branch information, available services, and branch-specific updates.",
+      icon: <MapPin className="text-white" size={32} />
     }
   ];
 
@@ -690,9 +688,12 @@ export default function HomePage() {
       {/* Features Section */}
       <section id="features" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-[#8b00cc] font-black text-lg tracking-widest uppercase mb-2">Core Platform</h2>
-            <h3 className="text-4xl md:text-5xl font-black text-gray-900">Everything you need, unified.</h3>
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <h2 className="text-[#8b00cc] font-black text-lg tracking-widest uppercase mb-2">GRAPHIX SERVICES</h2>
+            <h3 className="text-4xl md:text-5xl font-black text-gray-900 leading-tight mb-4">Everything you need for your devices, in one place.</h3>
+            <p className="text-lg text-gray-600 font-medium leading-relaxed">
+              Shop devices, request repairs, track your orders, and stay connected with your local Graphix branch through one convenient platform.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
