@@ -237,18 +237,11 @@ export default function AdminDashboard() {
           <div className="flex flex-col gap-6 lg:col-span-1">
             <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
               <h3 className="text-lg font-bold text-[#111] mb-4 flex items-center gap-2"><ShoppingCart size={20} className="text-[#bd00ff]" /> Transaction Count</h3>
-              <div className="flex justify-between items-end gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
-                  <h4 className={`font-black text-[#111] mt-1 tracking-tight truncate ${getResponsiveNumberClass(dashboardData?.transactions?.total ?? 0, 'standard')}`}>
-                    {dashboardData?.transactions?.total ?? 0}
-                  </h4>
-                </div>
-                <div className="text-right flex flex-col gap-1 shrink-0">
-                  <p className="text-sm font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-lg whitespace-nowrap">
-                    Online: {dashboardData?.transactions?.online ?? 0}
-                  </p>
-                </div>
+              <div>
+                <p className="text-[#666] text-sm font-semibold">Total Successful Sales</p>
+                <h4 className={`font-black text-[#111] mt-1 tracking-tight truncate ${getResponsiveNumberClass(dashboardData?.transactions?.total ?? 0, 'standard')}`}>
+                  {dashboardData?.transactions?.total ?? 0}
+                </h4>
               </div>
             </div>
 
