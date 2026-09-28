@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User, Settings } from 'lucide-react';
+import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User, Settings, KeyRound } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { BranchProvider, useBranch } from '../../context/BranchContext';
 
@@ -17,6 +17,7 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isLogoutModalOpen) {
@@ -281,39 +282,100 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
             <Link
               href="/cashier/notifications"
               title="Notifications"
-              className="relative text-white hover:scale-105 transition-transform p-2.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg shadow-sm outline-none border border-white/20 flex items-center justify-center"
+              className="relative text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-white/10 hover:bg-white/20 rounded-full border border-white/20 flex items-center justify-center"
             >
-              <Bell size={20} />
+              <Bell size={22} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </Link>
 
-            {/* 3. Cashier Profile Button */}
-            <button 
-              onClick={() => router.push('/cashier/profile')}
-              className="flex items-center gap-2 text-white hover:scale-105 transition-transform p-1.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg shadow-sm outline-none border border-white/20"
-              title="View Profile"
-            >
-              {cashier?.image ? (
-                <img src={cashier.image} alt="Avatar" className="w-[28px] h-[28px] rounded-full object-cover border border-white" />
-              ) : (
-                <div className="w-[28px] h-[28px] rounded-full bg-white/25 flex items-center justify-center text-xs font-bold text-white border border-white">
-                  {cashier?.name ? cashier.name.charAt(0).toUpperCase() : 'C'}
-                </div>
+            {/* 3. Cashier Profile Button & Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                title="Cashier Profile"
+                className={`relative text-white hover:scale-110 transition-all p-2 cursor-pointer rounded-full border border-white/20 flex items-center justify-center overflow-hidden ${
+                  isProfileMenuOpen ? 'bg-white/30 ring-2 ring-white/50' : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                {cashier?.image ? (
+                  <img src={cashier.image} alt={cashier?.name || 'Cashier'} className="w-[22px] h-[22px] rounded-full object-cover" />
+                ) : (
+                  <User size={22} />
+                )}
+              </button>
+
+              {isProfileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-purple-100 py-3 z-50 text-gray-900 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0 text-[#9b1fe8] font-bold text-base shadow-sm">
+                        {cashier?.image ? (
+                          <img src={cashier.image} alt={cashier?.name || 'Cashier'} className="w-full h-full object-cover" />
+                        ) : (
+                          (cashier?.name || 'C').charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-gray-900 truncate">{cashier?.name || 'Cashier'}</p>
+                        <span className="inline-block text-[11px] font-bold text-[#9b1fe8] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60 mt-0.5">
+                          Cashier
+                        </span>
+                        <p className="text-[11px] text-gray-500 font-semibold truncate mt-1">
+                          {cashier?.branch || 'Tagoloan'} Branch
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-1.5 space-y-0.5">
+                      <Link
+                        href="/cashier/profile"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
+                      >
+                        <User size={16} className="text-[#9b1fe8]" />
+                        My Profile
+                      </Link>
+                      <Link
+                        href="/cashier/change-password"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
+                      >
+                        <KeyRound size={16} className="text-[#9b1fe8]" />
+                        Change Password
+                      </Link>
+                    </div>
+
+                    <div className="pt-1 mt-1 border-t border-gray-100 p-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          setIsLogoutModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border-none bg-transparent"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
-              <span className="text-sm font-semibold pr-1 hidden md:inline">{cashier?.name || 'Cashier'}</span>
-            </button>
+            </div>
 
             {/* 4. Logout Button */}
             <button 
               onClick={() => setIsLogoutModalOpen(true)}
-              className="text-white hover:scale-105 transition-transform p-2.5 cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg shadow-sm outline-none border border-white/20 flex items-center justify-center"
-              title="Logout"
+              className="text-white hover:scale-110 transition-transform p-2 cursor-pointer bg-transparent border-none outline-none flex items-center justify-center"
+              title="Log Out"
             >
-              <LogOut size={20} />
+              <LogOut size={22} />
             </button>
           </div>
         </header>
