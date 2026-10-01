@@ -248,7 +248,11 @@ export default function CashierMonitoring() {
     fetch('/api/admin/accounts')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setUsers(data);
+        if (Array.isArray(data)) {
+          setUsers(data);
+        } else if (data && Array.isArray(data.users)) {
+          setUsers(data.users);
+        }
       })
       .catch(console.error);
   }, []);
@@ -258,19 +262,30 @@ export default function CashierMonitoring() {
       setAddUserId(null);
       return;
     }
-    const matchedUser = users.find(u => u.email.toLowerCase() === addCustomerEmail.toLowerCase());
+    const query = addCustomerEmail.toLowerCase().trim();
+    const matchedUser = users.find(u => 
+      ((u.email || '').toLowerCase() === query) ||
+      ((u.name || '').toLowerCase() === query)
+    );
     if (matchedUser) {
       setAddUserId(matchedUser.id);
       if (!addOwnerName && matchedUser.name) {
         setAddOwnerName(matchedUser.name);
       }
-    } else {
-      setAddUserId(null);
+      if (!addCustomerPhone && matchedUser.phone) {
+        setAddCustomerPhone(matchedUser.phone);
+      }
     }
   }, [addCustomerEmail, users]);
 
   const filteredUsers = addCustomerEmail 
-    ? users.filter(u => u.email.toLowerCase().includes(addCustomerEmail.toLowerCase()))
+    ? users.filter(u => {
+        const q = addCustomerEmail.toLowerCase().trim();
+        const matchEmail = (u.email || '').toLowerCase().includes(q);
+        const matchName = (u.name || '').toLowerCase().includes(q);
+        const matchPhone = (u.phone || '').toLowerCase().includes(q);
+        return matchEmail || matchName || matchPhone;
+      })
     : users;
 
   const paginatedDevices = devices;
