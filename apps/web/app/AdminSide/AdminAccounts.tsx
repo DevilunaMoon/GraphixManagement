@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
+import { formatStaffId } from '../../lib/staffId';
 
 const splitName = (fullName: string) => {
   const nameToSplit = (fullName || '').trim();
@@ -556,6 +557,7 @@ export default function AdminAccounts() {
             <thead>
               <tr className="bg-purple-50/70 text-purple-900 font-bold border-b border-purple-100 uppercase tracking-wider">
                 <th className="py-3.5 px-4">Email</th>
+                <th className="py-3.5 px-4">Staff ID</th>
                 <th className="py-3.5 px-4 text-center">Role</th>
                 <th className="py-3.5 px-4 text-center">Branch</th>
                 <th className="py-3.5 px-4">Contact #</th>
@@ -567,7 +569,7 @@ export default function AdminAccounts() {
             <tbody className="divide-y divide-gray-100 font-medium text-gray-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center">
+                  <td colSpan={8} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
                       <span className="text-gray-500 font-semibold animate-pulse">
@@ -600,6 +602,17 @@ export default function AdminAccounts() {
                             <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-black uppercase">Suspended</span>
                           )}
                         </div>
+                      </td>
+
+                      {/* Staff ID */}
+                      <td className="py-3 px-4 font-mono font-bold text-xs">
+                        {acc.role !== 'CUSTOMER' ? (
+                          <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200 inline-block font-mono text-[11px]">
+                            {formatStaffId(acc)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 font-normal">—</span>
+                        )}
                       </td>
 
                       {/* Role Badge */}
@@ -829,6 +842,12 @@ export default function AdminAccounts() {
               </div>
 
               <div className="flex flex-col gap-3 divide-y divide-gray-100">
+                {viewModalAccount.role !== 'CUSTOMER' && (
+                  <div className="pt-2 flex justify-between">
+                    <span className="text-gray-500 font-semibold">Staff ID</span>
+                    <span className="font-mono font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">{formatStaffId(viewModalAccount)}</span>
+                  </div>
+                )}
                 <div className="pt-2 flex justify-between">
                   <span className="text-gray-500 font-semibold">Full Name</span>
                   <span className="font-bold text-gray-900">{viewModalAccount.fullName}</span>

@@ -18,6 +18,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 import DatePicker from '../../components/ui/DatePicker';
+import { formatStaffId } from '../../lib/staffId';
 
 export default function CashierProfile({ user }: { user?: any }) {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function CashierProfile({ user }: { user?: any }) {
   const [isSaving, setIsSaving] = useState(false);
 
   // Derive official staff properties
-  const empId = user?.id ? `EMP-${user.id.substring(user.id.length - 6).toUpperCase()}` : 'EMP-001928';
+  const empId = formatStaffId(user);
   
   const rawBranch = user?.branch || 'Tagoloan';
   const branchName = rawBranch.toLowerCase().includes('branch') ? rawBranch : `${rawBranch} Branch`;

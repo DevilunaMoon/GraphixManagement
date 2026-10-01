@@ -22,24 +22,49 @@ export async function GET(req: Request) {
     const statusFilter = searchParams.get('status') || '';
 
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
+    const isBranchAdmin = session.role === 'ADMIN';
+    const isCashier = session.role === 'CASHIER';
     const where: any = {};
 
-    // Branch scoping
+    // Branch scoping & Role access
     if (isSuperAdmin) {
       if (branchFilter && branchFilter !== 'all') {
         where.branch = branchFilter;
       }
-    } else {
-      // Regular Admin only sees their own branch or Customers
-      where.OR = [
-        { branch: session.branch || 'Tagoloan' },
-        { role: 'CUSTOMER' }
-      ];
-    }
-
-    // Role filtering
-    if (roleFilter && roleFilter !== 'all') {
-      where.role = roleFilter;
+      if (roleFilter && roleFilter !== 'all') {
+        if (roleFilter === 'STAFF') {
+          where.role = { in: ['ADMIN', 'CASHIER', 'SUPER_ADMIN'] };
+        } else {
+          where.role = roleFilter;
+        }
+      }
+    } else if (isBranchAdmin) {
+      const adminBranch = session.branch || 'Tagoloan';
+      if (roleFilter && roleFilter !== 'all') {
+        if (roleFilter === 'STAFF') {
+          where.branch = adminBranch;
+          where.role = { in: ['ADMIN', 'CASHIER'] };
+        } else if (roleFilter === 'CUSTOMER') {
+          where.role = 'CUSTOMER';
+        } else {
+          where.branch = adminBranch;
+          where.role = roleFilter;
+        }
+      } else {
+        where.OR = [
+          { branch: adminBranch },
+          { role: 'CUSTOMER' }
+        ];
+      }
+    } else if (isCashier) {
+      if (roleFilter === 'STAFF' || roleFilter === 'ADMIN' || roleFilter === 'CASHIER') {
+        where.id = session.userId;
+      } else {
+        where.OR = [
+          { id: session.userId },
+          { role: 'CUSTOMER' }
+        ];
+      }
     }
 
     // Status filtering

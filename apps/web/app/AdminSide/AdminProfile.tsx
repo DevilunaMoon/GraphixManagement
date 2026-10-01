@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   UserCircle2, 
   KeyRound, 
@@ -15,11 +15,13 @@ import {
   Sparkles, 
   Info,
   Crown,
-  ShieldCheck
+  ShieldCheck,
+  Users
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 import DatePicker from '../../components/ui/DatePicker';
+import { formatStaffId } from '../../lib/staffId';
 
 export default function AdminProfile({ user }: { user?: any }) {
   const router = useRouter();
@@ -36,8 +38,12 @@ export default function AdminProfile({ user }: { user?: any }) {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Staff directory list state
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [isStaffLoading, setIsStaffLoading] = useState(true);
+
   // Derive official staff / administrator properties
-  const empId = user?.id ? `ADM-${user.id.substring(user.id.length - 6).toUpperCase()}` : 'ADM-001001';
+  const empId = formatStaffId(user);
   
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const roleDisplay = isSuperAdmin ? 'Super Admin' : 'Branch Admin';
@@ -72,6 +78,21 @@ export default function AdminProfile({ user }: { user?: any }) {
       setNewPhone('');
     }
   };
+
+  useEffect(() => {
+    setIsStaffLoading(true);
+    fetch('/api/admin/accounts?role=STAFF')
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.users)) {
+          setStaffList(data.users);
+        } else if (Array.isArray(data)) {
+          setStaffList(data);
+        }
+      })
+      .catch(err => console.error("Failed to load staff list:", err))
+      .finally(() => setIsStaffLoading(false));
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -245,12 +266,12 @@ export default function AdminProfile({ user }: { user?: any }) {
           {/* Staff ID */}
           <div className="bg-[#FAF7FF] p-4 rounded-2xl border border-purple-100 flex flex-col justify-between">
             <div className="flex items-center justify-between text-purple-600 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Admin ID</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Staff ID</span>
               <BadgeCheck size={18} />
             </div>
             <div>
               <p className="text-lg font-black text-gray-900 font-mono tracking-tight">{empId}</p>
-              <p className="text-[11px] text-purple-600 font-semibold mt-0.5">Administrator Identifier</p>
+              <p className="text-[11px] text-purple-600 font-semibold mt-0.5">Staff Identifier</p>
             </div>
           </div>
 
@@ -322,6 +343,95 @@ export default function AdminProfile({ user }: { user?: any }) {
               <p className="text-lg font-black text-gray-900">{hireDate}</p>
               <p className="text-[11px] text-gray-400 font-semibold mt-0.5">Account Registration Date</p>
             </div>
+          </div>
+        </div>
+
+        {/* Branch / Multi-Branch Staff Directory Table */}
+        <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 m-0 flex items-center gap-2">
+                <Users size={18} className="text-[#bd00ff]" />
+                <span>{isSuperAdmin ? 'System-Wide Staff Directory (All Branches)' : `${branchDisplay} Staff Directory`}</span>
+              </h3>
+              <p className="text-xs text-gray-500 m-0 mt-0.5 font-medium">
+                {isSuperAdmin 
+                  ? 'Complete staff directory across all branches with verified Staff IDs and role assignments' 
+                  : `Active branch administrators and cashiers assigned to ${branchDisplay}`}
+              </p>
+            </div>
+            <span className="text-xs font-bold bg-purple-50 text-[#bd00ff] px-3 py-1 rounded-full border border-purple-100">
+              {staffList.length} {staffList.length === 1 ? 'Staff Member' : 'Staff Members'}
+            </span>
+          </div>
+
+          <div className="overflow-x-auto border border-purple-100 rounded-2xl bg-white shadow-xs">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-purple-50/70 text-purple-900 font-bold border-b border-purple-100 uppercase tracking-wider">
+                  <th className="py-3 px-4">Staff Name</th>
+                  <th className="py-3 px-4">Staff ID</th>
+                  <th className="py-3 px-4 text-center">Role</th>
+                  <th className="py-3 px-4 text-center">Assigned Branch</th>
+                  <th className="py-3 px-4">Email Address</th>
+                  <th className="py-3 px-4 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 font-medium text-gray-800">
+                {isStaffLoading ? (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-400 font-semibold animate-pulse">
+                      Loading staff records...
+                    </td>
+                  </tr>
+                ) : staffList.length > 0 ? (
+                  staffList.map((st) => (
+                    <tr key={st.id} className="hover:bg-purple-50/40 transition-colors">
+                      <td className="py-3 px-4 font-bold text-gray-900">
+                        {st.name || 'Staff Member'}
+                      </td>
+                      <td className="py-3 px-4 font-mono font-bold text-purple-700">
+                        <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200 text-[11px] font-mono inline-block">
+                          {formatStaffId(st)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider inline-flex items-center gap-1 ${
+                          st.role === 'SUPER_ADMIN'
+                            ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black'
+                            : st.role === 'ADMIN'
+                              ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                              : 'bg-blue-100 text-blue-900 border border-blue-200'
+                        }`}>
+                          {st.role === 'SUPER_ADMIN' ? 'Super Admin' : (st.role === 'ADMIN' ? 'Branch Admin' : 'Cashier')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 inline-block">
+                          📍 {st.branch || 'Tagoloan'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">
+                        {st.email}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          st.status === 'Inactive' ? 'bg-gray-100 text-gray-600' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }`}>
+                          {st.status || 'Active'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-gray-400 font-semibold">
+                      No staff accounts found for this branch.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
