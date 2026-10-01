@@ -101,6 +101,10 @@ export default function AdminInventory() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyBranchFilter, setHistoryBranchFilter] = useState('all');
   const [historyTypeFilter, setHistoryTypeFilter] = useState('ALL');
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyTotalCount, setHistoryTotalCount] = useState(0);
+  const HISTORY_ITEMS_PER_PAGE = 10;
 
   // Physical Units / IMEI Modal State
   const [unitsModalOpen, setUnitsModalOpen] = useState(false);
@@ -714,14 +718,16 @@ export default function AdminInventory() {
   }, []);
 
   // Fetch Stock Movements History
-  const fetchHistory = () => {
+  const fetchHistory = (page = historyPage) => {
     setIsHistoryLoading(true);
     const branchQuery = isSuperAdmin ? historyBranchFilter : userBranch;
-    fetch(`/api/inventory/history?branch=${encodeURIComponent(branchQuery)}&type=${historyTypeFilter}`)
+    fetch(`/api/inventory/history?branch=${encodeURIComponent(branchQuery)}&type=${historyTypeFilter}&page=${page}&limit=${HISTORY_ITEMS_PER_PAGE}`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.movements)) {
           setMovements(data.movements);
+          setHistoryTotalCount(data.total || 0);
+          setHistoryTotalPages(data.totalPages || 1);
         }
       })
       .catch(err => console.error("Failed to load inventory history:", err))
@@ -744,8 +750,8 @@ export default function AdminInventory() {
   };
 
   useEffect(() => {
-    if (historyModalOpen) fetchHistory();
-  }, [historyModalOpen, historyBranchFilter, historyTypeFilter]);
+    if (historyModalOpen) fetchHistory(historyPage);
+  }, [historyModalOpen, historyBranchFilter, historyTypeFilter, historyPage]);
 
   useEffect(() => {
     if (unitsModalOpen) fetchUnits();
@@ -2176,7 +2182,10 @@ export default function AdminInventory() {
                 {isSuperAdmin && (
                   <select
                     value={historyBranchFilter}
-                    onChange={(e) => setHistoryBranchFilter(e.target.value)}
+                    onChange={(e) => {
+                      setHistoryBranchFilter(e.target.value);
+                      setHistoryPage(1);
+                    }}
                     className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 outline-none"
                   >
                     <option value="all">All Branches</option>
@@ -2187,7 +2196,10 @@ export default function AdminInventory() {
                 )}
                 <select
                   value={historyTypeFilter}
-                  onChange={(e) => setHistoryTypeFilter(e.target.value)}
+                  onChange={(e) => {
+                    setHistoryTypeFilter(e.target.value);
+                    setHistoryPage(1);
+                  }}
                   className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 outline-none"
                 >
                   <option value="ALL">All Movement Types</option>
@@ -2198,7 +2210,7 @@ export default function AdminInventory() {
                 </select>
               </div>
               <button
-                onClick={fetchHistory}
+                onClick={() => fetchHistory(historyPage)}
                 className="text-xs font-bold text-purple-700 hover:text-purple-900 underline"
               >
                 Refresh Log
@@ -2274,6 +2286,58 @@ export default function AdminInventory() {
                 </div>
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {!isHistoryLoading && historyTotalPages > 1 && (
+              <div className="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <span className="text-xs font-semibold text-gray-500">
+                  Showing {movements.length === 0 ? 0 : (historyPage - 1) * HISTORY_ITEMS_PER_PAGE + 1} to {Math.min(historyPage * HISTORY_ITEMS_PER_PAGE, historyTotalCount)} of {historyTotalCount} movements
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                    disabled={historyPage === 1}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs cursor-pointer shadow-sm"
+                  >
+                    Previous
+                  </button>
+                  
+                  {(() => {
+                    const range = [];
+                    const maxVisible = 5;
+                    let start = Math.max(1, historyPage - 2);
+                    let end = Math.min(historyTotalPages, start + maxVisible - 1);
+                    if (end - start < maxVisible - 1) {
+                      start = Math.max(1, end - maxVisible + 1);
+                    }
+                    for (let i = start; i <= end; i++) {
+                      range.push(i);
+                    }
+                    return range.map(pageNum => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setHistoryPage(pageNum)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs transition-all border shadow-sm cursor-pointer ${
+                          historyPage === pageNum
+                            ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white border-transparent'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-purple-500 hover:text-purple-700'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ));
+                  })()}
+
+                  <button
+                    onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
+                    disabled={historyPage === historyTotalPages}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs cursor-pointer shadow-sm"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

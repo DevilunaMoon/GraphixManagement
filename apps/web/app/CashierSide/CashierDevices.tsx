@@ -101,6 +101,10 @@ export default function CashierDevices() {
   const [movements, setMovements] = useState<any[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyTypeFilter, setHistoryTypeFilter] = useState('ALL');
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyTotalCount, setHistoryTotalCount] = useState(0);
+  const HISTORY_ITEMS_PER_PAGE = 10;
 
   // Physical Units / IMEI Modal State
   const [unitsModalOpen, setUnitsModalOpen] = useState(false);
@@ -333,13 +337,15 @@ export default function CashierDevices() {
   };
 
   // Fetch Stock History
-  const fetchHistory = () => {
+  const fetchHistory = (page = historyPage) => {
     setIsHistoryLoading(true);
-    fetch(`/api/inventory/history?branch=${encodeURIComponent(userBranch)}&type=${historyTypeFilter}`)
+    fetch(`/api/inventory/history?branch=${encodeURIComponent(userBranch)}&type=${historyTypeFilter}&page=${page}&limit=${HISTORY_ITEMS_PER_PAGE}`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.movements)) {
           setMovements(data.movements);
+          setHistoryTotalCount(data.total || 0);
+          setHistoryTotalPages(data.totalPages || 1);
         }
       })
       .catch(err => console.error("Failed to load inventory history:", err))
@@ -388,8 +394,8 @@ export default function CashierDevices() {
   }, []);
 
   useEffect(() => {
-    if (historyModalOpen) fetchHistory();
-  }, [historyModalOpen, historyTypeFilter, userBranch]);
+    if (historyModalOpen) fetchHistory(historyPage);
+  }, [historyModalOpen, historyTypeFilter, userBranch, historyPage]);
 
   useEffect(() => {
     if (unitsModalOpen) fetchUnits();
@@ -2194,52 +2200,73 @@ export default function CashierDevices() {
                 <span className="text-xs font-bold text-gray-600">Type:</span>
                 <select
                   value={historyTypeFilter}
-                  onChange={(e) => setHistoryTypeFilter(e.target.value)}
+                  onChange={(e) => {
+                    setHistoryTypeFilter(e.target.value);
+                    setHistoryPage(1);
+                  }}
                   className="bg-white border border-gray-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-gray-800 outline-none cursor-pointer"
                 >
                   <option value="ALL">All Movements</option>
-                  <option value="TRANSFER_IN">Transfer In</option>
-                  <option value="TRANSFER_OUT">Transfer Out</option>
+                  <option value="RESTOCK">Restocks</option>
+                  <option value="TRANSFER">Transfers</option>
+                  <option value="SALE">Sales (POS/Online)</option>
                   <option value="ADJUSTMENT">Adjustments</option>
-                  <option value="SALE">Sales / Deductions</option>
                 </select>
               </div>
+              <button
+                onClick={() => fetchHistory(historyPage)}
+                className="text-xs font-bold text-purple-700 hover:text-purple-900 underline cursor-pointer"
+              >
+                Refresh Log
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="flex-1 overflow-y-auto p-4">
               {isHistoryLoading ? (
-                <div className="py-16 text-center text-gray-500 font-semibold">Loading stock history...</div>
+                <div className="py-16 text-center text-gray-500 font-semibold animate-pulse">Loading stock history...</div>
               ) : movements.length > 0 ? (
                 <table className="w-full text-xs text-left">
                   <thead>
-                    <tr className="bg-gray-100 text-gray-700 font-bold border-b border-gray-200 uppercase">
+                    <tr className="bg-purple-50/70 text-gray-700 font-bold border-b border-purple-100 uppercase">
                       <th className="py-3 px-3">Date</th>
                       <th className="py-3 px-3">Type</th>
-                      <th className="py-3 px-3">Product / Variant</th>
-                      <th className="py-3 px-3 text-center">Change</th>
+                      <th className="py-3 px-3">Product Name / ID</th>
+                      <th className="py-3 px-3 text-center">Qty</th>
+                      <th className="py-3 px-3 text-center">Stock Change</th>
                       <th className="py-3 px-3">Notes</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 font-medium">
+                  <tbody className="divide-y divide-gray-100">
                     {movements.map((m) => (
-                      <tr key={m.id} className="hover:bg-gray-50">
+                      <tr key={m.id} className="hover:bg-gray-50/70">
                         <td className="py-3 px-3 text-gray-500 whitespace-nowrap">
                           {new Date(m.createdAt).toLocaleString()}
                         </td>
                         <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${m.type.includes('IN') || m.type === 'RESTOCK' ? 'bg-emerald-100 text-emerald-800' : m.type.includes('OUT') || m.type === 'SALE' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
                             {m.type}
                           </span>
                         </td>
-                        <td className="py-3 px-3 font-bold text-gray-900">
-                          {m.device?.name || 'Device'} {m.variation?.name ? `(${m.variation.name})` : ''}
+                        <td className="py-3 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-gray-900">{m.productName || 'Device'}</span>
+                            {m.productId && <span className="font-mono text-[11px] text-purple-700">{m.productId}</span>}
+                          </div>
                         </td>
-                        <td className="py-3 px-3 text-center font-bold">
-                          <span className={m.quantityChange > 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                            {m.quantityChange > 0 ? `+${m.quantityChange}` : m.quantityChange}
+                        <td className="py-3 px-3 text-center font-bold text-gray-900">
+                          {m.quantity}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="text-gray-500 font-medium">
+                            {m.previousStock} &rarr; <strong className="text-gray-900">{m.newStock}</strong>
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-gray-600">{m.notes || '—'}</td>
+                        <td className="py-3 px-3">
+                          <div className="flex flex-col">
+                            <span className="text-gray-700 font-medium">{m.notes || '—'}</span>
+                            {m.performedBy && <span className="text-[10px] text-gray-400">By: {m.performedBy} ({m.userRole || 'User'})</span>}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -2248,6 +2275,58 @@ export default function CashierDevices() {
                 <div className="py-16 text-center text-gray-500 font-semibold">No stock movements recorded.</div>
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {!isHistoryLoading && historyTotalPages > 1 && (
+              <div className="p-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <span className="text-xs font-semibold text-gray-500">
+                  Showing {movements.length === 0 ? 0 : (historyPage - 1) * HISTORY_ITEMS_PER_PAGE + 1} to {Math.min(historyPage * HISTORY_ITEMS_PER_PAGE, historyTotalCount)} of {historyTotalCount} movements
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                    disabled={historyPage === 1}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs cursor-pointer shadow-sm"
+                  >
+                    Previous
+                  </button>
+                  
+                  {(() => {
+                    const range = [];
+                    const maxVisible = 5;
+                    let start = Math.max(1, historyPage - 2);
+                    let end = Math.min(historyTotalPages, start + maxVisible - 1);
+                    if (end - start < maxVisible - 1) {
+                      start = Math.max(1, end - maxVisible + 1);
+                    }
+                    for (let i = start; i <= end; i++) {
+                      range.push(i);
+                    }
+                    return range.map(pageNum => (
+                      <button
+                        key={pageNum}
+                        onClick={() => setHistoryPage(pageNum)}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs transition-all border shadow-sm cursor-pointer ${
+                          historyPage === pageNum
+                            ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white border-transparent'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-purple-500 hover:text-purple-700'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ));
+                  })()}
+
+                  <button
+                    onClick={() => setHistoryPage(p => Math.min(historyTotalPages, p + 1))}
+                    disabled={historyPage === historyTotalPages}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xs cursor-pointer shadow-sm"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
