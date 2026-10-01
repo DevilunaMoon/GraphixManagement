@@ -73,7 +73,7 @@ export default function AdminChangePassword() {
         <h2 className="text-[1.6rem] font-bold text-[#111]">Change Password</h2>
       </div>
 
-      <div className={`bg-white/95 backdrop-blur-md rounded-2xl border-2 ${styles.borderMain} shadow-sm p-8 md:p-12 w-full max-w-2xl mx-auto transition-colors duration-300`}>
+      <div className={`bg-white/95 backdrop-blur-md rounded-2xl border-2 ${styles.borderMain} shadow-sm p-6 sm:p-8 md:p-10 w-full transition-colors duration-300`}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {errorMsg && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium">

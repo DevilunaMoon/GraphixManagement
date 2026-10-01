@@ -89,8 +89,7 @@ export default function CashierProfile({ user }: { user?: any }) {
   };
 
   return (
-    <main className="flex-1 p-3 sm:p-6 font-['Inter'] flex justify-center overflow-y-auto">
-      <div className="w-full max-w-4xl flex flex-col gap-6">
+    <div className="w-full flex flex-col gap-6 font-['Inter']">
         
         {/* 1. Profile Information Card (Editable Details) */}
         <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-purple-200/80 flex flex-col">
@@ -334,7 +333,6 @@ export default function CashierProfile({ user }: { user?: any }) {
           </button>
         </div>
 
-      </div>
 
       {/* Save Success Alert Modal */}
       {isSaveModalOpen && (
@@ -390,6 +388,6 @@ export default function CashierProfile({ user }: { user?: any }) {
         </div>
       )}
 
-    </main>
+    </div>
   );
 }

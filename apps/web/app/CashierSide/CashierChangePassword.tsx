@@ -66,8 +66,7 @@ export default function CashierChangePassword({ user }: { user?: any }) {
   };
 
   return (
-    <main className="flex-1 p-2 sm:p-5 font-['Inter'] flex justify-center overflow-y-auto">
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
+    <div className="w-full flex flex-col lg:flex-row gap-6 font-['Inter']">
 
         {/* Sidebar */}
         <aside className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0">
@@ -223,7 +222,6 @@ export default function CashierChangePassword({ user }: { user?: any }) {
           </div>
         </section>
 
-      </div>
-    </main>
+    </div>
   );
 }

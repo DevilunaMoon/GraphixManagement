@@ -92,7 +92,7 @@ export default function AdminProfile({ user }: { user?: any }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 font-['Inter']">
+    <div className="w-full flex flex-col gap-6 font-['Inter']">
       
       {/* 1. Profile Information Card (Editable Details) */}
       <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-purple-200/80 flex flex-col">
