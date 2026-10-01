@@ -259,6 +259,19 @@ export default function CashierDashboard() {
 
   const removeFromCart = (cartKey: string) => {
     setCart(prev => {
+      const existing = prev[cartKey];
+      if (!existing) return prev;
+
+      if (existing.cartQty > 1) {
+        return {
+          ...prev,
+          [cartKey]: {
+            ...existing,
+            cartQty: existing.cartQty - 1
+          }
+        };
+      }
+
       const newCart = { ...prev };
       delete newCart[cartKey];
       return newCart;
@@ -479,8 +492,8 @@ export default function CashierDashboard() {
                   </div>
                   <button 
                     onClick={() => removeFromCart(item.cartKey)}
-                    className="text-red-500 opacity-50 hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
-                    title="Remove Item"
+                    className="text-red-500 opacity-50 hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full cursor-pointer"
+                    title={item.cartQty > 1 ? "Remove 1 item" : "Remove item"}
                   >
                     <Trash2 size={18} />
                   </button>
