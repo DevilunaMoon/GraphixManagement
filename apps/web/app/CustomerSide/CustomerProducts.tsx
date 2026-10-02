@@ -199,9 +199,9 @@ function CustomerProductsContent() {
       <div className="w-full max-w-7xl flex flex-col gap-6">
 
         {/* Header & Filters */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 pb-4 border-b border-gray-100 w-full mb-2">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-purple-100/80 w-full mb-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase tracking-wide border-none">
+            <h2 className="text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#bd00ff] to-[#01f0ff] uppercase tracking-wide m-0 border-none">
               {searchFilter ? `Search: "${searchFilter}"` : categoryFilter ? `Shop: ${categoryFilter}` : sortOrder === 'discounted' ? 'Discounted Items' : sortOrder === 'under-2k' ? 'Items Under ₱2,000' : 'Shop Our Products'}
             </h2>
             {hasAnyActiveDiscounts && (
@@ -218,49 +218,61 @@ function CustomerProductsContent() {
             )}
           </div>
           
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             {/* Price Sort Filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Filter:</span>
-              <select 
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors cursor-pointer"
-              >
-                <option value="default">Featured</option>
-                <option value="discounted">Discounted (Sale)</option>
-                <option value="under-2k">Less Than ₱2,000</option>
-                <option value="pre-owned">Pre Owned</option>
-                <option value="price-desc">Price: Highest to Lowest</option>
-                <option value="price-asc">Price: Lowest to Highest</option>
-              </select>
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-between sm:justify-start">
+              <span className="text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Filter:</span>
+              <div className="relative w-full sm:w-auto">
+                <select 
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="w-full sm:w-auto appearance-none pl-3.5 pr-8 py-2 rounded-xl border border-purple-100 bg-white text-gray-800 font-semibold text-xs sm:text-sm outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-[#bd00ff]/20 transition-all cursor-pointer shadow-sm"
+                >
+                  <option value="default">Featured</option>
+                  <option value="discounted">Discounted (Sale)</option>
+                  <option value="under-2k">Less Than ₱2,000</option>
+                  <option value="pre-owned">Pre-Owned</option>
+                  <option value="price-desc">Price: Highest to Lowest</option>
+                  <option value="price-asc">Price: Lowest to Highest</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
+                  <ChevronRight size={14} className="rotate-90" />
+                </div>
+              </div>
             </div>
+
             {/* Device Type Filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Type:</span>
-              <select 
-                value={deviceTypeFilter}
-                onChange={(e) => setDeviceTypeFilter(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors cursor-pointer"
-              >
-                <option value="all">All Devices</option>
-                <option value="smartphone">Smartphone</option>
-                <option value="laptop">Laptop</option>
-                <option value="ipad">iPad/Tablet</option>
-                <option value="tv">TV</option>
-                <option value="speaker">Speaker</option>
-                <option value="phone accessories">Phone Accessories</option>
-              </select>
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-between sm:justify-start">
+              <span className="text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Type:</span>
+              <div className="relative w-full sm:w-auto">
+                <select 
+                  value={deviceTypeFilter}
+                  onChange={(e) => setDeviceTypeFilter(e.target.value)}
+                  className="w-full sm:w-auto appearance-none pl-3.5 pr-8 py-2 rounded-xl border border-purple-100 bg-white text-gray-800 font-semibold text-xs sm:text-sm outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-[#bd00ff]/20 transition-all cursor-pointer shadow-sm"
+                >
+                  <option value="all">All Devices</option>
+                  <option value="smartphone">Smartphone</option>
+                  <option value="laptop">Laptop</option>
+                  <option value="ipad">iPad/Tablet</option>
+                  <option value="tv">TV</option>
+                  <option value="speaker">Speaker</option>
+                  <option value="phone accessories">Phone Accessories</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
+                  <ChevronRight size={14} className="rotate-90" />
+                </div>
+              </div>
             </div>
+
             {/* Budget Filter */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-              <span className="text-gray-500 font-semibold text-sm uppercase whitespace-nowrap">Budget: ₱</span>
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-between sm:justify-start">
+              <span className="text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap">Budget: ₱</span>
               <input 
                 type="number" 
                 value={budgetFilter}
                 onChange={(e) => setBudgetFilter(e.target.value)}
                 placeholder="Max price" 
-                className="w-full sm:w-28 px-3 py-2 rounded-lg border-2 border-purple-100 bg-white text-black font-semibold text-sm outline-none focus:border-[#bd00ff] transition-colors"
+                className="w-full sm:w-28 px-3.5 py-2 rounded-xl border border-purple-100 bg-white text-gray-800 font-semibold text-xs sm:text-sm outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-[#bd00ff]/20 transition-all shadow-sm"
                 min="0"
               />
             </div>
@@ -282,7 +294,7 @@ function CustomerProductsContent() {
           if (activeDiscountedProducts.length === 0) return null;
 
           return (
-            <section className="bg-gradient-to-br from-purple-950 via-indigo-950 to-black rounded-3xl p-5 md:p-8 shadow-2xl border-2 border-[#bd00ff] flex flex-col gap-6 w-full text-white relative overflow-hidden">
+            <section className="bg-gradient-to-br from-purple-950 via-indigo-950 to-black rounded-3xl p-5 md:p-8 shadow-2xl border border-purple-800/60 flex flex-col gap-6 w-full text-white relative overflow-hidden">
               {/* Header */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-purple-800/60 pb-4">
                 <div className="flex items-center gap-3">
@@ -310,10 +322,10 @@ function CustomerProductsContent() {
                     <div 
                       key={product.id}
                       onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
-                      className="bg-white rounded-2xl p-4 shadow-xl hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col justify-between gap-3 border-2 border-purple-400/40 hover:border-[#01f0ff] group relative text-gray-900"
+                      className="bg-white rounded-2xl p-4 shadow-xl hover:shadow-2xl md:hover:-translate-y-1.5 transition-all cursor-pointer flex flex-col justify-between gap-3 border border-purple-200 hover:border-[#01f0ff] group relative text-gray-900"
                     >
                       {/* Product Image & Badges */}
-                      <div className="aspect-square w-full bg-gray-50 rounded-xl flex justify-center items-center overflow-hidden relative p-2">
+                      <div className="aspect-square w-full bg-gray-50/80 rounded-xl flex justify-center items-center overflow-hidden relative p-3">
                         {/* Condition Badge */}
                         <span className={`absolute top-2 left-2 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border ${
                           product.isPreOwned 
@@ -332,7 +344,7 @@ function CustomerProductsContent() {
                           <img 
                             src={product.image} 
                             alt={product.name} 
-                            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-300" 
+                            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" 
                           />
                         ) : (
                           <div className="h-full w-full bg-gray-100 rounded-lg" />
@@ -344,7 +356,7 @@ function CustomerProductsContent() {
                         <span className="text-[11px] text-gray-500 font-bold uppercase truncate">
                           {product.category?.name || product.type || 'Smartphone'}
                         </span>
-                        <h4 className="text-gray-950 font-black text-sm leading-snug line-clamp-2 h-10 m-0">
+                        <h4 className="text-gray-950 font-black text-sm leading-snug line-clamp-2 h-10 m-0 group-hover:text-[#8b00cc] transition-colors">
                           {product.name}
                         </h4>
                       </div>
@@ -355,10 +367,10 @@ function CustomerProductsContent() {
                           ₱ {Number(product.price || 0).toLocaleString()}
                         </span>
                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-[#bd00ff] font-black text-xl leading-none">
+                          <span className="text-[#8b00cc] font-black text-xl leading-none">
                             ₱ {discountedPrice.toLocaleString()}
                           </span>
-                          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.2 rounded">
+                          <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded">
                             Save ₱ {(product.price - discountedPrice).toLocaleString()}
                           </span>
                         </div>
@@ -393,7 +405,7 @@ function CustomerProductsContent() {
                           e.stopPropagation();
                           navigate(`/customer/product-info?id=${product.id}`);
                         }}
-                        className="w-full mt-1 py-2.5 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-xl group-hover:brightness-110 transition-all text-xs shadow-md border-none cursor-pointer"
+                        className="w-full mt-1 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl hover:brightness-110 transition-all text-xs shadow-md border-none cursor-pointer"
                       >
                         View Deal &rarr;
                       </button>
@@ -405,14 +417,16 @@ function CustomerProductsContent() {
           );
         })()}
 
-        {/* Categories Section */}
-        <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-purple-100/90 flex flex-col gap-4 w-full relative group/cats">
+        {/* Categories / Explore Brands Section */}
+        <section className="bg-white rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm border border-purple-100/90 flex flex-col gap-4 w-full relative group/cats">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs sm:text-sm font-black text-[#8b00cc] uppercase tracking-widest m-0 border-none">Explore Brands</h2>
+            <h3 className="text-xs sm:text-sm font-black text-[#8b00cc] uppercase tracking-widest m-0 border-none">
+              Explore Brands
+            </h3>
             {categoryFilter && (
               <button 
                 onClick={() => navigate('/customer/products')} 
-                className="text-xs font-bold text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer"
+                className="text-xs font-bold text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
               >
                 Clear Brand Filter ✕
               </button>
@@ -422,55 +436,63 @@ function CustomerProductsContent() {
           {/* Left Chevron */}
           <button 
             onClick={() => scrollCategories(-300)}
-            className="absolute left-2 md:left-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+            aria-label="Previous Brands"
+            className="absolute left-2 md:left-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all cursor-pointer"
           >
-            <ChevronLeft size={20} strokeWidth={2.5} />
+            <ChevronLeft size={18} strokeWidth={2.5} />
           </button>
 
           {/* Right Chevron */}
           <button 
             onClick={() => scrollCategories(300)}
-            className="absolute right-2 md:right-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+            aria-label="Next Brands"
+            className="absolute right-2 md:right-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all cursor-pointer"
           >
-            <ChevronRight size={20} strokeWidth={2.5} />
+            <ChevronRight size={18} strokeWidth={2.5} />
           </button>
 
           <div 
             ref={categoryScrollRef}
-            className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden items-center"
+            className="flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto pb-2 px-8 [&::-webkit-scrollbar]:hidden items-center"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {displayCategories.map((category, idx) => {
               const catName = category.name || category.id;
               const isActive = categoryFilter === catName;
               return (
-              <div 
-                key={category.id || idx} 
-                onClick={() => {
-                  if (isActive) {
-                    navigate('/customer/products');
-                  } else {
-                    navigate(`/customer/products?category=${encodeURIComponent(catName)}`);
-                  }
-                }}
-                className="flex flex-col items-center gap-3 min-w-[80px] sm:min-w-[100px] cursor-pointer group"
-              >
-                <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center shadow-sm border transition-all ease-out duration-300 p-4 ${isActive ? 'bg-purple-100 border-[#bd00ff] shadow-md scale-105' : 'bg-gray-50 border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md'}`}>
-                  {category.logoUrl || category.logo ? (
-                    <img 
-                      src={category.logoUrl || category.logo} 
-                      alt={category.name} 
-                      className={`w-full h-full object-contain transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}
-                      style={category.name === 'Apple' ? { paddingBottom: '2px' } : {}}
-                    />
-                  ) : (
-                    <span className="text-xs text-gray-400 font-bold">No Img</span>
-                  )}
+                <div 
+                  key={category.id || idx} 
+                  onClick={() => {
+                    if (isActive) {
+                      navigate('/customer/products');
+                    } else {
+                      navigate(`/customer/products?category=${encodeURIComponent(catName)}`);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-2.5 min-w-[76px] sm:min-w-[90px] cursor-pointer group"
+                >
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border transition-all ease-out duration-300 p-3.5 ${
+                    isActive 
+                      ? 'bg-purple-50 border-[#bd00ff] ring-4 ring-purple-100 shadow-md scale-105' 
+                      : 'bg-white border-gray-150 shadow-sm group-hover:border-purple-300 group-hover:shadow-md group-hover:scale-105'
+                  }`}>
+                    {category.logoUrl || category.logo ? (
+                      <img 
+                        src={category.logoUrl || category.logo} 
+                        alt={category.name} 
+                        className={`w-full h-full object-contain transition-transform duration-300 ${isActive ? '' : 'group-hover:scale-110'}`}
+                        style={category.name === 'Apple' ? { paddingBottom: '2px' } : {}}
+                      />
+                    ) : (
+                      <span className="text-xs text-gray-400 font-bold">No Img</span>
+                    )}
+                  </div>
+                  <span className={`text-xs sm:text-sm font-semibold text-center transition-colors leading-tight ${
+                    isActive ? 'text-[#8b00cc] font-bold' : 'text-gray-700 group-hover:text-[#8b00cc]'
+                  }`}>
+                    {category.name}
+                  </span>
                 </div>
-                <span className={`text-xs sm:text-sm font-semibold text-center transition-colors leading-tight ${isActive ? 'text-[#bd00ff]' : 'text-gray-700 group-hover:text-[#bd00ff]'}`}>
-                  {category.name}
-                </span>
-              </div>
               );
             })}
           </div>
@@ -480,20 +502,20 @@ function CustomerProductsContent() {
         {/* ALL PRODUCTS SECTION                                       */}
         {/* ========================================================== */}
         <section className="flex flex-col gap-4 w-full">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-wide m-0">
+          <div className="flex items-center justify-between border-b border-purple-100/80 pb-3">
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
               ALL PRODUCTS
             </h2>
-            <span className="text-xs font-bold text-gray-500">
+            <span className="text-xs font-bold text-gray-500 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
               Showing {sortedProducts.length} items
             </span>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 md:gap-6">
             {isLoading ? (
               <div className="col-span-full py-20 flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-12 border-4 border-purple-100 border-t-[#5c0099] rounded-full animate-spin"></div>
-                <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
+                <div className="w-12 h-12 border-4 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-semibold animate-pulse text-base">Loading products...</p>
               </div>
             ) : sortedProducts.length > 0 ? (
               sortedProducts.map(product => {
@@ -505,72 +527,110 @@ function CustomerProductsContent() {
                   (!product.discountEndDate || new Date(product.discountEndDate) >= now)
                 );
 
+                const discountedPrice = isDiscountActive 
+                  ? Math.round(product.price * (1 - product.discount / 100))
+                  : (product.price || 0);
+
                 return (
                   <div 
                     key={product.id} 
                     onClick={() => navigate(`/customer/product-info?id=${product.id}`)}
-                    className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group"
+                    className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-xl border border-purple-100/90 hover:border-purple-300 transition-all duration-300 cursor-pointer flex flex-col justify-between group md:hover:-translate-y-1 relative"
                   >
-                    <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
-                      {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                        <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
-                          PRE-OWNED
-                        </span>
-                      )}
-                      {isDiscountActive && (
-                        <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
-                          {Math.round(product.discount)}% OFF
-                        </span>
-                      )}
-                      {product.image ? (
-                        <img src={product.image} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
-                      ) : (
-                        <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
-                      )}
-                    </div>
-                    <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                    <div className="flex justify-between items-end w-full">
-                      <div className="flex flex-col">
-                        {isDiscountActive ? (
-                          <>
-                            <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
-                            <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
-                              ₱ {Math.round(product.price * (1 - product.discount / 100)).toLocaleString()}
-                            </p>
-                          </>
+                    <div>
+                      {/* Product Image Area */}
+                      <div className="aspect-square w-full bg-gray-50/70 rounded-xl flex justify-center items-center overflow-hidden relative p-3 mb-3">
+                        {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                          <span className="absolute top-2 left-2 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300/60">
+                            PRE-OWNED
+                          </span>
+                        )}
+                        {isDiscountActive && (
+                          <span className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
+                            {Math.round(product.discount)}% OFF
+                          </span>
+                        )}
+                        {product.image ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" 
+                          />
                         ) : (
-                          <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                          <div className="h-full w-full bg-gray-100 rounded-lg" />
                         )}
                       </div>
-                      <div className="flex flex-col items-end">
-                        <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
-                        <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
-                      </div>
+
+                      {/* Brand / Category */}
+                      <span className="text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-wider truncate block mb-1">
+                        {product.category?.name || product.type || 'Device'}
+                      </span>
+
+                      {/* Product Name */}
+                      <h3 className="text-gray-900 font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10 group-hover:text-[#8b00cc] transition-colors m-0 border-none">
+                        {product.name}
+                      </h3>
                     </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/customer/product-info?id=${product.id}`);
-                    }}
-                    className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
-                  >
-                    View Product
-                  </button>
-                </div>
-              );
-            })
-          ) : (
-              <div className="col-span-full py-10 text-center text-gray-500 font-bold">No products available.</div>
+
+                    <div className="mt-3 pt-2.5 border-t border-gray-100 flex flex-col gap-2">
+                      {/* Pricing & Stock row */}
+                      <div className="flex items-end justify-between gap-1">
+                        <div className="flex flex-col">
+                          {isDiscountActive ? (
+                            <>
+                              <span className="text-gray-400 line-through text-[11px] font-semibold leading-tight">
+                                ₱ {product.price?.toLocaleString()}
+                              </span>
+                              <span className="text-[#8b00cc] font-black text-sm sm:text-base leading-tight">
+                                ₱ {discountedPrice.toLocaleString()}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-[#8b00cc] font-black text-sm sm:text-base leading-tight">
+                              ₱ {product.price?.toLocaleString() || '0'}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end text-right">
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {product.sold || 0} sold
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            {product.stock || 0} stock
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* View Product CTA */}
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/customer/product-info?id=${product.id}`);
+                        }}
+                        className="w-full mt-1 py-2 bg-purple-50 text-[#8b00cc] group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] group-hover:text-white font-bold rounded-xl transition-all text-xs border border-purple-100/90 shadow-sm hidden md:flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        View Details
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-12 text-center text-gray-500 font-bold bg-white rounded-2xl border border-purple-100">
+                No products found matching your filters.
+              </div>
             )}
           </div>
         </section>
 
         {/* Pagination */}
         <div className="flex justify-center mt-6">
-          <div className="flex items-center gap-6 bg-white px-8 py-3 rounded-full shadow-sm border border-gray-100">
-            <button className="bg-transparent border-none text-black cursor-pointer hover:text-[#bd00ff] hover:-translate-x-1 transition-transform"><ChevronLeft size={24} /></button>
-            <span className="font-bold text-xl text-black">1/1</span>
-            <button className="bg-transparent border-none text-black cursor-pointer hover:text-[#bd00ff] hover:translate-x-1 transition-transform"><ChevronRight size={24} /></button>
+          <div className="flex items-center gap-6 bg-white px-8 py-3 rounded-full shadow-sm border border-purple-100">
+            <button className="bg-transparent border-none text-gray-600 cursor-pointer hover:text-[#8b00cc] hover:-translate-x-1 transition-all"><ChevronLeft size={22} /></button>
+            <span className="font-bold text-base sm:text-lg text-gray-800">1 / 1</span>
+            <button className="bg-transparent border-none text-gray-600 cursor-pointer hover:text-[#8b00cc] hover:translate-x-1 transition-all"><ChevronRight size={22} /></button>
           </div>
         </div>
 
