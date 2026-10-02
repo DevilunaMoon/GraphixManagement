@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle, User } from 'lucide-react';
+import { useState } from 'react';
+import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle, User, Upload, CheckCircle2, Phone, X, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 import DatePicker from '../../components/ui/DatePicker';
@@ -21,8 +21,6 @@ export default function CustomerProfile({ user }: { user?: any }) {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-
-
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -36,7 +34,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
 
   const handlePhoneUpdate = () => {
     if (newPhone.trim()) {
-      setPhone(newPhone);
+      setPhone(newPhone.trim());
       setIsPhoneModalOpen(false);
       setNewPhone('');
     }
@@ -54,7 +52,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
     setIsSaving(false);
     if (res?.success) {
       setIsSaveModalOpen(true);
-      router.refresh(); // Refresh layout so the navbar avatar updates globally!
+      router.refresh(); // Refresh layout so navbar avatar updates globally
     } else {
       alert(res?.error || "Failed to save profile");
     }
@@ -65,101 +63,147 @@ export default function CustomerProfile({ user }: { user?: any }) {
       <div className="w-full max-w-6xl flex flex-col gap-8">
         <div className="w-full flex flex-col md:flex-row gap-6">
 
-        {/* Sidebar */}
+        {/* Left Sidebar */}
         <aside className="w-full md:w-[280px] flex flex-col gap-5 shrink-0">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-purple-100/90 flex flex-col items-center gap-3 text-center">
-            <div className="w-[88px] h-[88px] rounded-full overflow-hidden border-2 border-purple-200 shadow-xs flex items-center justify-center bg-purple-50/50">
-              {avatar ? (
-                <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <UserCircle2 size={72} className="text-gray-400" />
-              )}
+          {/* User Profile Summary Card */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-purple-100/90 flex flex-col items-center gap-3.5 text-center transition-all hover:border-purple-200">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-purple-200 shadow-sm flex items-center justify-center bg-purple-50/50">
+                {avatar ? (
+                  <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <UserCircle2 size={80} className="text-purple-300" />
+                )}
+              </div>
+              <label className="absolute inset-0 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-[10px] font-bold gap-1">
+                <Upload size={16} />
+                <span>Change</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              </label>
             </div>
+
             <div className="flex flex-col items-center gap-1">
-              <span className="text-lg font-black text-gray-950">{userName}</span>
-              <div className="flex items-center gap-1.5 text-gray-500 font-bold text-xs">
-                <Pencil size={13} className="text-[#8b00cc]" /> Edit Profile
+              <span className="text-lg font-black text-gray-950 truncate max-w-[220px]">{userName}</span>
+              <div className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full font-bold text-xs border border-purple-100">
+                <Pencil size={11} className="text-[#8b00cc]" />
+                <span>Edit Profile</span>
               </div>
             </div>
           </div>
           
-          <nav className="bg-white rounded-3xl p-2.5 shadow-sm border border-purple-100/90 flex flex-col gap-1">
+          {/* Navigation Menu */}
+          <nav className="bg-white rounded-3xl p-2.5 shadow-sm border border-purple-100/90 flex flex-col gap-1.5">
             <button 
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#8b00cc] to-[#9d00e6] text-white font-black text-sm cursor-pointer text-left transition-all border-none shadow-xs shadow-purple-500/20"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold text-sm cursor-pointer text-left transition-all border-none shadow-sm shadow-purple-500/25"
             >
-              <User size={20} className="text-white" />
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                <User size={18} className="text-white" />
+              </div>
               <span>Profile</span>
             </button>
 
             <button 
               onClick={() => navigate('/customer/digital-receipt')}
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors text-gray-700 hover:text-[#8b00cc] font-bold text-sm"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50/80 transition-all text-gray-700 hover:text-[#8b00cc] font-bold text-sm group"
             >
-              <Receipt className="text-[#6b588c]" size={20} />
+              <div className="w-8 h-8 rounded-xl bg-purple-50 group-hover:bg-purple-100/80 flex items-center justify-center transition-colors">
+                <Receipt className="text-[#6b588c] group-hover:text-[#8b00cc] transition-colors" size={18} />
+              </div>
               <span>Digital Receipt</span>
             </button>
 
             <button 
               onClick={() => navigate('/customer/change-password')}
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors text-gray-700 hover:text-[#8b00cc] font-bold text-sm"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50/80 transition-all text-gray-700 hover:text-[#8b00cc] font-bold text-sm group"
             >
-              <KeyRound className="text-[#6b588c]" size={20} />
+              <div className="w-8 h-8 rounded-xl bg-purple-50 group-hover:bg-purple-100/80 flex items-center justify-center transition-colors">
+                <KeyRound className="text-[#6b588c] group-hover:text-[#8b00cc] transition-colors" size={18} />
+              </div>
               <span>Change Password</span>
             </button>
           </nav>
         </aside>
 
         {/* Main Profile Area */}
-        <section className="flex-1 bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col animate-in fade-in duration-300">
-          <div className="border-b border-purple-100 pb-4 mb-6">
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-950 m-0 tracking-tight">My Profile</h2>
-            <p className="text-gray-500 m-0 mt-1 font-medium text-xs sm:text-sm">Manage your personal information and account security.</p>
+        <section className="flex-1 bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col">
+          {/* Header */}
+          <div className="border-b border-purple-100 pb-5 mb-8">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-950 m-0 tracking-tight">My Profile</h2>
+              <Sparkles size={20} className="text-[#bd00ff]" />
+            </div>
+            <p className="text-gray-500 m-0 mt-1.5 font-medium text-xs sm:text-sm">
+              Manage your personal information, contact details, and account preferences.
+            </p>
           </div>
 
-          <div className="flex flex-col-reverse lg:flex-row gap-8 sm:gap-10 lg:gap-14">
+          <div className="flex flex-col-reverse lg:flex-row gap-8 sm:gap-10 lg:gap-12 flex-1">
             {/* Form Fields */}
-            <div className="flex-1 flex flex-col gap-4.5">
+            <div className="flex-1 flex flex-col gap-5">
               
+              {/* Username */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full">
-                <label className="sm:w-[110px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">Username</label>
+                <label className="sm:w-[120px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
+                  Username
+                </label>
                 <div className="flex-1">
                   <input 
                     type="text" 
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
-                    className="w-full h-10.5 border border-purple-100 bg-gray-50/50 focus:bg-white rounded-xl px-3.5 text-gray-900 outline-none focus:ring-2 focus:ring-[#8b00cc]/20 focus:border-[#8b00cc] transition-all font-semibold text-xs sm:text-sm shadow-2xs"
+                    placeholder="Enter your username"
+                    className="w-full h-11 border border-purple-100 bg-gray-50/60 focus:bg-white rounded-xl px-4 text-gray-900 outline-none focus:ring-2 focus:ring-purple-200 focus:border-[#8b00cc] transition-all font-semibold text-xs sm:text-sm shadow-xs"
                   />
                 </div>
               </div>
 
+              {/* Email */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full">
-                <label className="sm:w-[110px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
-                  Email
-                  <HelpCircle size={13} className="text-gray-400 cursor-help" />
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-48 bg-gray-900 text-white text-[11px] px-2.5 py-1 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 text-center shadow-lg">
-                    Email address is tied to your account
+                <label className="sm:w-[120px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1.5 group relative">
+                  <span>Email</span>
+                  <HelpCircle size={14} className="text-purple-400 cursor-help" />
+                  <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 w-48 bg-gray-900 text-white text-[11px] px-2.5 py-1 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20 text-center shadow-lg font-normal">
+                    Email address is associated with your account login
                   </div>
                 </label>
-                <div className="flex-1 text-gray-900 font-bold text-xs sm:text-sm">{user?.email || ''}</div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full">
-                <label className="sm:w-[110px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">Phone Number</label>
-                <div className="flex-1 flex gap-3 items-center">
-                  <span className="text-gray-900 font-bold text-xs sm:text-sm">{phone || "Not set"}</span>
-                  <button onClick={() => setIsPhoneModalOpen(true)} className="text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer font-bold text-xs p-0">Change</button>
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="w-full h-11 border border-gray-100 bg-gray-50/80 rounded-xl px-4 text-gray-700 font-semibold text-xs sm:text-sm flex items-center justify-between">
+                    <span className="truncate">{user?.email || 'No email attached'}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Read-only</span>
+                  </div>
                 </div>
               </div>
 
+              {/* Phone Number */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full">
-                <label className="sm:w-[110px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
+                <label className="sm:w-[120px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
+                  Phone Number
+                </label>
+                <div className="flex-1 flex gap-3 items-center">
+                  <div className="flex-1 h-11 border border-purple-100 bg-gray-50/60 rounded-xl px-4 text-gray-900 font-semibold text-xs sm:text-sm flex items-center justify-between">
+                    <span className={phone ? "text-gray-900" : "text-gray-400 italic"}>
+                      {phone || "No phone number added"}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => setIsPhoneModalOpen(true)} 
+                    className="px-4 h-11 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#8b00cc] hover:text-[#7a00b3] font-bold text-xs border border-purple-200/80 cursor-pointer transition-colors shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+
+              {/* Gender */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full">
+                <label className="sm:w-[120px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
                   Gender
                 </label>
                 <div className="flex-1">
                   <select 
                     value={gender} 
                     onChange={e => setGender(e.target.value)}
-                    className="w-full h-10.5 border border-purple-100 bg-gray-50/50 focus:bg-white rounded-xl px-3.5 outline-none focus:ring-2 focus:ring-[#8b00cc]/20 focus:border-[#8b00cc] text-gray-900 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+                    className="w-full h-11 border border-purple-100 bg-gray-50/60 focus:bg-white rounded-xl px-4 outline-none focus:ring-2 focus:ring-purple-200 focus:border-[#8b00cc] text-gray-900 font-semibold text-xs sm:text-sm transition-all cursor-pointer shadow-xs"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -168,44 +212,61 @@ export default function CustomerProfile({ user }: { user?: any }) {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full mb-2">
-                <label className="sm:w-[110px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
+              {/* Date of Birth */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-5 w-full">
+                <label className="sm:w-[120px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
                   Date of Birth
                 </label>
                 <div className="flex-1">
                   <DatePicker 
                     value={dob} 
                     onChange={setDob}
-                    className="w-full h-10.5 border border-purple-100 bg-gray-50/50 focus:bg-white rounded-xl px-3.5 outline-none focus:ring-2 focus:ring-[#8b00cc]/20 focus:border-[#8b00cc] text-gray-900 font-bold text-xs sm:text-sm transition-all shadow-2xs"
+                    className="w-full h-11 border border-purple-100 bg-gray-50/60 focus:bg-white rounded-xl px-4 outline-none focus:ring-2 focus:ring-purple-200 focus:border-[#8b00cc] text-gray-900 font-semibold text-xs sm:text-sm transition-all shadow-xs"
                   />
                 </div>
               </div>
 
             </div>
 
-            {/* Avatar Upload */}
-            <div className="flex flex-col items-center gap-4 lg:border-l lg:border-purple-100 lg:pl-10">
-              <div className="w-[120px] h-[120px] bg-purple-50/50 rounded-full flex justify-center items-center overflow-hidden border-2 border-purple-200 shadow-xs">
+            {/* Avatar Upload Container */}
+            <div className="flex flex-col items-center justify-center gap-4 lg:border-l lg:border-purple-100 lg:pl-10 shrink-0">
+              <div className="w-32 h-32 bg-purple-50/50 rounded-full flex justify-center items-center overflow-hidden border-4 border-purple-100 shadow-sm relative group">
                 {avatar ? (
                   <img src={avatar} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  <UserCircle2 size={90} className="text-gray-400" />
+                  <UserCircle2 size={100} className="text-purple-300" />
                 )}
               </div>
-              <label className="px-5 py-2 bg-gradient-to-r from-[#8b00cc] to-[#9d00e6] text-white font-bold rounded-xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all text-xs">
-                Upload an Image
+              
+              <label className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-bold rounded-xl cursor-pointer shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-xs">
+                <Upload size={14} />
+                <span>Upload an Image</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               </label>
+              
+              <div className="text-center text-[11px] text-gray-400 font-medium max-w-[160px]">
+                File size: max 5MB<br />Formats: JPG, PNG, WEBP
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-purple-100 flex justify-end">
+          {/* Bottom Actions */}
+          <div className="mt-8 pt-5 border-t border-purple-100 flex flex-col sm:flex-row justify-end items-center gap-3">
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="w-full sm:w-auto px-10 py-2.5 bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-black rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all border-none cursor-pointer disabled:opacity-50 text-xs sm:text-sm shadow-xs"
+              className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-black rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all border-none cursor-pointer disabled:opacity-50 text-xs sm:text-sm flex items-center justify-center gap-2"
             >
-              {isSaving ? "Saving..." : "Save Profile"}
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Saving Changes...</span>
+                </>
+              ) : (
+                <>
+                  <span>Save Profile</span>
+                </>
+              )}
             </button>
           </div>
         </section>
@@ -214,16 +275,24 @@ export default function CustomerProfile({ user }: { user?: any }) {
 
       </div>
 
-      {/* Save Modal */}
+      {/* Save Success Modal */}
       {isSaveModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center gap-6 animate-in zoom-in-95">
-            <p className="text-xl font-bold text-black m-0 text-center">Profile saved successfully!</p>
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border border-purple-100 flex flex-col items-center text-center gap-5 animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-full bg-green-50 text-green-600 border border-green-200 flex items-center justify-center">
+              <CheckCircle2 size={32} />
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-xl font-black text-gray-900 m-0">Profile Updated</h3>
+              <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">Your account details have been successfully saved.</p>
+            </div>
+
             <button 
               onClick={() => setIsSaveModalOpen(false)}
-              className="w-full py-3 bg-[#bd00ff] text-white font-bold rounded-lg border-none cursor-pointer hover:bg-[#9c00d6] transition-colors"
+              className="w-full py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:shadow-md transition-all text-sm"
             >
-              OK
+              Got it
             </button>
           </div>
         </div>
@@ -231,31 +300,50 @@ export default function CustomerProfile({ user }: { user?: any }) {
 
       {/* Phone Prompt Modal */}
       {isPhoneModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center">
-          <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95">
-            <div className="flex flex-col gap-2 border-b border-gray-100 pb-4">
-              <h3 className="text-xl font-bold text-black m-0 border-none">Change Phone Number</h3>
-              <p className="text-gray-500 m-0 text-sm">Enter your new phone number below.</p>
-            </div>
-            <input 
-              type="text" 
-              placeholder="e.g. 09123456789" 
-              value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)}
-              className="w-full h-12 border-2 border-gray-300 rounded-lg px-4 outline-none focus:border-[#bd00ff] text-black font-semibold uppercase tracking-wider transition-colors"
-            />
-            <div className="flex gap-4 w-full">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex justify-center items-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-purple-100 flex flex-col gap-6 animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-purple-100 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 text-[#8b00cc] flex items-center justify-center">
+                  <Phone size={18} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-950 m-0">Change Phone Number</h3>
+                  <p className="text-gray-500 m-0 text-xs font-medium">Update your contact phone number</p>
+                </div>
+              </div>
               <button 
                 onClick={() => setIsPhoneModalOpen(false)}
-                className="flex-1 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center border-none cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-gray-700">New Phone Number</label>
+              <input 
+                type="text" 
+                placeholder="e.g. 0917 123 4567" 
+                value={newPhone}
+                onChange={(e) => setNewPhone(e.target.value)}
+                className="w-full h-11 border border-purple-200 bg-purple-50/30 focus:bg-white rounded-xl px-4 outline-none focus:ring-2 focus:ring-purple-200 focus:border-[#8b00cc] text-gray-900 font-semibold text-sm transition-all"
+              />
+            </div>
+
+            <div className="flex gap-3 w-full">
+              <button 
+                onClick={() => { setIsPhoneModalOpen(false); setNewPhone(''); }}
+                className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl cursor-pointer border-none transition-colors text-xs sm:text-sm"
               >
                 Cancel
               </button>
               <button 
                 onClick={handlePhoneUpdate}
-                className="flex-1 py-3 bg-[#bd00ff] border-none text-white font-bold rounded-lg cursor-pointer hover:bg-[#9c00d6] transition-colors"
+                disabled={!newPhone.trim()}
+                className="flex-1 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:shadow-md transition-all disabled:opacity-50 text-xs sm:text-sm"
               >
-                Update
+                Update Phone
               </button>
             </div>
           </div>
@@ -265,3 +353,4 @@ export default function CustomerProfile({ user }: { user?: any }) {
     </main>
   );
 }
+

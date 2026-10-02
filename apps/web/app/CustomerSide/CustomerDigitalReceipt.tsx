@@ -72,46 +72,55 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
     <main className="flex-1 p-4 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto bg-[#fbfaff]">
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6">
 
-        {/* Sidebar */}
+        {/* Left Sidebar */}
         <aside className="w-full md:w-[280px] flex flex-col gap-5 shrink-0">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-purple-100/90 flex flex-col items-center gap-3 text-center">
-            <div className="w-[88px] h-[88px] rounded-full overflow-hidden border-2 border-purple-200 shadow-xs flex items-center justify-center bg-purple-50/50">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-purple-100/90 flex flex-col items-center gap-3.5 text-center transition-all hover:border-purple-200">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-purple-200 shadow-sm flex items-center justify-center bg-purple-50/50">
               {user?.image ? (
                 <img src={user.image} alt="User Avatar" className="w-full h-full object-cover" />
               ) : (
-                <UserCircle2 size={72} className="text-gray-400" />
+                <UserCircle2 size={80} className="text-purple-300" />
               )}
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="text-lg font-black text-gray-950">{user?.name || "Customer"}</span>
+              <span className="text-lg font-black text-gray-950 truncate max-w-[220px]">{user?.name || "Customer"}</span>
               <button 
                 onClick={() => navigate('/customer/profile')}
-                className="flex items-center gap-1.5 text-gray-500 hover:text-[#8b00cc] bg-transparent border-none cursor-pointer transition-colors font-bold text-xs p-0"
+                className="flex items-center gap-1.5 text-purple-700 bg-purple-50 hover:bg-purple-100 px-2.5 py-0.5 rounded-full font-bold text-xs border border-purple-100 transition-colors cursor-pointer"
               >
-                <Pencil size={13} className="text-[#8b00cc]" /> Edit Profile
+                <Pencil size={11} className="text-[#8b00cc]" />
+                <span>Edit Profile</span>
               </button>
             </div>
           </div>
           
-          <nav className="bg-white rounded-3xl p-2.5 shadow-sm border border-purple-100/90 flex flex-col gap-1">
+          <nav className="bg-white rounded-3xl p-2.5 shadow-sm border border-purple-100/90 flex flex-col gap-1.5">
             <button 
               onClick={() => navigate('/customer/profile')}
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors text-gray-700 hover:text-[#8b00cc] font-bold text-sm"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50/80 transition-all text-gray-700 hover:text-[#8b00cc] font-bold text-sm group"
             >
-              <User className="text-[#6b588c]" size={20} />
+              <div className="w-8 h-8 rounded-xl bg-purple-50 group-hover:bg-purple-100/80 flex items-center justify-center transition-colors">
+                <User className="text-[#6b588c] group-hover:text-[#8b00cc] transition-colors" size={18} />
+              </div>
               <span>Profile</span>
             </button>
+
             <button 
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#8b00cc] to-[#9d00e6] text-white font-black text-sm cursor-pointer text-left transition-all border-none shadow-xs shadow-purple-500/20"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold text-sm cursor-pointer text-left transition-all border-none shadow-sm shadow-purple-500/25"
             >
-              <Receipt size={20} className="text-white" />
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                <Receipt size={18} className="text-white" />
+              </div>
               <span>Digital Receipt</span>
             </button>
+
             <button 
               onClick={() => navigate('/customer/change-password')}
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors text-gray-700 hover:text-[#8b00cc] font-bold text-sm"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50/80 transition-all text-gray-700 hover:text-[#8b00cc] font-bold text-sm group"
             >
-              <KeyRound className="text-[#6b588c]" size={20} />
+              <div className="w-8 h-8 rounded-xl bg-purple-50 group-hover:bg-purple-100/80 flex items-center justify-center transition-colors">
+                <KeyRound className="text-[#6b588c] group-hover:text-[#8b00cc] transition-colors" size={18} />
+              </div>
               <span>Change Password</span>
             </button>
           </nav>
