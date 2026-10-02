@@ -267,7 +267,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
                     </div>
 
                     <h4 className="text-gray-900 font-bold text-sm sm:text-base truncate m-0 group-hover:text-[#8b00cc] transition-colors">
-                      {item.deviceName} {item.quantity > 1 && `(x${item.quantity})`}
+                      {item.deviceName} {item.quantity && item.quantity > 1 ? `(x${item.quantity})` : ''}
                     </h4>
 
                     <div className="flex items-center gap-3 flex-wrap">

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 
-export default function CustomerReceiptView({ user: initialUser, orderId }: { user?: any; orderId: string }) {
+export default function CustomerReceiptView({ user: _initialUser, orderId }: { user?: any; orderId: string }) {
   const router = useRouter();
   const [purchase, setPurchase] = useState<StandardReceiptData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
