@@ -110,10 +110,11 @@ function LoginContent() {
     } else if (result?.success) {
       const redirectUrl = searchParams?.get("redirect");
       const isLoggingIntoMonitoring = redirectUrl && redirectUrl.includes("/monitoring");
+      const userRole = (result.role || "").toUpperCase();
 
-      if (result.role === "admin" || result.role === "ADMIN" || result.role === "super_admin" || result.role === "SUPER_ADMIN") {
+      if (userRole === "SUPER_ADMIN" || userRole === "ADMIN" || userRole === "BRANCH_ADMIN") {
         window.location.href = isLoggingIntoMonitoring ? "/admin/monitoring" : "/admin/dashboard";
-      } else if (result.role === "cashier" || result.role === "CASHIER") {
+      } else if (userRole === "CASHIER") {
         window.location.href = isLoggingIntoMonitoring ? "/cashier/monitoring" : "/cashier/dashboard";
       } else {
         window.location.href = redirectUrl || "/customer/dashboard";
@@ -223,7 +224,7 @@ function LoginContent() {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
                 <User size={22} />
               </div>
-              <input type="text" name="email" required placeholder="Email" className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
+              <input type="text" name="email" required placeholder="Email / Username" className="w-full pl-12 pr-4 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" />
             </div>
 
             <div className="relative">

@@ -70,15 +70,16 @@ export async function register(formData: FormData) {
 }
 
 export async function login(formData: FormData) {
-  const email = formData.get("email") as string;
+  const identifier = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
 
-  if (!email || !password) {
+  if (!identifier || !password) {
     return { error: "Missing required fields" };
   }
 
   const now = Date.now();
-  const attemptData = loginAttempts.get(email) || { count: 0, lockedUntil: null };
+  const attemptKey = identifier.toLowerCase();
+  const attemptData = loginAttempts.get(attemptKey) || { count: 0, lockedUntil: null };
 
   if (attemptData.lockedUntil && now < attemptData.lockedUntil) {
     const remainingMinutes = Math.ceil((attemptData.lockedUntil - now) / 60000);
@@ -90,8 +91,14 @@ export async function login(formData: FormData) {
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Case-insensitive lookup by email or username/name
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: identifier, mode: 'insensitive' } },
+          { name: { equals: identifier, mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (!user) {
@@ -99,8 +106,12 @@ export async function login(formData: FormData) {
       if (attemptData.count >= MAX_ATTEMPTS) {
         attemptData.lockedUntil = now + LOCKOUT_MS;
       }
-      loginAttempts.set(email, attemptData);
-      return { error: attemptData.lockedUntil ? "Too many failed attempts. Try again in 15 minute(s)." : "Invalid credentials" };
+      loginAttempts.set(attemptKey, attemptData);
+      return { error: attemptData.lockedUntil ? "Too many failed attempts. Try again in 15 minute(s)." : "Invalid email or password." };
+    }
+
+    if (user.status === 'Inactive') {
+      return { error: "This account is currently inactive. Please contact the Super Admin." };
     }
 
     if (user.status === 'Suspended') {
@@ -127,7 +138,7 @@ export async function login(formData: FormData) {
       if (user.authProvider === "GOOGLE") {
         return { error: "This account was created via Google. Please sign in with Google." };
       }
-      return { error: "Invalid credentials (no password set)." };
+      return { error: "Invalid email or password." };
     }
 
     const passwordsMatch = await bcrypt.compare(password, user.password);
@@ -137,15 +148,15 @@ export async function login(formData: FormData) {
       if (attemptData.count >= MAX_ATTEMPTS) {
         attemptData.lockedUntil = now + LOCKOUT_MS;
       }
-      loginAttempts.set(email, attemptData);
-      return { error: attemptData.lockedUntil ? "Too many failed attempts. Try again in 15 minute(s)." : "Invalid credentials" };
+      loginAttempts.set(attemptKey, attemptData);
+      return { error: attemptData.lockedUntil ? "Too many failed attempts. Try again in 15 minute(s)." : "Invalid email or password." };
     }
 
     // Success, reset attempts
-    loginAttempts.delete(email);
+    loginAttempts.delete(attemptKey);
 
     await setSession(user.id, user.role, user.branch);
-    return { success: true, role: user.role };
+    return { success: true, role: user.role, branch: user.branch };
   } catch (err: any) {
     console.error("Login Error:", err);
     return { error: err.message || "Failed to log in" };

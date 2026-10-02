@@ -77,6 +77,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Status check
+    if (user.status === 'Inactive') {
+      return NextResponse.redirect(new URL("/login?error=" + encodeURIComponent("This account is currently inactive. Please contact the Super Admin."), baseUrl));
+    }
+
     // Suspension check
     if (user.status === 'Suspended') {
       if (user.suspendedUntil && user.suspendedUntil > new Date()) {
@@ -102,9 +107,19 @@ export async function GET(req: NextRequest) {
     // Set the session using the same logic as your regular login
     await setSession(user.id, user.role, user.branch);
 
-    // Redirect strictly to the customer dashboard or state redirect URL if present and starts with /
+    // Redirect based on role or state redirect URL if present and starts with /
     const state = url.searchParams.get("state") || "";
-    const redirectPath = (state && state.startsWith("/")) ? state : "/customer/dashboard";
+    let redirectPath = (state && state.startsWith("/")) ? state : "";
+    if (!redirectPath) {
+      const userRole = (user.role || "").toUpperCase();
+      if (userRole === "SUPER_ADMIN" || userRole === "ADMIN" || userRole === "BRANCH_ADMIN") {
+        redirectPath = "/admin/dashboard";
+      } else if (userRole === "CASHIER") {
+        redirectPath = "/cashier/dashboard";
+      } else {
+        redirectPath = "/customer/dashboard";
+      }
+    }
 
     return NextResponse.redirect(new URL(redirectPath, baseUrl));
 
