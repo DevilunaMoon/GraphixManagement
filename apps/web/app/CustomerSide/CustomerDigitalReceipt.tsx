@@ -69,100 +69,100 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
   const currentItems = receipts;
 
   return (
-    <main className="flex-1 p-3 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto">
+    <main className="flex-1 p-4 sm:p-6 md:p-10 font-['Inter'] flex justify-center overflow-y-auto bg-[#fbfaff]">
       <div className="w-full max-w-6xl flex flex-col md:flex-row gap-6">
 
         {/* Sidebar */}
-        <aside className="w-full md:w-[300px] flex flex-col gap-6 shrink-0">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center gap-4">
-            <div className="w-[100px] h-[100px] rounded-full overflow-hidden border-4 border-[#0022ff] shadow-sm flex items-center justify-center bg-gray-50">
+        <aside className="w-full md:w-[280px] flex flex-col gap-5 shrink-0">
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-purple-100/90 flex flex-col items-center gap-3 text-center">
+            <div className="w-[88px] h-[88px] rounded-full overflow-hidden border-2 border-purple-200 shadow-xs flex items-center justify-center bg-purple-50/50">
               {user?.image ? (
                 <img src={user.image} alt="User Avatar" className="w-full h-full object-cover" />
               ) : (
-                <UserCircle2 size={80} className="text-gray-400" />
+                <UserCircle2 size={72} className="text-gray-400" />
               )}
             </div>
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-xl font-bold text-black">{user?.name || "Customer"}</span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-lg font-black text-gray-950">{user?.name || "Customer"}</span>
               <button 
                 onClick={() => navigate('/customer/profile')}
-                className="flex items-center gap-2 text-gray-500 hover:text-[#bd00ff] bg-transparent border-none cursor-pointer transition-colors font-semibold p-0"
+                className="flex items-center gap-1.5 text-gray-500 hover:text-[#8b00cc] bg-transparent border-none cursor-pointer transition-colors font-bold text-xs p-0"
               >
-                <Pencil size={16} /> Edit Profile
+                <Pencil size={13} className="text-[#8b00cc]" /> Edit Profile
               </button>
             </div>
           </div>
           
-          <nav className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex flex-col gap-2">
+          <nav className="bg-white rounded-3xl p-2.5 shadow-sm border border-purple-100/90 flex flex-col gap-1">
             <button 
               onClick={() => navigate('/customer/profile')}
-              className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors text-gray-700 hover:text-[#8b00cc] font-bold text-sm"
             >
-              <User className="text-[#5b4a7a] group-hover:text-[#bd00ff] transition-colors" size={24} />
-              <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Profile</span>
+              <User className="text-[#6b588c]" size={20} />
+              <span>Profile</span>
             </button>
             <button 
-              className="flex items-center gap-4 w-full p-4 rounded-xl border-2 border-[#bd00ff] bg-purple-50 cursor-pointer text-left transition-colors"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl bg-gradient-to-r from-[#8b00cc] to-[#9d00e6] text-white font-black text-sm cursor-pointer text-left transition-all border-none shadow-xs shadow-purple-500/20"
             >
-              <Receipt className="text-[#bd00ff]" size={24} />
-              <span className="text-lg font-bold text-[#bd00ff]">Digital Receipt</span>
+              <Receipt size={20} className="text-white" />
+              <span>Digital Receipt</span>
             </button>
             <button 
               onClick={() => navigate('/customer/change-password')}
-              className="flex items-center gap-4 w-full p-4 rounded-xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors group"
+              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50 transition-colors text-gray-700 hover:text-[#8b00cc] font-bold text-sm"
             >
-              <KeyRound className="text-[#5b4a7a] group-hover:text-[#bd00ff] transition-colors" size={24} />
-              <span className="text-lg font-semibold text-gray-700 group-hover:text-[#bd00ff] transition-colors">Change Password</span>
+              <KeyRound className="text-[#6b588c]" size={20} />
+              <span>Change Password</span>
             </button>
           </nav>
         </aside>
 
         {/* Main Area */}
-        <section className="flex-1 bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 shadow-sm border border-[#bd00ff] flex flex-col">
+        <section className="flex-1 bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col">
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-200 pb-4 sm:pb-5 mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-purple-100 pb-4 mb-6 gap-3 sm:gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-black m-0 border-none">Digital Receipt</h2>
-              <p className="text-gray-500 m-0 mt-2 font-medium">View the list of Receipts</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-950 m-0 tracking-tight">Digital Receipts</h2>
+              <p className="text-gray-500 m-0 mt-1 font-medium text-xs sm:text-sm">View and download your official transaction receipts.</p>
             </div>
 
             {/* Custom Sort Dropdown */}
             <div className="relative z-10">
               <button 
                 onClick={() => setIsSortOpen(!isSortOpen)}
-                className="flex items-center justify-between w-[140px] px-4 py-2 border-2 border-gray-200 rounded-xl bg-white text-black font-semibold cursor-pointer hover:border-[#bd00ff] transition-colors"
+                className="flex items-center justify-between w-[130px] px-3.5 py-1.5 border border-purple-200 rounded-xl bg-purple-50/50 text-gray-800 font-bold text-xs cursor-pointer hover:border-[#8b00cc] transition-colors"
               >
-                {sortOrder === 'newest' ? 'Newest' : 'Oldest'}
-                <ChevronDown size={18} className={`transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
+                {sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                <ChevronDown size={15} className={`transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
               </button>
               
               {isSortOpen && (
-                <ul className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg list-none p-0 m-0 overflow-hidden">
+                <ul className="absolute top-full right-0 w-[140px] mt-1 bg-white border border-purple-100 rounded-xl shadow-lg list-none p-1 m-0 overflow-hidden z-20">
                   <li 
                     onClick={() => { setSortOrder('newest'); setIsSortOpen(false); setCurrentPage(1); }}
-                    className="px-4 py-3 hover:bg-purple-50 hover:text-[#bd00ff] cursor-pointer font-medium text-black transition-colors"
+                    className="px-3 py-2 hover:bg-purple-50 hover:text-[#8b00cc] cursor-pointer font-bold text-xs text-gray-800 rounded-lg transition-colors"
                   >
-                    Newest
+                    Newest First
                   </li>
                   <li 
                     onClick={() => { setSortOrder('oldest'); setIsSortOpen(false); setCurrentPage(1); }}
-                    className="px-4 py-3 hover:bg-purple-50 hover:text-[#bd00ff] cursor-pointer font-medium text-black transition-colors border-t border-gray-100"
+                    className="px-3 py-2 hover:bg-purple-50 hover:text-[#8b00cc] cursor-pointer font-bold text-xs text-gray-800 rounded-lg transition-colors"
                   >
-                    Oldest
+                    Oldest First
                   </li>
                 </ul>
               )}
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:gap-4 flex-1">
+          <div className="flex flex-col gap-3.5 flex-1">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-10 h-10 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
-                <p className="text-gray-500 font-semibold">Fetching your receipts...</p>
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <div className="w-8 h-8 border-3 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-semibold text-xs">Fetching your receipts...</p>
               </div>
             ) : currentItems.map(item => (
-              <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center p-4 sm:p-5 border border-gray-200 rounded-2xl bg-white hover:border-[#bd00ff] hover:shadow-md transition-all gap-3 sm:gap-0">
+              <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center p-4 sm:p-5 border border-purple-100/80 rounded-2xl bg-[#faf8fd] hover:border-purple-300 hover:shadow-2xs transition-all gap-3 sm:gap-0">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-black text-lg border-none m-0 leading-tight">Order #{item.orderNum}</span>

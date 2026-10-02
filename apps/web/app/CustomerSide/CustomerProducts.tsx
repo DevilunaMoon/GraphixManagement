@@ -406,28 +406,38 @@ function CustomerProductsContent() {
         })()}
 
         {/* Categories Section */}
-        <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full relative group/cats">
-          <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Brands</h2>
+        <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-purple-100/90 flex flex-col gap-4 w-full relative group/cats">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs sm:text-sm font-black text-[#8b00cc] uppercase tracking-widest m-0 border-none">Explore Brands</h2>
+            {categoryFilter && (
+              <button 
+                onClick={() => navigate('/customer/products')} 
+                className="text-xs font-bold text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer"
+              >
+                Clear Brand Filter ✕
+              </button>
+            )}
+          </div>
           
           {/* Left Chevron */}
           <button 
             onClick={() => scrollCategories(-300)}
-            className="absolute left-2 md:left-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+            className="absolute left-2 md:left-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
 
           {/* Right Chevron */}
           <button 
             onClick={() => scrollCategories(300)}
-            className="absolute right-2 md:right-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+            className="absolute right-2 md:right-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
           >
-            <ChevronRight size={24} />
+            <ChevronRight size={20} strokeWidth={2.5} />
           </button>
 
           <div 
             ref={categoryScrollRef}
-            className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden"
+            className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden items-center"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {displayCategories.map((category, idx) => {

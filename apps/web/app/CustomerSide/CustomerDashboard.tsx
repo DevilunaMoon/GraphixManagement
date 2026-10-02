@@ -146,8 +146,8 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
 
       {/* Banner Carousel Section */}
       {banners.length > 0 && (
-      <section className="relative w-full max-w-7xl mx-auto rounded-xl shadow-sm overflow-hidden group">
-        <div className="relative w-full h-[150px] sm:h-[200px] md:h-[250px] bg-white overflow-hidden">
+      <section className="relative w-full max-w-7xl mx-auto rounded-3xl shadow-sm overflow-hidden group border border-purple-100/80 bg-white">
+        <div className="relative w-full h-[200px] sm:h-[280px] md:h-[350px] bg-gradient-to-br from-purple-50/40 via-purple-100/20 to-white overflow-hidden flex items-center justify-center">
           <AnimatePresence initial={false} custom={direction}>
             {banners.length > 0 && banners[currentBannerIndex] && (
               <motion.div
@@ -161,22 +161,30 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                   x: { type: "spring", stiffness: 120, damping: 25 },
                   opacity: { duration: 0.4 }
                 }}
-                className="absolute w-full h-full flex items-center justify-center pointer-events-auto"
+                className="absolute w-full h-full flex items-center justify-center pointer-events-auto overflow-hidden"
               >
+                {/* Ambient Soft Glow Backdrop */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-center blur-2xl opacity-25 scale-125 pointer-events-none"
+                  style={{ backgroundImage: `url(${optimizeCloudinaryUrl(banners[currentBannerIndex].imageUrl, 400)})` }}
+                />
+
                 {banners[currentBannerIndex].linkUrl ? (
-                  <a href={banners[currentBannerIndex].linkUrl} target="_blank" rel="noopener noreferrer" className="w-full h-full block cursor-pointer">
+                  <a href={banners[currentBannerIndex].linkUrl} target="_blank" rel="noopener noreferrer" className="relative z-10 w-full h-full flex items-center justify-center cursor-pointer p-2 sm:p-4">
                     <img 
                       src={optimizeCloudinaryUrl(banners[currentBannerIndex].imageUrl, 1200)} 
                       alt={banners[currentBannerIndex].name || `Promotional Banner`} 
-                      className="w-full h-full object-contain hover:scale-[1.02] transition-transform duration-300"
+                      className="max-h-full max-w-full object-contain rounded-2xl drop-shadow-md hover:scale-[1.01] transition-transform duration-300"
                     />
                   </a>
                 ) : (
-                  <img 
-                    src={optimizeCloudinaryUrl(banners[currentBannerIndex].imageUrl, 1200)} 
-                    alt={banners[currentBannerIndex].name || `Promotional Banner`} 
-                    className="w-full h-full object-contain"
-                  />
+                  <div className="relative z-10 w-full h-full flex items-center justify-center p-2 sm:p-4">
+                    <img 
+                      src={optimizeCloudinaryUrl(banners[currentBannerIndex].imageUrl, 1200)} 
+                      alt={banners[currentBannerIndex].name || `Promotional Banner`} 
+                      className="max-h-full max-w-full object-contain rounded-2xl drop-shadow-md"
+                    />
+                  </div>
                 )}
               </motion.div>
             )}
@@ -186,62 +194,73 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
         {/* Navigation Buttons */}
         <button 
           onClick={prevBanner}
-          className="absolute z-10 left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#5c0099] p-2 sm:p-3 rounded-full shadow-lg transition-all opacity-60 hover:opacity-100 cursor-pointer border-none"
+          className="absolute z-20 left-3 sm:left-5 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#7e22ce] p-2.5 sm:p-3 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all opacity-70 group-hover:opacity-100 hover:scale-110 cursor-pointer border border-white/60"
+          title="Previous Banner"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={20} strokeWidth={2.5} />
         </button>
         <button 
           onClick={nextBanner}
-          className="absolute z-10 right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#5c0099] p-2 sm:p-3 rounded-full shadow-lg transition-all opacity-60 hover:opacity-100 cursor-pointer border-none"
+          className="absolute z-20 right-3 sm:right-5 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#7e22ce] p-2.5 sm:p-3 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-md transition-all opacity-70 group-hover:opacity-100 hover:scale-110 cursor-pointer border border-white/60"
+          title="Next Banner"
         >
-          <ChevronRight size={24} />
+          <ChevronRight size={20} strokeWidth={2.5} />
         </button>
 
         {/* Indicators */}
-        <div className="absolute z-10 bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute z-20 bottom-3.5 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full">
           {banners.map((_, idx) => (
              <button 
                key={idx}
                onClick={() => handleDotClick(idx)}
-               className={`w-3 h-3 rounded-full transition-all border-none cursor-pointer p-0 ${idx === currentBannerIndex ? 'bg-[#bd00ff] w-6' : 'bg-gray-300/80 hover:bg-gray-200'}`} 
+               className={`h-2 rounded-full transition-all border-none cursor-pointer p-0 ${idx === currentBannerIndex ? 'bg-[#8b00cc] w-6' : 'bg-white/70 hover:bg-white w-2'}`} 
+               title={`Slide ${idx + 1}`}
              />
           ))}
         </div>
       </section>
       )}
 
-      {/* Categories Section */}
-      <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-4 w-full max-w-7xl mx-auto relative group/cats">
-        <h2 className="text-lg text-gray-500 font-bold uppercase tracking-wide m-0 border-none mb-2">Brands</h2>
+      {/* Brands Section */}
+      <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-purple-100/90 flex flex-col gap-4 w-full max-w-7xl mx-auto relative group/cats">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs sm:text-sm font-black text-[#8b00cc] uppercase tracking-widest m-0 border-none">Explore Brands</h2>
+          <button 
+            onClick={() => navigate('/customer/products')} 
+            className="text-xs font-bold text-gray-500 hover:text-[#8b00cc] bg-transparent border-none cursor-pointer transition-colors"
+          >
+            View All Products &rarr;
+          </button>
+        </div>
         
         {/* Left Chevron */}
         <button 
           onClick={() => scrollCategories(-300)}
-          className="absolute left-2 md:left-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+          className="absolute left-2 md:left-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={20} strokeWidth={2.5} />
         </button>
 
         {/* Right Chevron */}
         <button 
           onClick={() => scrollCategories(300)}
-          className="absolute right-2 md:right-4 top-[55%] -translate-y-1/2 w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center border border-gray-100 z-10 text-gray-600 hover:text-[#bd00ff] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+          className="absolute right-2 md:right-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
         >
-          <ChevronRight size={24} />
+          <ChevronRight size={20} strokeWidth={2.5} />
         </button>
 
         <div 
           ref={categoryScrollRef}
-          className="flex gap-4 sm:gap-8 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden items-center"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayCategories.map((category, idx) => (
             <div 
               key={category.id || idx} 
               onClick={() => navigate(`/customer/products?category=${encodeURIComponent(category.name || category.id)}`)}
-              className="flex flex-col items-center gap-3 min-w-[80px] sm:min-w-[100px] cursor-pointer group"
+              className="flex flex-col items-center gap-2.5 min-w-[85px] sm:min-w-[105px] cursor-pointer group"
             >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-50 flex items-center justify-center shadow-sm border border-gray-200 group-hover:border-[#bd00ff] group-hover:shadow-md transition-all ease-out duration-300 p-4 shrink-0">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-purple-50/40 flex items-center justify-center shadow-xs border border-purple-100/80 group-hover:border-[#8b00cc] group-hover:bg-white group-hover:shadow-md group-hover:-translate-y-1 transition-all ease-out duration-300 p-3.5 shrink-0">
                 {category.logoUrl || category.logo ? (
                   <img 
                     src={optimizeCloudinaryUrl(category.logoUrl || category.logo, 100)} 
@@ -250,10 +269,10 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                     style={category.name === 'Apple' ? { paddingBottom: '2px' } : {}}
                   />
                 ) : (
-                  <span className="text-xs text-gray-400 font-bold">No Img</span>
+                  <span className="text-[10px] text-gray-400 font-bold">No Img</span>
                 )}
               </div>
-              <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center group-hover:text-[#bd00ff] transition-colors leading-tight">
+              <span className="text-xs sm:text-sm font-bold text-gray-700 text-center group-hover:text-[#8b00cc] transition-colors leading-tight">
                 {category.name}
               </span>
             </div>

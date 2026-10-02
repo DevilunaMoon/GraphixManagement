@@ -237,51 +237,56 @@ function CustomerProductInfoContent() {
   }
 
   return (
-    <div className="flex-1 p-6 md:p-10 font-['Inter'] flex justify-center bg-[#f8fafc]">
-      <div className="w-full max-w-5xl flex flex-col gap-8">
+    <div className="flex-1 p-4 sm:p-6 md:p-10 font-['Inter'] flex justify-center bg-[#fbfaff]">
+      <div className="w-full max-w-5xl flex flex-col gap-6">
         
         {/* Header Options */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3.5">
           <button 
             onClick={() => navigate('/customer/products')} 
-            className="w-12 h-12 rounded-2xl bg-white hover:bg-purple-50 border border-gray-200/80 hover:border-purple-200 text-gray-700 hover:text-[#bd00ff] transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-90"
+            className="w-10 h-10 rounded-2xl bg-white hover:bg-purple-50 border border-purple-100/80 hover:border-purple-300 text-gray-700 hover:text-[#8b00cc] transition-all flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+            title="Back to products"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} strokeWidth={2.5} />
           </button>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-black text-[#bd00ff] tracking-widest uppercase">Customer Portal</span>
-            <h2 className="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-purple-950 to-indigo-950 tracking-tight m-0">Product Details</h2>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black text-[#8b00cc] tracking-widest uppercase">Customer Portal</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight m-0">Product Details</h2>
           </div>
         </div>
 
         {/* Product Details Section Card */}
-        <section className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col gap-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <section className="bg-white rounded-3xl p-6 md:p-10 shadow-sm border border-purple-100/90 flex flex-col gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
           
             {/* Gallery Left Component */}
-            <div className="flex flex-col gap-5 w-full">
-              <div className="w-full aspect-[4/3] bg-gradient-to-br from-gray-50/50 to-gray-100/50 rounded-3xl flex justify-center items-center p-6 border border-gray-200/60 relative group/gallery overflow-hidden shadow-inner">
+            <div className="flex flex-col gap-4 w-full">
+              <div className="w-full aspect-[4/3] bg-gradient-to-br from-purple-50/20 via-white to-gray-50/50 rounded-3xl flex justify-center items-center p-6 border border-purple-100/80 relative group/gallery overflow-hidden shadow-xs">
                 {product.images && product.images.length > 1 && (
                   <>
                     <button 
                       onClick={handlePrevImage}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/95 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#bd00ff] transition-all opacity-0 group-hover/gallery:opacity-100 border border-gray-100 cursor-pointer z-10 hover:scale-105 active:scale-95"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/95 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#8b00cc] transition-all opacity-0 group-hover/gallery:opacity-100 border border-purple-100 cursor-pointer z-10 hover:scale-105 active:scale-95"
                       title="Previous Image"
                     >
-                      <ChevronLeft size={24} strokeWidth={2.5} />
+                      <ChevronLeft size={20} strokeWidth={2.5} />
                     </button>
                     <button 
                       onClick={handleNextImage}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 bg-white/95 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#bd00ff] transition-all opacity-0 group-hover/gallery:opacity-100 border border-gray-100 cursor-pointer z-10 hover:scale-105 active:scale-95"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/95 hover:bg-white rounded-full shadow-md flex items-center justify-center text-gray-700 hover:text-[#8b00cc] transition-all opacity-0 group-hover/gallery:opacity-100 border border-purple-100 cursor-pointer z-10 hover:scale-105 active:scale-95"
                       title="Next Image"
                     >
-                      <ChevronRight size={24} strokeWidth={2.5} />
+                      <ChevronRight size={20} strokeWidth={2.5} />
                     </button>
                   </>
                 )}
-                {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                  <span className="absolute top-4 left-4 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-xs font-black px-3.5 py-1 rounded-full shadow-lg uppercase tracking-wider z-10 border border-purple-300">
+                {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) ? (
+                  <span className="absolute top-3.5 left-3.5 bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-black px-3 py-0.8 rounded-full shadow-xs uppercase tracking-wider z-10">
                     PRE-OWNED
+                  </span>
+                ) : (
+                  <span className="absolute top-3.5 left-3.5 bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-black px-3 py-0.8 rounded-full shadow-xs uppercase tracking-wider z-10">
+                    NEW
                   </span>
                 )}
                 {product.images && product.images.length > 0 ? (
@@ -301,12 +306,12 @@ function CustomerProductInfoContent() {
                 )}
               </div>
               {product.images && product.images.filter(Boolean).length > 1 && (
-                <div className="flex gap-3 overflow-x-auto py-1 scrollbar-thin justify-center w-full">
+                <div className="flex gap-2.5 overflow-x-auto py-1 scrollbar-thin justify-center w-full">
                   {product.images.filter(Boolean).map((img: string, idx: number) => (
                     <button 
                       key={idx}
                       onClick={() => setActiveImageIndex(idx)}
-                      className={`shrink-0 w-20 h-20 rounded-2xl border-2 overflow-hidden bg-white ${activeImageIndex === idx ? 'border-[#bd00ff] shadow-md shadow-purple-500/10 scale-95' : 'border-gray-200/80 opacity-70'} transition-all hover:border-[#bd00ff] hover:opacity-100 p-1.5 cursor-pointer hover:scale-95`}
+                      className={`shrink-0 w-16 h-16 rounded-xl border-2 overflow-hidden bg-white ${activeImageIndex === idx ? 'border-[#8b00cc] shadow-md shadow-purple-500/15 scale-95' : 'border-gray-200/80 opacity-70'} transition-all hover:border-[#8b00cc] hover:opacity-100 p-1 cursor-pointer hover:scale-95`}
                     >
                       <img src={img} alt={`Preview ${idx + 1}`} className="w-full h-full object-contain mix-blend-multiply" />
                     </button>
@@ -316,15 +321,15 @@ function CustomerProductInfoContent() {
             </div>
 
             {/* Product Meta Info Right */}
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-3">
-                <h3 className="text-3xl md:text-4xl font-black text-gray-900 border-none m-0 tracking-tight leading-tight">{product.name}</h3>
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-2xl sm:text-3xl font-black text-gray-950 border-none m-0 tracking-tight leading-snug">{product.name}</h3>
                 
                 {/* Branch Availability & Condition Filter */}
-                <div className="flex flex-wrap items-center gap-3 mt-1">
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="branchFilterSelect" className="text-xs font-black text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                      <MapPin size={13} className="text-[#bd00ff]" />
+                <div className="flex flex-wrap items-center gap-2.5 mt-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <label htmlFor="branchFilterSelect" className="text-[11px] font-black text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                      <MapPin size={12} className="text-[#8b00cc]" />
                       Branch:
                     </label>
                     <div className="relative">
@@ -336,29 +341,29 @@ function CustomerProductInfoContent() {
                           setSelectedVariations({});
                           setQty(1);
                         }}
-                        className="bg-white border-2 border-purple-200 hover:border-[#bd00ff] text-[#bd00ff] font-extrabold text-sm rounded-xl px-3.5 py-1.5 pr-8 appearance-none outline-none transition-all cursor-pointer shadow-sm focus:ring-2 focus:ring-[#bd00ff]/20"
+                        className="bg-purple-50/60 border border-purple-200 hover:border-[#8b00cc] text-[#8b00cc] font-black text-xs rounded-xl px-3 py-1 pr-7 appearance-none outline-none transition-all cursor-pointer shadow-2xs focus:ring-2 focus:ring-[#8b00cc]/20"
                       >
                         <option value="Tagoloan" className="text-black font-semibold">Tagoloan</option>
                         <option value="Villanueva" className="text-black font-semibold">Villanueva</option>
                         <option value="Jasaan" className="text-black font-semibold">Jasaan</option>
                       </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-[#bd00ff]">
-                        <ChevronDown size={15} strokeWidth={2.5} />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-[#8b00cc]">
+                        <ChevronDown size={14} strokeWidth={2.5} />
                       </div>
                     </div>
                   </div>
 
                   {/* Product Condition Display */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-gray-500 uppercase tracking-wider">
-                      Product Condition:
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">
+                      Condition:
                     </span>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.8 rounded-full text-[11px] font-black uppercase tracking-wider ${
                       product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                        : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-300'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
                     }`}>
-                      <span className={`w-2 h-2 rounded-full ${
+                      <span className={`w-1.5 h-1.5 rounded-full ${
                         product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
                           ? 'bg-amber-500'
                           : 'bg-emerald-500'
@@ -369,8 +374,8 @@ function CustomerProductInfoContent() {
                     </span>
                   </div>
 
-                  <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all ${currentStock > 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50 shadow-sm' : 'bg-rose-50 text-rose-600 border border-rose-200/50 shadow-sm'}`}>
-                    <span className={`w-2 h-2 rounded-full ${currentStock > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.8 rounded-full text-[11px] font-black uppercase tracking-wider transition-all ${currentStock > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs' : 'bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${currentStock > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                     {currentStock > 0 ? `Available (${currentStock} in stock)` : 'Out of Stock'}
                   </span>
                 </div>
@@ -397,40 +402,40 @@ function CustomerProductInfoContent() {
                 const totalSavings = isDiscountActive ? ((unitRawPrice * discountPercent / 100) * qty) : 0;
 
                 return (
-                  <div className="flex flex-col gap-1.5 p-5 rounded-3xl bg-gradient-to-br from-purple-50/70 to-indigo-50/20 border border-purple-100/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)] w-full">
+                  <div className="flex flex-col gap-1 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/70 via-indigo-50/30 to-purple-50/40 border border-purple-100 shadow-xs w-full">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Special Portal Price</span>
+                      <span className="text-[10px] font-black text-[#8b00cc] uppercase tracking-widest">Special Portal Price</span>
                       {isDiscountActive && (
-                        <span className="bg-rose-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                        <span className="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs animate-pulse">
                           {discountPercent}% OFF
                         </span>
                       )}
                     </div>
                     <div className="flex items-baseline gap-2 flex-wrap">
-                      <div className="flex items-baseline text-[#bd00ff]">
-                        <span className="text-2xl font-black mr-0.5">₱</span>
-                        <span className="text-4xl font-black tracking-tight">{totalDiscountedPrice?.toLocaleString()}</span>
+                      <div className="flex items-baseline text-[#8b00cc]">
+                        <span className="text-xl sm:text-2xl font-black mr-0.5">₱</span>
+                        <span className="text-3xl sm:text-4xl font-black tracking-tight">{totalDiscountedPrice?.toLocaleString()}</span>
                       </div>
                       {isDiscountActive && (
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base text-gray-400 line-through font-semibold">
+                          <span className="text-sm text-gray-400 line-through font-semibold">
                             ₱ {totalRawPrice?.toLocaleString()}
                           </span>
-                          <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                          <span className="text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
                             Save ₱ {totalSavings.toLocaleString()}
                           </span>
                         </div>
                       )}
                     </div>
                     {isDiscountActive && discountEndDate && (
-                      <div className="mt-2 pt-2 border-t border-purple-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-900 font-bold bg-amber-50/60 p-2.5 rounded-2xl border border-amber-200/60">
+                      <div className="mt-1.5 pt-1.5 border-t border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-amber-900 font-bold bg-amber-50/80 p-2 rounded-xl border border-amber-200/60">
                         <div className="flex items-center gap-1.5">
-                          <Clock size={14} className="text-amber-700 shrink-0" />
-                          <span>Sale Ends {new Date(discountEndDate).toLocaleDateString()} at {new Date(discountEndDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <Clock size={13} className="text-amber-700 shrink-0" />
+                          <span className="text-[11px]">Sale Ends {new Date(discountEndDate).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] uppercase tracking-wider text-purple-900 font-extrabold">Ends in:</span>
-                          <CountdownTimer targetDate={discountEndDate} format="short" className="text-rose-700 font-black" />
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] uppercase tracking-wider text-purple-900 font-black">Ends in:</span>
+                          <CountdownTimer targetDate={discountEndDate} format="short" className="text-rose-700 font-black text-xs" />
                         </div>
                       </div>
                     )}
@@ -438,14 +443,14 @@ function CustomerProductInfoContent() {
                 );
               })()}
 
-              <div className="flex flex-col gap-5 mt-1">
+              <div className="flex flex-col gap-4">
                 {/* Variation Controls */}
                 {variationGroups && (
-                  <div className="flex flex-col gap-5 border-t border-b border-gray-100 py-5">
+                  <div className="flex flex-col gap-3.5 border-t border-b border-purple-100/70 py-3.5">
                     {Object.entries(variationGroups).map(([section, vars]: [string, any]) => (
-                      <div key={section} className="flex flex-col gap-2.5">
-                        <span className="text-xs font-extrabold text-gray-400 uppercase tracking-wider">{section}:</span>
-                        <div className="flex flex-wrap gap-2.5">
+                      <div key={section} className="flex flex-col gap-2">
+                        <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider">{section}:</span>
+                        <div className="flex flex-wrap gap-2">
                           {vars.map((v: any) => {
                             const isSelected = selectedVariations[section]?.id === v.id;
                             return (
@@ -464,12 +469,12 @@ function CustomerProductInfoContent() {
                                   setQty(1);
                                 }}
                                 disabled={v.stock === 0}
-                                className={`px-5 py-3 rounded-2xl border-2 font-extrabold text-sm transition-all duration-200 ${
+                                className={`px-4 py-2 rounded-xl border font-black text-xs transition-all duration-200 ${
                                   v.stock === 0 
                                     ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through' 
                                     : isSelected 
-                                      ? 'border-[#bd00ff] bg-gradient-to-br from-purple-50 to-indigo-50/50 text-[#bd00ff] shadow-md shadow-purple-500/10 scale-95' 
-                                      : 'border-gray-200 bg-white text-gray-600 hover:border-purple-300 hover:text-[#bd00ff] cursor-pointer'
+                                      ? 'border-[#8b00cc] bg-gradient-to-r from-[#8b00cc] to-[#9d00e6] text-white shadow-sm shadow-purple-500/20' 
+                                      : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:text-[#8b00cc] cursor-pointer'
                                 }`}
                               >
                                 {v.name}
@@ -483,42 +488,42 @@ function CustomerProductInfoContent() {
                 )}
                 
                 {/* Quantity Control */}
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-extrabold text-gray-400 uppercase tracking-wider w-20">Quantity:</span>
-                  <div className="flex items-center bg-gray-50 border border-gray-200/80 rounded-2xl p-1 w-max">
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-wider w-16">Quantity:</span>
+                  <div className="flex items-center bg-gray-50 border border-gray-200/80 rounded-xl p-0.5 w-max">
                     <button 
                       onClick={() => updateQty(-1)} 
                       disabled={qty <= 1 || currentStock <= 0}
-                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-sm active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-2xs active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                      <Minus size={16} strokeWidth={2.5} />
+                      <Minus size={14} strokeWidth={2.5} />
                     </button>
-                    <span className="w-12 text-center font-black text-gray-800 text-lg">{qty}</span>
+                    <span className="w-10 text-center font-black text-gray-900 text-sm">{qty}</span>
                     <button 
                       onClick={() => updateQty(1)} 
                       disabled={qty >= currentStock || currentStock <= 0}
-                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-sm active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-700 cursor-pointer hover:bg-gray-100 hover:text-black transition-all flex items-center justify-center shadow-2xs active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
-                      <Plus size={16} strokeWidth={2.5} />
+                      <Plus size={14} strokeWidth={2.5} />
                     </button>
                   </div>
                 </div>
               </div>
 
               {/* Purchase Call-To-Actions */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 mt-auto pt-6 border-t border-gray-50 w-full">
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 mt-auto pt-4 border-t border-purple-100/70 w-full">
                 <button 
                   onClick={handleAddToCart}
                   disabled={currentStock === 0 || !hasSelectedAllSections || isAddingToCart}
-                  className="w-full sm:flex-1 py-4 flex items-center justify-center gap-2 border-2 border-[#bd00ff] bg-purple-50/50 rounded-2xl text-[#bd00ff] font-extrabold text-base hover:bg-purple-100/50 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] shadow-sm"
+                  className="w-full sm:flex-1 py-3 px-4 flex items-center justify-center gap-2 border-2 border-[#8b00cc] bg-purple-50/50 rounded-xl text-[#8b00cc] font-black text-xs sm:text-sm hover:bg-purple-100/60 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] shadow-xs"
                 >
-                  <ShoppingCart size={20} strokeWidth={2.5} />
+                  <ShoppingCart size={18} strokeWidth={2.5} />
                   {isAddingToCart ? 'Adding...' : 'Add to Cart'}
                 </button>
                 <button 
                   onClick={() => navigate(`/customer/payment?deviceId=${targetDeviceId}${selectedVariationsArray.length > 0 ? `&variationIds=${selectedVariationsArray.map(v => v.id).join(',')}` : ''}&quantity=${qty}`)}
                   disabled={currentStock === 0 || !hasSelectedAllSections}
-                  className="w-full sm:flex-1 py-4 border-none bg-gradient-to-r from-[#bd00ff] to-[#4B0082] rounded-2xl text-white font-extrabold text-base hover:opacity-95 shadow-lg shadow-purple-500/20 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+                  className="w-full sm:flex-1 py-3 px-4 border-none bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] rounded-xl text-white font-black text-xs sm:text-sm shadow-md shadow-purple-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   Buy Now
                 </button>
@@ -528,17 +533,17 @@ function CustomerProductInfoContent() {
 
           {/* Expandable Specifications Section */}
           {product.specs && (
-            <div className="flex flex-col gap-4 pt-8 border-t border-gray-100">
-              <h3 className="text-xl font-black text-gray-900 border-none m-0 tracking-tight">Technical Specifications</h3>
-              <div className={`relative transition-all duration-300 ${!isDescriptionExpanded ? 'max-h-[140px] overflow-hidden' : ''}`}>
-                <p className="text-gray-600 font-medium whitespace-pre-wrap m-0 leading-relaxed text-base">{product.specs}</p>
+            <div className="flex flex-col gap-3 pt-6 border-t border-purple-100/70">
+              <h3 className="text-lg font-black text-gray-900 border-none m-0 tracking-tight">Technical Specifications</h3>
+              <div className={`relative transition-all duration-300 ${!isDescriptionExpanded ? 'max-h-[120px] overflow-hidden' : ''}`}>
+                <p className="text-gray-600 font-medium whitespace-pre-wrap m-0 leading-relaxed text-xs sm:text-sm">{product.specs}</p>
                 {!isDescriptionExpanded && (
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-white to-transparent pointer-events-none" />
                 )}
               </div>
               <button 
                 onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                className="self-center px-5 py-2 border border-purple-200 hover:border-purple-400 text-[#bd00ff] font-extrabold text-xs bg-white rounded-full cursor-pointer hover:shadow-sm transition-all"
+                className="self-center px-4 py-1.5 border border-purple-200 hover:border-purple-400 text-[#8b00cc] font-extrabold text-xs bg-white rounded-full cursor-pointer hover:shadow-xs transition-all"
               >
                 {isDescriptionExpanded ? 'Show Less Specs' : 'View Full Details'}
               </button>
