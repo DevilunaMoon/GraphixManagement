@@ -189,7 +189,7 @@ function LoginContent() {
 
   return (
     <div 
-      className="min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
+      className="h-[100dvh] min-h-[620px] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
       style={{ backgroundImage: "linear-gradient(rgba(14, 4, 26, 0.6), rgba(14, 4, 26, 0.65)), url('/Images/storefront-bg.jpg')" }}
     >
       {/* Ambient background blur circles */}
@@ -207,7 +207,7 @@ function LoginContent() {
       </button>
 
       {/* Main Glassmorphic Container */}
-      <div className="bg-white/30 backdrop-blur-xl rounded-[2.2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] overflow-hidden w-full max-w-4xl h-full max-h-[720px] flex flex-col relative transition-all duration-700 border border-white/50 z-10">
+      <div className="bg-white/30 backdrop-blur-xl rounded-[2.2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] overflow-hidden w-full max-w-4xl h-[650px] max-h-[92vh] flex flex-col relative transition-all duration-700 border border-white/50 z-10">
 
         {/* --- Sign In Form --- */}
         <div 
