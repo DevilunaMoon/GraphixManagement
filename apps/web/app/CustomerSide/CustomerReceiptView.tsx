@@ -29,20 +29,20 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center justify-center gap-4 font-['Inter']">
-        <div className="w-12 h-12 border-4 border-purple-100 border-t-[#bd00ff] rounded-full animate-spin"></div>
-        <p className="text-[#666] font-semibold animate-pulse text-lg">Loading digital receipt...</p>
+      <div className="min-h-screen bg-[#fbfaff] flex flex-col items-center justify-center gap-4 font-['Inter']">
+        <div className="w-12 h-12 border-4 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-semibold text-sm">Loading official digital receipt...</p>
       </div>
     );
   }
 
   if (!purchase) {
     return (
-      <div className="min-h-screen bg-[#f4f5f7] flex flex-col items-center justify-center gap-4 font-['Inter']">
-        <p className="text-red-500 font-bold text-lg">Receipt not found.</p>
+      <div className="min-h-screen bg-[#fbfaff] flex flex-col items-center justify-center gap-4 font-['Inter']">
+        <p className="text-red-500 font-bold text-base">Receipt not found.</p>
         <button 
           onClick={() => router.back()} 
-          className="px-6 py-2.5 bg-[#bd00ff] text-white rounded-xl font-bold cursor-pointer border-none hover:bg-[#9c00d6] transition-colors"
+          className="px-6 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white rounded-xl font-bold cursor-pointer border-none hover:shadow-md transition-all text-sm"
         >
           Go Back
         </button>
@@ -51,8 +51,8 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] flex flex-col justify-center items-center p-4 sm:p-6 font-['Inter'] py-8 sm:py-12">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-xl border border-gray-100 flex flex-col gap-6">
+    <div className="min-h-screen bg-[#fbfaff] flex flex-col justify-center items-center p-4 sm:p-6 font-['Inter'] py-8 sm:py-12">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-xl border border-purple-100/90 flex flex-col gap-6 animate-in fade-in zoom-in-95">
         <StandardDigitalReceipt 
           data={purchase} 
           onBack={() => router.back()} 
@@ -62,3 +62,4 @@ export default function CustomerReceiptView({ user: initialUser, orderId }: { us
     </div>
   );
 }
+
