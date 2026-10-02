@@ -1,6 +1,6 @@
 "use client";
 
-import { Palette, HelpCircle, ChevronRight } from 'lucide-react';
+import { Palette, HelpCircle, ChevronRight, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function CustomerSettings() {
@@ -11,43 +11,60 @@ export default function CustomerSettings() {
     <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center w-full overflow-y-auto">
       <div className="w-full max-w-7xl flex flex-col gap-6">
         
-        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-200/70 flex flex-col min-h-[500px]">
+        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col w-full">
           
-          <div className="border-b border-gray-200 pb-5 mb-8">
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#bd00ff] m-0 border-none">Settings</h2>
-            <p className="text-gray-500 m-0 mt-2 font-medium">Manage your account preferences and application settings.</p>
+          <div className="flex items-center gap-3 border-b border-purple-100/80 pb-5 mb-6">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-purple-50 text-[#8b00cc] border border-purple-100/80 shadow-sm shrink-0">
+              <Settings size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
+                Settings
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+                Manage your account preferences and application settings
+              </p>
+            </div>
           </div>
           
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3.5">
             
+            {/* Themes Row */}
             <button 
               onClick={() => navigate('/customer/settings/themes')}
-              className="flex items-center p-4 sm:p-5 rounded-2xl border border-gray-100 hover:border-[#bd00ff] hover:shadow-md transition-all group bg-white cursor-pointer w-full text-left"
+              className="flex items-center p-4 sm:p-5 rounded-2xl border border-purple-100/90 hover:border-purple-300 hover:shadow-md transition-all group bg-white cursor-pointer w-full text-left"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-50 rounded-full flex justify-center items-center mr-4 sm:mr-6 shrink-0 group-hover:bg-[#bd00ff] transition-colors">
-                <Palette size={24} className="text-[#bd00ff] group-hover:text-white transition-colors sm:w-[28px] sm:h-[28px]" />
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100/80 flex justify-center items-center mr-4 sm:mr-5 shrink-0 group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] transition-all shadow-xs">
+                <Palette size={22} className="text-[#8b00cc] group-hover:text-white transition-colors" />
               </div>
-              <div className="flex flex-col flex-1">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800 m-0 mb-0.5 sm:mb-1 group-hover:text-[#bd00ff] transition-colors border-none">Themes</h3>
-                <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">Customize the appearance, layout, and colors</p>
+              <div className="flex flex-col flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 m-0 mb-0.5 group-hover:text-[#8b00cc] transition-colors border-none truncate">
+                  Themes
+                </h3>
+                <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">
+                  Customize the appearance, layout, and colors
+                </p>
               </div>
-              <ChevronRight size={24} className="text-gray-300 group-hover:text-[#bd00ff] transition-colors shrink-0" />
+              <ChevronRight size={20} className="text-gray-400 group-hover:text-[#8b00cc] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
             </button>
             
-
-            
+            {/* Help & Support Row */}
             <button 
               onClick={() => navigate('/customer/settings/help')}
-              className="flex items-center p-4 sm:p-5 rounded-2xl border border-gray-100 hover:border-[#bd00ff] hover:shadow-md transition-all group bg-white cursor-pointer w-full text-left"
+              className="flex items-center p-4 sm:p-5 rounded-2xl border border-purple-100/90 hover:border-purple-300 hover:shadow-md transition-all group bg-white cursor-pointer w-full text-left"
             >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-50 rounded-full flex justify-center items-center mr-4 sm:mr-6 shrink-0 group-hover:bg-[#bd00ff] transition-colors">
-                <HelpCircle size={24} className="text-[#bd00ff] group-hover:text-white transition-colors sm:w-[28px] sm:h-[28px]" />
+              <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100/80 flex justify-center items-center mr-4 sm:mr-5 shrink-0 group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] transition-all shadow-xs">
+                <HelpCircle size={22} className="text-[#8b00cc] group-hover:text-white transition-colors" />
               </div>
-              <div className="flex flex-col flex-1">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800 m-0 mb-0.5 sm:mb-1 group-hover:text-[#bd00ff] transition-colors border-none leading-tight sm:leading-normal">Help & Support</h3>
-                <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium mt-0.5 sm:mt-0">View FAQs, manuals, or contact our support team</p>
+              <div className="flex flex-col flex-1 min-w-0">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 m-0 mb-0.5 group-hover:text-[#8b00cc] transition-colors border-none truncate">
+                  Help & Support
+                </h3>
+                <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">
+                  View FAQs, manuals, or contact our support team
+                </p>
               </div>
-              <ChevronRight size={24} className="text-gray-300 group-hover:text-[#bd00ff] transition-colors shrink-0" />
+              <ChevronRight size={20} className="text-gray-400 group-hover:text-[#8b00cc] group-hover:translate-x-1 transition-all shrink-0 ml-2" />
             </button>
 
           </div>
