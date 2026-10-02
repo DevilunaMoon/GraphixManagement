@@ -397,14 +397,29 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
       })()}
 
       {/* Shop Our Products Section */}
-      <section className="bg-white rounded-xl p-5 md:p-8 shadow-sm border-2 border-[#5c0099] flex flex-col gap-6 w-full max-w-7xl mx-auto mb-10">
-        <h2 className="text-2xl font-bold text-black m-0 border-none">Shop Our Products</h2>
+      <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col gap-6 w-full max-w-7xl mx-auto mb-10">
+        <div className="flex items-center justify-between border-b border-purple-100/80 pb-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
+              Shop Our Products
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+              Explore our latest devices and certified electronics
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate('/customer/products')}
+            className="text-xs sm:text-sm font-bold text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+          >
+            View All &rarr;
+          </button>
+        </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 md:gap-6">
           {isLoading ? (
             <div className="col-span-full py-16 flex flex-col items-center justify-center gap-4">
-              <div className="w-12 h-12 border-4 border-purple-100 border-t-[#5c0099] rounded-full animate-spin"></div>
-              <p className="text-[#666] font-semibold animate-pulse text-lg">Loading products...</p>
+              <div className="w-12 h-12 border-4 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
+              <p className="text-gray-500 font-semibold animate-pulse text-base">Loading products...</p>
             </div>
           ) : products.length > 0 ? (
             products.slice(0, 15).map(product => {
@@ -415,69 +430,106 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                 (!product.discountStartDate || new Date(product.discountStartDate) <= now) &&
                 (!product.discountEndDate || new Date(product.discountEndDate) >= now)
               );
-              const discountedPrice = hasDiscount ? product.price * (1 - product.discount / 100) : product.price;
+              const discountedPrice = hasDiscount ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
 
               return (
-                <div key={product.id} onClick={() => navigate(`/customer/product-info?id=${product.id}`)} className="bg-white rounded-xl p-2 sm:p-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-md md:hover:-translate-y-1 transition-all cursor-pointer flex flex-col gap-2 border border-transparent md:border-2 md:border-[#5c0099] group">
-                  <div className="aspect-square w-full md:h-36 bg-transparent flex justify-center items-center overflow-hidden mb-1 sm:mb-2 relative">
-                    {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
-                      <span className="absolute top-1 left-1 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-md uppercase tracking-wider z-10 border border-purple-300">
-                        PRE-OWNED
-                      </span>
-                    )}
-                    {hasDiscount && (
-                      <span className="absolute top-1 right-1 bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
-                        {product.discount}% OFF
-                      </span>
-                    )}
-                    {product.image ? (
-                      <img src={optimizeCloudinaryUrl(product.image, 300)} alt={product.name} className="w-full h-full object-contain p-1 md:p-0 mix-blend-multiply md:group-hover:scale-110 transition-transform duration-300" />
-                    ) : (
-                      <div className="h-full w-full bg-gray-100 mix-blend-multiply" />
-                    )}
-                  </div>
-                  <p className="text-black font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10">{product.name}</p>
-                  <div className="flex justify-between items-end w-full">
-                    <div className="flex flex-col">
-                      {hasDiscount ? (
-                        <>
-                          <span className="text-gray-400 line-through text-[11px] font-semibold">₱ {product.price?.toLocaleString()}</span>
-                          <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0 leading-tight">
-                            ₱ {discountedPrice.toLocaleString()}
-                          </p>
-                        </>
+                <div 
+                  key={product.id} 
+                  onClick={() => navigate(`/customer/product-info?id=${product.id}`)} 
+                  className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-xl border border-purple-100/90 hover:border-purple-300 md:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group relative"
+                >
+                  <div>
+                    {/* Product Image Box */}
+                    <div className="aspect-square w-full bg-gray-50/70 rounded-xl flex justify-center items-center overflow-hidden relative p-3 mb-3">
+                      {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
+                        <span className="absolute top-2 left-2 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300/60">
+                          PRE-OWNED
+                        </span>
+                      )}
+                      {hasDiscount && (
+                        <span className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 animate-pulse">
+                          {Math.round(product.discount)}% OFF
+                        </span>
+                      )}
+                      {product.image ? (
+                        <img 
+                          src={optimizeCloudinaryUrl(product.image, 300)} 
+                          alt={product.name} 
+                          className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" 
+                        />
                       ) : (
-                        <p className="text-[#bd00ff] font-black text-sm sm:text-base m-0">₱ {product.price?.toLocaleString() || '0'}</p>
+                        <div className="h-full w-full bg-gray-100 rounded-lg" />
                       )}
                     </div>
-                    <div className="flex flex-col items-end">
-                      <p className="text-[11px] sm:text-xs text-gray-500 font-bold">{product.sold || 0} Sold</p>
-                      <p className="text-[10px] text-gray-400 font-medium">Stock: {product.stock || 0}</p>
-                    </div>
+
+                    {/* Category/Type Tag */}
+                    <span className="text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-wider truncate block mb-1">
+                      {product.category?.name || product.type || 'Device'}
+                    </span>
+
+                    {/* Product Name */}
+                    <h3 className="text-gray-900 font-bold text-xs sm:text-sm leading-snug line-clamp-2 h-8 sm:h-10 group-hover:text-[#8b00cc] transition-colors m-0 border-none">
+                      {product.name}
+                    </h3>
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/customer/product-info?id=${product.id}`);
-                    }}
-                    className="w-full mt-2 py-2 bg-purple-50 text-[#bd00ff] border border-[#bd00ff] font-bold rounded-lg group-hover:bg-[#bd00ff] group-hover:text-white transition-colors text-xs sm:text-sm shadow-sm hidden md:block"
-                  >
-                    View Product
-                  </button>
+
+                  {/* Bottom Meta & Action */}
+                  <div className="mt-3 pt-2.5 border-t border-gray-100 flex flex-col gap-2">
+                    <div className="flex items-end justify-between gap-1">
+                      <div className="flex flex-col">
+                        {hasDiscount ? (
+                          <>
+                            <span className="text-gray-400 line-through text-[11px] font-semibold leading-tight">
+                              ₱ {product.price?.toLocaleString()}
+                            </span>
+                            <span className="text-[#8b00cc] font-black text-sm sm:text-base leading-tight">
+                              ₱ {discountedPrice.toLocaleString()}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[#8b00cc] font-black text-sm sm:text-base leading-tight">
+                            ₱ {product.price?.toLocaleString() || '0'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end text-right">
+                        <span className="text-[10px] text-gray-400 font-medium">
+                          {product.sold || 0} sold
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-bold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          {product.stock || 0} stock
+                        </span>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/customer/product-info?id=${product.id}`);
+                      }}
+                      className="w-full mt-1 py-2 bg-purple-50 text-[#8b00cc] group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] group-hover:text-white font-bold rounded-xl transition-all text-xs border border-purple-100/90 shadow-sm flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      View Product
+                    </button>
+                  </div>
                 </div>
               );
             })
           ) : (
-            <div className="col-span-full py-10 text-center text-gray-500 font-bold">No products available.</div>
+            <div className="col-span-full py-12 text-center text-gray-500 font-bold bg-white rounded-2xl border border-purple-100">
+              No products available.
+            </div>
           )}
         </div>
 
-        <div className="flex justify-center mt-2">
+        <div className="flex justify-center mt-4">
           <button 
             onClick={() => navigate('/customer/products')}
-            className="px-8 py-2.5 bg-[#4B0082] text-white font-bold rounded-xl hover:bg-[#320057] transition-colors cursor-pointer border-none shadow-md"
+            className="px-8 py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl hover:brightness-110 shadow-md hover:shadow-lg transition-all cursor-pointer border-none flex items-center gap-2"
           >
-            View More
+            Explore All Products &rarr;
           </button>
         </div>
       </section>
