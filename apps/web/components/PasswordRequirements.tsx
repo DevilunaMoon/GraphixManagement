@@ -44,11 +44,11 @@ export default function PasswordRequirements({
   // Variant styling
   const isGlass = variant === "glass";
   const containerClasses = isGlass
-    ? "bg-black/30 backdrop-blur-md border border-white/20 text-white rounded-2xl p-3.5 shadow-lg animate-in fade-in slide-in-from-top-1"
+    ? "bg-slate-900/70 backdrop-blur-md border border-white/20 text-white rounded-xl p-2.5 sm:p-3 shadow-lg animate-in fade-in slide-in-from-top-1"
     : "bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3.5 shadow-xs animate-in fade-in slide-in-from-top-1";
 
   const titleClasses = isGlass
-    ? "text-xs font-black text-white/90 tracking-wide uppercase flex items-center justify-between"
+    ? "text-[10px] font-black text-white/90 tracking-wider uppercase flex items-center justify-between"
     : "text-xs font-black text-purple-950 tracking-wide uppercase flex items-center justify-between";
 
   return (
@@ -56,27 +56,27 @@ export default function PasswordRequirements({
       <div className={titleClasses}>
         <span>Password Requirements</span>
         {reqs.isValid && (
-          <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full">
+          <span className="text-[9px] font-bold px-1.5 py-0.2 bg-emerald-500/25 text-emerald-300 border border-emerald-400/40 rounded-full">
             All Met
           </span>
         )}
       </div>
 
       {invalidCheck.hasInvalid && (
-        <div className="mt-2 p-2 bg-rose-500/20 border border-rose-400/40 rounded-xl flex items-center gap-1.5 text-xs font-bold text-rose-200 animate-in fade-in">
-          <AlertCircle size={14} className="shrink-0 text-rose-300" />
+        <div className="mt-1.5 p-1.5 bg-rose-500/25 border border-rose-400/40 rounded-lg flex items-center gap-1.5 text-[11px] font-bold text-rose-200 animate-in fade-in">
+          <AlertCircle size={13} className="shrink-0 text-rose-300" />
           <span>{invalidCheck.error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5">
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1.5">
         {items.map((item, idx) => {
           const isMet = item.met;
 
           return (
             <div
               key={idx}
-              className={`flex items-center gap-1.5 text-[11px] font-semibold transition-colors duration-200 ${
+              className={`flex items-center gap-1.5 text-[10px] leading-tight font-medium transition-colors duration-200 ${
                 isMet
                   ? isGlass
                     ? "text-emerald-300"
@@ -87,7 +87,7 @@ export default function PasswordRequirements({
               }`}
             >
               <span
-                className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 text-[9px] ${
+                className={`w-3 h-3 rounded-full flex items-center justify-center shrink-0 text-[8px] ${
                   isMet
                     ? isGlass
                       ? "bg-emerald-500/30 text-emerald-300 border border-emerald-400/40"
@@ -97,9 +97,9 @@ export default function PasswordRequirements({
                     : "bg-gray-100 text-gray-400 border border-gray-200"
                 }`}
               >
-                {isMet ? <Check size={10} strokeWidth={3} /> : <X size={9} strokeWidth={2.5} />}
+                {isMet ? <Check size={8} strokeWidth={3} /> : <X size={7} strokeWidth={2.5} />}
               </span>
-              <span>{item.label}</span>
+              <span className="truncate">{item.label}</span>
             </div>
           );
         })}
