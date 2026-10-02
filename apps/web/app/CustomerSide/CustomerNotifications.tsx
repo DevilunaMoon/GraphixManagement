@@ -92,33 +92,43 @@ export default function CustomerNotifications() {
     <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center overflow-y-auto w-full">
       <div className="w-full max-w-7xl flex flex-col gap-6">
         
-        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-gray-200/70 flex flex-col min-h-[650px] w-full">
+        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col min-h-[650px] w-full">
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 border-b border-gray-200 pb-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-100/80 pb-5 mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-purple-100 text-[#bd00ff]">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-purple-50 text-[#8b00cc] border border-purple-100/80 shadow-sm">
                 <Bell size={22} />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-[#bd00ff] m-0 border-none">Notifications</h2>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
+                  Notifications
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+                  Stay updated on your orders, payments, and repair progress
+                </p>
+              </div>
             </div>
             <button 
               onClick={handleMarkAllRead}
-              className="px-4 py-2 border-2 text-sm sm:text-base border-[#bd00ff] text-[#bd00ff] font-bold rounded-xl bg-purple-50 hover:bg-[#bd00ff] hover:text-white transition-colors cursor-pointer w-full sm:w-auto flex items-center justify-center gap-1.5"
+              className="px-4 py-2 text-xs sm:text-sm border border-purple-100/90 text-[#8b00cc] font-bold rounded-xl bg-purple-50 hover:bg-gradient-to-r hover:from-[#8b00cc] hover:to-[#bd00ff] hover:text-white transition-all cursor-pointer w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-sm"
             >
-              <CheckCheck size={18} /> Mark All as Read
+              <CheckCheck size={16} /> Mark All as Read
             </button>
           </div>
 
-          <div className="flex flex-col gap-4 flex-1">
+          <div className="flex flex-col gap-3.5 flex-1">
             {loading ? (
               <div className="flex flex-col gap-4 w-full h-[300px] justify-center items-center">
-                <div className="w-10 h-10 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
-                <p className="text-gray-500 font-medium">Loading Notifications...</p>
+                <div className="w-10 h-10 border-4 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
+                <p className="text-gray-500 font-medium text-sm">Loading notifications...</p>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center gap-4 text-gray-400 my-auto">
-                <Bell size={44} strokeWidth={1.5} />
-                <p className="text-lg font-medium">No notifications yet. You're all caught up!</p>
+              <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400 my-auto bg-purple-50/40 rounded-2xl border border-dashed border-purple-200">
+                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-[#8b00cc] shadow-sm border border-purple-100">
+                  <Bell size={28} strokeWidth={1.75} />
+                </div>
+                <h3 className="text-base font-bold text-gray-700 m-0 border-none">No notifications yet</h3>
+                <p className="text-xs text-gray-500 m-0">You're completely caught up! Updates about your account will show up here.</p>
               </div>
             ) : (
               notifications.map((notif) => {
@@ -130,38 +140,42 @@ export default function CustomerNotifications() {
                   <div 
                     key={notif.id} 
                     onClick={() => handleNotificationClick(notif)}
-                    className={`p-4 sm:p-6 rounded-2xl border transition-all cursor-pointer ${
-                      hasLink ? 'hover:shadow-md hover:border-[#bd00ff]' : ''
-                    } ${
+                    className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
                       !notif.isRead 
-                        ? 'bg-gradient-to-r from-purple-50/70 to-white border-l-4 border-[#bd00ff] border-y-purple-100 border-r-purple-100 shadow-sm' 
-                        : 'bg-white border-gray-200 hover:border-purple-200'
+                        ? 'bg-gradient-to-r from-purple-50/70 via-purple-50/20 to-white border-l-4 border-l-[#8b00cc] border-purple-100 shadow-sm hover:shadow-md' 
+                        : 'bg-white border-gray-100 hover:border-purple-200 hover:shadow-sm opacity-90 hover:opacity-100'
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-2 flex-wrap justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
                         {notif.type === 'REVIEW_REPLY' ? (
-                          <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#bd00ff] flex items-center justify-center shrink-0">
-                            <MessageSquare size={15} />
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#8b00cc] flex items-center justify-center shrink-0">
+                            <MessageSquare size={14} />
                           </div>
                         ) : null}
-                        <h4 className={`text-base sm:text-lg m-0 border-none ${!notif.isRead ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>
+                        <h4 className={`text-sm sm:text-base m-0 border-none truncate ${!notif.isRead ? 'font-bold text-gray-950' : 'font-semibold text-gray-800'}`}>
                           {notif.title}
                         </h4>
                         {!notif.isRead && (
-                          <span className="bg-red-500 w-2.5 h-2.5 rounded-full shadow-sm"></span>
+                          <span className="relative flex h-2.5 w-2.5 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                          </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-gray-50 px-2.5 py-1 rounded-full border border-gray-200/60 shadow-sm">
-                        <Clock size={12} className="text-[#bd00ff]" />
+
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 shrink-0">
+                        <Clock size={12} className="text-[#8b00cc]" />
                         <span>{formatDateTime(notif.createdAt)}</span>
                       </div>
                     </div>
-                    <p className={`m-0 leading-relaxed text-sm sm:text-base ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
+
+                    <p className={`m-0 leading-relaxed text-xs sm:text-sm ${!notif.isRead ? 'text-gray-800 font-medium' : 'text-gray-600'}`}>
                       {cleanMessage}
                     </p>
+
                     {hasLink && (
-                      <div className="mt-2 text-xs font-bold text-[#bd00ff] hover:underline flex items-center gap-1">
+                      <div className="text-xs font-bold text-[#8b00cc] hover:underline flex items-center gap-1 pt-1">
                         <span>View Product Reviews</span>
                         <ExternalLink size={12} />
                       </div>
@@ -174,25 +188,25 @@ export default function CustomerNotifications() {
 
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="flex justify-center items-center mt-8 gap-3">
+            <div className="flex justify-center items-center mt-8 gap-2">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="w-10 h-10 flex justify-center items-center rounded-full border-none bg-gray-100 text-black cursor-pointer disabled:opacity-50 hover:bg-gray-200 transition-colors"
+                className="w-9 h-9 flex justify-center items-center rounded-xl border border-purple-100 bg-white text-gray-600 cursor-pointer disabled:opacity-40 hover:text-[#8b00cc] hover:border-purple-200 transition-colors shadow-xs"
                 aria-label="Previous page"
               >
-                <ChevronLeft size={20} />
+                <ChevronLeft size={18} />
               </button>
               
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 {Array.from({ length: totalPages }).map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`w-10 h-10 flex justify-center items-center rounded-xl font-bold transition-colors cursor-pointer border ${
+                    className={`w-9 h-9 flex justify-center items-center rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer border ${
                       currentPage === i + 1 
-                        ? 'bg-[#bd00ff] text-white border-[#bd00ff] shadow-md' 
-                        : 'bg-white text-black border-gray-200 hover:border-[#bd00ff]'
+                        ? 'bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white border-transparent shadow-sm' 
+                        : 'bg-white text-gray-700 border-purple-100 hover:border-purple-300'
                     }`}
                   >
                     {i + 1}
@@ -203,10 +217,10 @@ export default function CustomerNotifications() {
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="w-10 h-10 flex justify-center items-center rounded-full border-none bg-gray-100 text-black cursor-pointer disabled:opacity-50 hover:bg-gray-200 transition-colors"
+                className="w-9 h-9 flex justify-center items-center rounded-xl border border-purple-100 bg-white text-gray-600 cursor-pointer disabled:opacity-40 hover:text-[#8b00cc] hover:border-purple-200 transition-colors shadow-xs"
                 aria-label="Next page"
               >
-                <ChevronRight size={20} />
+                <ChevronRight size={18} />
               </button>
             </div>
           )}
