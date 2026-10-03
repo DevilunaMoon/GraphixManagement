@@ -30,7 +30,6 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "80:3000"
       - "3000:3000"
     env_file:
       - .env.production
