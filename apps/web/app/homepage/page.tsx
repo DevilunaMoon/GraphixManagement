@@ -280,21 +280,26 @@ export default function HomePage() {
     }
   ];
 
-  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    e.preventDefault();
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
+  const scrollToSection = (e: React.MouseEvent<any>, id: string) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setMobileMenuOpen(false);
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    // Timeout ensures that closing the mobile drawer does not cancel smooth scroll on Android/Chromium
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        try {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (_) {
+          const offset = 80;
+          const targetY = element.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0) - offset;
+          window.scrollTo({
+            top: Math.max(0, targetY),
+            behavior: 'smooth'
+          });
+        }
+      }
+    }, 120);
   };
 
   return (
@@ -357,7 +362,7 @@ export default function HomePage() {
                   key={item.id}
                   href={`#${item.id}`}
                   onClick={(e) => scrollToSection(e, item.id)}
-                  className={`font-bold text-sm px-4 py-2 rounded-full transition-all duration-200 ${
+                  className={`font-bold text-sm px-4 py-2 rounded-full transition-all duration-200 cursor-pointer select-none active:scale-95 touch-manipulation ${
                     isScrolled
                       ? 'text-gray-600 hover:text-[#8b00cc] hover:bg-purple-50'
                       : 'text-white/90 hover:text-white hover:bg-white/15'
@@ -412,17 +417,14 @@ export default function HomePage() {
               {[
                 { label: 'Home', id: 'home' },
                 { label: 'Best Sellers', id: 'storefront' },
-                { label: 'Our Branches', id: 'about' },
+                { label: 'Branches', id: 'about' },
                 { label: 'Services', id: 'features' }
               ].map((item) => (
                 <a
                   key={item.id}
                   href={`#${item.id}`}
-                  onClick={(e) => {
-                    setMobileMenuOpen(false);
-                    scrollToSection(e, item.id);
-                  }}
-                  className="text-gray-800 hover:text-[#8b00cc] font-bold text-lg py-3 px-3 rounded-xl hover:bg-purple-50/80 transition-colors border-b border-gray-50 flex items-center justify-between"
+                  onClick={(e) => scrollToSection(e, item.id)}
+                  className="text-gray-800 hover:text-[#8b00cc] active:text-[#8b00cc] active:bg-purple-50/80 font-bold text-lg py-3 px-3 rounded-xl hover:bg-purple-50/80 transition-colors border-b border-gray-50 flex items-center justify-between cursor-pointer select-none touch-manipulation"
                 >
                   <span>{item.label}</span>
                   <ChevronRight size={18} className="text-gray-400" />
@@ -446,7 +448,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section
         id="home"
-        className="relative pt-36 pb-28 md:pt-48 md:pb-40 px-5 sm:px-8 overflow-hidden bg-cover bg-center bg-no-repeat"
+        className="scroll-mt-24 relative pt-36 pb-28 md:pt-48 md:pb-40 px-5 sm:px-8 overflow-hidden bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/Images/storefront-bg.jpg')" }}
       >
         {/* Modern dark gradient overlay with purple tint */}
@@ -511,7 +513,7 @@ export default function HomePage() {
       </section>
 
       {/* Storefront / Best Sellers Section */}
-      <section id="storefront" className="px-5 sm:px-8 py-20 bg-[#fafafc] border-b border-gray-100">
+      <section id="storefront" className="scroll-mt-24 px-5 sm:px-8 py-20 bg-[#fafafc] border-b border-gray-100">
         <div className="max-w-7xl mx-auto flex flex-col gap-10">
           {/* Section Header with Branch Tabs */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -647,7 +649,7 @@ export default function HomePage() {
       </section>
 
       {/* About Section: Our Branches & Showcases */}
-      <section id="about" className="py-24 bg-[#0d0714] text-white border-y border-purple-950/60 relative overflow-hidden">
+      <section id="about" className="scroll-mt-24 py-24 bg-[#0d0714] text-white border-y border-purple-950/60 relative overflow-hidden">
         {/* Background glow accents */}
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#8b00cc] rounded-full mix-blend-screen opacity-15 blur-[120px] pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#bd00ff] rounded-full mix-blend-screen opacity-15 blur-[120px] pointer-events-none" />
@@ -811,7 +813,7 @@ export default function HomePage() {
       </section>
 
       {/* Services / Feature Section */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="scroll-mt-24 py-24 bg-white">
         <div className="max-w-7xl mx-auto px-5 sm:px-8">
           <div className="text-center mb-16 max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-[#8b00cc] rounded-lg text-xs font-black uppercase tracking-wider mb-3">
