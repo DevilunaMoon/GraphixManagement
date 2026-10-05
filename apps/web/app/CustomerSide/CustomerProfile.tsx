@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { UserCircle2, Pencil, Receipt, KeyRound, HelpCircle, User, Upload, CheckCircle2, Phone, X, Sparkles } from 'lucide-react';
+import { UserCircle2, Pencil, Receipt, HelpCircle, User, Upload, CheckCircle2, Phone, X, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 import DatePicker from '../../components/ui/DatePicker';
@@ -112,15 +112,6 @@ export default function CustomerProfile({ user }: { user?: any }) {
               <span>Digital Receipt</span>
             </button>
 
-            <button 
-              onClick={() => navigate('/customer/change-password')}
-              className="flex items-center gap-3 w-full p-3.5 rounded-2xl border-none cursor-pointer text-left bg-transparent hover:bg-purple-50/80 transition-all text-gray-700 hover:text-[#8b00cc] font-bold text-sm group"
-            >
-              <div className="w-8 h-8 rounded-xl bg-purple-50 group-hover:bg-purple-100/80 flex items-center justify-center transition-colors">
-                <KeyRound className="text-[#6b588c] group-hover:text-[#8b00cc] transition-colors" size={18} />
-              </div>
-              <span>Change Password</span>
-            </button>
           </nav>
         </aside>
 
