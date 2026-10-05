@@ -161,14 +161,19 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
       <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-5 flex items-center gap-4 fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
         <button 
           onClick={toggleSidebar} 
+          aria-label="Open sidebar"
           className="text-white bg-transparent border-none p-0 flex items-center justify-center cursor-pointer shrink-0 active:scale-90 transition-transform"
         >
           <Menu size={28} />
         </button>
-        <div className="flex items-center gap-3">
+        <Link 
+          href="/customer/dashboard"
+          onClick={() => setIsSidebarOpen(false)}
+          className="flex items-center gap-3 no-underline cursor-pointer active:opacity-80 transition-opacity"
+        >
           <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover border-2 border-white shadow-sm" />
           <span className="text-white text-lg font-bold">Graphix Shop</span>
-        </div>
+        </Link>
       </div>
 
       {/* Sidebar Overlay */}
@@ -199,8 +204,12 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         </button>
 
         <div className={`p-5 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-[#e9ddff] h-[85px]`}>
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/customer/dashboard')}>
-            <div className="p-0.5 rounded-full bg-white shadow-xs border border-[#e4d8fb] group-hover:border-[#bd00ff] transition-all">
+          <Link 
+            href="/customer/dashboard"
+            onClick={() => setIsSidebarOpen(false)}
+            className="flex items-center gap-3 cursor-pointer group no-underline text-inherit"
+          >
+            <div className="p-0.5 rounded-full bg-white shadow-xs border border-[#e4d8fb] group-hover:border-[#bd00ff] transition-all shrink-0">
               <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className={`rounded-full object-cover transition-all ${isCollapsed ? 'w-[36px] h-[36px]' : 'w-[42px] h-[42px]'}`} />
             </div>
             {!isCollapsed && (
@@ -209,12 +218,14 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
                 <span className="text-[11px] font-bold text-[#8b7aa8] mt-1 tracking-wide uppercase">Customer Portal</span>
               </div>
             )}
-          </div>
-          {!isCollapsed && (
-            <button onClick={toggleSidebar} className="md:hidden text-[#7e22ce] bg-transparent border-none p-1 cursor-pointer">
-              <X size={22} />
-            </button>
-          )}
+          </Link>
+          <button 
+            onClick={() => setIsSidebarOpen(false)} 
+            aria-label="Close sidebar"
+            className="md:hidden text-[#7e22ce] hover:text-[#bd00ff] bg-transparent border-none p-2 -mr-2 cursor-pointer flex items-center justify-center active:scale-90 transition-transform"
+          >
+            <X size={24} />
+          </button>
         </div>
 
         <nav className={`flex flex-col py-4 flex-1 overflow-x-hidden ${isCollapsed ? 'px-2.5 gap-1.5' : 'px-3 gap-1'}`}>
