@@ -7,19 +7,139 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const branchParam = searchParams.get('branch');
-    const isSpecificBranch = branchParam && branchParam.toLowerCase() !== 'all';
+    const isSpecificBranch = !!(branchParam && branchParam.toLowerCase() !== 'all');
 
-    // 1. Fetch purchases with optional branch filter
-    let purchaseWhere: any = {};
+    // -------------------------------------------------------------
+    // SPECIFIC BRANCH VIEW (e.g. Tagoloan, Villanueva, Jasaan)
+    // -------------------------------------------------------------
     if (isSpecificBranch) {
-      purchaseWhere.branch = {
-        equals: branchParam,
-        mode: 'insensitive'
-      };
+      // 1. Fetch purchases for this specific branch
+      const purchases = await prisma.purchase.findMany({
+        where: {
+          branch: { equals: branchParam, mode: 'insensitive' }
+        },
+        select: {
+          deviceId: true,
+          quantity: true,
+          branch: true
+        }
+      });
+
+      // 2. Fetch branch stocks for this specific branch
+      const branchStocks = await prisma.branchStock.findMany({
+        where: {
+          branch: { equals: branchParam, mode: 'insensitive' }
+        },
+        select: {
+          deviceId: true,
+          sold: true,
+          stock: true,
+          branch: true
+        }
+      });
+
+      const salesMap: Record<string, number> = {};
+      const stockMap: Record<string, number> = {};
+
+      purchases.forEach(p => {
+        if (p.deviceId) {
+          salesMap[p.deviceId] = (salesMap[p.deviceId] || 0) + (p.quantity || 1);
+        }
+      });
+
+      branchStocks.forEach(bs => {
+        if (bs.deviceId) {
+          if (bs.sold > 0) {
+            salesMap[bs.deviceId] = Math.max(salesMap[bs.deviceId] || 0, bs.sold);
+          }
+          stockMap[bs.deviceId] = (stockMap[bs.deviceId] || 0) + (bs.stock || 0);
+        }
+      });
+
+      // Find devices that have recorded sales strictly in this branch
+      const soldDeviceIds = Object.entries(salesMap)
+        .filter(([_, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([id]) => id);
+
+      let devices: any[] = [];
+      if (soldDeviceIds.length > 0) {
+        const dbDevices = await prisma.device.findMany({
+          where: {
+            id: { in: soldDeviceIds }
+          },
+          include: { 
+            category: true, 
+            variations: true,
+            branchStocks: {
+              where: { branch: { equals: branchParam, mode: 'insensitive' } }
+            }
+          }
+        });
+
+        devices = dbDevices.sort((a, b) => (salesMap[b.id] || 0) - (salesMap[a.id] || 0));
+      }
+
+      // If fewer than 5, ONLY fill with devices strictly assigned to or stocked in THIS branch
+      if (devices.length < 5) {
+        const remainingCount = 5 - devices.length;
+        const alreadyFetchedIds = devices.map(d => d.id);
+
+        const branchSpecificDevices = await prisma.device.findMany({
+          where: {
+            id: { notIn: alreadyFetchedIds },
+            OR: [
+              { branch: { equals: branchParam, mode: 'insensitive' } },
+              { branchStocks: { some: { branch: { equals: branchParam, mode: 'insensitive' }, stock: { gt: 0 } } } }
+            ]
+          },
+          take: remainingCount,
+          include: { 
+            category: true, 
+            variations: true,
+            branchStocks: {
+              where: { branch: { equals: branchParam, mode: 'insensitive' } }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+
+        devices = [...devices, ...branchSpecificDevices];
+      }
+
+      // STRICT ISOLATION: Do NOT fallback to other branches. If this branch has no items/sales, return []
+      devices = devices.slice(0, 5);
+
+      const enrichedDevices = devices.map((device, index) => {
+        let branchStockQty = 0;
+        if (device.branchStocks && device.branchStocks.length > 0) {
+          branchStockQty = device.branchStocks[0].stock ?? 0;
+        } else if (device.branch?.toLowerCase() === branchParam.toLowerCase()) {
+          branchStockQty = device.stock;
+        }
+
+        return {
+          ...device,
+          rank: index + 1,
+          unitsSold: salesMap[device.id] || 0,
+          selectedBranch: branchParam,
+          topBranch: branchParam,
+          branch: branchParam,
+          branchStockQuantity: branchStockQty
+        };
+      });
+
+      return NextResponse.json(enrichedDevices, {
+        headers: {
+          'Cache-Control': 'no-store, must-revalidate'
+        }
+      });
     }
 
+    // -------------------------------------------------------------
+    // ALL BRANCHES VIEW (Ranked overall with primary branch attribution)
+    // -------------------------------------------------------------
     const purchases = await prisma.purchase.findMany({
-      where: purchaseWhere,
       select: {
         deviceId: true,
         quantity: true,
@@ -27,17 +147,7 @@ export async function GET(req: Request) {
       }
     });
 
-    // 2. Fetch branch stocks to include POS / branch-recorded sold units
-    let branchStockWhere: any = {};
-    if (isSpecificBranch) {
-      branchStockWhere.branch = {
-        equals: branchParam,
-        mode: 'insensitive'
-      };
-    }
-
     const branchStocks = await prisma.branchStock.findMany({
-      where: branchStockWhere,
       select: {
         deviceId: true,
         sold: true,
@@ -46,35 +156,43 @@ export async function GET(req: Request) {
       }
     });
 
-    // 3. Sum total sales for each deviceId
-    const salesMap: Record<string, number> = {};
-    const stockMap: Record<string, number> = {};
+    const totalSalesMap: Record<string, number> = {};
+    const branchSalesMap: Record<string, Record<string, number>> = {};
 
     purchases.forEach(p => {
       if (p.deviceId) {
-        salesMap[p.deviceId] = (salesMap[p.deviceId] || 0) + (p.quantity || 1);
+        const qty = p.quantity || 1;
+        totalSalesMap[p.deviceId] = (totalSalesMap[p.deviceId] || 0) + qty;
+        const b = p.branch || 'Tagoloan';
+        if (!branchSalesMap[p.deviceId]) {
+          branchSalesMap[p.deviceId] = {};
+        }
+        const bMap = branchSalesMap[p.deviceId]!;
+        bMap[b] = (bMap[b] || 0) + qty;
       }
     });
 
     branchStocks.forEach(bs => {
       if (bs.deviceId) {
         if (bs.sold > 0) {
-          // Add or ensure sold count from POS terminal records
-          salesMap[bs.deviceId] = Math.max(salesMap[bs.deviceId] || 0, bs.sold);
+          totalSalesMap[bs.deviceId] = Math.max(totalSalesMap[bs.deviceId] || 0, bs.sold);
+          const b = bs.branch || 'Tagoloan';
+          if (!branchSalesMap[bs.deviceId]) {
+            branchSalesMap[bs.deviceId] = {};
+          }
+          const bMap = branchSalesMap[bs.deviceId]!;
+          bMap[b] = Math.max(bMap[b] || 0, bs.sold);
         }
-        stockMap[bs.deviceId] = (stockMap[bs.deviceId] || 0) + (bs.stock || 0);
       }
     });
 
-    // 4. Sort by total quantity sold descending
-    const sortedSales = Object.entries(salesMap)
+    const sortedSales = Object.entries(totalSalesMap)
       .sort((a, b) => b[1] - a[1]);
 
     const deviceIds = sortedSales.map(([id]) => id);
 
     let devices: any[] = [];
     if (deviceIds.length > 0) {
-      // Find devices that are the best-sellers
       const dbDevices = await prisma.device.findMany({
         where: {
           id: { in: deviceIds }
@@ -86,32 +204,20 @@ export async function GET(req: Request) {
         }
       });
 
-      // Maintain the sorted order of best selling!
       devices = dbDevices.sort((a, b) => {
-        const aSold = salesMap[a.id] || 0;
-        const bSold = salesMap[b.id] || 0;
+        const aSold = totalSalesMap[a.id] || 0;
+        const bSold = totalSalesMap[b.id] || 0;
         return bSold - aSold;
       });
     }
 
-    // 5. If we have fewer than 5 best-selling devices for this branch, fill with other available devices
     if (devices.length < 5) {
       const remainingCount = 5 - devices.length;
-      
-      let additionalWhere: any = {
-        id: { notIn: deviceIds }
-      };
-
-      if (isSpecificBranch) {
-        // Prefer devices assigned to or stocked in this branch
-        additionalWhere.OR = [
-          { branch: { equals: branchParam, mode: 'insensitive' } },
-          { branchStocks: { some: { branch: { equals: branchParam, mode: 'insensitive' }, stock: { gt: 0 } } } }
-        ];
-      }
-
-      let additionalDevices = await prisma.device.findMany({
-        where: additionalWhere,
+      const alreadyFetchedIds = devices.map(d => d.id);
+      const additionalDevices = await prisma.device.findMany({
+        where: {
+          id: { notIn: alreadyFetchedIds }
+        },
         take: remainingCount,
         include: { 
           category: true, 
@@ -120,48 +226,35 @@ export async function GET(req: Request) {
         },
         orderBy: { createdAt: 'desc' }
       });
-
-      // If still fewer than 5, grab any remaining newest devices
-      if (devices.length + additionalDevices.length < 5) {
-        const alreadyFetchedIds = [...deviceIds, ...additionalDevices.map(d => d.id)];
-        const fallbackDevices = await prisma.device.findMany({
-          where: {
-            id: { notIn: alreadyFetchedIds }
-          },
-          take: 5 - (devices.length + additionalDevices.length),
-          include: { 
-            category: true, 
-            variations: true,
-            branchStocks: true
-          },
-          orderBy: { createdAt: 'desc' }
-        });
-        additionalDevices = [...additionalDevices, ...fallbackDevices];
-      }
-
       devices = [...devices, ...additionalDevices];
     }
 
-    // Limit to 5 best-sellers for crisp display
     devices = devices.slice(0, 5);
 
-    // 6. Enrich devices with computed branch-specific unitsSold and stock status
-    const enrichedDevices = devices.map(device => {
-      let branchStockQty = device.stock;
-      if (isSpecificBranch && device.branchStocks?.length > 0) {
-        const match = device.branchStocks.find((bs: any) => 
-          bs.branch?.toLowerCase() === branchParam.toLowerCase()
-        );
-        if (match) {
-          branchStockQty = match.stock;
-        }
+    const enrichedDevices = devices.map((device, index) => {
+      // Find which branch sold the most of this device or where it belongs
+      const breakdown = branchSalesMap[device.id] || {};
+      const topBranchEntry = Object.entries(breakdown).sort((a, b) => b[1] - a[1])[0];
+      
+      let primaryBranch = topBranchEntry?.[0] || device.branch;
+      if (!primaryBranch && device.branchStocks && device.branchStocks.length > 0) {
+        const stockMatch = device.branchStocks.find((bs: any) => (bs.stock || 0) > 0);
+        primaryBranch = stockMatch?.branch || device.branchStocks[0].branch;
       }
+      if (!primaryBranch) primaryBranch = 'Tagoloan';
+
+      const totalStock = device.branchStocks && device.branchStocks.length > 0
+        ? device.branchStocks.reduce((sum: number, bs: any) => sum + (bs.stock || 0), 0)
+        : device.stock;
 
       return {
         ...device,
-        unitsSold: salesMap[device.id] || 0,
-        selectedBranch: isSpecificBranch ? branchParam : 'All Branches',
-        branchStockQuantity: branchStockQty
+        rank: index + 1,
+        unitsSold: totalSalesMap[device.id] || 0,
+        selectedBranch: 'All Branches',
+        topBranch: primaryBranch,
+        branch: primaryBranch,
+        branchStockQuantity: totalStock
       };
     });
 
@@ -175,4 +268,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Failed to fetch best selling devices' }, { status: 500 });
   }
 }
+
 

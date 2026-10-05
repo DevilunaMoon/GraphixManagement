@@ -159,15 +159,20 @@ export default function HomePage() {
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
-          if (data && data.length > 0) {
-            const dbProducts = data.map((device: any) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const isAll = !selectedBestSellerBranch || selectedBestSellerBranch.toLowerCase() === 'all';
+            const dbProducts = data.map((device: any, index: number) => {
               const stockCount = device.branchStockQuantity !== undefined ? device.branchStockQuantity : device.stock;
               const isAvailable = stockCount > 0;
+              const rank = device.rank || (index + 1);
+              const branchName = device.topBranch || device.branch || (isAll ? 'Tagoloan' : selectedBestSellerBranch);
               
               let tagText = 'Best Seller';
               if (!isAvailable) {
                 tagText = 'Out of Stock';
-              } else if (selectedBestSellerBranch && selectedBestSellerBranch.toLowerCase() !== 'all') {
+              } else if (isAll) {
+                tagText = `Top ${rank} · ${branchName}`;
+              } else {
                 tagText = `${selectedBestSellerBranch} Top Seller`;
               }
 
@@ -180,6 +185,8 @@ export default function HomePage() {
                 image: device.image || '/Images/graphix-logo.jpg',
                 unitsSold: device.unitsSold || 0,
                 selectedBranch: device.selectedBranch,
+                branchName: branchName,
+                rank: rank,
                 stock: stockCount,
                 tag: tagText,
                 tagColor: isAvailable ? 'purple' : 'gray'
@@ -190,6 +197,8 @@ export default function HomePage() {
           } else {
             setProducts([]);
           }
+        } else {
+          setProducts([]);
         }
       } catch (err) {
         console.error('Error fetching best-selling devices', err);
@@ -561,6 +570,11 @@ export default function HomePage() {
                     alt={product.name}
                     className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
+                  {selectedBestSellerBranch.toLowerCase() === 'all' && product.rank && (
+                    <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white text-[10px] font-black shadow-md border border-white tracking-wider uppercase flex items-center gap-1">
+                      <span>Top #{product.rank}</span>
+                    </div>
+                  )}
                   {product.tag && (
                     <div className={`absolute top-2 right-2 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs uppercase tracking-wider border ${
                       product.stock > 0 
@@ -577,6 +591,12 @@ export default function HomePage() {
                   <h3 className="font-extrabold text-gray-900 text-xs sm:text-sm line-clamp-2 min-h-[2.5rem] leading-snug group-hover:text-[#8b00cc] transition-colors m-0">
                     {product.name}
                   </h3>
+                  {selectedBestSellerBranch.toLowerCase() === 'all' && product.branchName && (
+                    <div className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md w-fit my-0.5">
+                      <MapPin size={11} className="text-[#8b00cc] shrink-0" />
+                      <span>{product.branchName} Branch</span>
+                    </div>
+                  )}
                   <p className="text-[11px] text-gray-400 line-clamp-1 m-0 font-medium">
                     {product.description}
                   </p>
