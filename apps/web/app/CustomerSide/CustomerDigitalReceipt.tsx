@@ -244,9 +244,9 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
               >
                 {/* Left details with icon/thumbnail */}
                 <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 flex-1 min-w-0">
-                  <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-purple-50/70 border border-purple-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 min-w-[48px] min-h-[48px] sm:min-w-[56px] sm:min-h-[56px] max-w-[48px] max-h-[48px] sm:max-w-[56px] sm:max-h-[56px] rounded-2xl bg-purple-50/70 border border-purple-100 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
                     {item.deviceImage ? (
-                      <img src={item.deviceImage} alt={item.deviceName} className="w-full h-full object-cover" />
+                      <img src={item.deviceImage} alt={item.deviceName} className="w-full h-full object-cover block" />
                     ) : (
                       <Receipt className="text-[#8b00cc]" size={24} />
                     )}

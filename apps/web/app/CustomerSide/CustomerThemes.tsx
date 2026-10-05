@@ -85,7 +85,7 @@ export default function CustomerThemes() {
                       onClick={() => setActiveTheme(color.id as any)}
                       className="flex flex-col items-center gap-2 cursor-pointer group transition-all duration-200"
                     >
-                      <div className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full flex justify-center items-center p-0.5 transition-all ${
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex justify-center items-center p-0.5 transition-all ${
                         isSelected 
                           ? 'ring-4 ring-purple-100 border-2 border-[#bd00ff] scale-105 shadow-md' 
                           : 'border border-transparent group-hover:scale-105 group-hover:shadow-sm'
@@ -128,7 +128,7 @@ export default function CustomerThemes() {
                       onClick={() => setActiveBg(bg.id as any)}
                       className="flex flex-col items-center gap-2 cursor-pointer group transition-all duration-200"
                     >
-                      <div className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full flex justify-center items-center p-0.5 transition-all ${
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex justify-center items-center p-0.5 transition-all ${
                         isSelected 
                           ? 'ring-4 ring-purple-100 border-2 border-[#bd00ff] scale-105 shadow-md' 
                           : 'border border-transparent group-hover:scale-105 group-hover:shadow-sm'
