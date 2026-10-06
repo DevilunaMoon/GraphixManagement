@@ -409,7 +409,7 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         </header>
 
         {/* Content */}
-        <div className="flex-1 w-full bg-[#fbfaff] mt-[124px] md:mt-[68px]">
+        <div className="flex-1 w-full bg-[#fbfaff] mt-[64px] md:mt-[68px]">
           {children}
         </div>
 

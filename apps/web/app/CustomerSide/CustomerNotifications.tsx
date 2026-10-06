@@ -96,21 +96,21 @@ export default function CustomerNotifications() {
   };
 
   return (
-    <main className="flex-1 p-4 sm:p-6 md:p-8 font-['Inter'] flex justify-center overflow-y-auto w-full">
-      <div className="w-full max-w-7xl flex flex-col gap-6">
+    <main className="flex-1 p-3.5 sm:p-6 md:p-8 font-['Inter'] flex justify-center overflow-y-auto w-full">
+      <div className="w-full max-w-7xl flex flex-col gap-5 sm:gap-6">
         
-        <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col min-h-[650px] w-full">
+        <section className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col min-h-[500px] w-full">
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-purple-100/80 pb-5 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-purple-50 text-[#8b00cc] border border-purple-100/80 shadow-sm">
-                <Bell size={22} />
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 sm:gap-4 border-b border-purple-100/80 pb-4 sm:pb-5 mb-5 sm:mb-6">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center bg-purple-50 text-[#8b00cc] border border-purple-100/80 shadow-sm shrink-0">
+                <Bell size={20} className="sm:w-[22px] sm:h-[22px]" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
                   Notifications
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+                <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium m-0 mt-0.5">
                   Stay updated on your orders, payments, and repair progress
                 </p>
               </div>
@@ -121,7 +121,7 @@ export default function CustomerNotifications() {
                 handleMarkAllRead();
               }}
               disabled={!hasUnread || isMarking}
-              className={`px-4 py-2 text-xs sm:text-sm border rounded-xl font-bold transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
+              className={`px-3.5 sm:px-4 py-2 text-xs sm:text-sm border rounded-xl font-bold transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
                 hasUnread
                   ? 'border-purple-100/90 text-[#8b00cc] bg-purple-50 hover:bg-gradient-to-r hover:from-[#8b00cc] hover:to-[#bd00ff] hover:text-white cursor-pointer'
                   : 'border-gray-200 text-gray-400 bg-gray-50/80 cursor-default opacity-70'
@@ -141,19 +141,19 @@ export default function CustomerNotifications() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-3.5 flex-1">
+          <div className="flex flex-col gap-3 sm:gap-3.5 flex-1">
             {loading ? (
               <div className="flex flex-col gap-4 w-full h-[300px] justify-center items-center">
                 <div className="w-10 h-10 border-4 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
                 <p className="text-gray-500 font-medium text-sm">Loading notifications...</p>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400 my-auto bg-purple-50/40 rounded-2xl border border-dashed border-purple-200">
-                <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-[#8b00cc] shadow-sm border border-purple-100">
-                  <Bell size={28} strokeWidth={1.75} />
+              <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400 my-auto bg-purple-50/40 rounded-2xl border border-dashed border-purple-200">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center text-[#8b00cc] shadow-sm border border-purple-100">
+                  <Bell size={24} className="sm:w-7 sm:h-7" strokeWidth={1.75} />
                 </div>
-                <h3 className="text-base font-bold text-gray-700 m-0 border-none">No notifications yet</h3>
-                <p className="text-xs text-gray-500 m-0">You're completely caught up! Updates about your account will show up here.</p>
+                <h3 className="text-sm sm:text-base font-bold text-gray-700 m-0 border-none">No notifications yet</h3>
+                <p className="text-[11px] sm:text-xs text-gray-500 m-0">You're completely caught up! Updates about your account will show up here.</p>
               </div>
             ) : (
               notifications.map((notif) => {
@@ -165,32 +165,32 @@ export default function CustomerNotifications() {
                   <div 
                     key={notif.id} 
                     onClick={() => handleNotificationClick(notif)}
-                    className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                    className={`p-3.5 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
                       !notif.isRead 
                         ? 'bg-gradient-to-r from-purple-50/70 via-purple-50/20 to-white border-l-4 border-l-[#8b00cc] border-purple-100 shadow-sm hover:shadow-md' 
                         : 'bg-white border-gray-100 hover:border-purple-200 hover:shadow-sm opacity-90 hover:opacity-100'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-                      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-3">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
                         {notif.type === 'REVIEW_REPLY' ? (
-                          <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#8b00cc] flex items-center justify-center shrink-0">
-                            <MessageSquare size={14} />
+                          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-purple-100 text-[#8b00cc] flex items-center justify-center shrink-0">
+                            <MessageSquare size={13} className="sm:w-3.5 sm:h-3.5" />
                           </div>
                         ) : null}
-                        <h4 className={`text-sm sm:text-base m-0 border-none truncate ${!notif.isRead ? 'font-bold text-gray-950' : 'font-semibold text-gray-800'}`}>
+                        <h4 className={`text-xs sm:text-base m-0 border-none truncate font-bold ${!notif.isRead ? 'text-gray-950' : 'text-gray-800'}`}>
                           {notif.title}
                         </h4>
                         {!notif.isRead && (
-                          <span className="relative flex h-2.5 w-2.5 shrink-0">
+                          <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-rose-500"></span>
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100 shrink-0">
-                        <Clock size={12} className="text-[#8b00cc]" />
+                      <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-gray-500 font-medium bg-gray-50 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-gray-100 shrink-0 self-start sm:self-auto">
+                        <Clock size={11} className="text-[#8b00cc]" />
                         <span>{formatDateTime(notif.createdAt)}</span>
                       </div>
                     </div>
