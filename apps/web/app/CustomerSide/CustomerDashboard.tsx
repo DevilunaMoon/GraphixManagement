@@ -141,7 +141,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
   const displayCategories = categoriesData.length > 0 ? categoriesData : fallbackCategories;
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col gap-10">
+    <main className="flex-1 p-3.5 sm:p-6 md:p-10 font-['Inter'] flex flex-col gap-6 sm:gap-10">
       
 
       {/* Banner Carousel Section */}
@@ -397,21 +397,22 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
       })()}
 
       {/* Shop Our Products Section */}
-      <section className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-purple-100/90 flex flex-col gap-6 w-full max-w-7xl mx-auto mb-10">
-        <div className="flex items-center justify-between border-b border-purple-100/80 pb-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none">
+      <section className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border border-purple-100/90 flex flex-col gap-5 sm:gap-6 w-full max-w-7xl mx-auto mb-10">
+        <div className="flex items-start sm:items-center justify-between border-b border-purple-100/80 pb-3.5 sm:pb-4 gap-2">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 uppercase tracking-wide m-0 border-none truncate">
               Shop Our Products
             </h2>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+            <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium m-0 mt-0.5 line-clamp-1">
               Explore our latest devices and certified electronics
             </p>
           </div>
           <button 
             onClick={() => navigate('/customer/products')}
-            className="text-xs sm:text-sm font-bold text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1"
+            className="text-xs sm:text-sm font-bold text-[#8b00cc] hover:underline bg-transparent border-none cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap pt-0.5 sm:pt-0"
           >
-            View All &rarr;
+            <span>View All</span>
+            <span>&rarr;</span>
           </button>
         </div>
         
@@ -436,11 +437,11 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                 <div 
                   key={product.id} 
                   onClick={() => navigate(`/customer/product-info?id=${product.id}`)} 
-                  className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm hover:shadow-xl border border-purple-100/90 hover:border-purple-300 md:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group relative"
+                  className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm hover:shadow-xl border border-purple-100/90 hover:border-purple-300 md:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group relative"
                 >
                   <div>
                     {/* Product Image Box */}
-                    <div className="aspect-square w-full bg-gray-50/70 rounded-xl flex justify-center items-center overflow-hidden relative p-3 mb-3">
+                    <div className="aspect-square w-full bg-gray-50/70 rounded-xl flex justify-center items-center overflow-hidden relative p-2 sm:p-3 mb-2.5 sm:mb-3">
                       {(product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')) && (
                         <span className="absolute top-2 left-2 bg-gradient-to-r from-purple-700 to-indigo-800 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm uppercase tracking-wider z-10 border border-purple-300/60">
                           PRE-OWNED
@@ -474,32 +475,32 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                   </div>
 
                   {/* Bottom Meta & Action */}
-                  <div className="mt-3 pt-2.5 border-t border-gray-100 flex flex-col gap-2">
-                    <div className="flex items-end justify-between gap-1">
-                      <div className="flex flex-col">
+                  <div className="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-gray-100 flex flex-col gap-2">
+                    <div className="flex items-baseline justify-between gap-1 min-w-0">
+                      <div className="flex flex-col min-w-0">
                         {hasDiscount ? (
                           <>
-                            <span className="text-gray-400 line-through text-[11px] font-semibold leading-tight">
-                              ₱ {product.price?.toLocaleString()}
+                            <span className="text-gray-400 line-through text-[10px] sm:text-[11px] font-semibold leading-none truncate whitespace-nowrap">
+                              ₱{product.price?.toLocaleString()}
                             </span>
-                            <span className="text-[#8b00cc] font-black text-sm sm:text-base leading-tight">
-                              ₱ {discountedPrice.toLocaleString()}
+                            <span className="text-[#8b00cc] font-black text-xs sm:text-sm md:text-base leading-tight whitespace-nowrap">
+                              ₱{discountedPrice.toLocaleString()}
                             </span>
                           </>
                         ) : (
-                          <span className="text-[#8b00cc] font-black text-sm sm:text-base leading-tight">
-                            ₱ {product.price?.toLocaleString() || '0'}
+                          <span className="text-[#8b00cc] font-black text-xs sm:text-sm md:text-base leading-tight whitespace-nowrap">
+                            ₱{product.price?.toLocaleString() || '0'}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex flex-col items-end text-right">
-                        <span className="text-[10px] text-gray-400 font-medium">
+                      <div className="flex flex-col items-end text-right shrink-0">
+                        <span className="text-[9px] sm:text-[10px] text-gray-400 font-medium whitespace-nowrap">
                           {product.sold || 0} sold
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 font-bold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                          {product.stock || 0} stock
+                        <span className={`inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold whitespace-nowrap ${Number(product.stock) > 0 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${Number(product.stock) > 0 ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+                          <span>{product.stock || 0} stock</span>
                         </span>
                       </div>
                     </div>
@@ -509,7 +510,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                         e.stopPropagation();
                         navigate(`/customer/product-info?id=${product.id}`);
                       }}
-                      className="w-full mt-1 py-2 bg-purple-50 text-[#8b00cc] group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] group-hover:text-white font-bold rounded-xl transition-all text-xs border border-purple-100/90 shadow-sm flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full mt-0.5 sm:mt-1 py-1.5 sm:py-2 bg-purple-50 text-[#8b00cc] hover:bg-gradient-to-r hover:from-[#8b00cc] hover:to-[#bd00ff] hover:text-white font-bold rounded-xl transition-all text-xs border border-purple-100/90 shadow-sm flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                     >
                       View Product
                     </button>
