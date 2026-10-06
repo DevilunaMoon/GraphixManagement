@@ -8,6 +8,7 @@ interface CustomerRepairRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  initialCustomerPhone?: string;
 }
 
 const BRAND_OPTIONS = [
@@ -64,7 +65,8 @@ type PhysicalSlotKey = typeof PHYSICAL_DAMAGE_SLOTS[number]['key'];
 export default function CustomerRepairRequestModal({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  initialCustomerPhone = ''
 }: CustomerRepairRequestModalProps) {
   // Device Information
   const [deviceName, setDeviceName] = useState('');
@@ -120,7 +122,7 @@ export default function CustomerRepairRequestModal({
   }>({
     name: 'Customer',
     email: '',
-    phone: ''
+    phone: initialCustomerPhone || ''
   });
 
   // State flags
@@ -134,14 +136,14 @@ export default function CustomerRepairRequestModal({
 
     // Fetch customer profile
     setIsLoadingProfile(true);
-    fetch('/api/profile')
+    fetch('/api/profile', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
-          const rawPhone = data.phone || '';
+          const rawPhone = (data.phone || initialCustomerPhone || '').trim();
           const cleanPhone = (rawPhone && !rawPhone.includes('₱') && !rawPhone.toLowerCase().includes('cash'))
             ? rawPhone
-            : '0917 123 4567';
+            : '';
           setCustomerInfo({
             name: data.name || 'Customer',
             email: data.email || 'customer@graphix.com',
@@ -308,6 +310,11 @@ export default function CustomerRepairRequestModal({
 
     if (!branch) {
       setErrorMessage('Please select a preferred repair branch.');
+      return;
+    }
+
+    if (!customerInfo.phone || !customerInfo.phone.trim()) {
+      setErrorMessage('Please add a contact phone number in your profile before submitting a repair request.');
       return;
     }
 
@@ -913,7 +920,9 @@ export default function CustomerRepairRequestModal({
                 </div>
                 <div className="bg-white p-3 rounded-xl border border-purple-100">
                   <span className="text-gray-400 font-semibold block uppercase text-[10px]">Phone Number</span>
-                  <span className="font-bold text-gray-800 text-sm">{customerInfo.phone || '—'}</span>
+                  <span className={`font-bold text-sm truncate block ${customerInfo.phone ? 'text-gray-800' : 'text-gray-400 italic'}`}>
+                    {customerInfo.phone || 'No phone number added'}
+                  </span>
                 </div>
               </div>
             </div>

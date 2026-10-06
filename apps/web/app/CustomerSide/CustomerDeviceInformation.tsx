@@ -32,10 +32,10 @@ export default function CustomerDeviceInformation({ deviceId }: CustomerDeviceIn
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
-          const rawPhone = data.phone || '';
+          const rawPhone = (data.phone || '').trim();
           const phoneClean = (rawPhone && !rawPhone.includes('₱') && !rawPhone.toLowerCase().includes('cash'))
             ? rawPhone
-            : '0917 123 4567';
+            : '';
           setUserProfile({
             name: data.name || 'Customer',
             email: data.email || 'customer@graphix.com',

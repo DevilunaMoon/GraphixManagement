@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from 'react';
-import { UserCircle2, Pencil, Receipt, HelpCircle, User, Upload, CheckCircle2, Phone, X, Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { UserCircle2, Pencil, Receipt, HelpCircle, User, Upload, CheckCircle2, Phone, X, Sparkles, ArrowRight } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
 import DatePicker from '../../components/ui/DatePicker';
 
 export default function CustomerProfile({ user }: { user?: any }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const actionParam = searchParams.get('action');
+  const fromParam = searchParams.get('from');
   const navigate = router.push;
   
   const [userName, setUserName] = useState(user?.name || 'User1');
@@ -20,6 +23,13 @@ export default function CustomerProfile({ user }: { user?: any }) {
   const [newPhone, setNewPhone] = useState('');
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (actionParam === 'phone' && !phone) {
+      setNewPhone('');
+      setIsPhoneModalOpen(true);
+    }
+  }, [actionParam]);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -128,6 +138,25 @@ export default function CustomerProfile({ user }: { user?: any }) {
             </p>
           </div>
 
+          {actionParam === 'phone' && !phone && (
+            <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 text-xs sm:text-sm font-semibold animate-in fade-in">
+              <div className="flex items-center gap-2.5">
+                <Phone size={18} className="text-amber-600 shrink-0" />
+                <span>Please add and save your phone number below to unlock the <strong>Request Repair</strong> feature.</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setNewPhone(phone);
+                  setIsPhoneModalOpen(true);
+                }}
+                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs cursor-pointer border-none shrink-0 transition-colors"
+              >
+                Add Now
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col-reverse lg:flex-row gap-8 sm:gap-10 lg:gap-12 flex-1">
             {/* Form Fields */}
             <div className="flex-1 flex flex-col gap-5">
@@ -177,10 +206,14 @@ export default function CustomerProfile({ user }: { user?: any }) {
                     </span>
                   </div>
                   <button 
-                    onClick={() => setIsPhoneModalOpen(true)} 
+                    type="button"
+                    onClick={() => {
+                      setNewPhone(phone);
+                      setIsPhoneModalOpen(true);
+                    }} 
                     className="px-4 h-11 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#8b00cc] hover:text-[#7a00b3] font-bold text-xs border border-purple-200/80 cursor-pointer transition-colors shrink-0"
                   >
-                    Change
+                    {phone ? 'Change' : '+ Add Phone'}
                   </button>
                 </div>
               </div>
@@ -279,12 +312,30 @@ export default function CustomerProfile({ user }: { user?: any }) {
               <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">Your account details have been successfully saved.</p>
             </div>
 
-            <button 
-              onClick={() => setIsSaveModalOpen(false)}
-              className="w-full py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:shadow-md transition-all text-sm"
-            >
-              Got it
-            </button>
+            {fromParam === 'monitoring' ? (
+              <div className="flex flex-col gap-2.5 w-full mt-2">
+                <button 
+                  onClick={() => router.push('/customer/monitoring')}
+                  className="w-full py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:shadow-md transition-all text-xs sm:text-sm flex items-center justify-center gap-2"
+                >
+                  <span>Return to Device Monitoring</span>
+                  <ArrowRight size={16} />
+                </button>
+                <button 
+                  onClick={() => setIsSaveModalOpen(false)}
+                  className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl border-none cursor-pointer transition-colors text-xs"
+                >
+                  Stay on Profile
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsSaveModalOpen(false)}
+                className="w-full py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl border-none cursor-pointer hover:shadow-md transition-all text-sm"
+              >
+                Got it
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -299,7 +350,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
                   <Phone size={18} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-gray-950 m-0">Change Phone Number</h3>
+                  <h3 className="text-lg font-black text-gray-950 m-0">{phone ? 'Change Phone Number' : 'Add Phone Number'}</h3>
                   <p className="text-gray-500 m-0 text-xs font-medium">Update your contact phone number</p>
                 </div>
               </div>

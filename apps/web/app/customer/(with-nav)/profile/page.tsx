@@ -1,6 +1,9 @@
+import { Suspense } from 'react';
 import CustomerProfile from '../../../CustomerSide/CustomerProfile';
 import { getSession } from '../../../../lib/session';
 import { prisma } from 'database';
+
+export const dynamic = 'force-dynamic';
 
 export default async function Page() {
   const session = await getSession();
@@ -17,5 +20,9 @@ export default async function Page() {
     }
   }
 
-  return <CustomerProfile user={user} />;
+  return (
+    <Suspense fallback={null}>
+      <CustomerProfile user={user} />
+    </Suspense>
+  );
 }
