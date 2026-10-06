@@ -367,54 +367,57 @@ export default function StandardDigitalReceipt({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* Top Action Toolbar (Matches SECOND IMAGE) */}
+      {/* Top Action Toolbar */}
       {showToolbar && (
-        <div className="flex items-center justify-between border-b border-gray-100 pb-4 print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3.5 sm:pb-4 print:hidden">
           {onBack ? (
             <button
               onClick={onBack}
               type="button"
-              className="flex items-center gap-1.5 text-gray-600 hover:text-[#bd00ff] bg-transparent border-none cursor-pointer p-0 transition-colors font-bold text-sm"
+              className="inline-flex items-center gap-1.5 text-gray-600 hover:text-[#bd00ff] bg-transparent border-none cursor-pointer p-0 transition-colors font-bold text-sm w-fit"
             >
-              <ChevronLeft size={20} /> Back
+              <ChevronLeft size={20} className="shrink-0" />
+              <span>Back</span>
             </button>
           ) : (
-            <div />
+            <div className="hidden sm:block" />
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleCopyReceipt}
-              className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl text-xs font-bold border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl text-[11px] sm:text-xs font-bold border border-purple-200 transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
             >
-              {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+              {copied ? <Check size={14} className="text-green-600 shrink-0" /> : <Copy size={14} className="shrink-0" />}
               <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-purple-50 text-[#bd00ff] rounded-xl font-bold border border-purple-200 cursor-pointer hover:bg-purple-100 transition-colors text-xs shadow-2xs"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 bg-purple-50 text-[#bd00ff] rounded-xl font-bold border border-purple-200 cursor-pointer hover:bg-purple-100 transition-colors text-[11px] sm:text-xs shadow-2xs whitespace-nowrap"
             >
-              <Printer size={16} /> Print
+              <Printer size={14} className="shrink-0" />
+              <span>Print</span>
             </button>
             <button
               type="button"
               onClick={handleSavePDF}
               disabled={isGeneratingPDF}
-              className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 text-white rounded-xl font-bold border-none cursor-pointer hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-sm"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 bg-gray-900 text-white rounded-xl font-bold border-none cursor-pointer hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[11px] sm:text-xs shadow-sm whitespace-nowrap"
             >
-              <Download size={16} /> {isGeneratingPDF ? 'Saving...' : 'Save PDF'}
+              <Download size={14} className="shrink-0" />
+              <span>{isGeneratingPDF ? 'Saving...' : 'Save PDF'}</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Main Standardized Digital Thermal Receipt (Matches SECOND IMAGE Exactly) */}
+      {/* Main Standardized Digital Thermal Receipt */}
       <div className="flex justify-center w-full">
         <div
           ref={receiptRef}
-          className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-6 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed mx-auto"
+          className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-4 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed mx-auto"
         >
           {/* Header & Store Info */}
           <div className="text-center pb-3 border-b border-dashed border-gray-300">

@@ -51,8 +51,8 @@ export default function CustomerReceiptView({ user: _initialUser, orderId }: { u
   }
 
   return (
-    <div className="min-h-screen bg-[#fbfaff] flex flex-col justify-center items-center p-4 sm:p-6 font-['Inter'] py-8 sm:py-12">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-xl border border-purple-100/90 flex flex-col gap-6 animate-in fade-in zoom-in-95">
+    <div className="min-h-screen bg-[#fbfaff] flex flex-col justify-center items-center p-3 sm:p-6 font-['Inter'] py-6 sm:py-12">
+      <div className="w-full max-w-lg bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xl border border-purple-100/90 flex flex-col gap-4 sm:gap-6 animate-in fade-in zoom-in-95">
         <StandardDigitalReceipt 
           data={purchase} 
           onBack={() => router.back()} 
