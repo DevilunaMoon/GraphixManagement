@@ -170,24 +170,24 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
   };
 
   return (
-    <main className="flex-1 p-6 md:p-10 font-['Inter'] flex flex-col items-center overflow-y-auto">
-      <div className="w-full max-w-7xl flex flex-col gap-6">
+    <main className="flex-1 p-3.5 sm:p-6 md:p-10 font-['Inter'] flex flex-col items-center overflow-y-auto w-full">
+      <div className="w-full max-w-7xl flex flex-col gap-5 sm:gap-6">
 
         {/* Header & Filter */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-purple-100/80 pb-4 w-full">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4 border-b border-purple-100/80 pb-4 w-full">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <button 
               onClick={() => router.back()}
-              className="flex items-center justify-center w-10 h-10 rounded-xl border border-purple-100 bg-white hover:border-[#8b00cc] hover:text-[#8b00cc] text-gray-600 cursor-pointer transition-all shrink-0 shadow-sm p-0"
+              className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-purple-100 bg-white hover:border-[#8b00cc] hover:text-[#8b00cc] text-gray-600 cursor-pointer transition-all shrink-0 shadow-sm p-0"
               title="Go Back"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={20} />
             </button>
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-wide border-none m-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 uppercase tracking-wide border-none m-0">
                 Device Monitoring Progress
               </h2>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+              <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium m-0 mt-0.5">
                 Track your repair progress or submit a new repair request
               </p>
             </div>
@@ -275,11 +275,11 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
                 <div 
                   key={device.id} 
                   onClick={() => navigate('/customer/device-info/' + device.id)}
-                  className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-xl border border-purple-100/90 hover:border-purple-300 md:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group text-center relative"
+                  className="bg-white rounded-2xl p-3 sm:p-5 shadow-sm hover:shadow-xl border border-purple-100/90 hover:border-purple-300 md:hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col justify-between group text-center relative"
                 >
                   <div>
                     {/* Device Image Box */}
-                    <div className="h-32 sm:h-40 w-full flex justify-center items-center overflow-hidden rounded-xl bg-gray-50/70 p-3 mb-3 border border-gray-100/60">
+                    <div className="h-28 sm:h-40 w-full flex justify-center items-center overflow-hidden rounded-xl bg-gray-50/70 p-2 sm:p-3 mb-2.5 sm:mb-3 border border-gray-100/60">
                       {device.image ? (
                         <img 
                           src={device.image} 
@@ -295,8 +295,8 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
                     </div>
 
                     {/* Device Name */}
-                    <div className="flex flex-col gap-1 mb-3">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Device Model</span>
+                    <div className="flex flex-col gap-0.5 sm:gap-1 mb-2.5 sm:mb-3">
+                      <span className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider">Device Model</span>
                       <h3 className="font-bold text-xs sm:text-sm text-gray-900 truncate m-0 border-none group-hover:text-[#8b00cc] transition-colors">
                         {device.deviceName}
                       </h3>
@@ -304,10 +304,10 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
                   </div>
 
                   {/* Status Badge & CTA */}
-                  <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
-                    <div className="flex items-center justify-between gap-1 text-xs">
-                      <span className="text-[11px] text-gray-400 font-semibold">Progress:</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${badgeStyle}`}>
+                  <div className="pt-2.5 sm:pt-3 border-t border-gray-100 flex flex-col gap-2">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-1 text-xs">
+                      <span className="text-[10px] sm:text-[11px] text-gray-400 font-semibold shrink-0">Progress:</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border max-w-full truncate inline-flex items-center justify-center leading-tight tracking-tight ${badgeStyle}`}>
                         {semanticStatus}
                       </span>
                     </div>
@@ -317,7 +317,7 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
                         e.stopPropagation();
                         navigate('/customer/device-info/' + device.id);
                       }}
-                      className="w-full mt-1 py-2 bg-purple-50 text-[#8b00cc] group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] group-hover:text-white font-bold rounded-xl transition-all text-xs border border-purple-100/90 shadow-sm flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full mt-0.5 sm:mt-1 py-1.5 sm:py-2 bg-purple-50 text-[#8b00cc] group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] group-hover:text-white font-bold rounded-xl transition-all text-[11px] sm:text-xs border border-purple-100/90 shadow-sm flex items-center justify-center gap-1 cursor-pointer"
                     >
                       View Details
                     </button>
