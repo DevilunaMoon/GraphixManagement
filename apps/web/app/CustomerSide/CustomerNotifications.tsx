@@ -27,7 +27,10 @@ export default function CustomerNotifications() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isMarking, setIsMarking] = useState(false);
   const itemsPerPage = 10;
+
+  const hasUnread = notifications.some(n => !n.isRead);
 
   const fetchNotifications = async (pageToFetch = currentPage) => {
     try {
@@ -50,6 +53,8 @@ export default function CustomerNotifications() {
   }, [currentPage]);
 
   const handleMarkAllRead = async () => {
+    if (isMarking || !hasUnread) return;
+    setIsMarking(true);
     try {
       const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
@@ -62,6 +67,8 @@ export default function CustomerNotifications() {
       }
     } catch (error) {
       console.error('Failed to mark notifications as read:', error);
+    } finally {
+      setIsMarking(false);
     }
   };
 
@@ -109,10 +116,28 @@ export default function CustomerNotifications() {
               </div>
             </div>
             <button 
-              onClick={handleMarkAllRead}
-              className="px-4 py-2 text-xs sm:text-sm border border-purple-100/90 text-[#8b00cc] font-bold rounded-xl bg-purple-50 hover:bg-gradient-to-r hover:from-[#8b00cc] hover:to-[#bd00ff] hover:text-white transition-all cursor-pointer w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-sm"
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleMarkAllRead();
+              }}
+              disabled={!hasUnread || isMarking}
+              className={`px-4 py-2 text-xs sm:text-sm border rounded-xl font-bold transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 shadow-sm active:scale-95 ${
+                hasUnread
+                  ? 'border-purple-100/90 text-[#8b00cc] bg-purple-50 hover:bg-gradient-to-r hover:from-[#8b00cc] hover:to-[#bd00ff] hover:text-white cursor-pointer'
+                  : 'border-gray-200 text-gray-400 bg-gray-50/80 cursor-default opacity-70'
+              }`}
             >
-              <CheckCheck size={16} /> Mark All as Read
+              {isMarking ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  <span>Marking...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCheck size={16} />
+                  <span>{hasUnread ? 'Mark All as Read' : 'All Read'}</span>
+                </>
+              )}
             </button>
           </div>
 
