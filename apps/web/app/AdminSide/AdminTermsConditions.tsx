@@ -17,6 +17,7 @@ export default function AdminTermsConditions() {
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms');
 
   const [purchasePolicy, setPurchasePolicy] = useState('');
+  const [refundPolicy, setRefundPolicy] = useState('');
   const [paymentPolicy, setPaymentPolicy] = useState('');
   const [repairPolicy, setRepairPolicy] = useState('');
   const [privacyPolicy, setPrivacyPolicy] = useState('');
@@ -36,7 +37,8 @@ export default function AdminTermsConditions() {
         const customs: CustomPolicy[] = [];
         data.forEach(policy => {
           const pType = (policy.type || '').toUpperCase();
-          if (pType === 'PURCHASE') setPurchasePolicy(policy.content || '');
+          if (pType === 'PURCHASE' || pType === 'TERMS') setPurchasePolicy(policy.content || '');
+          else if (pType === 'REFUND') setRefundPolicy(policy.content || '');
           else if (pType === 'PAYMENT') setPaymentPolicy(policy.content || '');
           else if (pType === 'REPAIR') setRepairPolicy(policy.content || '');
           else if (pType === 'PRIVACY') setPrivacyPolicy(policy.content || '');
@@ -101,6 +103,7 @@ export default function AdminTermsConditions() {
     try {
       const payloads = [
         { type: 'PURCHASE', content: purchasePolicy },
+        { type: 'REFUND', content: refundPolicy },
         { type: 'PAYMENT', content: paymentPolicy },
         { type: 'REPAIR', content: repairPolicy },
         { type: 'PRIVACY', content: privacyPolicy },
@@ -217,35 +220,64 @@ export default function AdminTermsConditions() {
             {activeTab === 'terms' && (
               <div className="flex flex-col gap-6">
                 
-                {/* 1. Purchase Policy */}
+                {/* 1. Terms of Service & Purchase Terms */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>1. Purchase & Warranty Terms</span>
+                      <span>1. Terms of Service & Purchase Terms</span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#BF00FF]">
+                        Footer: Terms of Service
+                      </span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Store purchases, warranties, and exchanges</span>
+                    <span className="text-xs text-gray-400 font-medium">Store purchases, warranties, and customer agreements</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
                       className="w-full h-32 p-4 rounded-xl border-2 border-purple-200 focus:border-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
                       value={purchasePolicy}
                       onChange={(e) => setPurchasePolicy(e.target.value)}
-                      placeholder="Enter purchase policy details, returns, and warranty rules..."
+                      placeholder="Enter terms of service, customer sales agreements, and warranty rules..."
                     />
                   ) : (
                     <div className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                      {purchasePolicy || <span className="italic text-gray-400">No purchase policy defined.</span>}
+                      {purchasePolicy || <span className="italic text-gray-400">No terms of service defined.</span>}
                     </div>
                   )}
                 </div>
 
-                {/* 2. Payment Policy */}
+                {/* 2. Refund & Return Policy */}
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
+                      <span>2. Refund & Return Policy</span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#BF00FF]">
+                        Footer: Refund Policy
+                      </span>
+                    </label>
+                    <span className="text-xs text-gray-400 font-medium">Returns, 7-day replacement window, and refund eligibility</span>
+                  </div>
+                  {isSuperAdmin ? (
+                    <textarea 
+                      className="w-full h-32 p-4 rounded-xl border-2 border-purple-200 focus:border-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
+                      value={refundPolicy}
+                      onChange={(e) => setRefundPolicy(e.target.value)}
+                      placeholder="Enter refund terms, return requirements, factory defect replacements..."
+                    />
+                  ) : (
+                    <div className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                      {refundPolicy || <span className="italic text-gray-400">No refund policy defined.</span>}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Payment Policy */}
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>2. Payment & Settlement Guidelines</span>
+                      <span>3. Payment & Settlement Guidelines</span>
                     </label>
                     <span className="text-xs text-gray-400 font-medium">Cash, GCash, downpayments, and layaways</span>
                   </div>
@@ -263,12 +295,12 @@ export default function AdminTermsConditions() {
                   )}
                 </div>
 
-                {/* 3. Repair Policy */}
+                {/* 4. Repair Policy */}
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>3. Repair Service Terms & Diagnostic Coverage</span>
+                      <span>4. Repair Service Terms & Diagnostic Coverage</span>
                     </label>
                     <span className="text-xs text-gray-400 font-medium">Device diagnostics, part warranties & service terms</span>
                   </div>
@@ -338,10 +370,13 @@ export default function AdminTermsConditions() {
             {activeTab === 'privacy' && (
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>Customer Data Confidentiality & Security</span>
+                      <span>Privacy Policy & Data Confidentiality</span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#BF00FF]">
+                        Footer: Privacy Policy
+                      </span>
                     </label>
                     <span className="text-xs text-gray-400 font-medium">Customer personal data, privacy & disclosure rules</span>
                   </div>

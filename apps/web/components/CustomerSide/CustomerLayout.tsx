@@ -117,13 +117,16 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
     const typeMapping: Record<string, string> = {
       'Privacy Policy': 'PRIVACY',
       'Terms of Service': 'PURCHASE',
-      'Refund Policy': 'PURCHASE',
+      'Refund Policy': 'REFUND',
       'Purchase Policy': 'PURCHASE',
       'Payment Policy': 'PAYMENT',
       'Repair Policy': 'REPAIR'
     };
     const targetType = typeMapping[type] || type.toUpperCase().replace(/\s+/g, '_');
-    const p = policies.find(p => (p.type || '').toUpperCase() === targetType);
+    let p = policies.find(p => (p.type || '').toUpperCase() === targetType);
+    if (!p && targetType === 'REFUND') {
+      p = policies.find(p => (p.type || '').toUpperCase() === 'PURCHASE');
+    }
     if (p) {
       setSelectedPolicyTitle(type);
       setSelectedPolicyContent(p.content);

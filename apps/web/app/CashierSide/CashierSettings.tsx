@@ -142,7 +142,10 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
   );
 
   const purchasePolicy = policies.find(p => p.type === 'PURCHASE')?.content || 
-    'All product purchases made through Graphix are subject to store availability and verification. Customers must inspect physical items upon delivery or in-store pickup. Warranty terms apply according to manufacturer and store standards. Returns and exchanges are accepted within 7 days of purchase with valid proof of receipt and in original packaging.';
+    'All product purchases made through Graphix are subject to store availability and verification. Customers must inspect physical items upon delivery or in-store pickup. Warranty terms apply according to manufacturer and store standards.';
+
+  const refundPolicy = policies.find(p => p.type === 'REFUND')?.content || 
+    'Returns and exchanges are accepted within 7 days of purchase with valid proof of receipt and in original packaging. Replacement applies to verified hardware defects. Physical and liquid damages are not eligible for replacement or refunds.';
   
   const paymentPolicy = policies.find(p => p.type === 'PAYMENT')?.content || 
     'Graphix supports cash, GCash, and verified digital payment methods. For installment and downpayment transactions, remaining balances must be settled according to the agreed schedule prior to final device release. All transactions are securely processed and recorded with corresponding official reference receipts.';
@@ -753,21 +756,28 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
             {activePolicyTab === 'terms' && (
               <div className="flex flex-col gap-5">
                 <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">1. Purchase & Warranty Terms</h4>
+                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">1. Terms of Service & Purchase Terms</h4>
                   <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {purchasePolicy}
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">2. Payment & Settlement Guidelines</h4>
+                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">2. Refund & Return Policy</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
+                    {refundPolicy}
+                  </p>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
+                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">3. Payment & Settlement Guidelines</h4>
                   <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {paymentPolicy}
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">3. Repair Service Terms & Diagnostic Coverage</h4>
+                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">4. Repair Service Terms & Diagnostic Coverage</h4>
                   <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {repairPolicy}
                   </p>

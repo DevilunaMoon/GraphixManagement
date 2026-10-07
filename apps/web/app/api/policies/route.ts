@@ -7,7 +7,11 @@ export const dynamic = 'force-dynamic';
 const DEFAULT_POLICIES = [
   {
     type: 'PURCHASE',
-    content: 'All product purchases made through Graphix are subject to store availability and verification. Customers must inspect physical items upon delivery or in-store pickup. Warranty terms apply according to manufacturer and store standards. Returns and exchanges are accepted within 7 days of purchase with valid proof of receipt and in original packaging.'
+    content: 'All product purchases made through Graphix are subject to store availability and verification. Customers must inspect physical items upon delivery or in-store pickup. Warranty terms apply according to manufacturer and store standards.'
+  },
+  {
+    type: 'REFUND',
+    content: 'Returns and exchanges are accepted within 7 days of purchase with valid proof of receipt and in original packaging. Replacement applies to verified hardware defects. Physical and liquid damages are not eligible for replacement or refunds.'
   },
   {
     type: 'PAYMENT',
