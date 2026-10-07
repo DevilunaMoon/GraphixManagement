@@ -182,7 +182,7 @@ function LoginContent() {
   const privacyPolicy = policies.find(p => (p.type || '').toUpperCase() === 'PRIVACY');
 
   const policyTitles: Record<string, string> = {
-    'PURCHASE': 'Terms of Service & Purchase Terms',
+    'PURCHASE': 'Terms of Service',
     'REFUND': 'Refund Policy',
     'PAYMENT': 'Payment Policy',
     'REPAIR': 'Repair Policy'

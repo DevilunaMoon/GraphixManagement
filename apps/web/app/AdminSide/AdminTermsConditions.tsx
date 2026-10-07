@@ -220,17 +220,14 @@ export default function AdminTermsConditions() {
             {activeTab === 'terms' && (
               <div className="flex flex-col gap-6">
                 
-                {/* 1. Terms of Service & Purchase Terms */}
+                {/* 1. Terms of Service */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center justify-between">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>1. Terms of Service & Purchase Terms</span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#BF00FF]">
-                        Footer: Terms of Service
-                      </span>
+                      <span>1. Terms of Service</span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Store purchases, warranties, and customer agreements</span>
+                    <span className="text-xs text-gray-400 font-medium">Customer agreements, device purchases, and warranties</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
@@ -246,15 +243,12 @@ export default function AdminTermsConditions() {
                   )}
                 </div>
 
-                {/* 2. Refund & Return Policy */}
+                {/* 2. Refund Policy */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center justify-between">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>2. Refund & Return Policy</span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#BF00FF]">
-                        Footer: Refund Policy
-                      </span>
+                      <span>2. Refund Policy</span>
                     </label>
                     <span className="text-xs text-gray-400 font-medium">Returns, 7-day replacement window, and refund eligibility</span>
                   </div>
@@ -370,13 +364,10 @@ export default function AdminTermsConditions() {
             {activeTab === 'privacy' && (
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div className="flex items-center justify-between">
                     <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>Privacy Policy & Data Confidentiality</span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-[#BF00FF]">
-                        Footer: Privacy Policy
-                      </span>
+                      <span>Privacy Policy</span>
                     </label>
                     <span className="text-xs text-gray-400 font-medium">Customer personal data, privacy & disclosure rules</span>
                   </div>

@@ -36,7 +36,7 @@ function PolicyContent() {
   }, [type]);
 
   const titles: Record<string, string> = {
-    'PURCHASE': 'Terms of Service & Purchase Policy',
+    'PURCHASE': 'Terms of Service',
     'REFUND': 'Refund Policy',
     'PAYMENT': 'Payment Policy',
     'REPAIR': 'Repair Policy',

@@ -756,14 +756,14 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
             {activePolicyTab === 'terms' && (
               <div className="flex flex-col gap-5">
                 <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">1. Terms of Service & Purchase Terms</h4>
+                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">1. Terms of Service</h4>
                   <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {purchasePolicy}
                   </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">2. Refund & Return Policy</h4>
+                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">2. Refund Policy</h4>
                   <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {refundPolicy}
                   </p>
