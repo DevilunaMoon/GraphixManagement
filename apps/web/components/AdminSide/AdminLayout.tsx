@@ -26,7 +26,9 @@ import {
   Building2,
   ScrollText,
   Crown,
-  KeyRound
+  KeyRound,
+  Check,
+  Globe
 } from 'lucide-react';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -38,6 +40,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [branchName, setBranchName] = useState('Tagoloan');
   const [adminAvatar, setAdminAvatar] = useState<string | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+  const [isMobileBranchDropdownOpen, setIsMobileBranchDropdownOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -45,6 +49,21 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { styles, bgClass } = useTheme();
+
+  const branchOptions = [
+    { value: 'all', label: 'All Branches', description: 'System-wide consolidated data' },
+    ...(branches && branches.length > 0
+      ? branches.map(b => ({
+          value: b.name,
+          label: b.name.toLowerCase().includes('branch') ? b.name : `${b.name} Branch`,
+          description: b.address || `${b.name} store location`
+        }))
+      : [
+          { value: 'Tagoloan', label: 'Tagoloan Branch', description: 'Main branch store' },
+          { value: 'Villanueva', label: 'Villanueva Branch', description: 'Branch store location' },
+          { value: 'Jasaan', label: 'Jasaan Branch', description: 'Branch store location' },
+        ])
+  ];
 
   useEffect(() => {
     if (isLogoutModalOpen) {
@@ -152,16 +171,48 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
         <div className="flex items-center gap-2">
           {isSuperAdmin ? (
-            <select
-              value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="text-[11px] px-2 py-1 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white outline-none [&>option]:text-slate-900"
-            >
-              <option value="all">🏢 All Branches</option>
-              <option value="Tagoloan">Tagoloan</option>
-              <option value="Villanueva">Villanueva</option>
-              <option value="Jasaan">Jasaan</option>
-            </select>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsMobileBranchDropdownOpen(!isMobileBranchDropdownOpen)}
+                className="text-[11px] px-2.5 py-1 bg-white/20 hover:bg-white/30 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white flex items-center gap-1.5 cursor-pointer outline-none transition-all active:scale-95 backdrop-blur-md"
+              >
+                <span>{selectedBranch === 'all' ? 'All Branches' : selectedBranch}</span>
+                <ChevronDown size={11} className={`transition-transform duration-200 ${isMobileBranchDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isMobileBranchDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsMobileBranchDropdownOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-purple-100 p-1.5 z-50 text-gray-900 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-2.5 py-1.5 border-b border-gray-100 text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1">
+                      Select Branch
+                    </div>
+                    {branchOptions.map((opt) => {
+                      const isSelected = selectedBranch === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setSelectedBranch(opt.value);
+                            setIsMobileBranchDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                            isSelected
+                              ? 'bg-purple-100/70 text-[#8b00cc] font-bold'
+                              : 'text-gray-700 hover:bg-purple-50/60'
+                          }`}
+                        >
+                          <span className="truncate">{opt.label}</span>
+                          {isSelected && <Check size={14} className="text-[#8b00cc] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
           )}
@@ -343,18 +394,98 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             {isSuperAdmin ? (
-              <div className="flex items-center gap-2 px-3.5 py-1.5 bg-white/20 hover:bg-white/25 backdrop-blur-md rounded-xl text-xs md:text-sm font-bold text-white border border-white/30 shadow-inner transition-all">
-                <span className="text-sm">🏢</span>
-                <select
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer pr-1 [&>option]:text-slate-900 [&>option]:font-semibold"
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+                  className={`flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold text-white border transition-all cursor-pointer backdrop-blur-md shadow-xs active:scale-95 select-none ${
+                    isBranchDropdownOpen
+                      ? 'bg-white/30 border-white/50 ring-2 ring-white/40 shadow-md'
+                      : 'bg-white/20 hover:bg-white/30 border-white/30'
+                  }`}
                 >
-                  <option value="all">All Branches</option>
-                  <option value="Tagoloan">Tagoloan</option>
-                  <option value="Villanueva">Villanueva</option>
-                  <option value="Jasaan">Jasaan</option>
-                </select>
+                  <Building2 size={16} className="text-white shrink-0 opacity-90" />
+                  <span>
+                    {selectedBranch === 'all'
+                      ? 'All Branches'
+                      : selectedBranch.toLowerCase().includes('branch')
+                      ? selectedBranch
+                      : `${selectedBranch} Branch`}
+                  </span>
+                  <ChevronDown
+                    size={14}
+                    className={`text-white/80 transition-transform duration-200 ${
+                      isBranchDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {isBranchDropdownOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsBranchDropdownOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2.5 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-purple-100 p-2 z-50 text-gray-900 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">
+                          Select Branch View
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-[#8b00cc] border border-purple-200/60">
+                          Super Admin
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        {branchOptions.map((opt) => {
+                          const isSelected = selectedBranch === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => {
+                                setSelectedBranch(opt.value);
+                                setIsBranchDropdownOpen(false);
+                              }}
+                              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left ${
+                                isSelected
+                                  ? 'bg-purple-100/70 text-[#8b00cc] font-bold shadow-xs'
+                                  : 'text-gray-700 hover:bg-purple-50/60 hover:text-[#8b00cc]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                    isSelected
+                                      ? 'bg-[#8b00cc] text-white shadow-xs'
+                                      : 'bg-gray-100 text-gray-500'
+                                  }`}
+                                >
+                                  {opt.value === 'all' ? (
+                                    <Globe size={14} />
+                                  ) : (
+                                    <Building2 size={14} />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="truncate text-xs m-0 leading-tight">
+                                    {opt.label}
+                                  </p>
+                                  <p className="text-[10px] text-gray-400 font-medium m-0 truncate">
+                                    {opt.description}
+                                  </p>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <Check size={16} className="text-[#8b00cc] shrink-0 ml-2" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/30 shadow-inner">
