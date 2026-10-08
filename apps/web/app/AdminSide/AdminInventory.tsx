@@ -921,12 +921,13 @@ export default function AdminInventory() {
     // Calculate total stocks
     let totalComputedStock = 0;
     if (addVariants.length > 0) {
+      const dedicatedBranch = (userBranch || 'Tagoloan').trim();
       const processedVariants = addVariants.map(v => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
         const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
-        const tagStock = parseInt(v.tagoloanStock || '0', 10);
-        const vilStock = parseInt(v.villanuevaStock || '0', 10);
-        const jasStock = parseInt(v.jasaanStock || '0', 10);
+        const tagStock = isSuperAdmin ? parseInt(v.tagoloanStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0);
+        const vilStock = isSuperAdmin ? parseInt(v.villanuevaStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0);
+        const jasStock = isSuperAdmin ? parseInt(v.jasaanStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0);
         const varTotal = tagStock + vilStock + jasStock;
         totalComputedStock += varTotal;
 
@@ -2655,9 +2656,15 @@ export default function AdminInventory() {
                         <th className="py-2.5 px-3">Product ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
-                        <th className="py-2.5 px-3 text-center">Tagoloan Stock</th>
-                        <th className="py-2.5 px-3 text-center">Villanueva Stock</th>
-                        <th className="py-2.5 px-3 text-center">Jasaan Stock</th>
+                        {isSuperAdmin ? (
+                          <>
+                            <th className="py-2.5 px-3 text-center">Tagoloan Stock</th>
+                            <th className="py-2.5 px-3 text-center">Villanueva Stock</th>
+                            <th className="py-2.5 px-3 text-center">Jasaan Stock</th>
+                          </>
+                        ) : (
+                          <th className="py-2.5 px-3 text-center">{(userBranch || 'Tagoloan')} Stock</th>
+                        )}
                         <th className="py-2.5 px-3 text-right">Price (₱)</th>
                         <th className="py-2.5 px-2 text-center"></th>
                       </tr>
@@ -2717,45 +2724,81 @@ export default function AdminInventory() {
                               placeholder="32 GB"
                             />
                           </td>
-                          <td className="py-2 px-3 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              value={v.tagoloanStock}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.tagoloanStock = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
-                            />
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              value={v.villanuevaStock}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.villanuevaStock = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
-                            />
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              value={v.jasaanStock}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.jasaanStock = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
-                            />
-                          </td>
+                          {isSuperAdmin ? (
+                            <>
+                              <td className="py-2 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={v.tagoloanStock}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.tagoloanStock = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={v.villanuevaStock}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.villanuevaStock = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={v.jasaanStock}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.jasaanStock = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
+                                />
+                              </td>
+                            </>
+                          ) : (
+                            <td className="py-2 px-3 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                value={
+                                  (userBranch || '').toLowerCase() === 'villanueva' ? v.villanuevaStock :
+                                  (userBranch || '').toLowerCase() === 'jasaan' ? v.jasaanStock :
+                                  v.tagoloanStock
+                                }
+                                onChange={(e) => {
+                                  const updated = [...addVariants];
+                                  const val = e.target.value;
+                                  const branch = (userBranch || 'Tagoloan').toLowerCase();
+                                  if (branch === 'villanueva') {
+                                    updated[idx]!.villanuevaStock = val;
+                                    updated[idx]!.tagoloanStock = '0';
+                                    updated[idx]!.jasaanStock = '0';
+                                  } else if (branch === 'jasaan') {
+                                    updated[idx]!.jasaanStock = val;
+                                    updated[idx]!.tagoloanStock = '0';
+                                    updated[idx]!.villanuevaStock = '0';
+                                  } else {
+                                    updated[idx]!.tagoloanStock = val;
+                                    updated[idx]!.villanuevaStock = '0';
+                                    updated[idx]!.jasaanStock = '0';
+                                  }
+                                  setAddVariants(updated);
+                                }}
+                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none"
+                              />
+                            </td>
+                          )}
                           <td className="py-2 px-3 text-right">
                             <input
                               type="number"

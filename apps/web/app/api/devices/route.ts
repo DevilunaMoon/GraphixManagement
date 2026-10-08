@@ -408,17 +408,18 @@ export async function POST(req: Request) {
             const varStock = parseInt(v.stock || 0, 10);
 
             // Compute branch stock values
+            const opBranchLower = (operatingBranch || 'Tagoloan').trim().toLowerCase();
             const tagStock = isSuperAdmin 
-              ? (v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (operatingBranch === 'Tagoloan' ? varStock : 0))
-              : (operatingBranch === 'Tagoloan' ? (parseInt(v.tagoloanStock ?? v.stock ?? 0, 10)) : 0);
+              ? (v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (opBranchLower === 'tagoloan' ? varStock : 0))
+              : (opBranchLower === 'tagoloan' ? (parseInt(v.tagoloanStock ?? v.stock ?? 0, 10)) : 0);
 
             const vilStock = isSuperAdmin
-              ? (v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (operatingBranch === 'Villanueva' ? varStock : 0))
-              : (operatingBranch === 'Villanueva' ? (parseInt(v.villanuevaStock ?? v.stock ?? 0, 10)) : 0);
+              ? (v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (opBranchLower === 'villanueva' ? varStock : 0))
+              : (opBranchLower === 'villanueva' ? (parseInt(v.villanuevaStock ?? v.stock ?? 0, 10)) : 0);
 
             const jasStock = isSuperAdmin
-              ? (v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (operatingBranch === 'Jasaan' ? varStock : 0))
-              : (operatingBranch === 'Jasaan' ? (parseInt(v.jasaanStock ?? v.stock ?? 0, 10)) : 0);
+              ? (v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (opBranchLower === 'jasaan' ? varStock : 0))
+              : (opBranchLower === 'jasaan' ? (parseInt(v.jasaanStock ?? v.stock ?? 0, 10)) : 0);
 
             const branchStockValues: Record<string, number> = {
               Tagoloan: isNaN(tagStock) ? 0 : tagStock,
@@ -622,17 +623,18 @@ export async function POST(req: Request) {
           const varStock = parseInt(v.stock || 0, 10);
           
           // Branch stock allocation
+          const opBranchLower = (operatingBranch || 'Tagoloan').trim().toLowerCase();
           const tagStock = isSuperAdmin
-            ? (v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (operatingBranch === 'Tagoloan' ? varStock : 0))
-            : (operatingBranch === 'Tagoloan' ? (parseInt(v.tagoloanStock ?? v.stock ?? 0, 10)) : 0);
+            ? (v.tagoloanStock !== undefined ? parseInt(v.tagoloanStock, 10) : (opBranchLower === 'tagoloan' ? varStock : 0))
+            : (opBranchLower === 'tagoloan' ? (parseInt(v.tagoloanStock ?? v.stock ?? 0, 10)) : 0);
 
           const vilStock = isSuperAdmin
-            ? (v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (operatingBranch === 'Villanueva' ? varStock : 0))
-            : (operatingBranch === 'Villanueva' ? (parseInt(v.villanuevaStock ?? v.stock ?? 0, 10)) : 0);
+            ? (v.villanuevaStock !== undefined ? parseInt(v.villanuevaStock, 10) : (opBranchLower === 'villanueva' ? varStock : 0))
+            : (opBranchLower === 'villanueva' ? (parseInt(v.villanuevaStock ?? v.stock ?? 0, 10)) : 0);
 
           const jasStock = isSuperAdmin
-            ? (v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (operatingBranch === 'Jasaan' ? varStock : 0))
-            : (operatingBranch === 'Jasaan' ? (parseInt(v.jasaanStock ?? v.stock ?? 0, 10)) : 0);
+            ? (v.jasaanStock !== undefined ? parseInt(v.jasaanStock, 10) : (opBranchLower === 'jasaan' ? varStock : 0))
+            : (opBranchLower === 'jasaan' ? (parseInt(v.jasaanStock ?? v.stock ?? 0, 10)) : 0);
 
           const branchStockValues: Record<string, number> = {
             Tagoloan: isNaN(tagStock) ? 0 : tagStock,
