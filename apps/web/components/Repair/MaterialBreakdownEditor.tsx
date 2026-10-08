@@ -314,7 +314,7 @@ export default function MaterialBreakdownEditor({
 
         {activeMaterials.length > 0 ? (
           <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-xs border-collapse min-w-[340px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase text-[10px]">
                   <th className="py-2 px-3 text-center w-12">Qty</th>
@@ -346,26 +346,26 @@ export default function MaterialBreakdownEditor({
         )}
 
         {/* Read-Only Cost & Payment Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-gradient-to-r from-purple-50/60 to-gray-50 p-3 rounded-xl border border-purple-100/80">
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-gradient-to-r from-purple-50/60 to-gray-50 p-3 sm:p-3.5 rounded-xl border border-purple-100/80">
+          <div className="flex flex-col">
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Total Repair Cost</span>
-            <span className="font-black text-base text-[#bd00ff] font-mono">₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span className="font-black text-sm sm:text-base text-[#bd00ff] font-mono mt-0.5">₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
-          <div>
+          <div className="flex flex-col">
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Payment Method</span>
-            <span className="font-bold text-gray-900 text-xs">
-              {currentMethod === 'Split' ? 'Split (Cash + GCash)' : `${currentMethod} Payment`}
+            <span className="font-bold text-gray-900 text-xs mt-0.5 truncate">
+              {currentMethod === 'Split' ? 'Split (Cash+GCash)' : `${currentMethod} Payment`}
             </span>
           </div>
-          <div>
-            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Amount / Downpayment</span>
-            <span className="font-bold text-gray-900 font-mono text-xs">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-500 uppercase font-semibold block">Downpayment / Paid</span>
+            <span className="font-bold text-gray-900 font-mono text-xs mt-0.5">
               ₱{totalAmountPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
-          <div>
+          <div className="flex flex-col">
             <span className="text-[10px] text-gray-500 uppercase font-semibold block">Balance Due</span>
-            <span className={`font-black text-base font-mono ${balanceDue > 0 ? 'text-amber-700' : 'text-green-600'}`}>
+            <span className={`font-black text-sm sm:text-base font-mono mt-0.5 ${balanceDue > 0 ? 'text-amber-700' : 'text-green-600'}`}>
               ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
