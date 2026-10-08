@@ -572,20 +572,27 @@ export default function HomePage() {
                     alt={product.name}
                     className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
-                  {selectedBestSellerBranch.toLowerCase() === 'all' && product.rank && (
-                    <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white text-[10px] font-black shadow-md border border-white tracking-wider uppercase flex items-center gap-1">
-                      <span>Top #{product.rank}</span>
-                    </div>
-                  )}
-                  {product.tag && (
-                    <div className={`absolute top-2 right-2 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs uppercase tracking-wider border ${
-                      product.stock > 0 
-                        ? 'bg-white/90 backdrop-blur-xs text-[#8b00cc] border-purple-200' 
-                        : 'bg-gray-100 text-gray-500 border-gray-200'
-                    }`}>
-                      {product.tag}
-                    </div>
-                  )}
+                  {/* Product Badges (Rank & Availability / Tags) */}
+                  <div className="absolute top-2 inset-x-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 pointer-events-none z-10">
+                    {selectedBestSellerBranch.toLowerCase() === 'all' && product.rank && (
+                      <div className="px-2 sm:px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white text-[9px] sm:text-[10px] font-black shadow-md border border-white tracking-wider uppercase flex items-center gap-1 shrink-0">
+                        <span>Top #{product.rank}</span>
+                      </div>
+                    )}
+                    {product.tag && (
+                      <div className={`text-[9px] sm:text-[10px] font-black px-2 sm:px-2.5 py-0.5 rounded-full shadow-xs uppercase tracking-wider border shrink-0 max-w-full truncate ${
+                        selectedBestSellerBranch.toLowerCase() === 'all' && product.rank
+                          ? 'self-start sm:self-auto sm:ml-auto'
+                          : 'self-end sm:self-auto ml-auto'
+                      } ${
+                        product.stock > 0 
+                          ? 'bg-white/90 backdrop-blur-xs text-[#8b00cc] border-purple-200' 
+                          : 'bg-gray-100 text-gray-500 border-gray-200'
+                      }`}>
+                        {product.tag}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Product Details */}
