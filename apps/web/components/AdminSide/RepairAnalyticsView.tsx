@@ -15,7 +15,6 @@ import {
   X,
   TrendingUp,
   TrendingDown,
-  Lock,
   Banknote,
   Smartphone,
   ExternalLink,
@@ -50,6 +49,7 @@ interface RepairAnalyticsViewProps {
   setCustomStartDate: (d: string) => void;
   customEndDate: string;
   setCustomEndDate: (d: string) => void;
+  exportTriggerRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export default function RepairAnalyticsView({
@@ -62,6 +62,7 @@ export default function RepairAnalyticsView({
   setCustomStartDate,
   customEndDate,
   setCustomEndDate,
+  exportTriggerRef,
 }: RepairAnalyticsViewProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -154,37 +155,14 @@ export default function RepairAnalyticsView({
     document.body.removeChild(link);
   };
 
+  useEffect(() => {
+    if (exportTriggerRef) {
+      exportTriggerRef.current = handleDownloadCsv;
+    }
+  });
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in duration-300">
-      {/* Header & Controls */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white/95 backdrop-blur-md p-6 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)]">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-[1.6rem] font-bold text-[#111]">
-              {isSuperAdmin ? 'Comprehensive Repair Analytics' : `${userBranch || 'Tagoloan'} Repair Analytics`}
-            </h2>
-            {!isSuperAdmin && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-200 text-[#5c0099] rounded-full text-xs font-black uppercase tracking-wider shadow-sm">
-                <Lock size={12} /> {userBranch || 'Tagoloan'}
-              </span>
-            )}
-          </div>
-          <p className="text-sm font-semibold text-gray-500 mt-1">
-            Repair performance metrics, technician status distribution, and service revenue
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={handleDownloadCsv}
-            className={`flex items-center gap-2 bg-gradient-to-r ${styles.gradient} text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md hover:opacity-95 cursor-pointer border-none`}
-          >
-            <FileSpreadsheet size={16} />
-            <span>Export Repair CSV</span>
-          </button>
-        </div>
-      </div>
-
       {/* Date Filter Bar */}
       <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2 flex-wrap">

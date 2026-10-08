@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Users, 
@@ -62,6 +62,7 @@ export default function AdminAnalytics() {
   const [reportData, setReportData] = useState<{year: string; salesGrowth: number; userGrowth: number}[]>([]);
   const [userGrowthData, setUserGrowthData] = useState<{ year: string, users: string, trend: string, trendUp: boolean }[]>([]);
   const [selectedYearData, setSelectedYearData] = useState<{ year: string, users: string, trend: string, trendUp: boolean } | null>(null);
+  const repairExportRef = useRef<(() => void) | null>(null);
 
   const { styles } = useTheme();
 
@@ -207,6 +208,16 @@ export default function AdminAnalytics() {
               >
                 <FileSpreadsheet size={16} />
                 <span>Export CSV Report</span>
+              </button>
+            )}
+
+            {analyticsView === 'repair' && (
+              <button 
+                onClick={() => repairExportRef.current?.()}
+                className={`flex items-center gap-2 bg-gradient-to-r ${styles.gradient} text-white px-4 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md hover:opacity-95 cursor-pointer border-none`}
+              >
+                <FileSpreadsheet size={16} />
+                <span>Export Repair CSV</span>
               </button>
             )}
           </div>
@@ -492,6 +503,7 @@ export default function AdminAnalytics() {
             setCustomStartDate={setCustomStartDate}
             customEndDate={customEndDate}
             setCustomEndDate={setCustomEndDate}
+            exportTriggerRef={repairExportRef}
           />
         )}
       </div>
