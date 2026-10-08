@@ -349,71 +349,71 @@ export default function AdminAccounts() {
       {/* ========================================================== */}
       {/* 1. USER MANAGEMENT SUMMARY CARDS                           */}
       {/* ========================================================== */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4.5 border border-purple-100 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:border-purple-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Users</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-100 text-[#5c0099] flex items-center justify-center shadow-inner">
-              <Users size={16} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-gray-900">{stats.totalUsers}</span>
-            <span className="text-[11px] text-gray-400 font-medium">accounts</span>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        <AccountStatCard
+          icon={<Users size={22} />}
+          label="Total Users"
+          value={stats.totalUsers}
+          subLabel="accounts"
+          badgeText="All Roles"
+          gradientBorder="from-purple-500 via-fuchsia-500 to-indigo-600"
+          iconBg="bg-purple-100/80"
+          iconColor="text-[#5c0099]"
+          badgeBg="bg-purple-50"
+          badgeColor="text-[#5c0099]"
+        />
 
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4.5 border border-purple-100 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:border-indigo-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Admins</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shadow-inner">
-              <Crown size={16} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-indigo-950">{stats.totalAdmins}</span>
-            <span className="text-[11px] text-indigo-500 font-bold">staff</span>
-          </div>
-        </div>
+        <AccountStatCard
+          icon={<Crown size={22} />}
+          label="Total Admins"
+          value={stats.totalAdmins}
+          subLabel="staff"
+          badgeText="Admin"
+          gradientBorder="from-indigo-500 via-purple-500 to-pink-500"
+          iconBg="bg-indigo-100/80"
+          iconColor="text-indigo-700"
+          badgeBg="bg-indigo-50"
+          badgeColor="text-indigo-700"
+        />
 
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4.5 border border-purple-100 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:border-blue-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Cashiers</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shadow-inner">
-              <UserCheck size={16} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-blue-950">{stats.totalCashiers}</span>
-            <span className="text-[11px] text-blue-500 font-bold">POS</span>
-          </div>
-        </div>
+        <AccountStatCard
+          icon={<UserCheck size={22} />}
+          label="Total Cashiers"
+          value={stats.totalCashiers}
+          subLabel="staff"
+          badgeText="POS Cashier"
+          gradientBorder="from-blue-500 via-sky-400 to-cyan-500"
+          iconBg="bg-blue-100/80"
+          iconColor="text-blue-700"
+          badgeBg="bg-blue-50"
+          badgeColor="text-blue-700"
+        />
 
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4.5 border border-purple-100 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:border-emerald-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Customers</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-inner">
-              <User size={16} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-emerald-950">{stats.totalCustomers}</span>
-            <span className="text-[11px] text-emerald-600 font-bold">buyers</span>
-          </div>
-        </div>
+        <AccountStatCard
+          icon={<User size={22} />}
+          label="Total Customers"
+          value={stats.totalCustomers}
+          subLabel="buyers"
+          badgeText="Customer"
+          gradientBorder="from-emerald-500 via-teal-400 to-emerald-600"
+          iconBg="bg-emerald-100/80"
+          iconColor="text-emerald-700"
+          badgeBg="bg-emerald-50"
+          badgeColor="text-emerald-700"
+        />
 
-        <div className="col-span-2 sm:col-span-1 bg-white/95 backdrop-blur-md rounded-2xl p-4.5 border border-purple-100 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:border-purple-300">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Accounts</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shadow-inner">
-              <CheckCircle2 size={16} />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-purple-900">{stats.activeAccounts}</span>
-            <span className="text-[11px] text-purple-600 font-bold">enabled</span>
-          </div>
-        </div>
+        <AccountStatCard
+          icon={<CheckCircle2 size={22} />}
+          label="Active Accounts"
+          value={stats.activeAccounts}
+          subLabel="enabled"
+          badgeText="Active"
+          gradientBorder="from-fuchsia-500 via-purple-500 to-violet-600"
+          iconBg="bg-fuchsia-100/80"
+          iconColor="text-fuchsia-700"
+          badgeBg="bg-fuchsia-50"
+          badgeColor="text-fuchsia-700"
+        />
       </div>
 
       {/* ========================================================== */}
@@ -1276,6 +1276,62 @@ export default function AdminAccounts() {
           customerName={customerDetailsTarget.name}
         />
       )}
+    </div>
+  );
+}
+
+function AccountStatCard({
+  icon,
+  label,
+  value,
+  subLabel,
+  badgeText,
+  gradientBorder,
+  iconBg,
+  iconColor,
+  badgeBg,
+  badgeColor,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number | string;
+  subLabel: string;
+  badgeText: string;
+  gradientBorder: string;
+  iconBg: string;
+  iconColor: string;
+  badgeBg: string;
+  badgeColor: string;
+}) {
+  return (
+    <div className="group relative bg-white/95 backdrop-blur-md rounded-2xl p-5 border border-purple-500/15 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden">
+      {/* Top Accent Gradient Line */}
+      <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${gradientBorder} opacity-80 group-hover:opacity-100 transition-opacity`} />
+      
+      {/* Icon & Badge Header */}
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className={`w-11 h-11 rounded-xl ${iconBg} ${iconColor} flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform`}>
+          {icon}
+        </div>
+        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${badgeBg} ${badgeColor} border border-black/5 shadow-2xs`}>
+          {badgeText}
+        </span>
+      </div>
+
+      {/* Label & Number */}
+      <div>
+        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+          {label}
+        </span>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none">
+            {value}
+          </span>
+          <span className="text-xs font-semibold text-gray-400 truncate">
+            {subLabel}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
