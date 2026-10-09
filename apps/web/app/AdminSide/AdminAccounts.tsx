@@ -344,6 +344,23 @@ export default function AdminAccounts() {
   const prevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
   const nextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
 
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalCount);
+
+  const getPageNumbers = () => {
+    const total = Math.max(1, totalPages);
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (currentPage >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', total];
+  };
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       {/* ========================================================== */}
@@ -1003,25 +1020,55 @@ export default function AdminAccounts() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex justify-between items-center px-4 py-3 bg-white/95 border-t border-gray-100 text-xs">
-          <span className="text-gray-500 font-medium">
-            Showing page {currentPage} of {totalPages} ({totalCount} total users)
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3.5 bg-white border-t border-gray-100 text-xs">
+          <span className="text-gray-500 font-medium text-center sm:text-left">
+            Showing <span className="font-bold text-gray-900">{startItem}</span> to <span className="font-bold text-gray-900">{endItem}</span> of <span className="font-bold text-gray-900">{totalCount}</span> user accounts
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 justify-center flex-wrap">
             <button 
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`p-1.5 rounded-lg border border-gray-200 transition-colors ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-purple-50 text-purple-700 cursor-pointer'}`}
+              className="h-8 px-2.5 sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              title="Previous Page"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={15} />
+              <span className="hidden sm:inline">Prev</span>
             </button>
-            <span className="font-bold text-gray-800 px-2">{currentPage} / {totalPages}</span>
+
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((p, idx) => {
+                if (p === '...') {
+                  return (
+                    <span key={`dots-${idx}`} className="w-6 h-8 flex items-center justify-center text-xs text-gray-400 font-bold select-none">
+                      ...
+                    </span>
+                  );
+                }
+                const isCurrent = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p as number)}
+                    className={`h-8 min-w-[32px] px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                      isCurrent
+                        ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-sm shadow-purple-500/25 ring-2 ring-purple-400/30'
+                        : 'bg-white hover:bg-purple-50 text-gray-700 hover:text-purple-700 border border-gray-200/90 hover:border-purple-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
             <button 
               onClick={nextPage}
-              disabled={currentPage === totalPages}
-              className={`p-1.5 rounded-lg border border-gray-200 transition-colors ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : 'hover:bg-purple-50 text-purple-700 cursor-pointer'}`}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="h-8 px-2.5 sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              title="Next Page"
             >
-              <ChevronRight size={16} />
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight size={15} />
             </button>
           </div>
         </div>
