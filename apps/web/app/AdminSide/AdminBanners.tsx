@@ -54,6 +54,21 @@ export default function AdminBanners() {
     fetchBanners();
   }, []);
 
+  // Prevent background scrolling when modals are open
+  useEffect(() => {
+    if (isModalOpen || bannerToDelete) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.overflow = originalBodyOverflow || '';
+        document.documentElement.style.overflow = originalHtmlOverflow || '';
+      };
+    }
+  }, [isModalOpen, bannerToDelete]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -176,16 +191,33 @@ export default function AdminBanners() {
 
       {/* Upload Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 flex flex-col overflow-hidden">
-            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isUploading) {
+              setIsModalOpen(false);
+              setNewBannerFile(null);
+              setNewBannerPreview(null);
+              setNewBannerLink('');
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh] my-auto overflow-hidden overscroll-contain"
+          >
+            <div className="flex justify-between items-center p-4 sm:p-5 border-b border-gray-100 bg-gray-50 shrink-0">
               <h3 className="text-xl font-bold text-black m-0">Upload Banner</h3>
-              <button onClick={() => { setIsModalOpen(false); setNewBannerFile(null); setNewBannerPreview(null); setNewBannerLink(''); }} className="text-gray-500 hover:text-black hover:bg-gray-200 p-1.5 rounded-full transition-colors border-none bg-transparent cursor-pointer">
+              <button 
+                type="button"
+                onClick={() => { setIsModalOpen(false); setNewBannerFile(null); setNewBannerPreview(null); setNewBannerLink(''); }} 
+                className="text-gray-500 hover:text-black hover:bg-gray-200 p-1.5 rounded-full transition-colors border-none bg-transparent cursor-pointer"
+              >
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-6 flex flex-col gap-5">
+            <div className="p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 overflow-y-auto overscroll-contain flex-1">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-bold text-gray-700">Banner Image <span className="text-red-500">*</span></label>
                 <input 
@@ -233,7 +265,7 @@ export default function AdminBanners() {
               </div>
             </div>
 
-            <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+            <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => { setIsModalOpen(false); setNewBannerFile(null); setNewBannerPreview(null); setNewBannerLink(''); }}
@@ -256,8 +288,18 @@ export default function AdminBanners() {
 
       {/* Delete Confirmation Modal */}
       {bannerToDelete && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) {
+              setBannerToDelete(null);
+            }
+          }}
+          className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl p-6 sm:p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center my-auto overscroll-contain"
+          >
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-5">
               <AlertCircle className="text-red-500 w-8 h-8" />
             </div>
