@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   FileText, Save, Info, ShoppingBag, Store, CreditCard, 
   Facebook, Image as ImageIcon, ExternalLink, CheckCircle, AlertCircle, RefreshCw,
-  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon, Zap, Camera, Eye, X, ChevronLeft, ChevronRight, ShieldCheck
+  Plus, Trash2, Building2, Upload, Loader2, Link as LinkIcon, Zap, Camera, Eye, X, ChevronLeft, ChevronRight, ShieldCheck, Lock
 } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
@@ -523,22 +523,22 @@ export default function AdminAboutEditor() {
           <div className="flex flex-col gap-6">
             
             {/* Section 0: Branch Documentation */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-lg">
-                  <Camera size={22} />
-                  <span>
+                <div className="flex flex-wrap items-center gap-2 text-[#bd00ff] font-bold text-base sm:text-lg min-w-0">
+                  <Camera size={22} className="shrink-0" />
+                  <span className="leading-tight">
                     {isSuperAdmin 
                       ? 'Branch Documentation' 
                       : `Branch Documentation — ${effectiveBranch} Branch`}
                   </span>
-                  <span className="ml-1.5 px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-extrabold rounded-full">
+                  <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-extrabold rounded-full shrink-0 whitespace-nowrap">
                     {branchPhotos.length}/8 Photos
                   </span>
                 </div>
                 {isSuperAdmin ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-bold rounded-full">
-                    <ShieldCheck size={14} /> Super Admin (View Only)
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-[#bd00ff] border border-purple-200 text-xs font-bold rounded-full shrink-0 whitespace-nowrap w-fit self-start sm:self-auto">
+                    <ShieldCheck size={14} className="shrink-0" /> Super Admin (View Only)
                   </span>
                 ) : (
                   <button
@@ -671,14 +671,15 @@ export default function AdminAboutEditor() {
             </div>
 
             {/* Section 1: Main Platform Overview */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-lg">
-                  <Info size={22} />
-                  <span>Main About Overview</span>
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-[#bd00ff] font-bold text-base sm:text-lg min-w-0">
+                  <Info size={22} className="shrink-0" />
+                  <span className="leading-tight">Main About Overview</span>
                 </div>
                 {!isSuperAdmin && (
-                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200 shrink-0 whitespace-nowrap w-fit self-start sm:self-auto">
+                    <Lock size={12} className="shrink-0 text-gray-400" />
                     Super Admin Only
                   </span>
                 )}
@@ -690,7 +691,7 @@ export default function AdminAboutEditor() {
                   value={mainText}
                   onChange={(e) => setMainText(e.target.value)}
                   disabled={!isSuperAdmin}
-                  className={`w-full p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
+                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
                     !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
                   }`}
                   placeholder="Enter main platform description..."
@@ -699,14 +700,15 @@ export default function AdminAboutEditor() {
             </div>
 
             {/* Section 2: Purchase & Downpayment Policies */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2 text-purple-700 font-bold text-lg">
-                  <ShoppingBag size={22} />
-                  <span>Purchase & Downpayment Policies</span>
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2 text-purple-700 font-bold text-base sm:text-lg min-w-0">
+                  <ShoppingBag size={22} className="shrink-0" />
+                  <span className="leading-tight">Purchase & Downpayment Policies</span>
                 </div>
                 {!isSuperAdmin && (
-                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full border border-gray-200 shrink-0 whitespace-nowrap w-fit self-start sm:self-auto">
+                    <Lock size={12} className="shrink-0 text-gray-400" />
                     Super Admin Only
                   </span>
                 )}
@@ -742,17 +744,17 @@ export default function AdminAboutEditor() {
             </div>
 
             {/* Section 3: Facebook Store Branches */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2 text-blue-600 font-bold text-lg">
-                  <Facebook size={22} />
-                  <span>
+                <div className="flex flex-wrap items-center gap-2 text-blue-600 font-bold text-base sm:text-lg min-w-0">
+                  <Facebook size={22} className="shrink-0" />
+                  <span className="leading-tight">
                     {isSuperAdmin 
                       ? `Facebook Store Branches (${branches.length})` 
                       : `Facebook Store Branch — ${effectiveBranch} Branch`}
                   </span>
                   {!isSuperAdmin && (
-                    <span className="ml-1 px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold rounded-full">
+                    <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold rounded-full shrink-0 whitespace-nowrap">
                       Assigned Branch
                     </span>
                   )}
@@ -761,13 +763,13 @@ export default function AdminAboutEditor() {
                   <button
                     type="button"
                     onClick={handleAddBranch}
-                    className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 border-none cursor-pointer"
+                    className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 border-none cursor-pointer w-fit"
                   >
                     <Plus size={16} /> Add Branch
                   </button>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-full">
-                    <Building2 size={14} /> {effectiveBranch} Admin
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-full shrink-0 whitespace-nowrap w-fit self-start sm:self-auto">
+                    <Building2 size={14} className="shrink-0" /> {effectiveBranch} Admin
                   </span>
                 )}
               </div>
