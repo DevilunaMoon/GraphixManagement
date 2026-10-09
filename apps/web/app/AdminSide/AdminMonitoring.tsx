@@ -219,6 +219,23 @@ export default function AdminMonitoring() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalCount);
+
+  const getPageNumbers = () => {
+    const total = Math.max(1, totalPages);
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (currentPage >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', total];
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedBranch]);
@@ -886,31 +903,132 @@ export default function AdminMonitoring() {
               <p className="text-[#7e6a99] font-medium text-sm animate-pulse">Loading repair requests...</p>
             </div>
           ) : paginatedDevices.length > 0 ? (
-            <div className="overflow-x-auto w-full rounded-2xl border border-[#E9D8FD] bg-white">
-              <table className="w-full text-left border-collapse min-w-[720px]">
-                <thead>
-                  <tr className="bg-[#FAF7FF] border-b border-[#E9D8FD] text-[#5b4a7a]">
-                    <th className="py-3.5 px-4 font-semibold text-center w-24 text-xs uppercase tracking-wider">Device</th>
-                    <th className="py-3.5 px-5 font-semibold text-xs uppercase tracking-wider">Device & Customer</th>
-                    {isSuperAdmin && <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Branch</th>}
-                    <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Progress</th>
-                    <th className="py-3.5 px-5 font-semibold text-center text-xs uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#F3E8FF]">
-                  {paginatedDevices.map(device => (
-                    <tr key={device.id} className="hover:bg-[#FAF7FF]/70 transition-colors group">
-                      <td className="py-4 px-4 text-center align-middle">
-                        <div className="h-14 w-14 mx-auto shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF] group-hover:border-[#C084FC] transition-colors">
-                          {device.image ? (
-                            <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto w-full rounded-2xl border border-[#E9D8FD] bg-white">
+                <table className="w-full text-left border-collapse min-w-[720px]">
+                  <thead>
+                    <tr className="bg-[#FAF7FF] border-b border-[#E9D8FD] text-[#5b4a7a]">
+                      <th className="py-3.5 px-4 font-semibold text-center w-24 text-xs uppercase tracking-wider">Device</th>
+                      <th className="py-3.5 px-5 font-semibold text-xs uppercase tracking-wider">Device & Customer</th>
+                      {isSuperAdmin && <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Branch</th>}
+                      <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Progress</th>
+                      <th className="py-3.5 px-5 font-semibold text-center text-xs uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F3E8FF]">
+                    {paginatedDevices.map(device => (
+                      <tr key={device.id} className="hover:bg-[#FAF7FF]/70 transition-colors group">
+                        <td className="py-4 px-4 text-center align-middle">
+                          <div className="h-14 w-14 mx-auto shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF] group-hover:border-[#C084FC] transition-colors">
+                            {device.image ? (
+                              <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
+                            ) : (
+                              <span className="text-[10px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 px-5 align-middle">
+                          <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug">{device.deviceName}</div>
+                          {device.ownerName ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomerDetailsTarget({ name: device.ownerName });
+                              }}
+                              className="text-xs text-[#7e22ce] hover:text-[#581c87] hover:underline font-medium mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                              title="Click to view complete customer details"
+                            >
+                              <User size={13} className="text-[#9333EA]" />
+                              <span>{device.ownerName}</span>
+                            </button>
                           ) : (
-                            <span className="text-[10px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
+                            <div className="text-xs text-[#8b7aa8] font-normal mt-1 flex items-center gap-1">
+                              <User size={13} className="text-[#8b7aa8]" />
+                              <span>Walk-in Customer</span>
+                            </div>
+                          )}
+                        </td>
+                        {isSuperAdmin && (
+                          <td className="py-4 px-4 align-middle text-center">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF5FF] text-[#7e22ce] border border-[#E9D8FD]">
+                              <Building2 size={12} className="text-[#9333EA]" />
+                              {device.branch || 'Tagoloan'}
+                            </span>
+                          </td>
+                        )}
+                        <td className="py-4 px-4 align-middle text-center">
+                          {renderProgressBadge(device.progress)}
+                        </td>
+                        <td className="py-4 px-5 align-middle">
+                          <div className="flex gap-2 justify-center items-center">
+                            {device.progress?.toLowerCase() === 'pending' && (
+                              <button 
+                                onClick={() => {
+                                  setRequestToReview(device);
+                                  setReviewRequestModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer border-none transition-all hover:shadow"
+                                title="Review Customer Repair Request"
+                              >
+                                <Eye size={13} />
+                                <span>Review</span>
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => {
+                                setDeviceToView(device);
+                                setViewDetailsOpen(true);
+                              }}
+                              className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer"
+                              title="View Intake & Material Breakdown"
+                            >
+                              <Receipt size={16} />
+                            </button>
+                            <button 
+                              onClick={() => openEditModal(device)}
+                              className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none"
+                              title="Edit Progress"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Device Repair Cards View (Zero Horizontal Scroll) */}
+              <div className="md:hidden flex flex-col gap-3">
+                {paginatedDevices.map(device => (
+                  <div 
+                    key={`mob-${device.id}`}
+                    className="bg-white rounded-2xl border border-[#E9D8FD] p-4 shadow-xs flex flex-col gap-3.5 transition-all"
+                  >
+                    {/* Top Row: Thumbnail + Device Name + Customer + Branch */}
+                    <div className="flex items-start gap-3">
+                      <div className="h-14 w-14 shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF]">
+                        {device.image ? (
+                          <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
+                        ) : (
+                          <span className="text-[10px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-bold text-sm text-[#1F1728] leading-snug truncate">
+                            {device.deviceName}
+                          </span>
+                          {isSuperAdmin && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#FAF5FF] text-[#7e22ce] border border-[#E9D8FD] shrink-0">
+                              <Building2 size={10} className="text-[#9333EA]" />
+                              {device.branch || 'Tagoloan'}
+                            </span>
                           )}
                         </div>
-                      </td>
-                      <td className="py-4 px-5 align-middle">
-                        <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug">{device.deviceName}</div>
                         {device.ownerName ? (
                           <button
                             type="button"
@@ -918,69 +1036,70 @@ export default function AdminMonitoring() {
                               e.stopPropagation();
                               setCustomerDetailsTarget({ name: device.ownerName });
                             }}
-                            className="text-xs text-[#7e22ce] hover:text-[#581c87] hover:underline font-medium mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                            className="text-xs text-[#7e22ce] hover:text-[#581c87] hover:underline font-medium mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors w-fit truncate"
                             title="Click to view complete customer details"
                           >
-                            <User size={13} className="text-[#9333EA]" />
-                            <span>{device.ownerName}</span>
+                            <User size={12} className="text-[#9333EA] shrink-0" />
+                            <span className="truncate">{device.ownerName}</span>
                           </button>
                         ) : (
                           <div className="text-xs text-[#8b7aa8] font-normal mt-1 flex items-center gap-1">
-                            <User size={13} className="text-[#8b7aa8]" />
+                            <User size={12} className="text-[#8b7aa8] shrink-0" />
                             <span>Walk-in Customer</span>
                           </div>
                         )}
-                      </td>
-                      {isSuperAdmin && (
-                        <td className="py-4 px-4 align-middle text-center">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FAF5FF] text-[#7e22ce] border border-[#E9D8FD]">
-                            <Building2 size={12} className="text-[#9333EA]" />
-                            {device.branch || 'Tagoloan'}
-                          </span>
-                        </td>
-                      )}
-                      <td className="py-4 px-4 align-middle text-center">
+                      </div>
+                    </div>
+
+                    {/* Status Progress Row */}
+                    <div className="flex items-center justify-between gap-2 p-2.5 bg-[#FAF7FF] rounded-xl border border-[#E9D8FD]/60">
+                      <span className="text-[11px] font-bold text-[#7e6a99] uppercase tracking-wider">
+                        Repair Stage:
+                      </span>
+                      <div>
                         {renderProgressBadge(device.progress)}
-                      </td>
-                      <td className="py-4 px-5 align-middle">
-                        <div className="flex gap-2 justify-center items-center">
-                          {device.progress?.toLowerCase() === 'pending' && (
-                            <button 
-                              onClick={() => {
-                                setRequestToReview(device);
-                                setReviewRequestModalOpen(true);
-                              }}
-                              className="px-3 py-1.5 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer border-none transition-all hover:shadow"
-                              title="Review Customer Repair Request"
-                            >
-                              <Eye size={13} />
-                              <span>Review</span>
-                            </button>
-                          )}
-                          <button 
-                            onClick={() => {
-                              setDeviceToView(device);
-                              setViewDetailsOpen(true);
-                            }}
-                            className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer"
-                            title="View Intake & Material Breakdown"
-                          >
-                            <Receipt size={16} />
-                          </button>
-                          <button 
-                            onClick={() => openEditModal(device)}
-                            className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none"
-                            title="Edit Progress"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Row */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-[#F3E8FF]">
+                      {device.progress?.toLowerCase() === 'pending' && (
+                        <button 
+                          onClick={() => {
+                            setRequestToReview(device);
+                            setReviewRequestModalOpen(true);
+                          }}
+                          className="flex-1 py-2 px-3 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer border-none transition-all active:scale-95"
+                          title="Review Customer Repair Request"
+                        >
+                          <Eye size={14} />
+                          <span>Review</span>
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => {
+                          setDeviceToView(device);
+                          setViewDetailsOpen(true);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer text-xs font-semibold active:scale-95"
+                        title="View Intake & Material Breakdown"
+                      >
+                        <Receipt size={14} />
+                        <span>Receipt</span>
+                      </button>
+                      <button 
+                        onClick={() => openEditModal(device)}
+                        className="flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none text-xs font-semibold"
+                        title="Edit Progress"
+                      >
+                        <Pencil size={14} />
+                        <span>Update</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="w-full py-16 text-center flex flex-col items-center justify-center rounded-2xl border border-[#E9D8FD] bg-[#FAF7FF]/30 gap-2">
                <div className="w-12 h-12 rounded-2xl bg-[#FAF5FF] border border-[#E9D8FD] flex items-center justify-center text-[#9333EA] mb-1">
@@ -993,29 +1112,58 @@ export default function AdminMonitoring() {
         </div>
 
         {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex justify-center w-full pt-2">
-            <div className="flex items-center justify-center gap-4 bg-[#FAF7FF] px-4 py-2 rounded-xl border border-[#E9D8FD]">
-              <button 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="w-8 h-8 rounded-lg bg-white border border-[#E9D8FD] text-[#5b4a7a] hover:text-[#9333EA] hover:border-[#9333EA] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#5b4a7a] disabled:hover:border-[#E9D8FD] flex justify-center items-center cursor-pointer transition-all shadow-2xs"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="font-semibold text-xs text-[#5b4a7a] px-2">
-                Page <span className="text-[#1F1728] font-bold">{currentPage}</span> of <span className="text-[#1F1728] font-bold">{totalPages}</span>
-              </span>
-              <button 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="w-8 h-8 rounded-lg bg-white border border-[#E9D8FD] text-[#5b4a7a] hover:text-[#9333EA] hover:border-[#9333EA] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#5b4a7a] disabled:hover:border-[#E9D8FD] flex justify-center items-center cursor-pointer transition-all shadow-2xs"
-              >
-                <ChevronRight size={16} />
-              </button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs">
+          <span className="text-[#7e6a99] font-medium text-center sm:text-left">
+            Showing <span className="font-bold text-[#1F1728]">{startItem}</span> to <span className="font-bold text-[#1F1728]">{endItem}</span> of <span className="font-bold text-[#1F1728]">{totalCount}</span> repair requests
+          </span>
+          <div className="flex items-center gap-1.5 justify-center flex-wrap">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="h-8 px-2.5 sm:px-3 rounded-xl border border-[#E9D8FD] bg-white hover:bg-[#FAF5FF] hover:text-[#9333EA] hover:border-[#C084FC] disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-[#5b4a7a] flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              title="Previous Page"
+            >
+              <ChevronLeft size={15} />
+              <span className="hidden sm:inline">Prev</span>
+            </button>
+
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((p, idx) => {
+                if (p === '...') {
+                  return (
+                    <span key={`dots-${idx}`} className="w-6 h-8 flex items-center justify-center text-xs text-[#8b7aa8] font-bold select-none">
+                      ...
+                    </span>
+                  );
+                }
+                const isCurrent = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p as number)}
+                    className={`h-8 min-w-[32px] px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                      isCurrent
+                        ? 'bg-[#9333EA] text-white shadow-sm shadow-purple-500/25 ring-2 ring-purple-400/30'
+                        : 'bg-white hover:bg-[#FAF5FF] text-[#5b4a7a] hover:text-[#9333EA] border border-[#E9D8FD] hover:border-[#C084FC]'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
             </div>
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="h-8 px-2.5 sm:px-3 rounded-xl border border-[#E9D8FD] bg-white hover:bg-[#FAF5FF] hover:text-[#9333EA] hover:border-[#C084FC] disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-[#5b4a7a] flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              title="Next Page"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight size={15} />
+            </button>
           </div>
-        )}
+        </div>
 
       </div>
 
