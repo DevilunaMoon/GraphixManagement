@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle } from 'lucide-react';
+import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle, Lock } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
 export default function AdminSettings() {
@@ -10,24 +10,27 @@ export default function AdminSettings() {
   const { isSuperAdmin } = useBranch();
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="mb-2">
-        <h2 className="text-[1.6rem] font-bold text-[#111]">Settings</h2>
+    <div className="flex flex-col gap-5 sm:gap-6 max-w-7xl mx-auto w-full pb-10">
+      <div className="mb-1 sm:mb-2">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 m-0 tracking-tight">Admin Settings</h2>
+        <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-1 leading-relaxed">
+          Manage store branches, dashboard aesthetics, customer inquiries, and security credentials.
+        </p>
       </div>
 
       {/* Settings Card */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm py-5 w-full">
-        <ul className="flex flex-col list-none">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs py-2 sm:py-3 w-full overflow-hidden">
+        <ul className="flex flex-col list-none m-0 p-0">
           
           <SettingsItem 
-            icon={<Building2 className="text-[#BF00FF] w-7 h-7" />}
+            icon={<Building2 className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
             label="Branch & Contact Settings"
             sublabel="Manage store contact email, phone, location address, and checkout GCash"
             onClick={() => navigate('/admin/branches')}
           />
 
           <SettingsItem 
-            icon={<Palette className="text-[#BF00FF] w-7 h-7" />}
+            icon={<Palette className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
             label="Themes"
             sublabel="Customize dashboard color theme and aesthetics"
             onClick={() => navigate('/admin/themes')}
@@ -36,7 +39,7 @@ export default function AdminSettings() {
           <SettingsItem 
             icon={
               <div className="relative inline-block">
-                <MessageSquarePlus className="text-[#BF00FF] w-7 h-7" />
+                <MessageSquarePlus className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />
               </div>
             }
             label="Customer Support Questions"
@@ -50,8 +53,8 @@ export default function AdminSettings() {
           <SettingsItem 
             icon={
               <div className="relative inline-block">
-                <MailCheck className="text-[#BF00FF] w-7 h-7" />
-                <span className="absolute -bottom-0.5 -right-1 bg-[#6B21A8] text-white text-[0.6rem] font-bold border-2 border-white rounded-full w-4 h-4 flex items-center justify-center">
+                <MailCheck className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />
+                <span className="absolute -bottom-0.5 -right-1 bg-[#6B21A8] text-white text-[0.6rem] font-bold border-2 border-white rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">
                   !
                 </span>
               </div>
@@ -64,8 +67,8 @@ export default function AdminSettings() {
           <SettingsItem 
             icon={
               <div className="relative inline-block">
-                <MessageSquare className="text-[#BF00FF] w-7 h-7" />
-                <span className="absolute -bottom-0.5 -right-1 bg-[#6B21A8] text-white text-[0.6rem] font-bold border-2 border-white rounded-full w-4 h-4 flex items-center justify-center">
+                <MessageSquare className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />
+                <span className="absolute -bottom-0.5 -right-1 bg-[#6B21A8] text-white text-[0.6rem] font-bold border-2 border-white rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">
                   !
                 </span>
               </div>
@@ -76,14 +79,14 @@ export default function AdminSettings() {
           />
 
           <SettingsItem 
-            icon={<KeyRound className="text-[#BF00FF] w-7 h-7 -rotate-45" />}
+            icon={<KeyRound className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7 -rotate-45" />}
             label="Change Password"
             sublabel="Update your admin account login credentials"
             onClick={() => navigate('/admin/change-password')}
           />
 
           <SettingsItem 
-            icon={<FileText className="text-[#BF00FF] w-7 h-7" />}
+            icon={<FileText className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
             label="Terms & Privacy"
             badge={!isSuperAdmin ? "View Only" : undefined}
             sublabel={isSuperAdmin 
@@ -94,11 +97,11 @@ export default function AdminSettings() {
           />
 
           <SettingsItem 
-            icon={<HelpCircle className="text-[#BF00FF] w-7 h-7" />}
+            icon={<HelpCircle className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
             label="Frequently Asked Questions"
             badge={!isSuperAdmin ? "View Only" : undefined}
             sublabel={isSuperAdmin 
-              ? "Manage frequently asked questions and answers displayed to customers."
+              ? "Manage frequently asked questions and answers displayed to customers"
               : "View published frequently asked questions and answers"
             }
             onClick={() => navigate('/admin/faqs')}
@@ -126,26 +129,31 @@ function SettingsItem({
   return (
     <li 
       onClick={onClick}
-      className="flex justify-between items-center px-8 md:px-10 py-5 md:py-6 hover:bg-[#8100FF]/5 transition-colors cursor-pointer group border-b border-gray-100 last:border-b-0"
+      className="flex justify-between items-center px-4 sm:px-6 md:px-8 py-3.5 sm:py-4.5 md:py-5 hover:bg-purple-50/50 transition-colors cursor-pointer group border-b border-gray-100 last:border-b-0 gap-3"
     >
-      <div className="flex items-center gap-5 md:gap-6">
+      <div className="flex items-center gap-3.5 sm:gap-5 md:gap-6 flex-1 min-w-0">
         <div className="shrink-0">{icon}</div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2.5">
-            <span className="text-[1.05rem] md:text-[1.1rem] font-bold text-[#111] group-hover:text-[#BF00FF] transition-colors">{label}</span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="text-sm sm:text-[1.05rem] md:text-[1.1rem] font-bold text-gray-900 group-hover:text-[#BF00FF] transition-colors leading-snug">
+              {label}
+            </span>
             {badge && (
-              <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] rounded-full border border-purple-200 shadow-2xs">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[10px] sm:text-[11px] rounded-full border border-purple-200 shrink-0 whitespace-nowrap shadow-2xs">
+                <Lock size={10} className="text-[#bd00ff]" />
                 {badge}
               </span>
             )}
           </div>
           {sublabel && (
-            <span className="text-xs text-gray-500 font-normal mt-0.5">{sublabel}</span>
+            <span className="text-xs text-gray-500 font-normal mt-0.5 line-clamp-2 leading-relaxed">
+              {sublabel}
+            </span>
           )}
         </div>
       </div>
-      <div>
-        <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-gray-400 group-hover:text-[#BF00FF] group-hover:translate-x-1 transition-all" />
+      <div className="shrink-0">
+        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#BF00FF] group-hover:translate-x-1 transition-all" />
       </div>
     </li>
   );
