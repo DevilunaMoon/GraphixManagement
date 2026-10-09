@@ -7,6 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { BranchProvider, useBranch } from '../../context/BranchContext';
 import {
   List,
+  Menu,
   X,
   Grid,
   User,
@@ -166,8 +167,17 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Mobile Header */}
       <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-4 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
         <div className="flex items-center gap-3">
-          <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[32px] h-[32px] rounded-full object-cover" />
-          <span className="text-white text-base font-bold">Graphix Admin</span>
+          <button 
+            onClick={toggleSidebar} 
+            aria-label="Open sidebar"
+            className="text-white bg-transparent border-none p-0 flex items-center justify-center cursor-pointer shrink-0 active:scale-90 transition-transform"
+          >
+            <Menu size={26} />
+          </button>
+          <div className="flex items-center gap-2.5">
+            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[32px] h-[32px] rounded-full object-cover" />
+            <span className="text-white text-base font-bold">Graphix Admin</span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {isSuperAdmin ? (
@@ -223,14 +233,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           >
             <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-md animate-pulse">
+              <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-md">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </Link>
-          <button onClick={toggleSidebar} className="text-white outline-none bg-transparent border-none cursor-pointer">
-            <List size={26} />
-          </button>
         </div>
       </div>
 
@@ -361,7 +368,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 <div className="relative flex items-center justify-center">
                   <Icon size={22} className={`${isCollapsed ? "mx-auto" : ""} ${isActive ? 'text-[#9b1fe8]' : 'text-[#5b4a7a]'}`} />
                   {item.label === 'Notifications' && unreadCount > 0 && isCollapsed && (
-                    <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                    <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -500,7 +507,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             >
               <Bell size={22} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
