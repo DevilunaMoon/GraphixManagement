@@ -1020,26 +1020,26 @@ export default function AdminAccounts() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3.5 bg-white border-t border-gray-100 text-xs">
-          <span className="text-gray-500 font-medium text-center sm:text-left">
+        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3.5 bg-white border-t border-gray-100 text-xs">
+          <span className="w-full sm:w-auto text-gray-500 font-medium text-center sm:text-left">
             Showing <span className="font-bold text-gray-900">{startItem}</span> to <span className="font-bold text-gray-900">{endItem}</span> of <span className="font-bold text-gray-900">{totalCount}</span> user accounts
           </span>
-          <div className="flex items-center gap-1.5 justify-center flex-wrap">
+          <div className="w-full sm:w-auto flex items-center justify-center gap-1.5">
             <button 
               onClick={prevPage}
               disabled={currentPage === 1}
-              className="h-8 px-2.5 sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              className="w-9 h-9 sm:w-auto sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95"
               title="Previous Page"
             >
               <ChevronLeft size={15} />
               <span className="hidden sm:inline">Prev</span>
             </button>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {getPageNumbers().map((p, idx) => {
                 if (p === '...') {
                   return (
-                    <span key={`dots-${idx}`} className="w-6 h-8 flex items-center justify-center text-xs text-gray-400 font-bold select-none">
+                    <span key={`dots-${idx}`} className="w-7 h-9 flex items-center justify-center text-xs text-gray-400 font-bold select-none">
                       ...
                     </span>
                   );
@@ -1049,7 +1049,7 @@ export default function AdminAccounts() {
                   <button
                     key={p}
                     onClick={() => setCurrentPage(p as number)}
-                    className={`h-8 min-w-[32px] px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
                       isCurrent
                         ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-sm shadow-purple-500/25 ring-2 ring-purple-400/30'
                         : 'bg-white hover:bg-purple-50 text-gray-700 hover:text-purple-700 border border-gray-200/90 hover:border-purple-200'
@@ -1064,7 +1064,7 @@ export default function AdminAccounts() {
             <button 
               onClick={nextPage}
               disabled={currentPage === totalPages || totalPages === 0}
-              className="h-8 px-2.5 sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              className="w-9 h-9 sm:w-auto sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95"
               title="Next Page"
             >
               <span className="hidden sm:inline">Next</span>
