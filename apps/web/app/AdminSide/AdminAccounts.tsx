@@ -5,7 +5,7 @@ import {
   Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, 
   Eye, EyeOff, MoreVertical, ShieldCheck, UserCheck, Users, 
   Building2, Key, Edit3, ArrowRightLeft, Power, Ban, Plus,
-  CheckCircle2, AlertCircle, Sparkles, Crown, User
+  CheckCircle2, AlertCircle, Sparkles, Crown, User, Phone
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
@@ -419,9 +419,9 @@ export default function AdminAccounts() {
       {/* ========================================================== */}
       {/* 2. ENHANCED USER FILTERS BAR                               */}
       {/* ========================================================== */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-purple-100 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5 relative z-30">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 border border-purple-100 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 relative z-30">
         {/* Search Bar */}
-        <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2 flex-1 max-w-full lg:max-w-xs focus-within:ring-2 focus-within:ring-purple-500 focus-within:bg-white transition-all">
+        <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 sm:py-2 flex-1 max-w-full lg:max-w-xs focus-within:ring-2 focus-within:ring-purple-500 focus-within:bg-white transition-all">
           <Search size={18} className="text-purple-600 mr-2 shrink-0" />
           <input 
             type="text" 
@@ -433,104 +433,107 @@ export default function AdminAccounts() {
         </div>
 
         {/* Dropdown Filters & Actions */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Role Filter */}
-          <div className="relative" onClick={e => e.stopPropagation()}>
-            <button 
-              type="button"
-              onClick={() => {
-                setIsRoleDropdownOpen(!isRoleDropdownOpen);
-                setIsBranchDropdownOpen(false);
-                setIsStatusDropdownOpen(false);
-              }}
-              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm"
-            >
-              <span>Role: <strong className="text-purple-800">{roleFilter}</strong></span>
-              <ChevronDown size={14} className={`transition-transform ${isRoleDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isRoleDropdownOpen && (
-              <div className="absolute top-[115%] left-0 w-44 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                {['All Accounts', 'Super Admin', 'Admin', 'Cashier', 'Customer'].map((role) => (
-                  <button 
-                    key={role}
-                    type="button"
-                    onClick={() => { setRoleFilter(role); setIsRoleDropdownOpen(false); }}
-                    className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${roleFilter === role ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
-                  >
-                    {role}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Branch Filter (Super Admin Enabled) */}
-          {isSuperAdmin && (
-            <div className="relative" onClick={e => e.stopPropagation()}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 w-full lg:w-auto">
+          {/* Dropdown Filters: 2-column grid on mobile, inline flex on tablet/desktop */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+            {/* Role Filter */}
+            <div className="relative w-full sm:w-auto" onClick={e => e.stopPropagation()}>
               <button 
                 type="button"
                 onClick={() => {
-                  setIsBranchDropdownOpen(!isBranchDropdownOpen);
-                  setIsRoleDropdownOpen(false);
+                  setIsRoleDropdownOpen(!isRoleDropdownOpen);
+                  setIsBranchDropdownOpen(false);
                   setIsStatusDropdownOpen(false);
                 }}
-                className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm"
+                className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm active:scale-95"
               >
-                <span>Branch: <strong className="text-purple-800">{branchFilter}</strong></span>
-                <ChevronDown size={14} className={`transition-transform ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="truncate">Role: <strong className="text-purple-800">{roleFilter}</strong></span>
+                <ChevronDown size={14} className={`transition-transform shrink-0 ${isRoleDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {isBranchDropdownOpen && (
-                <div className="absolute top-[115%] left-0 w-40 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                  {['All Branches', 'Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
+              {isRoleDropdownOpen && (
+                <div className="absolute top-[115%] left-0 w-44 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
+                  {['All Accounts', 'Super Admin', 'Admin', 'Cashier', 'Customer'].map((role) => (
                     <button 
-                      key={b}
+                      key={role}
                       type="button"
-                      onClick={() => {
-                        setBranchFilter(b);
-                        setSelectedBranch(b === 'All Branches' ? 'all' : b);
-                        setIsBranchDropdownOpen(false);
-                      }}
-                      className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${branchFilter === b ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
+                      onClick={() => { setRoleFilter(role); setIsRoleDropdownOpen(false); }}
+                      className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${roleFilter === role ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
                     >
-                      {b === 'All Branches' ? '🏢 All Branches' : `📍 ${b}`}
+                      {role}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-          )}
 
-          {/* Status Filter */}
-          <div className="relative" onClick={e => e.stopPropagation()}>
-            <button 
-              type="button"
-              onClick={() => {
-                setIsStatusDropdownOpen(!isStatusDropdownOpen);
-                setIsRoleDropdownOpen(false);
-                setIsBranchDropdownOpen(false);
-              }}
-              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm"
-            >
-              <span>Status: <strong className="text-purple-800">{statusFilter}</strong></span>
-              <ChevronDown size={14} className={`transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
+            {/* Branch Filter (Super Admin Enabled) */}
+            {isSuperAdmin && (
+              <div className="relative w-full sm:w-auto" onClick={e => e.stopPropagation()}>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsBranchDropdownOpen(!isBranchDropdownOpen);
+                    setIsRoleDropdownOpen(false);
+                    setIsStatusDropdownOpen(false);
+                  }}
+                  className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm active:scale-95"
+                >
+                  <span className="truncate">Branch: <strong className="text-purple-800">{branchFilter}</strong></span>
+                  <ChevronDown size={14} className={`transition-transform shrink-0 ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-            {isStatusDropdownOpen && (
-              <div className="absolute top-[115%] left-0 w-36 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                {['All', 'Active', 'Inactive'].map((st) => (
-                  <button 
-                    key={st}
-                    type="button"
-                    onClick={() => { setStatusFilter(st); setIsStatusDropdownOpen(false); }}
-                    className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${statusFilter === st ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
-                  >
-                    {st}
-                  </button>
-                ))}
+                {isBranchDropdownOpen && (
+                  <div className="absolute top-[115%] left-0 w-40 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
+                    {['All Branches', 'Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
+                      <button 
+                        key={b}
+                        type="button"
+                        onClick={() => {
+                          setBranchFilter(b);
+                          setSelectedBranch(b === 'All Branches' ? 'all' : b);
+                          setIsBranchDropdownOpen(false);
+                        }}
+                        className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${branchFilter === b ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
+                      >
+                        {b === 'All Branches' ? '🏢 All Branches' : `📍 ${b}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Status Filter */}
+            <div className="relative w-full sm:w-auto" onClick={e => e.stopPropagation()}>
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                  setIsRoleDropdownOpen(false);
+                  setIsBranchDropdownOpen(false);
+                }}
+                className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <span className="truncate">Status: <strong className="text-purple-800">{statusFilter}</strong></span>
+                <ChevronDown size={14} className={`transition-transform shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isStatusDropdownOpen && (
+                <div className="absolute top-[115%] left-0 w-36 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
+                  {['All', 'Active', 'Inactive'].map((st) => (
+                    <button 
+                      key={st}
+                      type="button"
+                      onClick={() => { setStatusFilter(st); setIsStatusDropdownOpen(false); }}
+                      className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${statusFilter === st ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Create Account Button */}
@@ -540,7 +543,7 @@ export default function AdminAccounts() {
               setModalError(null);
               setCreateModal(true);
             }}
-            className="flex items-center gap-1.5 bg-[#5c0099] hover:bg-[#4a007a] text-white rounded-xl px-4 py-2 text-xs font-bold shadow-sm transition-all cursor-pointer ml-auto"
+            className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-[#5c0099] hover:bg-[#4a007a] text-white rounded-xl px-4 py-2.5 sm:py-2 text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95 whitespace-nowrap"
           >
             <Plus size={16} />
             <span>Create Account</span>
@@ -549,10 +552,223 @@ export default function AdminAccounts() {
       </div>
 
       {/* ========================================================== */}
-      {/* 3. USER MANAGEMENT TABLE                                   */}
+      {/* 3. USER MANAGEMENT TABLE & MOBILE CARDS                     */}
       {/* ========================================================== */}
       <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-100 shadow-sm overflow-hidden flex flex-col relative z-10">
-        <div className="overflow-x-auto">
+        {/* Mobile View: Responsive Account Cards (< md) */}
+        <div className="md:hidden flex flex-col gap-3 p-3 bg-gray-50/50">
+          {isLoading ? (
+            <div className="py-16 text-center bg-white rounded-2xl border border-purple-100">
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+                <span className="text-gray-500 font-semibold animate-pulse text-xs">
+                  {isSuperAdmin ? 'Loading accounts across branches...' : 'Loading branch accounts...'}
+                </span>
+              </div>
+            </div>
+          ) : accounts.length > 0 ? (
+            accounts.map((acc) => {
+              const isMenuOpen = activeMenuId === `mob-${acc.id}`;
+
+              return (
+                <div 
+                  key={`mob-${acc.id}`}
+                  className="bg-white rounded-2xl border border-purple-100/90 p-4 shadow-xs flex flex-col gap-3 transition-all active:scale-[0.99] cursor-pointer relative"
+                  onClick={() => {
+                    if (acc.role === 'CUSTOMER') {
+                      setCustomerDetailsTarget({ id: acc.id, email: acc.email, name: acc.fullName || acc.name });
+                    } else {
+                      setViewModalAccount(acc);
+                    }
+                  }}
+                >
+                  {/* Top Row: User Avatar + Name + Email + Action Menu */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center text-[#5c0099] font-bold text-sm shrink-0">
+                        {acc.fullName ? acc.fullName.charAt(0).toUpperCase() : acc.email.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-gray-900 text-sm truncate">
+                          {acc.fullName || 'Anonymous'}
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs text-gray-500 truncate font-medium">{acc.email}</span>
+                          {acc.status === 'Suspended' && (
+                            <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-black uppercase tracking-wider">
+                              Suspended
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Menu (⋮ More) */}
+                    <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveMenuId(isMenuOpen ? null : `mob-${acc.id}`)}
+                        className="p-1.5 rounded-lg hover:bg-purple-100 text-gray-600 hover:text-purple-900 transition-colors cursor-pointer"
+                        title="More Actions"
+                      >
+                        <MoreVertical size={18} />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-2xl border border-purple-100 py-1.5 z-50 animate-in fade-in zoom-in-95">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              if (acc.role === 'CUSTOMER') {
+                                setCustomerDetailsTarget({ id: acc.id, email: acc.email, name: acc.fullName || acc.name });
+                              } else {
+                                setViewModalAccount(acc);
+                              }
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2"
+                          >
+                            <Eye size={14} /> View Details
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditModalAccount(acc);
+                              setModalError(null);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2"
+                          >
+                            <Edit3 size={14} /> Edit Account
+                          </button>
+
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setChangeBranchAccount(acc);
+                                setModalError(null);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2"
+                            >
+                              <ArrowRightLeft size={14} /> Change Branch
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleToggleStatus(acc);
+                              setActiveMenuId(null);
+                            }}
+                            className={`w-full px-3.5 py-2 text-left text-xs font-bold flex items-center gap-2 ${
+                              acc.status === 'Inactive' 
+                                ? 'text-emerald-700 hover:bg-emerald-50' 
+                                : 'text-amber-700 hover:bg-amber-50'
+                            }`}
+                          >
+                            <Power size={14} /> {acc.status === 'Inactive' ? 'Activate Account' : 'Deactivate Account'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResetPasswordAccount(acc);
+                              setNewPasswordInput('');
+                              setModalError(null);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2 border-t border-gray-100"
+                          >
+                            <Key size={14} /> Reset Password
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSuspendModal({
+                                isOpen: true,
+                                id: acc.id,
+                                name: acc.fullName,
+                                status: acc.status,
+                                suspendedUntil: acc.suspendedUntil
+                              });
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                          >
+                            <Ban size={14} /> Suspend Access
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Badges Row: Role, Branch, Status, Staff ID */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-gray-100">
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider inline-flex items-center gap-1 ${
+                      acc.role === 'SUPER_ADMIN' 
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black' 
+                        : acc.role === 'ADMIN' 
+                          ? 'bg-purple-100 text-purple-900 border border-purple-200' 
+                          : acc.role === 'CASHIER' 
+                            ? 'bg-blue-100 text-blue-900 border border-blue-200' 
+                            : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {acc.role === 'SUPER_ADMIN' && <Crown size={10} />}
+                      {acc.role || 'Customer'}
+                    </span>
+
+                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 ${
+                      acc.branch === 'Tagoloan'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : acc.branch === 'Villanueva'
+                          ? 'bg-indigo-50 text-indigo-800 border border-indigo-200'
+                          : acc.branch === 'Jasaan'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                            : 'bg-purple-50 text-purple-800 border border-purple-200'
+                    }`}>
+                      📍 {acc.branch || 'Tagoloan'}
+                    </span>
+
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                      acc.status === 'Inactive'
+                        ? 'bg-gray-100 text-gray-600'
+                        : acc.status === 'Suspended'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {acc.status || 'Active'}
+                    </span>
+
+                    {acc.role !== 'CUSTOMER' && (
+                      <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200 font-mono text-[10px] font-bold">
+                        {formatStaffId(acc)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Contact Row (if present) */}
+                  {acc.phone && (
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 font-mono">
+                      <Phone size={12} className="text-purple-500 shrink-0" />
+                      <span>{acc.phone}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-12 text-center text-gray-500 font-bold text-xs bg-white rounded-2xl border border-gray-100">
+              No matching user accounts found for this branch view.
+            </div>
+          )}
+        </div>
+
+        {/* Desktop View: Full 8-Column Table (≥ md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-purple-50/70 text-purple-900 font-bold border-b border-purple-100 uppercase tracking-wider">
