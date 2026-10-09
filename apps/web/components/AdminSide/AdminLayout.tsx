@@ -73,7 +73,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     if (shouldLock) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
       const scrollables = document.querySelectorAll('main, .overflow-y-auto');
       scrollables.forEach((el) => {
         if (!el.closest('.fixed.inset-0') && !el.closest('aside')) {
@@ -83,7 +82,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     } else {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      document.body.style.touchAction = '';
       const scrollables = document.querySelectorAll('main, .overflow-y-auto');
       scrollables.forEach((el) => {
         (el as HTMLElement).style.overflow = '';
@@ -92,7 +90,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     return () => {
       document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
-      document.body.style.touchAction = '';
       const scrollables = document.querySelectorAll('main, .overflow-y-auto');
       scrollables.forEach((el) => {
         (el as HTMLElement).style.overflow = '';
@@ -262,7 +259,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           background: 'linear-gradient(180deg, #faf5ff 0%, #ede4ff 100%)',
           borderRight: '1px solid #e4d8fb'
         }}
-        className={`fixed top-0 left-0 h-screen flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.06)] overscroll-contain ${
+        className={`fixed top-0 left-0 h-screen h-[100dvh] max-h-[100dvh] flex flex-col z-50 transition-all duration-300 shadow-[4px_0_24px_rgba(0,0,0,0.06)] overscroll-contain touch-pan-y ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } ${isCollapsed ? 'w-[260px] md:w-[80px]' : 'w-[260px]'}`}
       >
@@ -299,7 +296,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           )}
         </div>
 
-        <nav className={`flex flex-col py-5 flex-1 overflow-y-auto overscroll-contain touch-pan-y ${isCollapsed ? 'px-2' : ''}`}>
+        <nav 
+          style={{ WebkitOverflowScrolling: 'touch' }}
+          className={`flex flex-col py-5 pb-16 flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y ${isCollapsed ? 'px-2' : ''}`}
+        >
           {navItems.map((item: any, idx) => {
             const Icon = item.icon;
             if (item.subItems) {
