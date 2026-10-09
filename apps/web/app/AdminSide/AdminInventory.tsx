@@ -46,7 +46,28 @@ export default function AdminInventory() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 8;
+
+  const prevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
+  const nextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
+
+  const startItem = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalCount);
+
+  const getPageNumbers = () => {
+    const total = Math.max(1, totalPages);
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (currentPage >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', total];
+  };
 
   // Products Data
   const [products, setProducts] = useState<any[]>([]);
@@ -604,9 +625,12 @@ export default function AdminInventory() {
       .then(data => {
         if (data && Array.isArray(data.devices)) {
           setTotalPages(data.totalPages || 1);
+          setTotalCount(data.total || 0);
           setProducts(data.devices);
         } else if (Array.isArray(data)) {
           setProducts(data);
+          setTotalCount(data.length);
+          setTotalPages(1);
         }
       })
       .catch(err => console.error("Error fetching inventory:", err))
@@ -1336,155 +1360,167 @@ export default function AdminInventory() {
       </div>
 
       {/* Filter & Action Controls Bar */}
-      <div className="flex flex-wrap justify-between items-center gap-3 w-full">
-        {/* Search */}
-        <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2.5 w-full sm:w-auto sm:min-w-[260px] shadow-sm`}>
-          <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
-          <input 
-            type="text" 
-            placeholder="Search Model, Storage, Specs..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-            className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400" 
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black">
-              <X size={16} />
-            </button>
-          )}
-        </div>
-
-        {/* Stock Status Filter Pills */}
-        <div className="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1">
-          <button
-            onClick={() => setStockStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            All Stock
-          </button>
-          <button
-            onClick={() => setStockStatusFilter('low')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
-          </button>
-          <button
-            onClick={() => setStockStatusFilter('out')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
-          >
-            <span className="w-2 h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
-          </button>
-        </div>
-
-        {/* Brand & Type Filters + Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Brand Dropdown */}
-          <div className="relative">
-            <button 
-              onClick={() => setIsFilterOpen(!isFilterOpen)} 
-              className={`flex items-center gap-2 bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 font-semibold text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm`}
-            >
-              <Filter size={16} />
-              <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
-              <ChevronDown size={16} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {isFilterOpen && (
-              <div className="absolute top-[115%] right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
-                <button 
-                  onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} 
-                  className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                >
-                  All Brands
-                </button>
-                {categories.map(cat => (
-                  <button 
-                    key={cat.id} 
-                    onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} 
-                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-                <div className="border-t border-purple-100 mt-1 pt-1">
-                  <button 
-                    onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
-                    className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Plus size={14} /> + Add / Manage Brands
-                  </button>
-                </div>
-              </div>
+      <div className="flex flex-col gap-3.5 w-full">
+        {/* Row 1: Search Input + Stock Status Segmented Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
+          {/* Search Input */}
+          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:min-w-[280px] shadow-sm flex-1`}>
+            <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
+            <input 
+              type="text" 
+              placeholder="Search Model, Storage, Specs..." 
+              value={searchQuery} 
+              onChange={(e) => setSearchQuery(e.target.value)} 
+              className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400" 
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer">
+                <X size={16} />
+              </button>
             )}
           </div>
 
-          {/* Type Dropdown */}
-          <select 
-            value={selectedDeviceType} 
-            onChange={(e) => setSelectedDeviceType(e.target.value)} 
-            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-          >
-            <option value="all">All Types</option>
-            <option value="smartphone">Smartphones</option>
-            <option value="laptop">Laptops</option>
-            <option value="ipad">iPads/Tablets</option>
-            <option value="tv">TVs</option>
-            <option value="speaker">Speakers</option>
-            <option value="phone accessories">Accessories</option>
-          </select>
+          {/* Stock Status Filter Pills */}
+          <div className="flex items-center justify-between sm:justify-start bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1 shrink-0 overflow-x-auto">
+            <button
+              onClick={() => setStockStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors shrink-0 cursor-pointer ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              All Stock
+            </button>
+            <button
+              onClick={() => setStockStatusFilter('low')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
+            </button>
+            <button
+              onClick={() => setStockStatusFilter('out')}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
+            </button>
+          </div>
+        </div>
 
-          {/* Condition Filter Dropdown */}
-          <select
-            value={selectedCondition}
-            onChange={(e) => setSelectedCondition(e.target.value as any)}
-            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-          >
-            <option value="all">All Conditions</option>
-            <option value="new">New</option>
-            <option value="pre-owned">Pre-Owned</option>
-          </select>
+        {/* Row 2: Dropdown Filters, Exports & Action Buttons */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 w-full">
+          {/* Dropdown Filters + Export Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Brand Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                className={`flex items-center gap-2 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
+              >
+                <Filter size={15} />
+                <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
+                <ChevronDown size={15} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isFilterOpen && (
+                <div className="absolute top-[115%] left-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
+                  <button 
+                    onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} 
+                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
+                  >
+                    All Brands
+                  </button>
+                  {categories.map(cat => (
+                    <button 
+                      key={cat.id} 
+                      onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} 
+                      className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                  <div className="border-t border-purple-100 mt-1 pt-1">
+                    <button 
+                      onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Plus size={14} /> + Add / Manage Brands
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
-          {/* Export Buttons */}
-          <button onClick={downloadPDF} className="flex items-center gap-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3.5 py-2 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
-            <FileText size={14} /> PDF
-          </button>
-          <button onClick={downloadExcel} className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
-            <FileText size={14} /> Excel
-          </button>
+            {/* Type Dropdown */}
+            <select 
+              value={selectedDeviceType} 
+              onChange={(e) => setSelectedDeviceType(e.target.value)} 
+              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+            >
+              <option value="all">All Types</option>
+              <option value="smartphone">Smartphones</option>
+              <option value="laptop">Laptops</option>
+              <option value="ipad">iPads/Tablets</option>
+              <option value="tv">TVs</option>
+              <option value="speaker">Speakers</option>
+              <option value="phone accessories">Accessories</option>
+            </select>
 
-          {/* Add Brand Button */}
-          <button 
-            onClick={() => setCategoriesModalOpen(true)} 
-            className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-4 py-2 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
-            title="Add & Manage Brands"
-          >
-            <Plus size={16} />
-            <span>Add Brand</span>
-          </button>
+            {/* Condition Filter Dropdown */}
+            <select
+              value={selectedCondition}
+              onChange={(e) => setSelectedCondition(e.target.value as any)}
+              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+            >
+              <option value="all">All Conditions</option>
+              <option value="new">New</option>
+              <option value="pre-owned">Pre-Owned</option>
+            </select>
 
-          {/* Add Device Button */}
-          <button 
-            onClick={() => setIsAddModalOpen(true)} 
-            className="flex items-center gap-2 bg-[#5c0099] hover:bg-[#470077] text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer"
-          >
-            <Plus size={18} />
-            <span>Add Product</span>
-          </button>
+            {/* Export Buttons */}
+            <div className="flex items-center gap-1.5">
+              <button onClick={downloadPDF} className="flex items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
+                <FileText size={13} /> PDF
+              </button>
+              <button onClick={downloadExcel} className="flex items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
+                <FileText size={13} /> Excel
+              </button>
+            </div>
+          </div>
 
-          {/* Add Discount Product Button - Directly Beside Add Product */}
-          <button 
-            onClick={() => handleOpenAddDiscount()} 
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer border border-purple-400/40"
-            title="Apply discount to an existing product and variant"
-          >
-            <Percent size={17} className="text-amber-300" />
-            <span>+ Add Discount Product</span>
-          </button>
+          {/* Action Buttons Bar (+ Add Brand, + Add Product, + Discount) */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Add Brand Button */}
+            <button 
+              onClick={() => setCategoriesModalOpen(true)} 
+              className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
+              title="Add & Manage Brands"
+            >
+              <Plus size={15} />
+              <span>Add Brand</span>
+            </button>
+
+            {/* Add Product Button */}
+            <button 
+              onClick={() => setIsAddModalOpen(true)} 
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#5c0099] hover:bg-[#470077] text-white px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer active:scale-95"
+            >
+              <Plus size={16} />
+              <span>Add Product</span>
+            </button>
+
+            {/* Add Discount Product Button */}
+            <button 
+              onClick={() => handleOpenAddDiscount()} 
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-4 py-1.5 sm:px-5 sm:py-2 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer border border-purple-400/40 active:scale-95"
+              title="Apply discount to an existing product and variant"
+            >
+              <Percent size={15} className="text-amber-300" />
+              <span>+ Add Discount</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Model-Based Inventory Table with Expandable Storage Variants */}
       <div className={`bg-white/95 backdrop-blur-md border-2 ${styles.borderMain} rounded-2xl overflow-hidden shadow-sm flex flex-col`}>
-        <div className="w-full overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block w-full overflow-x-auto">
           <table className="w-full border-collapse text-left min-w-[750px]">
             <thead>
               <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
@@ -1896,26 +1932,365 @@ export default function AdminInventory() {
           </table>
         </div>
 
+        {/* Mobile Inventory Cards View (No Horizontal Scroll) */}
+        <div className="md:hidden flex flex-col divide-y divide-purple-100/60">
+          {isLoading ? (
+            <div className="py-16 text-center">
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+                <span className="text-gray-500 font-semibold animate-pulse text-xs">
+                  Loading {isSuperAdmin ? 'multi-branch' : userBranch} inventory...
+                </span>
+              </div>
+            </div>
+          ) : products.length > 0 ? (
+            products.map((prod) => {
+              const isExpanded = expandedModelId === prod.id;
+              const variants: VariantData[] = prod.variations || [];
+              const assignedStock = userBranch.toLowerCase() === 'villanueva'
+                ? (prod.villanuevaStock || 0)
+                : userBranch.toLowerCase() === 'jasaan'
+                ? (prod.jasaanStock || 0)
+                : (prod.tagoloanStock || 0);
+
+              const now = new Date();
+              const isDiscountActive = Boolean(
+                prod.discount && prod.discount > 0 &&
+                (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
+                (!prod.discountEndDate || new Date(prod.discountEndDate) >= now)
+              );
+              const isDiscountScheduled = Boolean(
+                prod.discount && prod.discount > 0 &&
+                prod.discountStartDate && new Date(prod.discountStartDate) > now
+              );
+              const isDiscountExpired = Boolean(
+                prod.discount && prod.discount > 0 &&
+                prod.discountEndDate && new Date(prod.discountEndDate) < now
+              );
+
+              const isActionMenuOpen = activeActionMenuId === `mob-${prod.id}`;
+
+              return (
+                <div key={`mob-card-${prod.id}`} className="p-4 flex flex-col gap-3 bg-white hover:bg-purple-50/20 transition-colors">
+                  {/* Top Row: Thumbnail + Title + Badges + Action Menu */}
+                  <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <img 
+                        src={prod.image || '/Images/Aula.jpg'} 
+                        alt={prod.name} 
+                        className="w-12 h-12 object-cover rounded-xl border border-purple-100 shadow-xs shrink-0" 
+                      />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-bold text-gray-900 text-sm leading-snug truncate">
+                          {prod.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          <span className="text-xs text-gray-500 font-medium">
+                            {prod.category?.name || prod.type || 'Smartphone'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${prod.isPreOwned ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`}>
+                            {prod.isPreOwned ? 'Pre-Owned' : 'New'}
+                          </span>
+                          {isDiscountActive && (
+                            <span className="bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider flex items-center gap-0.5 animate-pulse">
+                              <Percent size={9} /> {Math.round(prod.discount)}% OFF
+                            </span>
+                          )}
+                          {isDiscountScheduled && (
+                            <span className="bg-blue-100 text-blue-800 text-[9px] font-black px-1.5 py-0.2 rounded-full border border-blue-200 uppercase">
+                              Scheduled
+                            </span>
+                          )}
+                          {isDiscountExpired && (
+                            <span className="bg-gray-100 text-gray-600 text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-gray-200 uppercase">
+                              Expired
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Menu (⋮ More) */}
+                    <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveActionMenuId(isActionMenuOpen ? null : `mob-${prod.id}`)}
+                        className={`p-1.5 rounded-lg transition-all cursor-pointer border ${
+                          isActionMenuOpen
+                            ? 'bg-[#bd00ff] text-white border-[#bd00ff] shadow-sm'
+                            : 'text-gray-500 hover:text-purple-900 hover:bg-purple-50 border-gray-100'
+                        }`}
+                        title="Product Actions"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+
+                      {isActionMenuOpen && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-40" 
+                            onClick={(e) => { e.stopPropagation(); setActiveActionMenuId(null); }} 
+                          />
+                          <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-2xl shadow-xl border border-purple-200/80 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenuId(null);
+                                handleEditClick(prod);
+                              }}
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                            >
+                              <Pencil size={15} className="text-purple-600" />
+                              <span>Edit Product</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenuId(null);
+                                handleOpenAddDiscount(prod);
+                              }}
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                            >
+                              <Percent size={15} className="text-rose-600" />
+                              <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
+                            </button>
+
+                            {isSuperAdmin && (
+                              <>
+                                <div className="my-1 border-t border-gray-100" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    setProductToDelete(prod.id);
+                                    setDeleteModalOpen(true);
+                                  }}
+                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                >
+                                  <Trash2 size={15} className="text-rose-600" />
+                                  <span>Delete Product</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Middle Row: Stock Badges + Price */}
+                  <div className="flex items-center justify-between gap-2 p-2.5 bg-purple-50/40 rounded-xl border border-purple-100/70">
+                    {/* Stocks */}
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isSuperAdmin ? (
+                          <>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Branch Stocks:</span>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${prod.tagoloanStock > 0 ? (prod.tagoloanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                              Tag: {prod.tagoloanStock || 0}
+                            </span>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${prod.villanuevaStock > 0 ? (prod.villanuevaStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                              Vil: {prod.villanuevaStock || 0}
+                            </span>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${prod.jasaanStock > 0 ? (prod.jasaanStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                              Jas: {prod.jasaanStock || 0}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{userBranch} Stock:</span>
+                            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${assignedStock > 0 ? (assignedStock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800') : 'bg-rose-100 text-rose-700'}`}>
+                              {assignedStock > 0 ? `${assignedStock} pcs` : 'Out of Stock'}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <div className="text-right shrink-0">
+                      {isDiscountActive ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[10px] text-gray-400 line-through">₱ {Number(prod.price || 0).toLocaleString()}</span>
+                          <span className="text-[#bd00ff] font-black text-sm">
+                            ₱ {Math.round(prod.price * (1 - prod.discount / 100)).toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-bold text-gray-900 text-sm">
+                          ₱ {Number(prod.price || 0).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bottom Row: Units Count Toggle Pill Button */}
+                  {variants.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedModelId(isExpanded ? null : prod.id)}
+                      className="w-full py-2 px-3 rounded-xl bg-purple-50/80 hover:bg-purple-100/80 border border-purple-200/80 text-[#5c0099] font-bold text-xs flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Layers size={14} className="text-purple-600" />
+                        <span>{variants.length} Storage Variants & Units</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px]">
+                        <span>{isExpanded ? 'Hide' : 'View'} Units</span>
+                        {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="flex items-center justify-between text-xs text-gray-500 px-1">
+                      <span className="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
+                        <Layers size={13} /> Standard single unit
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Expanded Storage Variants Drawer */}
+                  {isExpanded && variants.length > 0 && (
+                    <div className="flex flex-col gap-2 pt-2 border-t border-purple-100">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 px-1">
+                        <span>STORAGE VARIANTS</span>
+                        <span>STOCK & ACTIONS</span>
+                      </div>
+
+                      {variants.map((v, vIdx) => {
+                        const vBranchStock = userBranch.toLowerCase() === 'villanueva'
+                          ? (v.villanuevaStock ?? (v.branchStocks?.Villanueva || 0))
+                          : userBranch.toLowerCase() === 'jasaan'
+                          ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
+                          : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
+                        const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
+
+                        return (
+                          <div key={v.id || vIdx} className="p-3 bg-purple-50/30 rounded-xl border border-purple-200/60 flex flex-col gap-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-gray-900 text-xs">{prod.name} – {v.name}</span>
+                                <span className="font-mono text-[10px] text-[#5c0099] font-bold">{displayProdId}</span>
+                              </div>
+                              <span className="font-bold text-[#5c0099] text-xs">
+                                ₱ {Number(v.price || prod.price).toLocaleString()}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-1 border-t border-purple-100/50">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {isSuperAdmin ? (
+                                  <>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${v.tagoloanStock && v.tagoloanStock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'}`}>
+                                      Tag: {v.tagoloanStock || 0}
+                                    </span>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${v.villanuevaStock && v.villanuevaStock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'}`}>
+                                      Vil: {v.villanuevaStock || 0}
+                                    </span>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${v.jasaanStock && v.jasaanStock > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'}`}>
+                                      Jas: {v.jasaanStock || 0}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${vBranchStock > 0 ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-700'}`}>
+                                    {vBranchStock > 0 ? `${vBranchStock} pcs in ${userBranch}` : 'Out of Stock'}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAdjustItem({ device: prod, variant: v });
+                                    setAdjustBranch(isSuperAdmin ? 'Tagoloan' : userBranch);
+                                    setAdjustStockVal(String(isSuperAdmin ? (v.tagoloanStock || 0) : vBranchStock));
+                                    setAdjustModalOpen(true);
+                                  }}
+                                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2 py-1 rounded-lg text-[10px] transition-colors cursor-pointer"
+                                >
+                                  Adjust
+                                </button>
+                                {isSuperAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTransferDeviceId(prod.id);
+                                      setTransferVariationId(v.id || '');
+                                      setTransferModalOpen(true);
+                                    }}
+                                    className="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2 py-1 rounded-lg text-[10px] transition-colors cursor-pointer flex items-center gap-0.5"
+                                  >
+                                    <ArrowRightLeft size={10} /> Transfer
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-12 text-center text-gray-500 font-semibold text-xs">
+              No products found matching the criteria.
+            </div>
+          )}
+        </div>
+
         {/* Pagination Footer */}
-        <div className="flex justify-between items-center p-4 bg-white/95 border-t border-gray-100 text-sm">
-          <span className="text-xs text-gray-500">
-            Showing page {currentPage} of {totalPages}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white/95 border-t border-gray-100 text-xs">
+          <span className="text-gray-500 font-medium text-center sm:text-left">
+            Showing <span className="font-bold text-gray-900">{startItem}</span> to <span className="font-bold text-gray-900">{endItem}</span> of <span className="font-bold text-gray-900">{totalCount}</span> products
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 justify-center flex-wrap">
             <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-              disabled={currentPage === 1} 
-              className={`p-2 rounded-lg border border-gray-200 transition-colors ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-purple-50 text-purple-700 cursor-pointer'}`}
+              onClick={prevPage}
+              disabled={currentPage === 1}
+              className="h-8 px-2.5 sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              title="Previous Page"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={15} />
+              <span className="hidden sm:inline">Prev</span>
             </button>
-            <span className="font-bold text-gray-800 px-2">{currentPage} / {totalPages}</span>
+
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((p, idx) => {
+                if (p === '...') {
+                  return (
+                    <span key={`dots-${idx}`} className="w-6 h-8 flex items-center justify-center text-xs text-gray-400 font-bold select-none">
+                      ...
+                    </span>
+                  );
+                }
+                const isCurrent = p === currentPage;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p as number)}
+                    className={`h-8 min-w-[32px] px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                      isCurrent
+                        ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-sm shadow-purple-500/25 ring-2 ring-purple-400/30'
+                        : 'bg-white hover:bg-purple-50 text-gray-700 hover:text-purple-700 border border-gray-200/90 hover:border-purple-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+
             <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-              disabled={currentPage === totalPages} 
-              className={`p-2 rounded-lg border border-gray-200 transition-colors ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : 'hover:bg-purple-50 text-purple-700 cursor-pointer'}`}
+              onClick={nextPage}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="h-8 px-2.5 sm:px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
+              title="Next Page"
             >
-              <ChevronRight size={18} />
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight size={15} />
             </button>
           </div>
         </div>
