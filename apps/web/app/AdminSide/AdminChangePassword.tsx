@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { changePassword } from '../../actions/auth';
 import { useTheme } from '../../context/ThemeContext';
-import { Loader2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Loader2, Eye, EyeOff, AlertCircle, ChevronLeft } from 'lucide-react';
 import PasswordRequirements from '../../components/PasswordRequirements';
 import { validatePassword, detectInvalidPasswordChars } from '../../lib/passwordPolicy';
 
@@ -68,12 +69,35 @@ export default function AdminChangePassword() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="mb-2">
-        <h2 className="text-[1.6rem] font-bold text-[#111]">Change Password</h2>
+    <div className="flex flex-col gap-6 relative w-full max-w-7xl mx-auto pb-10">
+      {/* Top Header Card */}
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto min-w-0">
+          <Link
+            href="/admin/settings"
+            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0 active:scale-95"
+            title="Back to Settings"
+          >
+            <ChevronLeft size={20} className="sm:w-[22px] sm:h-[22px]" />
+          </Link>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 m-0 leading-tight">
+                Change Password
+              </h2>
+              <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] sm:text-xs rounded-full border border-purple-200 shrink-0 whitespace-nowrap shadow-2xs">
+                Security & Account
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-1 leading-relaxed">
+              Update your account password to ensure your Graphix admin dashboard remains secure.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className={`bg-white/95 backdrop-blur-md rounded-2xl border-2 ${styles.borderMain} shadow-sm p-6 sm:p-8 md:p-10 w-full transition-colors duration-300`}>
+      <div className="bg-white rounded-2xl border border-purple-100 shadow-xs p-4 sm:p-6 md:p-8 w-full transition-colors duration-300">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {errorMsg && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium">
@@ -188,7 +212,7 @@ export default function AdminChangePassword() {
           <button 
             type="submit" 
             disabled={isPending}
-            className={`mt-4 w-full bg-gradient-to-r ${styles.gradient} text-white font-bold py-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 opacity-90 hover:opacity-100 disabled:opacity-50`}
+            className={`mt-4 w-full bg-gradient-to-r ${styles.gradient} text-white font-bold py-3.5 sm:py-4 text-sm sm:text-base rounded-xl transition-all shadow-md flex justify-center items-center gap-2 opacity-95 hover:opacity-100 disabled:opacity-50 cursor-pointer active:scale-[0.99]`}
           >
             {isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Click to Change Password'}
           </button>
