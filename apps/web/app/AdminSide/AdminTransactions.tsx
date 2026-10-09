@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
@@ -240,53 +240,84 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             <p className="text-sm">There are no transactions matching your criteria.</p>
           </div>
         ) : (
-          <div className="w-full border border-gray-200 rounded-xl mt-2 overflow-hidden overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Transaction ID</th>
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Branch</th>
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
-                  {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Source</th>}
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">
-                    {type === "downpayment" ? "Payment Info" : "Amount"}
-                  </th>
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Date</th>
-                  <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedTransactions.map((tx) => {
-                  const remBal = tx.remainingBalance !== undefined ? tx.remainingBalance : Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0));
-                  const isFullyPaid = tx.isSettled || remBal === 0;
+          <>
+            {/* Mobile Responsive Cards (< md) */}
+            <div className="md:hidden flex flex-col gap-3 mt-2 w-full">
+              {paginatedTransactions.map((tx) => {
+                const remBal = tx.remainingBalance !== undefined ? tx.remainingBalance : Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0));
+                const isFullyPaid = tx.isSettled || remBal === 0;
 
-                  return (
-                  <tr 
-                    key={tx.id} 
+                return (
+                  <div 
+                    key={`mob-${tx.id}`} 
                     onClick={() => setSelectedTransaction(tx)}
-                    className="hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer"
+                    className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs flex flex-col gap-3 transition-all active:scale-[0.99] cursor-pointer"
                   >
-                    <td className="px-5 py-4 font-semibold">
-                      <div className="flex flex-col items-start gap-1">
-                        {tx.isExpired && tx.status !== 'Cancelled' && (
-                          <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Expired</span>
-                        )}
-                        {tx.status === 'Cancelled' && (
-                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Cancelled</span>
-                        )}
-                        <span className="text-xs font-bold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
+                    {/* Top Row: Invoice ID, Status badges, Branch & Date */}
+                    <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-gray-100">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-gray-800 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200 shadow-2xs">
                           {formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch)}
                         </span>
+                        {tx.isExpired && tx.status !== 'Cancelled' && (
+                          <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-extrabold shadow-2xs">
+                            Expired
+                          </span>
+                        )}
+                        {tx.status === 'Cancelled' && (
+                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-extrabold shadow-2xs">
+                            Cancelled
+                          </span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 inline-block shadow-2xs">
-                        {tx.branch || 'Tagoloan'}
-                      </span>
-                    </td>
-                    <td 
-                      className="px-5 py-4"
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                          {tx.branch || 'Tagoloan'}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500">
+                          {new Date(tx.createdAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Middle: Product / Device info */}
+                    <div className="flex items-center gap-3">
+                      {tx.device?.image ? (
+                        <img src={tx.device.image} alt={tx.device.name} className="w-12 h-12 rounded-xl object-cover bg-white border border-gray-100 shadow-2xs shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-400 shrink-0">
+                          <Box size={22} />
+                        </div>
+                      )}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name || 'Device'}</span>
+                          {((tx.device as any)?.isPreOwned || (tx.device?.name || '').toLowerCase().includes('pre-owned') || (tx.device?.name || '').toLowerCase().includes('pre owned')) && (
+                            <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300 uppercase tracking-wider">
+                              PRE-OWNED
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500 font-medium truncate mt-0.5">
+                          Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
+                        </span>
+                        {tx.imei ? (
+                          <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                            IMEI: {tx.imei}
+                          </span>
+                        ) : isIPhoneProduct(tx.device?.name || '') ? (
+                          <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                            IMEI: Pending Pickup
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Customer Info row */}
+                    <div 
                       onClick={(e) => {
                         e.stopPropagation();
                         setCustomerDetailsTarget({
@@ -295,102 +326,49 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           name: tx.user?.name || undefined
                         });
                       }}
+                      className="flex items-center gap-2.5 bg-gray-50/80 hover:bg-purple-50/60 p-2 rounded-xl border border-gray-100 transition-colors"
+                      title="Click to view complete customer details"
                     >
-                      <div className="flex items-center gap-3 group/cust cursor-pointer" title="Click to view complete customer details">
-                        <div className="relative">
-                          <UserCircle2 size={36} className="text-gray-400 group-hover/cust:text-[#bd00ff] transition-colors" />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-900 text-sm group-hover/cust:text-[#bd00ff] group-hover/cust:underline transition-colors flex items-center gap-1">
-                            {tx.user?.name || 'Anonymous'}
-                          </span>
-                          <span className="text-xs text-gray-500 font-semibold">{tx.user?.email}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        {tx.device?.image ? (
-                          <img src={tx.device.image} alt={tx.device.name} className="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100 shadow-sm" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gray-200" />
-                        )}
-                        <div className="flex flex-col max-w-[200px]">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name}</span>
-                            {((tx.device as any)?.isPreOwned || (tx.device?.name || '').toLowerCase().includes('pre-owned') || (tx.device?.name || '').toLowerCase().includes('pre owned')) && (
-                              <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300 uppercase tracking-wider">
-                                PRE-OWNED
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-gray-500 font-semibold truncate">
-                            Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
-                          </span>
-                          {tx.imei ? (
-                            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                              IMEI: {tx.imei}
-                            </span>
-                          ) : isIPhoneProduct(tx.device?.name || '') ? (
-                            <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                              IMEI: Pending Pickup
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                    </td>
-                    {type === "downpayment" && (
-                      <td className="px-5 py-4">
-                        <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm ${tx.source === 'POS' || tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {tx.source || 'POS'}
+                      <UserCircle2 size={24} className="text-gray-400 shrink-0" />
+                      <div className="flex items-center justify-between flex-1 min-w-0">
+                        <span className="font-bold text-gray-800 text-xs truncate">
+                          {tx.user?.name || 'Anonymous'}
                         </span>
-                      </td>
-                    )}
-                    <td className="px-5 py-4 min-w-[170px]">
-                      {type === "downpayment" ? (
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-bold">Downpayment:</span>
-                            <span className="font-extrabold text-green-600">₱{(tx.downpaymentAmount || tx.amount || 0).toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-1.5">
-                            <span className="text-gray-500 font-bold">Rem. Balance:</span>
-                            <span className={`font-extrabold ${isFullyPaid ? 'text-green-600' : 'text-red-500'}`}>
-                              ₱{remBal.toLocaleString()}
+                        <span className="text-[11px] text-gray-500 truncate ml-2">
+                          {tx.user?.email || ''}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Bottom row: Amount & Action buttons */}
+                    <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-gray-100">
+                      <div>
+                        {type === "downpayment" ? (
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">DP:</span>
+                              <span className="font-black text-green-600 text-sm">₱{(tx.downpaymentAmount || tx.amount || 0).toLocaleString()}</span>
+                            </div>
+                            <span className={`text-[11px] font-bold ${isFullyPaid ? 'text-green-600' : 'text-red-500'}`}>
+                              Bal: ₱{remBal.toLocaleString()}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center text-[11px] border-t border-gray-100 pt-1">
-                            <span className="text-gray-400 font-semibold">Status:</span>
-                            <span className={`font-extrabold px-2 py-0.5 rounded text-[10px] ${isFullyPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {isFullyPaid ? 'Fully Settled' : 'Active Downpayment'}
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Amount</span>
+                            <span className="font-black text-[#bd00ff] text-base leading-tight">
+                              ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
                             </span>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col">
-                          <span className="font-extrabold text-[#bd00ff] text-sm">
-                            ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
-                          </span>
-                          {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="text-sm font-bold text-gray-600">
-                        {new Date(tx.createdAt).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
                         {type === 'downpayment' && !isFullyPaid && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleSettleBalance(tx.id); }}
                             disabled={settlingTxId === tx.id}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-lg transition-all border-none cursor-pointer shadow-sm"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all border-none cursor-pointer shadow-xs active:scale-95"
                             title="Settle Remaining Balance"
                           >
                             {settlingTxId === tx.id ? 'Settling...' : 'Settle'}
@@ -398,19 +376,191 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                         )}
                         <button 
                           onClick={(e) => { e.stopPropagation(); setSelectedTransaction(tx); }}
-                          className="px-3.5 py-1.5 rounded-xl inline-flex justify-center items-center gap-1.5 bg-[#bd00ff] text-white hover:bg-[#9c00d6] transition-all shadow-xs border-none cursor-pointer font-bold text-xs"
+                          className="px-3.5 py-1.5 rounded-xl inline-flex justify-center items-center gap-1.5 bg-[#bd00ff] text-white hover:bg-[#9c00d6] transition-all shadow-xs border-none cursor-pointer font-bold text-xs active:scale-95"
                           title="View Digital Receipt"
                         >
                           <ReceiptText size={14} /> Receipt
                         </button>
                       </div>
-                    </td>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table (≥ md) */}
+            <div className="hidden md:block w-full border border-gray-200 rounded-xl mt-2 overflow-hidden overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-[#BF00FF] to-[#4B0082] text-white">
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Transaction ID</th>
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Branch</th>
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
+                    {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Source</th>}
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">
+                      {type === "downpayment" ? "Payment Info" : "Amount"}
+                    </th>
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Date</th>
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm text-center">Action</th>
                   </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {paginatedTransactions.map((tx) => {
+                    const remBal = tx.remainingBalance !== undefined ? tx.remainingBalance : Math.max(0, ((tx.device?.price || 0) * tx.quantity) - (tx.amount || 0));
+                    const isFullyPaid = tx.isSettled || remBal === 0;
+
+                    return (
+                    <tr 
+                      key={tx.id} 
+                      onClick={() => setSelectedTransaction(tx)}
+                      className="hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-b-0 cursor-pointer"
+                    >
+                      <td className="px-5 py-4 font-semibold">
+                        <div className="flex flex-col items-start gap-1">
+                          {tx.isExpired && tx.status !== 'Cancelled' && (
+                            <span className="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Expired</span>
+                          )}
+                          {tx.status === 'Cancelled' && (
+                            <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest font-extrabold shadow-sm">Cancelled</span>
+                          )}
+                          <span className="text-xs font-bold text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md shadow-sm border border-gray-200">
+                            {formatDisplayInvoiceId(tx.referenceId || tx.id, tx.branch)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 inline-block shadow-2xs">
+                          {tx.branch || 'Tagoloan'}
+                        </span>
+                      </td>
+                      <td 
+                        className="px-5 py-4"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCustomerDetailsTarget({
+                            id: tx.user?.id,
+                            email: tx.user?.email,
+                            name: tx.user?.name || undefined
+                          });
+                        }}
+                      >
+                        <div className="flex items-center gap-3 group/cust cursor-pointer" title="Click to view complete customer details">
+                          <div className="relative">
+                            <UserCircle2 size={36} className="text-gray-400 group-hover/cust:text-[#bd00ff] transition-colors" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-gray-900 text-sm group-hover/cust:text-[#bd00ff] group-hover/cust:underline transition-colors flex items-center gap-1">
+                              {tx.user?.name || 'Anonymous'}
+                            </span>
+                            <span className="text-xs text-gray-500 font-semibold">{tx.user?.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          {tx.device?.image ? (
+                            <img src={tx.device.image} alt={tx.device.name} className="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100 shadow-sm" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-200" />
+                          )}
+                          <div className="flex flex-col max-w-[200px]">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-gray-900 text-sm truncate">{tx.device?.name}</span>
+                              {((tx.device as any)?.isPreOwned || (tx.device?.name || '').toLowerCase().includes('pre-owned') || (tx.device?.name || '').toLowerCase().includes('pre owned')) && (
+                                <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300 uppercase tracking-wider">
+                                  PRE-OWNED
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 font-semibold truncate">
+                              Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
+                            </span>
+                            {tx.imei ? (
+                              <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                                IMEI: {tx.imei}
+                              </span>
+                            ) : isIPhoneProduct(tx.device?.name || '') ? (
+                              <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
+                                IMEI: Pending Pickup
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </td>
+                      {type === "downpayment" && (
+                        <td className="px-5 py-4">
+                          <span className={`text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm ${tx.source === 'POS' || tx.source === 'In-Store' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {tx.source || 'POS'}
+                          </span>
+                        </td>
+                      )}
+                      <td className="px-5 py-4 min-w-[170px]">
+                        {type === "downpayment" ? (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 font-bold">Downpayment:</span>
+                              <span className="font-extrabold text-green-600">₱{(tx.downpaymentAmount || tx.amount || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs border-t border-gray-100 pt-1.5">
+                              <span className="text-gray-500 font-bold">Rem. Balance:</span>
+                              <span className={`font-extrabold ${isFullyPaid ? 'text-green-600' : 'text-red-500'}`}>
+                                ₱{remBal.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] border-t border-gray-100 pt-1">
+                              <span className="text-gray-400 font-semibold">Status:</span>
+                              <span className={`font-extrabold px-2 py-0.5 rounded text-[10px] ${isFullyPaid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                {isFullyPaid ? 'Fully Settled' : 'Active Downpayment'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="font-extrabold text-[#bd00ff] text-sm">
+                              ₱{tx.amount > 0 ? tx.amount.toLocaleString() : (tx.device?.price || 0).toLocaleString()}
+                            </span>
+                            {tx.amount === 0 && <span className="text-[10px] text-gray-400 uppercase tracking-widest font-extrabold mt-0.5">Legacy</span>}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-sm font-bold text-gray-600">
+                          {new Date(tx.createdAt).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {type === 'downpayment' && !isFullyPaid && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleSettleBalance(tx.id); }}
+                              disabled={settlingTxId === tx.id}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-lg transition-all border-none cursor-pointer shadow-sm"
+                              title="Settle Remaining Balance"
+                            >
+                              {settlingTxId === tx.id ? 'Settling...' : 'Settle'}
+                            </button>
+                          )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedTransaction(tx); }}
+                            className="px-3.5 py-1.5 rounded-xl inline-flex justify-center items-center gap-1.5 bg-[#bd00ff] text-white hover:bg-[#9c00d6] transition-all shadow-xs border-none cursor-pointer font-bold text-xs"
+                            title="View Digital Receipt"
+                          >
+                            <ReceiptText size={14} /> Receipt
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Total Sales Summary */}
