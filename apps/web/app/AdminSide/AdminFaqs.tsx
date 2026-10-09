@@ -234,25 +234,27 @@ export default function AdminFaqs() {
       )}
 
       {/* Top Header Card */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto min-w-0">
           <button
             onClick={() => router.push('/admin/settings')}
-            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0"
+            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0 active:scale-95"
             title="Back to Settings"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={20} className="sm:w-[22px] sm:h-[22px]" />
           </button>
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Frequently Asked Questions</h2>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 m-0 leading-tight">
+                Frequently Asked Questions
+              </h2>
               {!isSuperAdmin && (
-                <span className="px-3 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-xs rounded-full border border-purple-200 flex items-center gap-1 shadow-2xs">
+                <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] sm:text-xs rounded-full border border-purple-200 flex items-center gap-1 shrink-0 whitespace-nowrap shadow-2xs">
                   <Eye size={12} /> View Only
                 </span>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-1 leading-relaxed">
               {isSuperAdmin 
                 ? 'Manage frequently asked questions and answers displayed to customers.'
                 : 'View published frequently asked questions and answers.'
@@ -264,16 +266,16 @@ export default function AdminFaqs() {
         {isSuperAdmin && (
           <button
             onClick={handleOpenAddModal}
-            className="px-5 py-3 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-sm rounded-xl border-none cursor-pointer shadow-md shadow-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0"
+            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm rounded-xl border-none cursor-pointer shadow-md shadow-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 self-start sm:self-auto"
           >
-            <Plus size={18} strokeWidth={2.5} />
+            <Plus size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
             <span>Add FAQ</span>
           </button>
         )}
       </div>
 
       {/* Search & Stats Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-3.5">
         <div className="relative flex-1">
           <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -281,16 +283,32 @@ export default function AdminFaqs() {
             placeholder="Search FAQs by question or keyword..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-800 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100 transition-all shadow-xs"
+            className="w-full pl-10 pr-10 py-2.5 sm:py-3 bg-white border border-gray-200 rounded-xl text-xs sm:text-sm font-medium text-gray-800 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100 transition-all shadow-xs"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-center shrink-0 text-xs font-bold text-gray-500 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-xs">
-          <span>Total: <strong className="text-gray-900">{faqs.length}</strong></span>
-          <span>•</span>
-          <span>Active: <strong className="text-emerald-600">{faqs.filter(f => f.isActive).length}</strong></span>
-          <span>•</span>
-          <span>Inactive: <strong className="text-gray-400">{faqs.filter(f => !f.isActive).length}</strong></span>
+        {/* Responsive Stats Badges */}
+        <div className="grid grid-cols-3 gap-2 w-full sm:flex sm:w-auto items-center p-1.5 sm:p-2 bg-purple-50/50 rounded-xl border border-purple-100 shadow-2xs">
+          <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-purple-100 shadow-2xs">
+            <span className="text-gray-500 font-bold text-[11px] sm:text-xs">Total:</span>
+            <span className="text-gray-900 font-black text-xs sm:text-sm">{faqs.length}</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-emerald-100 shadow-2xs">
+            <span className="text-emerald-600 font-bold text-[11px] sm:text-xs">Active:</span>
+            <span className="text-emerald-700 font-black text-xs sm:text-sm">{faqs.filter(f => f.isActive).length}</span>
+          </div>
+          <div className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white rounded-lg border border-gray-200 shadow-2xs">
+            <span className="text-gray-400 font-bold text-[11px] sm:text-xs">Inactive:</span>
+            <span className="text-gray-600 font-black text-xs sm:text-sm">{faqs.filter(f => !f.isActive).length}</span>
+          </div>
         </div>
       </div>
 
