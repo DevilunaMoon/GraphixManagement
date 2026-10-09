@@ -715,28 +715,34 @@ export default function AdminAboutEditor() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Full Online Purchase Policy</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Full Online Purchase Policy</label>
+                  <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">Online store checkout policy</span>
+                </div>
                 <textarea
                   rows={3}
                   value={purchasePolicy}
                   onChange={(e) => setPurchasePolicy(e.target.value)}
                   disabled={!isSuperAdmin}
-                  className={`w-full p-3.5 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
-                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
+                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed min-h-[95px] sm:min-h-[105px] resize-y transition-all ${
+                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100'
                   }`}
                   placeholder="Enter online purchase policy statement..."
                 />
               </div>
 
-              <div className="flex flex-col gap-2 mt-2">
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Downpayment & In-Store Notice</label>
+              <div className="flex flex-col gap-2 mt-1 sm:mt-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">Downpayment & In-Store Notice</label>
+                  <span className="text-[11px] text-gray-400 font-medium hidden sm:inline">In-store walk-in downpayment advisory</span>
+                </div>
                 <textarea
-                  rows={4}
+                  rows={6}
                   value={downpaymentPolicy}
                   onChange={(e) => setDownpaymentPolicy(e.target.value)}
                   disabled={!isSuperAdmin}
-                  className={`w-full p-3.5 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
-                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
+                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed min-h-[145px] sm:min-h-[155px] resize-y transition-all ${
+                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100'
                   }`}
                   placeholder="Enter in-store downpayment notice..."
                 />
