@@ -281,23 +281,33 @@ export default function AdminBranches() {
       )}
 
       {/* Header Card */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3 md:gap-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4 w-full md:w-auto min-w-0">
           <Link
             href="/admin/settings"
-            className="w-11 h-11 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors shrink-0 no-underline"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors shrink-0 no-underline"
             title="Back to Settings"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={20} className="sm:w-[22px] sm:h-[22px]" />
           </Link>
-          <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-[#bd00ff] shadow-sm shrink-0">
-            <Building2 size={28} />
+          <div className="w-11 h-11 sm:w-14 sm:h-14 bg-purple-100 rounded-xl sm:rounded-2xl flex items-center justify-center text-[#bd00ff] shadow-sm shrink-0">
+            <Building2 size={22} className="sm:w-7 sm:h-7" />
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 m-0">
-              {isSuperAdmin ? 'Branch Management' : 'Branch Settings'}
-            </h2>
-            <p className="text-gray-500 m-0 text-sm">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 m-0 leading-tight">
+                {isSuperAdmin ? 'Branch Management' : 'Branch Settings'}
+              </h2>
+              {/* Mobile Refresh Button right in the header row */}
+              <button
+                onClick={fetchBranchMetrics}
+                title="Refresh"
+                className="md:hidden p-2 sm:p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer border-none shrink-0 flex items-center justify-center active:scale-95"
+              >
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+            <p className="text-gray-500 m-0 text-xs sm:text-sm mt-1 leading-relaxed">
               {isSuperAdmin 
                 ? 'Create, monitor, and manage system branches across all locations'
                 : 'Configure branch information, GCash payment account, and QR Code for your store location'}
@@ -305,11 +315,12 @@ export default function AdminBranches() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
           <button
             onClick={fetchBranchMetrics}
             title="Refresh"
-            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer border-none"
+            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors cursor-pointer border-none flex items-center justify-center active:scale-95"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -322,7 +333,7 @@ export default function AdminBranches() {
           <div className="w-10 h-10 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
         </div>
       ) : filteredBranches.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border border-gray-100">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center border border-gray-100">
           <Building2 size={48} className="mx-auto text-gray-300 mb-3" />
           <h3 className="text-lg font-bold text-gray-700">No Branches Found</h3>
           <p className="text-sm text-gray-500 mt-1">
@@ -341,19 +352,19 @@ export default function AdminBranches() {
             return (
               <div 
                 key={branch.id} 
-                className={`w-full bg-white rounded-3xl p-6 md:p-8 shadow-sm border transition-all flex flex-col gap-6 ${
+                className={`w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all flex flex-col gap-5 sm:gap-6 ${
                   branch.status === 'Active' ? 'border-gray-100' : 'border-red-200 bg-red-50/20'
                 }`}
               >
                 {/* Branch Header Row */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-100">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-2xl md:text-3xl font-black text-gray-900 m-0">{branch.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                      <h3 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 m-0">{branch.name}</h3>
                       <button
                         onClick={() => handleToggleStatus(branch)}
                         title={`Click to ${branch.status === 'Active' ? 'Deactivate' : 'Activate'}`}
-                        className={`px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border-none ${
+                        className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border-none shrink-0 whitespace-nowrap ${
                           branch.status === 'Active' 
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                             : 'bg-red-100 text-red-700 hover:bg-red-200'
@@ -364,19 +375,19 @@ export default function AdminBranches() {
                       </button>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mt-2">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-gray-500 mt-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
                         <MapPin size={15} className="text-gray-400 shrink-0" />
-                        <span>{branch.address || 'No address specified'}</span>
+                        <span className="truncate">{branch.address || 'No address specified'}</span>
                       </div>
                       {branch.phone && (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <Phone size={15} className="text-gray-400 shrink-0" />
                           <span>{branch.phone}</span>
                         </div>
                       )}
                       {branch.email && (
-                        <div className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-lg font-medium border border-purple-100">
+                        <div className="flex items-center gap-1.5 text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-lg font-medium border border-purple-100 shrink-0 whitespace-nowrap">
                           <Mail size={14} className="text-[#bd00ff] shrink-0" />
                           <span>{branch.email}</span>
                         </div>
@@ -384,17 +395,17 @@ export default function AdminBranches() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 w-full md:w-auto">
                     <button
                       onClick={() => handleOpenEdit(branch)}
-                      className="flex items-center gap-2 px-5 py-3 text-xs md:text-sm font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 rounded-xl transition-all cursor-pointer border-none shadow-xs"
+                      className="w-full md:w-auto flex items-center justify-center gap-2 px-4 sm:px-5 py-3 text-xs md:text-sm font-bold text-[#bd00ff] bg-purple-50 hover:bg-purple-100 active:scale-95 rounded-xl transition-all cursor-pointer border-none shadow-xs"
                     >
                       <Edit3 size={15} /> Edit Contact Us & Branch Details
                     </button>
                     {isSuperAdmin && (
                       <button
                         onClick={() => setBranchToDelete(branch)}
-                        className="flex items-center gap-1.5 px-4 py-3 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-colors cursor-pointer border-none"
+                        className="px-4 py-3 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 active:scale-95 rounded-xl transition-colors cursor-pointer border-none shrink-0"
                       >
                         <Trash2 size={15} /> Remove
                       </button>
@@ -403,9 +414,9 @@ export default function AdminBranches() {
                 </div>
 
                 {/* Metrics & GCash Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   {/* Staff Members */}
-                  <div className="bg-purple-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-purple-100/50">
+                  <div className="bg-purple-50/60 rounded-2xl p-3.5 sm:p-4 md:p-5 flex flex-col justify-between gap-3 border border-purple-100/50">
                     <div className="flex items-center justify-between text-xs font-bold text-purple-700 uppercase tracking-wider">
                       <span className="flex items-center gap-1.5"><Users size={16} /> Staff Members</span>
                     </div>
@@ -420,7 +431,7 @@ export default function AdminBranches() {
                   </div>
 
                   {/* Available Stock */}
-                  <div className="bg-blue-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-blue-100/50">
+                  <div className="bg-blue-50/60 rounded-2xl p-3.5 sm:p-4 md:p-5 flex flex-col justify-between gap-3 border border-blue-100/50">
                     <div className="flex items-center justify-between text-xs font-bold text-blue-700 uppercase tracking-wider">
                       <span className="flex items-center gap-1.5"><Package size={16} /> Available Stock</span>
                     </div>
@@ -435,7 +446,7 @@ export default function AdminBranches() {
                   </div>
 
                   {/* Completed Sales */}
-                  <div className="bg-emerald-50/60 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-emerald-100/50">
+                  <div className="bg-emerald-50/60 rounded-2xl p-3.5 sm:p-4 md:p-5 flex flex-col justify-between gap-3 border border-emerald-100/50">
                     <div className="flex items-center justify-between text-xs font-bold text-emerald-700 uppercase tracking-wider">
                       <span className="flex items-center gap-1.5"><TrendingUp size={16} /> Completed Sales</span>
                     </div>
@@ -450,17 +461,17 @@ export default function AdminBranches() {
                   </div>
 
                   {/* GCash Payment Info */}
-                  <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/50 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-3 border border-blue-200/70">
+                  <div className="bg-gradient-to-br from-blue-50/90 to-indigo-50/50 rounded-2xl p-3.5 sm:p-4 md:p-5 flex flex-col justify-between gap-3 border border-blue-200/70">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#005ce6] uppercase tracking-wider flex items-center gap-1.5">
                         <QrCode size={16} /> GCash Payment
                       </span>
                       {branch.gcashQrCode ? (
-                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 whitespace-nowrap">
                           <CheckCircle2 size={11} /> Official QR
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
                           Auto QR Active
                         </span>
                       )}
@@ -493,7 +504,7 @@ export default function AdminBranches() {
         </div>
       ) : (
         /* Multi-Branch 3-Column Grid for Super Admin */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredBranches.map((branch) => {
             const admins = branch.adminsCount || 0;
             const cashiers = branch.cashiersCount || 0;
@@ -503,7 +514,7 @@ export default function AdminBranches() {
             return (
             <div 
               key={branch.id} 
-              className={`bg-white rounded-3xl p-6 shadow-sm border transition-all hover:shadow-md flex flex-col justify-between gap-5 ${
+              className={`bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border transition-all hover:shadow-md flex flex-col justify-between gap-5 ${
                 branch.status === 'Active' ? 'border-gray-100' : 'border-red-200 bg-red-50/20'
               }`}
             >
