@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle2, ShieldCheck, FileText, Plus, Trash2, Sparkles, Lock } from 'lucide-react';
+import Link from 'next/link';
+import { Save, CheckCircle2, ShieldCheck, FileText, Plus, Trash2, Sparkles, Lock, ChevronLeft } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
 interface CustomPolicy {
@@ -136,30 +137,43 @@ export default function AdminTermsConditions() {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl font-['Inter']">
-      {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-[1.6rem] font-bold text-[#111]">Terms & Privacy</h2>
-          <p className="text-gray-500 text-sm mt-0.5">
-            {isSuperAdmin 
-              ? 'Manage, customize, and publish customer agreements, purchase rules, repair terms, and privacy policies.'
-              : 'View system-wide terms, conditions, and privacy policies managed by the Super Admin.'}
-          </p>
-        </div>
+    <div className="flex flex-col gap-6 max-w-6xl font-['Inter'] w-full mx-auto pb-10">
+      {/* Top Header Card */}
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto min-w-0">
+          <Link
+            href="/admin/settings"
+            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0 active:scale-95"
+            title="Back to Settings"
+          >
+            <ChevronLeft size={20} className="sm:w-[22px] sm:h-[22px]" />
+          </Link>
 
-        {/* Status Badge */}
-        {isSuperAdmin ? (
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-50 border border-purple-200 text-[#BF00FF] font-bold text-xs rounded-full self-start sm:self-auto shadow-2xs">
-            <Sparkles size={14} />
-            <span>Super Admin • Full Edit Access</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 m-0 leading-tight">
+                Terms & Privacy
+              </h2>
+              {isSuperAdmin ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] sm:text-xs rounded-full border border-purple-200 shrink-0 whitespace-nowrap shadow-2xs">
+                  <Sparkles size={12} />
+                  Super Admin • Full Edit Access
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-gray-100 text-gray-700 font-extrabold text-[11px] sm:text-xs rounded-full border border-gray-200 shrink-0 whitespace-nowrap shadow-2xs">
+                  <Lock size={12} className="text-[#BF00FF]" />
+                  Branch Admin • Read Only
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-1 leading-relaxed">
+              {isSuperAdmin 
+                ? 'Manage, customize, and publish customer agreements, purchase rules, repair terms, and privacy policies.'
+                : 'View system-wide terms, conditions, and privacy policies managed by the Super Admin.'}
+            </p>
           </div>
-        ) : (
-          <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gray-100 border border-gray-200 text-gray-700 font-bold text-xs rounded-full self-start sm:self-auto shadow-2xs">
-            <Lock size={14} className="text-[#BF00FF]" />
-            <span>Branch Admin • Read Only</span>
-          </div>
-        )}
+        </div>
       </div>
 
       {errorMsg && (
@@ -169,7 +183,7 @@ export default function AdminTermsConditions() {
       )}
 
       {/* Main Container Card */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm p-6 md:p-8 w-full flex flex-col gap-6">
+      <div className="bg-white rounded-2xl border border-purple-100 shadow-xs p-4 sm:p-6 md:p-8 w-full flex flex-col gap-6">
         
         {/* Navigation Tabs */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
@@ -222,16 +236,16 @@ export default function AdminTermsConditions() {
                 
                 {/* 1. Terms of Service */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>1. Terms of Service</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <label className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#BF00FF] shrink-0"></span>
+                      <span className="leading-snug">1. Terms of Service</span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Customer agreements, device purchases, and warranties</span>
+                    <span className="text-xs text-gray-400 font-medium sm:text-right pl-4 sm:pl-0">Customer agreements, device purchases, and warranties</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
-                      className="w-full h-32 p-4 rounded-xl border-2 border-purple-200 focus:border-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
+                      className="w-full h-32 p-4 rounded-xl border border-gray-200 focus:border-[#BF00FF] focus:ring-1 focus:ring-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
                       value={purchasePolicy}
                       onChange={(e) => setPurchasePolicy(e.target.value)}
                       placeholder="Enter terms of service, customer sales agreements, and warranty rules..."
@@ -245,16 +259,16 @@ export default function AdminTermsConditions() {
 
                 {/* 2. Refund Policy */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>2. Refund Policy</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <label className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#BF00FF] shrink-0"></span>
+                      <span className="leading-snug">2. Refund Policy</span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Returns, 7-day replacement window, and refund eligibility</span>
+                    <span className="text-xs text-gray-400 font-medium sm:text-right pl-4 sm:pl-0">Returns, 7-day replacement window, and refund eligibility</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
-                      className="w-full h-32 p-4 rounded-xl border-2 border-purple-200 focus:border-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
+                      className="w-full h-32 p-4 rounded-xl border border-gray-200 focus:border-[#BF00FF] focus:ring-1 focus:ring-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
                       value={refundPolicy}
                       onChange={(e) => setRefundPolicy(e.target.value)}
                       placeholder="Enter refund terms, return requirements, factory defect replacements..."
@@ -268,16 +282,16 @@ export default function AdminTermsConditions() {
 
                 {/* 3. Payment Policy */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>3. Payment & Settlement Guidelines</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <label className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#BF00FF] shrink-0"></span>
+                      <span className="leading-snug">3. Payment & Settlement Guidelines</span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Cash, GCash, downpayments, and layaways</span>
+                    <span className="text-xs text-gray-400 font-medium sm:text-right pl-4 sm:pl-0">Cash, GCash, downpayments, and layaways</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
-                      className="w-full h-32 p-4 rounded-xl border-2 border-purple-200 focus:border-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
+                      className="w-full h-32 p-4 rounded-xl border border-gray-200 focus:border-[#BF00FF] focus:ring-1 focus:ring-[#BF00FF] bg-white outline-none resize-y font-['Inter'] text-[#222] text-sm leading-relaxed transition-all"
                       value={paymentPolicy}
                       onChange={(e) => setPaymentPolicy(e.target.value)}
                       placeholder="Enter payment policies, accepted methods, downpayment terms..."
@@ -291,12 +305,12 @@ export default function AdminTermsConditions() {
 
                 {/* 4. Repair Policy */}
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>4. Repair Service Terms & Diagnostic Coverage</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <label className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#BF00FF] shrink-0"></span>
+                      <span className="leading-snug">4. Repair Service Terms & Diagnostic Coverage</span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Device diagnostics, part warranties & service terms</span>
+                    <span className="text-xs text-gray-400 font-medium sm:text-right pl-4 sm:pl-0">Device diagnostics, part warranties & service terms</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
@@ -364,12 +378,12 @@ export default function AdminTermsConditions() {
             {activeTab === 'privacy' && (
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[1.05rem] font-bold text-[#111] flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#BF00FF]"></span>
-                      <span>Privacy Policy</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <label className="text-sm sm:text-base font-bold text-gray-900 flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#BF00FF] shrink-0"></span>
+                      <span className="leading-snug">Privacy Policy</span>
                     </label>
-                    <span className="text-xs text-gray-400 font-medium">Customer personal data, privacy & disclosure rules</span>
+                    <span className="text-xs text-gray-400 font-medium sm:text-right pl-4 sm:pl-0">Customer personal data, privacy & disclosure rules</span>
                   </div>
                   {isSuperAdmin ? (
                     <textarea 
