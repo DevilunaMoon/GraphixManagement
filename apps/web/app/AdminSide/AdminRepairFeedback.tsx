@@ -132,46 +132,58 @@ export default function AdminRepairFeedback() {
   return (
     <div className="flex flex-col gap-6 relative w-full max-w-7xl mx-auto pb-10">
       
-      {/* Top Breadcrumb / Back Link */}
-      <div className="flex items-center gap-2">
+      {/* Top Header Card */}
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto min-w-0">
+          <button
+            onClick={() => router.push('/admin/settings')}
+            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0 active:scale-95"
+            title="Back to Settings"
+          >
+            <ChevronLeft size={20} className="sm:w-[22px] sm:h-[22px]" />
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 m-0 leading-tight">
+                  Repair Feedback
+                </h2>
+                <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] sm:text-xs rounded-full border border-purple-200 shrink-0 whitespace-nowrap shadow-2xs">
+                  {totalCount} {totalCount === 1 ? 'Repair Feedback' : 'Repair Feedbacks'}
+                </span>
+              </div>
+
+              {/* Mobile Refresh Button in top right */}
+              <button
+                onClick={() => fetchFeedbacks()}
+                title="Refresh Feedback"
+                className="sm:hidden p-2 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl border border-purple-200 cursor-pointer transition-all shrink-0 flex items-center justify-center active:scale-95 shadow-2xs"
+              >
+                <RefreshCw size={15} className={isLoading ? 'animate-spin text-[#bd00ff]' : ''} />
+              </button>
+            </div>
+
+            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-1 leading-relaxed">
+              {isSuperAdmin 
+                ? 'View customer feedback, ratings, and comments about completed repairs across all Graphix branches.'
+                : `Viewing customer feedback and service ratings for completed repairs at ${userBranch || 'your assigned'} branch.`}
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop Refresh Button */}
         <button
-          onClick={() => router.push('/admin/settings')}
-          className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-[#BF00FF] transition-colors cursor-pointer bg-transparent border-none p-0"
+          onClick={() => fetchFeedbacks()}
+          className="hidden sm:flex px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-xs rounded-xl border border-purple-200 cursor-pointer transition-all items-center gap-1.5 shrink-0 active:scale-95 shadow-xs"
         >
-          <ArrowLeft size={16} />
-          <span>Back to Settings</span>
+          <RefreshCw size={14} className={isLoading ? 'animate-spin text-[#bd00ff]' : ''} />
+          <span>Refresh</span>
         </button>
       </div>
 
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-[1.8rem] font-black text-[#111] tracking-tight">Repair Feedback</h2>
-            <span className="bg-[#BF00FF]/10 text-[#BF00FF] border border-[#BF00FF]/30 font-bold px-3 py-0.5 rounded-full text-xs">
-              {totalCount} {totalCount === 1 ? 'Repair Feedback' : 'Repair Feedbacks'}
-            </span>
-          </div>
-          <p className="text-gray-500 text-sm mt-1">
-            {isSuperAdmin 
-              ? 'View customer feedback, ratings, and comments about completed repairs across all Graphix branches.'
-              : `Viewing customer feedback and service ratings for completed repairs at ${userBranch || 'your assigned'} branch.`}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 self-start md:self-auto">
-          <button
-            onClick={() => fetchFeedbacks()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] font-semibold text-sm rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
-          >
-            <RefreshCw size={16} className={isLoading ? 'animate-spin text-[#BF00FF]' : ''} />
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
-
       {/* Filter Toolbar */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF]/40 shadow-sm p-4 md:p-5 flex flex-col gap-4">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs p-3.5 sm:p-4 md:p-5 flex flex-col gap-3.5 sm:gap-4">
         
         <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
           {/* Search input */}
@@ -185,7 +197,7 @@ export default function AdminRepairFeedback() {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 focus:border-[#BF00FF] focus:bg-white rounded-xl text-sm font-medium outline-none transition-all"
+              className="w-full pl-10 pr-10 py-2.5 bg-gray-50/80 border border-gray-200 focus:border-[#BF00FF] focus:bg-white rounded-xl text-xs sm:text-sm font-medium outline-none transition-all shadow-2xs"
             />
             {searchTerm && (
               <button
@@ -193,17 +205,17 @@ export default function AdminRepairFeedback() {
                   setSearchTerm('');
                   setCurrentPage(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
               >
                 <X size={14} />
               </button>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 sm:gap-3">
             {/* Branch filter (Super Admin only) */}
             {isSuperAdmin ? (
-              <div className="relative min-w-[170px]">
+              <div className="relative flex-1 sm:flex-none sm:min-w-[170px]">
                 <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#BF00FF] w-4 h-4 pointer-events-none" />
                 <select
                   value={selectedBranchFilter}
@@ -211,29 +223,23 @@ export default function AdminRepairFeedback() {
                     setSelectedBranchFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 hover:border-[#BF00FF] focus:border-[#BF00FF] focus:bg-white rounded-xl text-sm font-semibold text-gray-800 outline-none cursor-pointer transition-all appearance-none"
+                  className="w-full pl-9 pr-8 py-2.5 bg-gray-50/80 border border-gray-200 hover:border-[#BF00FF] focus:border-[#BF00FF] focus:bg-white rounded-xl text-xs sm:text-sm font-semibold text-gray-800 outline-none cursor-pointer transition-all appearance-none shadow-2xs"
                 >
                   <option value="all">🏢 All Branches</option>
                   <option value="Tagoloan">📍 Tagoloan Branch</option>
                   <option value="Villanueva">📍 Villanueva Branch</option>
                   <option value="Jasaan">📍 Jasaan Branch</option>
-                  {branches && branches.length > 0 && branches
-                    .filter(b => !['tagoloan', 'villanueva', 'jasaan'].includes(b.name.toLowerCase().replace(/\s*branch$/i, '')))
-                    .map(b => (
-                      <option key={b.id} value={b.name}>📍 {b.name}</option>
-                    ))
-                  }
                 </select>
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3.5 py-2.5 bg-purple-50 border border-purple-200 rounded-xl text-xs font-bold text-[#BF00FF]">
-                <Building2 size={14} />
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-purple-50/80 border border-purple-200 rounded-xl text-xs font-bold text-[#BF00FF] shrink-0 whitespace-nowrap shadow-2xs">
+                <Building2 size={14} className="shrink-0" />
                 <span>{userBranch || 'Tagoloan'} Branch</span>
               </div>
             )}
 
             {/* Date filter */}
-            <div className="relative min-w-[170px]">
+            <div className="relative flex-1 sm:flex-none sm:min-w-[170px]">
               <DatePicker
                 value={filterDate}
                 onChange={(newDate) => {
@@ -241,7 +247,7 @@ export default function AdminRepairFeedback() {
                   setCurrentPage(1);
                 }}
                 placeholder="Filter by Date"
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 hover:border-[#BF00FF] rounded-xl text-sm font-semibold text-gray-800 transition-all flex items-center justify-between"
+                className="w-full px-3.5 py-2.5 bg-gray-50/80 border border-gray-200 hover:border-[#BF00FF] rounded-xl text-xs sm:text-sm font-semibold text-gray-800 transition-all flex items-center justify-between shadow-2xs"
               />
             </div>
 
@@ -249,7 +255,7 @@ export default function AdminRepairFeedback() {
             {(searchTerm || filterDate || selectedSentiment !== 'all' || (isSuperAdmin && selectedBranchFilter !== 'all')) && (
               <button
                 onClick={handleClearFilters}
-                className="px-3 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
               >
                 <X size={14} />
                 <span>Reset</span>
@@ -298,7 +304,7 @@ export default function AdminRepairFeedback() {
       </div>
 
       {/* Main Feedback List / Cards */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm p-5 md:p-8 w-full flex flex-col gap-6">
+      <div className="bg-white rounded-2xl border border-purple-100 shadow-xs p-4 sm:p-6 md:p-8 w-full flex flex-col gap-6">
         
         {isLoading ? (
           <div className="py-24 flex flex-col items-center justify-center gap-4">
@@ -443,28 +449,28 @@ export default function AdminRepairFeedback() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-purple-100">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-purple-100">
             <span className="text-xs font-semibold text-gray-500">
               Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} of {totalCount} reviews
             </span>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-xl border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all cursor-pointer"
+                className="w-9 h-9 rounded-xl border border-gray-200 hover:border-[#BF00FF] hover:bg-purple-50 text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all flex items-center justify-center cursor-pointer shadow-2xs"
               >
-                <ChevronLeft size={18} />
+                <ChevronLeft size={16} />
               </button>
-              <span className="text-sm font-bold text-gray-800 px-2">
+              <span className="text-xs sm:text-sm font-bold text-gray-800 px-2">
                 Page {currentPage} of {totalPages}
               </span>
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-xl border border-gray-200 hover:border-[#BF00FF] text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all cursor-pointer"
+                className="w-9 h-9 rounded-xl border border-gray-200 hover:border-[#BF00FF] hover:bg-purple-50 text-gray-700 hover:text-[#BF00FF] disabled:opacity-40 disabled:hover:border-gray-200 disabled:hover:bg-transparent disabled:hover:text-gray-700 disabled:cursor-not-allowed transition-all flex items-center justify-center cursor-pointer shadow-2xs"
               >
-                <ChevronRight size={18} />
+                <ChevronRight size={16} />
               </button>
             </div>
           </div>
