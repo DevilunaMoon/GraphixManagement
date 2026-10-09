@@ -221,8 +221,8 @@ export default function RepairDashboardView({
       {/* Charts Section: Repair Activity Overview (Bar Chart) & Repair Status Overview (Donut/Pie) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Repair Activity Overview Bar Chart */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
-          <div className="flex items-center justify-between mb-8">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-2">
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-bold text-[#111]">Repair Activity Overview</h3>
@@ -234,8 +234,8 @@ export default function RepairDashboardView({
             </div>
           </div>
 
-          <div className="w-full overflow-x-auto border-2 border-[#BF00FF] rounded-xl relative">
-            <div className="w-full min-w-[500px] h-[300px] flex justify-around items-end gap-2 text-xs md:text-sm p-5">
+          <div className="w-full border-2 border-[#BF00FF] rounded-xl relative overflow-hidden">
+            <div className="w-full h-[250px] sm:h-[300px] flex justify-between items-end gap-1 sm:gap-2 px-1.5 py-3 sm:p-5">
               {months.map((month, i) => {
                 const count = monthlyActivity[i];
                 const rev = monthlyRevenue[i];
@@ -244,19 +244,19 @@ export default function RepairDashboardView({
                 return (
                   <div 
                     key={month} 
-                    className="flex flex-col items-center justify-end h-full w-full gap-2 group cursor-pointer"
+                    className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2 group cursor-pointer"
                     onClick={() => setSelectedMonthIndex(i)}
                   >
                     <div
-                      className="w-full max-w-[40px] bg-gradient-to-t from-purple-700 to-[#bd00ff] rounded-t-md hover:brightness-125 transition-all duration-300 relative flex justify-center"
+                      className="w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] bg-gradient-to-t from-purple-700 to-[#bd00ff] rounded-t-xs sm:rounded-t-md hover:brightness-125 active:brightness-125 transition-all duration-300 relative flex justify-center"
                       style={{ height: `${heightPercent}%` }}
                     >
-                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/90 text-white text-xs px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-20 shadow-lg flex flex-col items-center gap-0.5">
+                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black/90 text-white text-[10px] sm:text-xs px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-20 shadow-lg flex flex-col items-center gap-0.5">
                         <span className="font-bold">{month}: {count} {count === 1 ? 'repair' : 'repairs'}</span>
                         <span className="text-[10px] text-purple-300 font-semibold">{formatCurrency(rev)}</span>
                       </div>
                     </div>
-                    <span className="text-[#111] font-semibold">{month}</span>
+                    <span className="text-[#111] font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm tracking-tight">{month}</span>
                   </div>
                 );
               })}

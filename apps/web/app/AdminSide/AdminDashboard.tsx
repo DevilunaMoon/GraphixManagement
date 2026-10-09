@@ -197,14 +197,14 @@ export default function AdminDashboard() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
           {/* Sales Growth Bar Chart */}
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
-            <div className="mb-8">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-2">
+            <div className="mb-6 sm:mb-8">
               <h3 className="text-xl font-bold text-[#111] mb-1">Monthly Sales</h3>
               <p className="text-sm text-[#666]">Monthly Overview ({new Date().getFullYear()})</p>
             </div>
             
-            <div className="w-full overflow-x-auto border-2 border-[#BF00FF] rounded-xl relative">
-              <div className="w-full min-w-[500px] h-[300px] flex justify-around items-end gap-2 text-xs md:text-sm p-5">
+            <div className="w-full border-2 border-[#BF00FF] rounded-xl relative overflow-hidden">
+              <div className="w-full h-[250px] sm:h-[300px] flex justify-between items-end gap-1 sm:gap-2 px-1.5 py-3 sm:p-5">
               {(() => {
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 const salesData = dashboardData?.salesGrowth || Array(12).fill(0);
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
                   return <ChartBar key={month} label={month} height={`${heightPercent}%`} value={value} />;
                 });
               })()}
-            </div>
+              </div>
             </div>
           </div>
 
@@ -473,18 +473,18 @@ function StatCard({
 
 function ChartBar({ label, height, value }: { label: string, height: string, value?: number }) {
   return (
-    <div className="flex flex-col items-center justify-end h-full w-full gap-2 group">
+    <div className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2 group">
       <div 
-        className="w-full max-w-[40px] bg-[#bd00ff] rounded-t-md hover:brightness-125 transition-all duration-300 cursor-pointer relative flex justify-center" 
+        className="w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] bg-[#bd00ff] rounded-t-xs sm:rounded-t-md hover:brightness-125 active:brightness-125 transition-all duration-300 cursor-pointer relative flex justify-center" 
         style={{ height }}
       >
         {value !== undefined && (
-          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black text-white text-[10px] sm:text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-20 shadow-lg">
             {formatCurrency(value)}
           </div>
         )}
       </div>
-      <span className="text-[#111] font-semibold">{label}</span>
+      <span className="text-[#111] font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm tracking-tight">{label}</span>
     </div>
   );
 }

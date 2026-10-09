@@ -268,14 +268,14 @@ export default function RepairAnalyticsView({
       {/* Charts Section: Monthly Activity & Status Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Monthly Activity Bar Chart */}
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
-          <div className="mb-8">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-2">
+          <div className="mb-6 sm:mb-8">
             <h3 className="text-xl font-bold text-[#111] mb-1">Monthly Repair Activity</h3>
             <p className="text-sm text-[#666]">Repair Volume Overview ({effectiveBranchLabel})</p>
           </div>
 
-          <div className={`w-full overflow-x-auto border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
-            <div className="w-full min-w-[500px] h-[300px] p-5 flex justify-around items-end gap-2 text-xs md:text-sm">
+          <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative overflow-hidden transition-colors duration-300`}>
+            <div className="w-full h-[250px] sm:h-[300px] px-1.5 py-3 sm:p-5 flex justify-between items-end gap-1 sm:gap-2 text-xs md:text-sm">
               {months.map((month, i) => {
                 const count = monthlyActivity[i];
                 const heightPercent = count > 0 ? Math.max((count / maxRepairs) * 85, 4) : 2;
@@ -283,19 +283,19 @@ export default function RepairAnalyticsView({
                 return (
                   <div
                     key={month}
-                    className="flex flex-col items-center justify-end h-full w-full gap-2 group cursor-pointer"
+                    className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2 group cursor-pointer"
                     onClick={() => setSelectedMonthIndex(i)}
                   >
                     <div
-                      className={`w-full max-w-[40px] bg-gradient-to-t ${styles.gradient} rounded-t-md hover:brightness-125 transition-all duration-300 relative flex justify-center`}
+                      className={`w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] bg-gradient-to-t ${styles.gradient} rounded-t-xs sm:rounded-t-md hover:brightness-125 active:brightness-125 transition-all duration-300 relative flex justify-center`}
                       style={{ height: `${heightPercent}%` }}
                     >
-                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/90 text-white text-xs px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-20 shadow-lg flex flex-col items-center gap-0.5">
+                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black/90 text-white text-[10px] sm:text-xs px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-20 shadow-lg flex flex-col items-center gap-0.5">
                         <span className="font-bold">{month}: {count} repairs</span>
                         <span className="text-[10px] text-purple-300 font-semibold">{formatCurrency(monthlyRevenue[i])}</span>
                       </div>
                     </div>
-                    <span className="text-[#111] font-semibold">{month}</span>
+                    <span className="text-[#111] font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm tracking-tight">{month}</span>
                   </div>
                 );
               })}

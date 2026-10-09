@@ -316,14 +316,14 @@ export default function AdminAnalytics() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
           {/* Year-Over-Year Sales Growth Bar Chart */}
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-2">
-            <div className="mb-8">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-2">
+            <div className="mb-6 sm:mb-8">
               <h3 className="text-xl font-bold text-[#111] mb-1">Year-Over-Year Sales Growth</h3>
               <p className="text-sm text-[#666]">All-Time Overview ({effectiveBranchLabel})</p>
             </div>
             
-            <div className={`w-full overflow-x-auto border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
-              <div className="w-full min-w-[500px] h-[300px] p-5 flex justify-around items-end gap-2 text-xs md:text-sm">
+            <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative overflow-hidden transition-colors duration-300`}>
+              <div className="w-full h-[250px] sm:h-[300px] px-1.5 py-3 sm:p-5 flex justify-between items-end gap-1 sm:gap-2 text-xs md:text-sm">
                 {reportData.map((data) => (
                   <ChartBar key={`sales-${data.year}`} label={data.year} height={() => `${data.salesGrowth}%`} color={`bg-gradient-to-t ${styles.gradient}`} />
                 ))}
@@ -578,12 +578,12 @@ function ChartBar({ label, height, color }: { label: string, height: () => strin
   }, [height]);
 
   return (
-    <div className="flex flex-col items-center justify-end h-full w-full gap-2">
+    <div className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2">
       <div 
-        className={`w-full max-w-[40px] ${color} rounded-t-md hover:brightness-125 transition-all duration-1000 ease-out cursor-pointer`}
+        className={`w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] ${color} rounded-t-xs sm:rounded-t-md hover:brightness-125 transition-all duration-1000 ease-out cursor-pointer`}
         style={{ height: h }}
       ></div>
-      <span className="text-[#111] font-semibold">{label}</span>
+      <span className="text-[#111] font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm tracking-tight">{label}</span>
     </div>
   );
 }
