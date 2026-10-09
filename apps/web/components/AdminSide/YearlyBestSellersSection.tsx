@@ -159,27 +159,27 @@ export default function YearlyBestSellersSection({
 
   return (
     <>
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 lg:col-span-1 flex flex-col justify-between">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-1 flex flex-col justify-between">
         {/* Header with Title and Super Admin Branch Switcher */}
         <div>
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-bold text-[#111]">Yearly Best Sellers</h3>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-700 border border-purple-200">
-                  {activeBranch}
-                </span>
-              </div>
-              <p className="text-sm text-[#666] mt-0.5">{timeframeLabel}</p>
+          <div className="flex items-start justify-between gap-2.5 mb-3">
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-xl font-bold text-[#111] leading-snug">Yearly Best Sellers</h3>
+              <p className="text-xs sm:text-sm text-[#666] mt-0.5 font-medium">{timeframeLabel}</p>
             </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-semibold text-xs transition-colors border border-purple-200/60 shadow-xs shrink-0 cursor-pointer"
-              title="View detailed branch best sellers"
-            >
-              <ExternalLink size={14} />
-              <span>Details</span>
-            </button>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold bg-purple-100 text-[#8b00cc] border border-purple-200/80 shadow-2xs">
+                {activeBranch}
+              </span>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-xs transition-all border border-purple-200/60 shadow-2xs shrink-0 cursor-pointer active:scale-95"
+                title="View detailed branch best sellers"
+              >
+                <ExternalLink size={13} />
+                <span>Details</span>
+              </button>
+            </div>
           </div>
 
           {/* Super Admin Branch Switcher Tabs: All Branches, Tagoloan, Villanueva, Jasaan */}
@@ -214,16 +214,16 @@ export default function YearlyBestSellersSection({
           )}
 
           {/* Branch Subheader for clarity */}
-          <div className="mb-4 pb-2 border-b border-purple-50 flex items-center justify-between text-xs">
-            <span className="font-bold text-gray-800 flex items-center gap-1.5">
+          <div className="mb-4 pb-2 border-b border-purple-50 flex items-center justify-between text-xs gap-2">
+            <span className="font-bold text-gray-800 flex items-center gap-1.5 min-w-0 truncate">
               {isAllBranches ? (
-                <Globe size={13} className="text-[#bd00ff]" />
+                <Globe size={13} className="text-[#bd00ff] shrink-0" />
               ) : (
-                <Building2 size={13} className="text-[#bd00ff]" />
+                <Building2 size={13} className="text-[#bd00ff] shrink-0" />
               )}
-              {isAllBranches ? 'All Branches — Best Sellers' : `${activeBranch} Branch — Best Sellers`}
+              <span className="truncate">{isAllBranches ? 'All Branches — Best Sellers' : `${activeBranch} Branch — Best Sellers`}</span>
             </span>
-            <span className="text-gray-500 font-medium">
+            <span className="text-gray-500 font-medium shrink-0">
               {totalUnits} {totalUnits === 1 ? 'unit' : 'units'} sold
             </span>
           </div>
