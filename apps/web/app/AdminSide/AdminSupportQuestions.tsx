@@ -175,23 +175,38 @@ export default function AdminSupportQuestions() {
     <div className="flex flex-col gap-6 font-['Inter'] max-w-7xl mx-auto w-full pb-10">
       
       {/* Top Header Card */}
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-200/80 shadow-xs p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-all">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 w-full sm:w-auto min-w-0">
           <button
             onClick={() => router.push('/admin/settings')}
-            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0"
+            className="w-10 h-10 rounded-xl bg-purple-50 text-[#BF00FF] hover:bg-[#BF00FF] hover:text-white flex items-center justify-center transition-all cursor-pointer border border-purple-100 shadow-xs shrink-0 active:scale-95"
             title="Back to Settings"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={20} className="sm:w-[22px] sm:h-[22px]" />
           </button>
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Customer Support Inquiries</h2>
-              <span className="px-3 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-xs rounded-full border border-purple-200 shadow-2xs">
-                {isSuperAdmin ? 'All Branches View' : 'Assigned Branch Questions'}
-              </span>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-black text-gray-900 m-0 leading-tight">
+                  Customer Support Inquiries
+                </h2>
+                <span className="px-2.5 py-0.5 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] sm:text-xs rounded-full border border-purple-200 shrink-0 whitespace-nowrap">
+                  {isSuperAdmin ? 'All Branches View' : 'Assigned Branch Questions'}
+                </span>
+              </div>
+
+              {/* Mobile Refresh Button in top right */}
+              <button
+                onClick={fetchQuestions}
+                title="Refresh Questions"
+                className="sm:hidden p-2 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl border border-purple-200 cursor-pointer transition-all shrink-0 flex items-center justify-center active:scale-95 shadow-2xs"
+              >
+                <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              </button>
             </div>
-            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+
+            <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-1 leading-relaxed">
               {isSuperAdmin
                 ? 'Review, monitor, and answer customer support questions submitted across all store branches.'
                 : 'Review and answer customer support questions submitted to your assigned branch.'}
@@ -199,11 +214,12 @@ export default function AdminSupportQuestions() {
           </div>
         </div>
 
+        {/* Desktop Refresh Button */}
         <button
           onClick={fetchQuestions}
-          className="px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-xs rounded-xl border border-purple-200 cursor-pointer transition-all flex items-center gap-1.5 self-start sm:self-auto shrink-0"
+          className="hidden sm:flex px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-xs rounded-xl border border-purple-200 cursor-pointer transition-all items-center gap-1.5 shrink-0 active:scale-95 shadow-xs"
         >
-          <RefreshCw size={14} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           <span>Refresh</span>
         </button>
       </div>
