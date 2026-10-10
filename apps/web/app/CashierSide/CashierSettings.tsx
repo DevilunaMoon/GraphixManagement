@@ -26,7 +26,8 @@ import {
   Lock,
   Loader2,
   X,
-  MessageSquare
+  MessageSquare,
+  RotateCw
 } from 'lucide-react';
 
 export default function CashierSettings({ initialUser }: { initialUser?: any }) {
@@ -550,20 +551,23 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
             {/* TAB: CUSTOMER INQUIRIES (Cashier Read-Only) */}
             {activeHelpTab === 'questions' && (
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-gray-900">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs sm:text-sm font-bold text-gray-900 leading-snug">
                       Customer Inquiries for {assignedBranch} Branch
                     </span>
-                    <span className="px-2.5 py-0.5 bg-purple-50 text-[#BF00FF] font-extrabold text-[11px] rounded-full border border-purple-200">
+                    <span className="px-2.5 py-0.5 bg-purple-50 text-[#BF00FF] font-extrabold text-[10px] sm:text-[11px] rounded-full border border-purple-200 whitespace-nowrap shrink-0 shadow-2xs">
                       Read Only
                     </span>
                   </div>
                   <button
                     onClick={fetchSupportQuestions}
-                    className="text-xs font-bold text-[#BF00FF] hover:underline bg-transparent border-none cursor-pointer"
+                    disabled={loadingSupportQuestions}
+                    className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-purple-50 active:scale-95 text-[#BF00FF] border border-purple-200 rounded-xl font-bold text-xs shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                    title="Refresh inquiries"
                   >
-                    Refresh
+                    <RotateCw size={13} className={`${loadingSupportQuestions ? 'animate-spin' : 'transition-transform duration-300'}`} />
+                    <span>{loadingSupportQuestions ? 'Refreshing...' : 'Refresh'}</span>
                   </button>
                 </div>
 
