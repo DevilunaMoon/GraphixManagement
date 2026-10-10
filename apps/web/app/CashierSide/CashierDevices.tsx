@@ -2834,7 +2834,7 @@ export default function CashierDevices() {
                     placeholder="e.g. iPhone 13 Pro Max"
                     value={newDeviceName}
                     onChange={(e) => setNewDeviceName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                     required
                   />
                 </div>
@@ -2843,7 +2843,7 @@ export default function CashierDevices() {
                   <select
                     value={newDeviceIsPreOwned ? 'pre-owned' : 'new'}
                     onChange={(e) => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
-                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-purple-300 bg-white rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                   >
                     <option value="new">New</option>
                     <option value="pre-owned">Pre-Owned</option>
@@ -2863,7 +2863,7 @@ export default function CashierDevices() {
                   <select
                     value={newDeviceCategory}
                     onChange={(e) => setNewDeviceCategory(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-gray-300 bg-white text-gray-900 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                     required
                   >
                     <option value="">Select Brand...</option>
@@ -2889,7 +2889,7 @@ export default function CashierDevices() {
                     placeholder="4500"
                     value={newDeviceCost}
                     onChange={(e) => setNewDeviceCost(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                     required
                   />
                 </div>
@@ -2901,7 +2901,7 @@ export default function CashierDevices() {
                     placeholder="5999"
                     value={newDevicePrice}
                     onChange={(e) => setNewDevicePrice(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                     required
                   />
                 </div>
@@ -2910,7 +2910,7 @@ export default function CashierDevices() {
                   <select
                     value={newDeviceType}
                     onChange={(e) => setNewDeviceType(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-gray-300 bg-white text-gray-900 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                   >
                     <option value="Smartphone">Smartphone</option>
                     <option value="Laptop">Laptop</option>
@@ -2970,7 +2970,7 @@ export default function CashierDevices() {
                                 updated[idx]!.name = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                              className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                               placeholder="32 GB"
                             />
                           </td>
@@ -2983,7 +2983,7 @@ export default function CashierDevices() {
                                 updated[idx]!.productId = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
                               placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                             />
                           </td>
@@ -2996,7 +2996,7 @@ export default function CashierDevices() {
                                 updated[idx]!.color = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none"
+                              className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                               placeholder="Red"
                             />
                           </td>
@@ -3009,7 +3009,7 @@ export default function CashierDevices() {
                                 updated[idx]!.storage = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none"
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                               placeholder="32 GB"
                             />
                           </td>
@@ -3025,7 +3025,7 @@ export default function CashierDevices() {
                                 else updated[idx]!.jasaanStock = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none"
+                              className="border border-gray-300 bg-white text-gray-900 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                             />
                           </td>
                           <td className="py-2 px-3 text-right">
@@ -3039,7 +3039,7 @@ export default function CashierDevices() {
                                 updated[idx]!.price = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none"
+                              className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                             />
                           </td>
                           <td className="py-2 px-2 text-center">
@@ -3104,7 +3104,7 @@ export default function CashierDevices() {
                   placeholder="Technical specifications, included items, warranty notes..."
                   value={newDeviceSpecs}
                   onChange={(e) => setNewDeviceSpecs(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                 />
               </div>
 
@@ -3153,7 +3153,7 @@ export default function CashierDevices() {
                     type="text"
                     value={editDeviceName}
                     onChange={(e) => setEditDeviceName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                     required
                   />
                 </div>
@@ -3162,7 +3162,7 @@ export default function CashierDevices() {
                   <select
                     value={editDeviceIsPreOwned ? 'pre-owned' : 'new'}
                     onChange={(e) => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
-                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-purple-300 bg-white rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                   >
                     <option value="new">New</option>
                     <option value="pre-owned">Pre-Owned</option>
@@ -3173,7 +3173,7 @@ export default function CashierDevices() {
                   <select
                     value={editDeviceCategory}
                     onChange={(e) => setEditDeviceCategory(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-gray-300 bg-white text-gray-900 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                     required
                   >
                     <option value="">Select Brand...</option>
@@ -3192,7 +3192,7 @@ export default function CashierDevices() {
                     min="0"
                     value={editDeviceCost}
                     onChange={(e) => setEditDeviceCost(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                     required
                   />
                 </div>
@@ -3203,7 +3203,7 @@ export default function CashierDevices() {
                     min="0"
                     value={editDevicePrice}
                     onChange={(e) => setEditDevicePrice(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                     required
                   />
                 </div>
@@ -3212,7 +3212,7 @@ export default function CashierDevices() {
                   <select
                     value={editDeviceType}
                     onChange={(e) => setEditDeviceType(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-gray-300 bg-white text-gray-900 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shadow-2xs"
                   >
                     <option value="Smartphone">Smartphone</option>
                     <option value="Laptop">Laptop</option>
@@ -3278,7 +3278,7 @@ export default function CashierDevices() {
                   rows={3}
                   value={editDeviceSpecs}
                   onChange={(e) => setEditDeviceSpecs(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
                 />
               </div>
 
@@ -3342,7 +3342,7 @@ export default function CashierDevices() {
                                   updated[idx]!.name = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                                className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 placeholder="e.g. 32 GB"
                               />
                             </td>
@@ -3355,7 +3355,7 @@ export default function CashierDevices() {
                                   updated[idx]!.productId = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                               />
                             </td>
@@ -3368,7 +3368,7 @@ export default function CashierDevices() {
                                   updated[idx]!.color = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none"
+                                className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 placeholder="Red"
                               />
                             </td>
@@ -3381,7 +3381,7 @@ export default function CashierDevices() {
                                   updated[idx]!.storage = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none"
+                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 placeholder="32 GB"
                               />
                             </td>
@@ -3396,7 +3396,7 @@ export default function CashierDevices() {
                                   updated[idx]!.price = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none"
+                                className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                               />
                             </td>
                             <td className="py-2 px-3 text-center">
