@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Building2, 
   HelpCircle, 
@@ -29,6 +30,7 @@ import {
 } from 'lucide-react';
 
 export default function CashierSettings({ initialUser }: { initialUser?: any }) {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<'menu' | 'branch' | 'help' | 'terms'>('menu');
   
   // Data states
@@ -161,33 +163,42 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
       {/* 1. Main Settings Navigation Menu */}
       {activeSection === 'menu' && (
         <>
-          <div className="mb-2">
-            <h2 className="text-[1.6rem] font-bold text-[#111]">Settings</h2>
-            <p className="text-sm text-gray-500 font-medium mt-1">
-              View your branch information, system operating guidelines, and store policies.
-            </p>
+          <div className="flex items-center gap-2.5 sm:gap-3 mb-1">
+            <button 
+              onClick={() => router.push('/cashier/dashboard')} 
+              className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0"
+              title="Back to POS Dashboard"
+            >
+              <ChevronLeft size={28} />
+            </button>
+            <div>
+              <h2 className="text-xl sm:text-[1.6rem] font-bold text-[#111] m-0 leading-tight">Settings</h2>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5 m-0">
+                View your branch information, system operating guidelines, and store policies.
+              </p>
+            </div>
           </div>
 
           {/* Settings Card */}
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm py-5 w-full overflow-hidden">
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border-2 border-[#BF00FF] shadow-sm py-3 sm:py-5 w-full overflow-hidden">
             <ul className="flex flex-col list-none m-0 p-0">
               
               <SettingsItem 
-                icon={<Building2 className="text-[#BF00FF] w-7 h-7" />}
+                icon={<Building2 className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
                 label="Branch Information"
                 sublabel="View your assigned branch information and contact details."
                 onClick={() => setActiveSection('branch')}
               />
 
               <SettingsItem 
-                icon={<HelpCircle className="text-[#BF00FF] w-7 h-7" />}
+                icon={<HelpCircle className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
                 label="Help & Support"
                 sublabel="Get help with Cashier functions, FAQs, and system support."
                 onClick={() => setActiveSection('help')}
               />
 
               <SettingsItem 
-                icon={<FileText className="text-[#BF00FF] w-7 h-7" />}
+                icon={<FileText className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
                 label="Terms & Privacy"
                 sublabel="View the current Terms & Conditions and Privacy Policy."
                 onClick={() => setActiveSection('terms')}
@@ -200,36 +211,31 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
 
       {/* 2. Branch Information Sub-View */}
       {activeSection === 'branch' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveSection('menu')}
-              className="p-2 bg-white hover:bg-purple-50 text-gray-700 hover:text-[#BF00FF] rounded-xl border border-gray-200 transition-colors cursor-pointer flex items-center gap-1.5 font-bold text-sm shadow-xs"
-            >
-              <ChevronLeft size={18} />
-              Back to Settings
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-[#BF00FF] flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-              <div>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center">
-                    <Building2 size={26} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-gray-900 m-0">
-                      {assignedBranch} Branch
-                    </h3>
-                    <p className="text-sm text-gray-500 font-medium m-0 mt-0.5">
-                      Assigned store branch and operational contact information
-                    </p>
-                  </div>
+        <div className="flex flex-col gap-4 sm:gap-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border-2 border-[#BF00FF] flex flex-col gap-5 sm:gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4 sm:pb-5">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <button
+                  onClick={() => setActiveSection('menu')}
+                  className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0"
+                  title="Back to Settings"
+                >
+                  <ChevronLeft size={28} />
+                </button>
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center shrink-0">
+                  <Building2 size={22} />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0 leading-tight">
+                    {assignedBranch} Branch
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+                    Assigned store branch and operational contact information
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+              <div className="flex items-center gap-2 self-start sm:self-auto pl-10 sm:pl-0">
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   Active Branch
                 </span>
@@ -333,37 +339,35 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
 
       {/* 3. Help & Support Sub-View */}
       {activeSection === 'help' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveSection('menu')}
-              className="p-2 bg-white hover:bg-purple-50 text-gray-700 hover:text-[#BF00FF] rounded-xl border border-gray-200 transition-colors cursor-pointer flex items-center gap-1.5 font-bold text-sm shadow-xs"
-            >
-              <ChevronLeft size={18} />
-              Back to Settings
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-[#BF00FF] flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border-2 border-[#BF00FF] flex flex-col gap-5 sm:gap-6">
             
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center">
-                  <HelpCircle size={26} />
+            {/* Header with Consistent Back Button */}
+            <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 sm:pb-5">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <button
+                  onClick={() => setActiveSection('menu')}
+                  className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0"
+                  title="Back to Settings"
+                >
+                  <ChevronLeft size={28} />
+                </button>
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center shrink-0">
+                  <HelpCircle size={22} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900 m-0">Help & Support</h3>
-                  <p className="text-sm text-gray-500 font-medium m-0 mt-0.5">
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0 leading-tight">Help & Support</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
                     Frequently asked questions, operation guides, and management contacts
                   </p>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start md:self-auto flex-wrap">
+              {/* Tabs: Sleek Horizontal Scroll Strip on Mobile */}
+              <div className="flex bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200 overflow-x-auto no-scrollbar gap-1 w-full max-w-full">
                 <button
                   onClick={() => setActiveHelpTab('faqs')}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activeHelpTab === 'faqs' 
                       ? 'bg-white text-[#BF00FF] shadow-xs' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -373,7 +377,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                 </button>
                 <button
                   onClick={() => setActiveHelpTab('questions')}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activeHelpTab === 'questions' 
                       ? 'bg-white text-[#BF00FF] shadow-xs' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -383,7 +387,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                 </button>
                 <button
                   onClick={() => setActiveHelpTab('guide')}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activeHelpTab === 'guide' 
                       ? 'bg-white text-[#BF00FF] shadow-xs' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -393,7 +397,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                 </button>
                 <button
                   onClick={() => setActiveHelpTab('contact')}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activeHelpTab === 'contact' 
                       ? 'bg-white text-[#BF00FF] shadow-xs' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -414,24 +418,24 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                     value={faqSearch}
                     onChange={(e) => setFaqSearch(e.target.value)}
                     placeholder="Search frequently asked questions..."
-                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-900 outline-none focus:border-[#BF00FF] transition-colors"
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-xs sm:text-sm font-semibold text-gray-900 placeholder-gray-400 outline-none focus:border-[#BF00FF] focus:ring-2 focus:ring-purple-500/20 transition-all shadow-2xs"
                   />
                 </div>
 
-                <div className="flex flex-col gap-3 mt-2">
+                <div className="flex flex-col gap-2.5 sm:gap-3 mt-1">
                   {filteredFaqs.length > 0 ? (
                     filteredFaqs.map((faq) => {
                       const isOpen = expandedFaq === faq.id;
                       return (
                         <div 
                           key={faq.id || faq.question}
-                          className="border border-purple-100 rounded-2xl overflow-hidden transition-all bg-purple-50/20 hover:bg-purple-50/40"
+                          className="border border-purple-100/80 rounded-2xl overflow-hidden transition-all bg-white hover:border-purple-300 shadow-2xs"
                         >
                           <button
                             onClick={() => setExpandedFaq(isOpen ? null : (faq.id || faq.question))}
-                            className="w-full p-4 text-left flex items-center justify-between gap-4 font-bold text-gray-900 cursor-pointer bg-transparent border-none"
+                            className="w-full p-3.5 sm:p-4 text-left flex items-center justify-between gap-3 sm:gap-4 font-bold text-gray-900 cursor-pointer bg-transparent border-none"
                           >
-                            <span className="text-sm md:text-base text-gray-900">{faq.question}</span>
+                            <span className="text-xs sm:text-sm md:text-base text-gray-900 leading-snug">{faq.question}</span>
                             {isOpen ? (
                               <ChevronUp size={18} className="text-[#BF00FF] shrink-0" />
                             ) : (
@@ -439,7 +443,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                             )}
                           </button>
                           {isOpen && (
-                            <div className="px-4 pb-4 pt-1 text-sm text-gray-600 font-medium leading-relaxed border-t border-purple-100/50">
+                            <div className="px-3.5 sm:px-4 pb-4 pt-1 text-xs sm:text-sm text-gray-600 font-medium leading-relaxed border-t border-purple-50 bg-purple-50/20">
                               {faq.answer}
                             </div>
                           )}
@@ -447,7 +451,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                       );
                     })
                   ) : (
-                    <div className="text-center py-10 text-gray-400 font-semibold text-sm">
+                    <div className="text-center py-10 text-gray-400 font-semibold text-xs sm:text-sm">
                       No frequently asked questions matched your search.
                     </div>
                   )}
@@ -546,12 +550,12 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
             {/* TAB: CUSTOMER INQUIRIES (Cashier Read-Only) */}
             {activeHelpTab === 'questions' && (
               <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-900">
+                    <span className="text-xs sm:text-sm font-bold text-gray-900">
                       Customer Inquiries for {assignedBranch} Branch
                     </span>
-                    <span className="px-2.5 py-0.5 bg-purple-50 text-[#BF00FF] font-extrabold text-xs rounded-full border border-purple-200">
+                    <span className="px-2.5 py-0.5 bg-purple-50 text-[#BF00FF] font-extrabold text-[11px] rounded-full border border-purple-200">
                       Read Only
                     </span>
                   </div>
@@ -569,56 +573,90 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                     <span>Loading inquiries...</span>
                   </div>
                 ) : supportQuestions.length === 0 ? (
-                  <div className="p-8 bg-gray-50 border border-gray-200 rounded-2xl text-center text-gray-500 font-medium text-sm">
+                  <div className="p-8 bg-gray-50 border border-gray-200 rounded-2xl text-center text-gray-500 font-medium text-xs sm:text-sm">
                     No customer support inquiries submitted to {assignedBranch} Branch yet.
                   </div>
                 ) : (
-                  <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-2xs">
-                    <table className="w-full text-left border-collapse text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                          <th className="py-3 px-4">Customer</th>
-                          <th className="py-3 px-4">Subject</th>
-                          <th className="py-3 px-4">Branch</th>
-                          <th className="py-3 px-4">Status</th>
-                          <th className="py-3 px-4">Date</th>
-                          <th className="py-3 px-4 text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-                        {supportQuestions.map((q) => (
-                          <tr key={q.id} className="hover:bg-purple-50/30 transition-colors">
-                            <td className="py-3 px-4 font-bold text-gray-900">{q.customerName}</td>
-                            <td className="py-3 px-4 max-w-xs truncate font-semibold">{q.subject}</td>
-                            <td className="py-3 px-4 whitespace-nowrap">{q.branchName} Branch</td>
-                            <td className="py-3 px-4 whitespace-nowrap">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                q.status === 'Answered'
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : q.status === 'Closed'
-                                  ? 'bg-gray-100 text-gray-600'
-                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
-                              }`}>
-                                {q.status}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap">
-                              {new Date(q.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="py-3 px-4 text-right whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => setActiveQuestionModal(q)}
-                                className="px-3 py-1 bg-purple-50 hover:bg-[#BF00FF] text-[#BF00FF] hover:text-white font-bold text-xs rounded-lg border border-purple-200 transition-colors cursor-pointer"
-                              >
-                                View
-                              </button>
-                            </td>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block border border-gray-200 rounded-2xl overflow-hidden shadow-2xs">
+                      <table className="w-full text-left border-collapse text-sm">
+                        <thead>
+                          <tr className="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <th className="py-3 px-4">Customer</th>
+                            <th className="py-3 px-4">Subject</th>
+                            <th className="py-3 px-4">Branch</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4">Date</th>
+                            <th className="py-3 px-4 text-right">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                          {supportQuestions.map((q) => (
+                            <tr key={q.id} className="hover:bg-purple-50/30 transition-colors">
+                              <td className="py-3 px-4 font-bold text-gray-900">{q.customerName}</td>
+                              <td className="py-3 px-4 max-w-xs truncate font-semibold">{q.subject}</td>
+                              <td className="py-3 px-4 whitespace-nowrap">{q.branchName} Branch</td>
+                              <td className="py-3 px-4 whitespace-nowrap">
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                  q.status === 'Answered'
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : q.status === 'Closed'
+                                    ? 'bg-gray-100 text-gray-600'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                }`}>
+                                  {q.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap">
+                                {new Date(q.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="py-3 px-4 text-right whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveQuestionModal(q)}
+                                  className="px-3 py-1 bg-purple-50 hover:bg-[#BF00FF] text-[#BF00FF] hover:text-white font-bold text-xs rounded-lg border border-purple-200 transition-colors cursor-pointer"
+                                >
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Inquiries Card View */}
+                    <div className="block md:hidden flex flex-col gap-2.5">
+                      {supportQuestions.map((q) => (
+                        <div 
+                          key={`mob-q-${q.id}`} 
+                          onClick={() => setActiveQuestionModal(q)}
+                          className="bg-white border border-purple-100 rounded-2xl p-3.5 shadow-2xs flex flex-col gap-2 hover:border-purple-300 transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-xs text-gray-900 truncate">{q.customerName}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                              q.status === 'Answered'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : q.status === 'Closed'
+                                ? 'bg-gray-100 text-gray-600'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {q.status}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-gray-700 m-0 line-clamp-2 leading-snug">
+                            {q.subject}
+                          </p>
+                          <div className="flex items-center justify-between pt-1 border-t border-gray-100 text-[11px] text-gray-500">
+                            <span>{new Date(q.createdAt).toLocaleDateString()}</span>
+                            <span className="text-[#BF00FF] font-bold text-xs">View Thread →</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -701,37 +739,34 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
 
       {/* 4. Terms & Privacy Sub-View */}
       {activeSection === 'terms' && (
-        <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveSection('menu')}
-              className="p-2 bg-white hover:bg-purple-50 text-gray-700 hover:text-[#BF00FF] rounded-xl border border-gray-200 transition-colors cursor-pointer flex items-center gap-1.5 font-bold text-sm shadow-xs"
-            >
-              <ChevronLeft size={18} />
-              Back to Settings
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border-2 border-[#BF00FF] flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border-2 border-[#BF00FF] flex flex-col gap-5 sm:gap-6">
             
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center">
-                  <FileText size={26} />
+            <div className="flex flex-col gap-4 border-b border-gray-100 pb-4 sm:pb-5">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <button
+                  onClick={() => setActiveSection('menu')}
+                  className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0"
+                  title="Back to Settings"
+                >
+                  <ChevronLeft size={28} />
+                </button>
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center shrink-0">
+                  <FileText size={22} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-black text-gray-900 m-0">Terms & Privacy</h3>
-                  <p className="text-sm text-gray-500 font-medium m-0 mt-0.5">
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0 leading-tight">Terms & Privacy</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
                     Official Graphix store policies, warranty specifications, and customer privacy protocols
                   </p>
                 </div>
               </div>
 
               {/* Tabs */}
-              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start md:self-auto">
+              <div className="flex bg-gray-100/90 p-1.5 rounded-2xl border border-gray-200 overflow-x-auto no-scrollbar gap-1 w-full max-w-full">
                 <button
                   onClick={() => setActivePolicyTab('terms')}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activePolicyTab === 'terms' 
                       ? 'bg-white text-[#BF00FF] shadow-xs' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -741,7 +776,7 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
                 </button>
                 <button
                   onClick={() => setActivePolicyTab('privacy')}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activePolicyTab === 'privacy' 
                       ? 'bg-white text-[#BF00FF] shadow-xs' 
                       : 'text-gray-600 hover:text-gray-900'
@@ -754,31 +789,31 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
 
             {/* TAB 1: Terms & Conditions */}
             {activePolicyTab === 'terms' && (
-              <div className="flex flex-col gap-5">
-                <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">1. Terms of Service</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
+              <div className="flex flex-col gap-4 sm:gap-5">
+                <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#BF00FF] mb-1.5 m-0">1. Terms of Service</h4>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {purchasePolicy}
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">2. Refund Policy</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
+                <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#BF00FF] mb-1.5 m-0">2. Refund Policy</h4>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {refundPolicy}
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">3. Payment & Settlement Guidelines</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
+                <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#BF00FF] mb-1.5 m-0">3. Payment & Settlement Guidelines</h4>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {paymentPolicy}
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
-                  <h4 className="text-sm font-bold text-[#BF00FF] mb-1.5 m-0">4. Repair Service Terms & Diagnostic Coverage</h4>
-                  <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
+                <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/40 border border-purple-100">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#BF00FF] mb-1.5 m-0">4. Repair Service Terms & Diagnostic Coverage</h4>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {repairPolicy}
                   </p>
                 </div>
@@ -788,18 +823,18 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
             {/* TAB 2: Privacy Policy */}
             {activePolicyTab === 'privacy' && (
               <div className="flex flex-col gap-4">
-                <div className="p-6 rounded-2xl bg-gray-50 border border-gray-200">
-                  <div className="flex items-center gap-2 text-sm font-bold text-[#BF00FF] mb-3">
+                <div className="p-4 sm:p-6 rounded-2xl bg-gray-50 border border-gray-200">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-[#BF00FF] mb-3">
                     <ShieldCheck size={20} />
                     Customer Data Confidentiality
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed font-medium m-0">
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-medium m-0">
                     {privacyPolicy}
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-purple-50/30 border border-purple-100">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 m-0">Staff Compliance Notice</h4>
+                <div className="p-4 sm:p-5 rounded-2xl bg-purple-50/30 border border-purple-100">
+                  <h4 className="text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 m-0">Staff Compliance Notice</h4>
                   <p className="text-xs text-gray-600 leading-relaxed font-medium m-0">
                     Cashiers must handle customer phone numbers, receipts, and device credentials with strict confidentiality. Do not store customer payment screenshots on personal devices.
                   </p>
@@ -807,9 +842,9 @@ export default function CashierSettings({ initialUser }: { initialUser?: any }) 
               </div>
             )}
 
-            <div className="bg-gray-50 rounded-2xl p-4 text-xs font-semibold text-gray-500 flex items-center justify-between border border-gray-200">
+            <div className="bg-gray-50 rounded-2xl p-3.5 sm:p-4 text-[11px] sm:text-xs font-semibold text-gray-500 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border border-gray-200">
               <span className="flex items-center gap-2">
-                <Lock size={14} className="text-[#BF00FF]" />
+                <Lock size={14} className="text-[#BF00FF] shrink-0" />
                 View-Only Document • Governed by Graphix Management
               </span>
               <span>Updated {new Date().getFullYear()}</span>
