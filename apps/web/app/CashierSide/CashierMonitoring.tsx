@@ -1174,8 +1174,8 @@ export default function CashierMonitoring() {
 
       {/* Edit Progress Modal */}
       {editModalOpen && deviceToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -1570,7 +1570,7 @@ export default function CashierMonitoring() {
               </div>
 
               {/* 5. Itemized Materials Breakdown */}
-              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100">
+              <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-100">
                 <MaterialBreakdownEditor
                   items={editMaterials}
                   onItemsChange={setEditMaterials}
@@ -1635,8 +1635,8 @@ export default function CashierMonitoring() {
 
       {/* Add Device Request Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -2042,7 +2042,7 @@ export default function CashierMonitoring() {
               </div>
 
               {/* 5. Itemized Materials Breakdown */}
-              <div className="bg-white p-5 rounded-2xl border-2 border-gray-100">
+              <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-100">
                 <MaterialBreakdownEditor
                   items={addMaterials}
                   onItemsChange={setAddMaterials}

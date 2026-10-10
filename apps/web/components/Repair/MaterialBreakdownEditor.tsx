@@ -313,32 +313,50 @@ export default function MaterialBreakdownEditor({
         </div>
 
         {activeMaterials.length > 0 ? (
-          <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-2xs">
-            <table className="w-full text-left text-xs border-collapse min-w-[340px]">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase text-[10px]">
-                  <th className="py-2 px-3 text-center w-12">Qty</th>
-                  <th className="py-2 px-3">Part / Material</th>
-                  <th className="py-2 px-3 text-right w-24">Unit Price</th>
-                  <th className="py-2 px-3 text-right w-24">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {activeMaterials.map((item, idx) => (
-                  <tr key={item.id || idx} className="hover:bg-purple-50/20">
-                    <td className="py-2 px-3 text-center font-bold text-gray-700">{item.qty}x</td>
-                    <td className="py-2 px-3 font-medium text-gray-900">{item.description}</td>
-                    <td className="py-2 px-3 text-right font-mono text-gray-600">
-                      ₱{(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-2 px-3 text-right font-mono font-bold text-gray-900">
-                      ₱{(item.total || (item.qty * item.unitPrice) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-2xs">
+              <table className="w-full text-left text-xs border-collapse min-w-[340px]">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-semibold uppercase text-[10px]">
+                    <th className="py-2 px-3 text-center w-12">Qty</th>
+                    <th className="py-2 px-3">Part / Material</th>
+                    <th className="py-2 px-3 text-right w-24">Unit Price</th>
+                    <th className="py-2 px-3 text-right w-24">Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {activeMaterials.map((item, idx) => (
+                    <tr key={item.id || idx} className="hover:bg-purple-50/20">
+                      <td className="py-2 px-3 text-center font-bold text-gray-700">{item.qty}x</td>
+                      <td className="py-2 px-3 font-medium text-gray-900">{item.description}</td>
+                      <td className="py-2 px-3 text-right font-mono text-gray-600">
+                        ₱{(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-gray-900">
+                        ₱{(item.total || (item.qty * item.unitPrice) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile View: No Side-Scrolling */}
+            <div className="block md:hidden space-y-2">
+              {activeMaterials.map((item, idx) => (
+                <div key={item.id || idx} className="p-2.5 bg-white rounded-xl border border-gray-200 text-xs flex justify-between items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-gray-900 truncate m-0">{item.description}</p>
+                    <p className="text-[11px] text-gray-500 m-0">₱{(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} × {item.qty}</p>
+                  </div>
+                  <span className="font-mono font-bold text-gray-900 shrink-0">
+                    ₱{(item.total || (item.qty * item.unitPrice) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="p-3 bg-gray-50 rounded-xl text-center text-xs text-gray-400">
             No itemized replacement parts recorded.
@@ -379,23 +397,23 @@ export default function MaterialBreakdownEditor({
     <div className="flex flex-col gap-4 font-['Inter'] w-full">
       
       {/* Title & Action */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
-          <Wrench size={16} className="text-[#bd00ff]" />
+          <Wrench size={16} className="text-[#bd00ff] shrink-0" />
           <label className="font-bold text-sm text-black">Itemized Replacement Parts / Materials</label>
         </div>
         <button
           type="button"
           onClick={handleAddRow}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white border border-[#bd00ff]/40 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs"
+          className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white border border-[#bd00ff]/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 self-start sm:self-auto"
         >
           <Plus size={14} />
-          Add Part / Material
+          <span>Add Part / Material</span>
         </button>
       </div>
 
-      {/* Materials Table */}
-      <div className="overflow-x-auto border-2 border-gray-200 rounded-2xl bg-white shadow-xs">
+      {/* --- DESKTOP VIEW: Materials Table (Hidden on Mobile) --- */}
+      <div className="hidden md:block overflow-x-auto border-2 border-gray-200 rounded-2xl bg-white shadow-xs">
         <table className="w-full text-left text-xs border-collapse min-w-[500px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase tracking-wider">
@@ -477,8 +495,86 @@ export default function MaterialBreakdownEditor({
         </table>
       </div>
 
+      {/* --- MOBILE VIEW: Material Item Cards (Hidden on Desktop, Zero Side-Scrolling) --- */}
+      <div className="block md:hidden">
+        {activeMaterials.length === 0 ? (
+          <div className="p-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/60 text-center">
+            <p className="text-xs text-gray-500 font-medium leading-relaxed m-0">
+              No parts added yet. Click <span className="text-[#bd00ff] font-bold">&quot;+ Add Part / Material&quot;</span> to itemize replacement parts (e.g. LCD, Battery, Flex cable).
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {activeMaterials.map((item, idx) => (
+              <div key={item.id} className="p-3.5 bg-white rounded-2xl border-2 border-gray-200 shadow-2xs flex flex-col gap-3">
+                {/* Item Top: Counter Badge + Description Input + Delete */}
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-purple-100 text-[#bd00ff] text-xs font-bold flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      placeholder="e.g. LCD Screen / Battery Replacement"
+                      value={item.description}
+                      onChange={(e) => handleUpdateRow(item.id, 'description', e.target.value)}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs font-medium text-gray-900 focus:border-[#bd00ff] focus:bg-white transition-colors"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRow(item.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border-none bg-transparent shrink-0"
+                    title="Remove part"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                {/* Item Bottom: Qty + Unit Price + Line Total */}
+                <div className="grid grid-cols-3 gap-2 items-center pt-2 border-t border-gray-100">
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Qty</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.qty}
+                      onChange={(e) => handleUpdateRow(item.id, 'qty', e.target.value)}
+                      className="w-full text-center py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs font-bold text-gray-800 focus:border-[#bd00ff] focus:bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Unit Price</label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">₱</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="0.00"
+                        value={item.unitPrice || ''}
+                        onChange={(e) => handleUpdateRow(item.id, 'unitPrice', e.target.value)}
+                        className="w-full pl-6 pr-1.5 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs font-mono font-bold text-gray-900 focus:border-[#bd00ff] focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1">Total</span>
+                    <span className="font-mono font-black text-gray-900 text-xs truncate block py-2">
+                      ₱{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Payment & Cost Calculation Section */}
-      <div className="bg-gradient-to-br from-purple-50/50 to-gray-50 p-4 sm:p-5 rounded-2xl border-2 border-purple-100 flex flex-col gap-4">
+      <div className="bg-gradient-to-br from-purple-50/50 to-gray-50 p-3.5 sm:p-5 rounded-2xl border-2 border-purple-100 flex flex-col gap-4">
         
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-purple-100/80">
@@ -488,7 +584,7 @@ export default function MaterialBreakdownEditor({
               Repair Cost & Payment Method
             </span>
           </div>
-          <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-purple-100 shadow-2xs">
+          <div className="flex items-center gap-1.5 bg-white px-3 py-1 rounded-xl border border-purple-100 shadow-2xs self-start sm:self-auto">
             <span className="text-[11px] font-bold text-gray-500">Total Cost:</span>
             <span className="text-sm font-black text-[#bd00ff] font-mono">
               ₱{totalRepairCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -496,10 +592,10 @@ export default function MaterialBreakdownEditor({
           </div>
         </div>
 
-        {/* 1. Payment Method Tabs */}
+        {/* 1. Payment Method Tabs (Responsive Grid) */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-bold text-gray-700">Select Payment Method</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleSelectMethod('Cash')}
