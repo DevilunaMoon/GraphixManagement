@@ -1136,93 +1136,96 @@ export default function CashierDevices() {
   return (
     <div className="flex flex-col gap-6 font-['Inter']">
       {/* Top Header & Assigned Branch Bar */}
-      <div className="flex flex-wrap justify-between items-center gap-4 bg-white/95 backdrop-blur-md p-5 rounded-2xl border-2 border-purple-500/20 shadow-sm">
+      <div className="flex flex-wrap justify-between items-center gap-4 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border-2 border-purple-500/20 shadow-sm">
         <div className="flex flex-col">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[1.6rem] font-bold text-[#111] tracking-tight">Multi-Branch Inventory</h2>
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+            <h2 className="text-xl sm:text-[1.6rem] font-bold text-[#111] tracking-tight">Multi-Branch Inventory</h2>
             <span className="bg-blue-100 text-blue-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider border border-blue-200 flex items-center gap-1.5">
               <Building2 size={14} /> {userBranch.toUpperCase()} BRANCH CASHIER
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
             Organized by Product Name/Model with internal storage units and live stock tracking for {userBranch} branch.
           </p>
         </div>
 
         {/* Action Buttons Bar */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-xl px-4 py-2 text-sm font-bold text-gray-700">
-            <Building2 size={18} className="text-blue-600" />
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-gray-700">
+            <Building2 size={16} className="text-blue-600 shrink-0" />
             <span>Assigned Branch: <strong className="text-blue-700">{userBranch}</strong></span>
           </div>
 
           {/* Stock Movement History Button */}
           <button
             onClick={() => setHistoryModalOpen(true)}
-            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-gray-300 cursor-pointer"
+            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2 rounded-xl font-bold transition-colors text-xs sm:text-sm border border-gray-300 cursor-pointer"
             title="View stock movement history for assigned branch"
           >
-            <History size={16} className="text-purple-600" />
+            <History size={15} className="text-purple-600" />
             <span>Stock History</span>
           </button>
         </div>
       </div>
 
       {/* Filter & Action Controls Bar */}
-      <div className="flex flex-wrap justify-between items-center gap-3 w-full">
-        {/* Search */}
-        <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2.5 w-full sm:w-auto sm:min-w-[260px] shadow-sm`}>
-          <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
-          <input 
-            type="text" 
-            placeholder="Search Model, Storage, Specs..." 
-            value={searchQuery} 
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }} 
-            className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400 font-medium" 
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black">
-              <X size={16} />
-            </button>
-          )}
-        </div>
+      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 w-full">
+        {/* Search & Stock Status */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+          {/* Search */}
+          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:min-w-[240px] shadow-sm`}>
+            <Search className={`${styles.textActive} w-4 h-4 mr-2 shrink-0`} />
+            <input 
+              type="text" 
+              placeholder="Search Model, Storage, Specs..." 
+              value={searchQuery} 
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }} 
+              className="border-none outline-none w-full text-xs sm:text-sm text-[#111] bg-transparent placeholder-gray-400 font-medium" 
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black">
+                <X size={15} />
+              </button>
+            )}
+          </div>
 
-        {/* Stock Status Filter Pills */}
-        <div className="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1">
-          <button
-            onClick={() => { setStockStatusFilter('all'); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            All Stock
-          </button>
-          <button
-            onClick={() => { setStockStatusFilter('low'); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
-          </button>
-          <button
-            onClick={() => { setStockStatusFilter('out'); setCurrentPage(1); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
-          >
-            <span className="w-2 h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
-          </button>
+          {/* Stock Status Filter Pills */}
+          <div className="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1 overflow-x-auto max-w-full shrink-0">
+            <button
+              onClick={() => { setStockStatusFilter('all'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer shrink-0 ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              All Stock
+            </button>
+            <button
+              onClick={() => { setStockStatusFilter('low'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0 ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
+            </button>
+            <button
+              onClick={() => { setStockStatusFilter('out'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0 ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
+            </button>
+          </div>
         </div>
 
         {/* Brand, Type, Condition Filters + Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Brand Dropdown */}
           <div className="relative">
             <button 
               onClick={() => setIsFilterOpen(!isFilterOpen)} 
-              className={`flex items-center gap-2 bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 font-semibold text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
+              className={`flex items-center gap-1.5 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
             >
-              <Filter size={16} />
+              <Filter size={14} />
               <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
-              <ChevronDown size={16} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
             </button>
             {isFilterOpen && (
               <div className="absolute top-[115%] right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
@@ -1257,7 +1260,7 @@ export default function CashierDevices() {
           <select 
             value={selectedDeviceType} 
             onChange={(e) => { setSelectedDeviceType(e.target.value); setCurrentPage(1); }} 
-            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+            className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
           >
             <option value="all">All Types</option>
             <option value="smartphone">Smartphones</option>
@@ -1272,7 +1275,7 @@ export default function CashierDevices() {
           <select
             value={selectedCondition}
             onChange={(e) => { setSelectedCondition(e.target.value as any); setCurrentPage(1); }}
-            className={`bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+            className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
           >
             <option value="all">All Conditions</option>
             <option value="new">New</option>
@@ -1280,47 +1283,48 @@ export default function CashierDevices() {
           </select>
 
           {/* Export Buttons */}
-          <button onClick={downloadPDF} className="flex items-center gap-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3.5 py-2 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
-            <FileText size={14} /> PDF
+          <button onClick={downloadPDF} className="flex items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
+            <FileText size={13} /> PDF
           </button>
-          <button onClick={downloadExcel} className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
-            <FileText size={14} /> Excel
+          <button onClick={downloadExcel} className="flex items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
+            <FileText size={13} /> Excel
           </button>
 
           {/* Add Brand Button */}
           <button 
             onClick={() => setCategoriesModalOpen(true)} 
-            className="flex items-center gap-1.5 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-4 py-2 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
+            className="flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-3 py-1.5 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
             title="Add & Manage Brands"
           >
-            <Plus size={16} />
+            <Plus size={14} />
             <span>Add Brand</span>
           </button>
 
           {/* Add Product Button */}
           <button 
             onClick={() => setIsAddModalOpen(true)} 
-            className="flex items-center gap-2 bg-[#5c0099] hover:bg-[#470077] text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-1.5 bg-[#5c0099] hover:bg-[#470077] text-white px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap"
           >
-            <Plus size={18} />
+            <Plus size={16} />
             <span>Add Product</span>
           </button>
 
-          {/* Add Discount Product Button - Directly Beside Add Product */}
+          {/* Add Discount Product Button */}
           <button 
             onClick={() => handleOpenAddDiscount()} 
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-5 py-2 rounded-full font-bold text-sm shadow-md transition-all cursor-pointer border border-purple-400/40"
+            className="flex items-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer border border-purple-400/40 whitespace-nowrap"
             title="Apply discount to an existing product and variant"
           >
-            <Percent size={17} className="text-amber-300" />
-            <span>+ Add Discount Product</span>
+            <Percent size={15} className="text-amber-300" />
+            <span>+ Add Discount</span>
           </button>
         </div>
       </div>
 
       {/* Main Model-Based Inventory Table with Expandable Storage Variants */}
       <div className={`bg-white/95 backdrop-blur-md border-2 ${styles.borderMain} rounded-2xl overflow-hidden shadow-sm flex flex-col`}>
-        <div className="w-full overflow-x-auto">
+        {/* Desktop View Table (hidden on mobile) */}
+        <div className="hidden md:block w-full overflow-x-auto">
           <table className="w-full border-collapse text-left min-w-[750px]">
             <thead>
               <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
@@ -1665,24 +1669,319 @@ export default function CashierDevices() {
           </table>
         </div>
 
+        {/* Mobile View: Zero-Scrolling Adaptive Inventory Cards */}
+        <div className="block md:hidden">
+          {isLoading ? (
+            <div className="py-16 text-center flex flex-col items-center justify-center gap-3">
+              <div className="w-10 h-10 border-4 border-purple-200 border-t-[#5c0099] rounded-full animate-spin"></div>
+              <span className="text-gray-500 font-semibold animate-pulse text-sm">Loading cashier inventory...</span>
+            </div>
+          ) : products.length > 0 ? (
+            <div className="divide-y divide-purple-100/80">
+              {products.map((prod) => {
+                const isExpanded = expandedModelId === prod.id;
+                const variants: VariantData[] = prod.variations || [];
+                const now = new Date();
+                const isDiscountActive = Boolean(
+                  prod.discount && prod.discount > 0 &&
+                  (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
+                  (!prod.discountEndDate || new Date(prod.discountEndDate) >= now)
+                );
+                const isDiscountScheduled = Boolean(
+                  prod.discount && prod.discount > 0 &&
+                  prod.discountStartDate && new Date(prod.discountStartDate) > now
+                );
+                const isDiscountExpired = Boolean(
+                  prod.discount && prod.discount > 0 &&
+                  prod.discountEndDate && new Date(prod.discountEndDate) < now
+                );
+
+                const assignedStock = userBranch.toLowerCase() === 'villanueva'
+                  ? (prod.villanuevaStock || 0)
+                  : userBranch.toLowerCase() === 'jasaan'
+                  ? (prod.jasaanStock || 0)
+                  : (prod.tagoloanStock || 0);
+
+                const mobileMenuKey = `mob-${prod.id}`;
+
+                return (
+                  <div key={mobileMenuKey} className="p-3.5 sm:p-4 hover:bg-purple-50/20 transition-colors">
+                    {/* Top row: Image + Info + 3-Dot Actions */}
+                    <div className="flex items-start gap-3">
+                      {/* Product Image */}
+                      <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0 mt-0.5">
+                        {prod.image || (prod.images && prod.images[0]) ? (
+                          <img src={prod.image || prod.images[0]} alt={prod.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon size={20} className="text-gray-400" />
+                        )}
+                      </div>
+
+                      {/* Info & Badges */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-bold text-gray-900 text-sm leading-tight line-clamp-2">
+                            {prod.name}
+                          </h4>
+
+                          {/* 3-Dot Action Button */}
+                          <div className="relative shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveActionMenuId(activeActionMenuId === mobileMenuKey ? null : mobileMenuKey);
+                              }}
+                              className={`p-1.5 rounded-lg transition-all cursor-pointer border ${
+                                activeActionMenuId === mobileMenuKey
+                                  ? 'bg-[#bd00ff] text-white border-[#bd00ff] shadow-sm'
+                                  : 'text-gray-500 hover:text-purple-900 hover:bg-purple-50 border-gray-200'
+                              }`}
+                              title="Product Actions"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+
+                            {activeActionMenuId === mobileMenuKey && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-40" 
+                                  onClick={(e) => { e.stopPropagation(); setActiveActionMenuId(null); }} 
+                                />
+                                <div className="absolute right-0 top-full mt-1.5 w-44 bg-white rounded-xl shadow-xl border border-purple-200 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      handleEditClick(prod);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Pencil size={14} className="text-purple-600" />
+                                    <span>Edit Product</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      handleOpenAddDiscount(prod);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Percent size={14} className="text-rose-600" />
+                                    <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
+                                  </button>
+
+                                  <div className="my-1 border-t border-gray-100" />
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      setProductToDelete(prod.id);
+                                      setDeleteModalOpen(true);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Trash2 size={14} />
+                                    <span>Delete Product</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Badges row */}
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="text-[11px] text-gray-500 font-medium">
+                            {prod.category?.name || prod.type || 'Product'}
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${prod.isPreOwned ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-emerald-700 bg-emerald-50 border border-emerald-200'}`}>
+                            {prod.isPreOwned ? 'Pre-Owned' : 'New'}
+                          </span>
+                          {isDiscountActive && (
+                            <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-1.5 py-0.5 rounded-full border border-rose-300 flex items-center gap-0.5 uppercase tracking-wider animate-pulse">
+                              <Percent size={10} /> {prod.discount}% OFF
+                            </span>
+                          )}
+                          {isDiscountScheduled && (
+                            <span className="bg-blue-100 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded-full border border-blue-300 uppercase">
+                              Scheduled Discount
+                            </span>
+                          )}
+                          {isDiscountExpired && (
+                            <span className="bg-gray-100 text-gray-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-gray-300 uppercase">
+                              Expired Discount
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stock & Price Row */}
+                    <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-gray-500 font-medium">{userBranch}:</span>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${assignedStock > 0 ? (assignedStock < 5 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200') : 'bg-rose-100 text-rose-700 border border-rose-200'}`}>
+                          {assignedStock > 0 ? `${assignedStock} pcs in stock` : 'Out of Stock'}
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      <div className="text-right">
+                        {isDiscountActive ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-[10px] text-gray-400 line-through">₱ {Number(prod.price || 0).toLocaleString()}</span>
+                            <span className="text-[#bd00ff] font-black text-sm">
+                              ₱ {Math.round(prod.price * (1 - prod.discount / 100)).toLocaleString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-gray-900 text-sm">₱ {Number(prod.price || 0).toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Units Toggle Button */}
+                    {variants.length > 0 ? (
+                      <div className="mt-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedModelId(isExpanded ? null : prod.id)}
+                          className="w-full flex items-center justify-between bg-purple-50 hover:bg-purple-100/80 text-[#5c0099] px-3 py-2 rounded-xl text-xs font-bold transition-all border border-purple-200/70 cursor-pointer"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Layers size={14} className="text-purple-600" />
+                            <span>{variants.length} Unit Variants</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-[11px] font-semibold text-purple-700">
+                            {isExpanded ? 'Hide Details' : 'View Units'}
+                            {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                          </span>
+                        </button>
+
+                        {/* Expandable Variants Cards List */}
+                        {isExpanded && (
+                          <div className="mt-2 space-y-2 bg-purple-50/40 rounded-xl p-2.5 border border-purple-200/60 animate-in fade-in">
+                            <div className="text-[11px] font-bold text-gray-700 flex items-center justify-between">
+                              <span className="uppercase tracking-wide text-purple-900">{userBranch} Branch Units</span>
+                              <span className="text-[10px] text-gray-500 font-normal">Tap to adjust stock</span>
+                            </div>
+
+                            {variants.map((v, vIdx) => {
+                              const vBranchStock = userBranch.toLowerCase() === 'villanueva'
+                                ? (v.villanuevaStock ?? (v.branchStocks?.Villanueva || 0))
+                                : userBranch.toLowerCase() === 'jasaan'
+                                ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
+                                : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
+
+                              const { unitLabel, color, storage } = parseUnitDetails(prod.name, v);
+                              const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
+
+                              return (
+                                <div key={v.id || vIdx} className="bg-white rounded-lg p-2.5 border border-purple-100 shadow-xs flex flex-col gap-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <div className="font-bold text-gray-900 text-xs leading-snug">{unitLabel}</div>
+                                      <span className="inline-block text-[10px] font-mono text-[#5c0099] bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200 mt-0.5">
+                                        {displayProdId}
+                                      </span>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="font-bold text-xs text-[#5c0099]">
+                                        ₱ {Number(v.price || prod.price).toLocaleString()}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-gray-100">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {color !== '—' && (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-800 border border-gray-200">
+                                          <span 
+                                            className="w-2 h-2 rounded-full border border-black/20 shrink-0" 
+                                            style={{ 
+                                              backgroundColor: color.toLowerCase() === 'black' ? '#111' 
+                                                : color.toLowerCase() === 'white' ? '#fff' 
+                                                : color.toLowerCase() === 'red' ? '#ef4444' 
+                                                : color.toLowerCase() === 'blue' ? '#3b82f6' 
+                                                : color.toLowerCase() === 'green' ? '#10b981' 
+                                                : color.toLowerCase() === 'gold' ? '#eab308' 
+                                                : color.toLowerCase() === 'silver' ? '#94a3b8' 
+                                                : color.toLowerCase() === 'purple' ? '#a855f7' 
+                                                : '#8b5cf6' 
+                                            }} 
+                                          />
+                                          {color}
+                                        </span>
+                                      )}
+                                      {storage !== '—' && (
+                                        <span className="bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded text-[10px] border border-purple-200">
+                                          {storage}
+                                        </span>
+                                      )}
+                                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-rose-600 bg-rose-50 border border-rose-200'}`}>
+                                        {vBranchStock > 0 ? `${vBranchStock} pcs` : '0 pcs'}
+                                      </span>
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setAdjustItem({ device: prod, variant: v });
+                                        setAdjustStockVal(String(vBranchStock));
+                                        setAdjustModalOpen(true);
+                                      }}
+                                      className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-[11px] transition-colors cursor-pointer shrink-0 border border-purple-200"
+                                      title="Quick Adjust Stock"
+                                    >
+                                      Adjust Stock
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-[11px] text-gray-400 italic">
+                        Standard inventory (no individual unit variants)
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-12 text-center flex flex-col items-center justify-center gap-2 px-4">
+              <AlertCircle className="text-gray-400 w-10 h-10" />
+              <span className="text-gray-700 font-bold text-sm">No inventory products found</span>
+              <span className="text-gray-400 text-xs">Try adjusting your search or filters.</span>
+            </div>
+          )}
+        </div>
+
         {/* Pagination Bar */}
-        <div className="flex flex-wrap items-center justify-between p-4 bg-gray-50/80 border-t border-gray-100 gap-3">
+        <div className="flex flex-wrap items-center justify-between p-3.5 sm:p-4 bg-gray-50/80 border-t border-gray-100 gap-2">
           <span className="text-xs font-semibold text-gray-500">
-            Showing Page {currentPage} of {totalPages}
+            Page {currentPage} of {totalPages}
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="p-1.5 sm:p-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="text-xs font-bold text-gray-700 px-2">{currentPage} / {totalPages}</span>
+            <span className="text-xs font-bold text-gray-700 px-1.5 sm:px-2">{currentPage} / {totalPages}</span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              className="p-1.5 sm:p-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               <ChevronRight size={16} />
             </button>
