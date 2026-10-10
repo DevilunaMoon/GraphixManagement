@@ -13,7 +13,8 @@ import {
   BadgeCheck,
   ArrowRight,
   Sparkles,
-  Info
+  Info,
+  ChevronLeft
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
@@ -95,9 +96,18 @@ export default function CashierProfile({ user }: { user?: any }) {
         {/* 1. Profile Information Card (Editable Details) */}
         <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-purple-200/80 flex flex-col">
           <div className="border-b border-gray-100 pb-4 mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-black m-0">Profile Information</h2>
-              <p className="text-gray-400 m-0 mt-1 font-semibold text-sm">Manage and update your personal staff credentials</p>
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <button
+                onClick={() => router.push('/cashier/dashboard')}
+                className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0"
+                title="Back to POS Dashboard"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-black m-0 leading-tight">Profile Information</h2>
+                <p className="text-gray-500 m-0 mt-0.5 font-semibold text-xs sm:text-sm">Manage and update your personal staff credentials</p>
+              </div>
             </div>
             <span className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-[#bd00ff] bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
               <Sparkles size={13} />

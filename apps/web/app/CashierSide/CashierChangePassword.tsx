@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { UserCircle2, Pencil, KeyRound, Eye, EyeOff, Briefcase, AlertCircle } from 'lucide-react';
+import { UserCircle2, Pencil, KeyRound, Eye, EyeOff, Briefcase, AlertCircle, ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updatePassword } from '../../actions/user';
 import PasswordRequirements from '../../components/PasswordRequirements';
@@ -110,9 +110,18 @@ export default function CashierChangePassword({ user }: { user?: any }) {
 
         {/* Main Area */}
         <section className="flex-1 bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-[#bd00ff] flex flex-col">
-          <div className="border-b border-gray-100 pb-4 mb-6">
-            <h2 className="text-2xl font-bold text-black m-0 border-none">Change Password</h2>
-            <p className="text-gray-400 m-0 mt-1 font-semibold text-sm">Protect your staff account with a strong password</p>
+          <div className="border-b border-gray-100 pb-4 mb-6 flex items-center gap-2.5 sm:gap-3">
+            <button
+              onClick={() => navigate('/cashier/dashboard')}
+              className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0"
+              title="Back to POS Dashboard"
+            >
+              <ChevronLeft size={28} />
+            </button>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-black m-0 border-none leading-tight">Change Password</h2>
+              <p className="text-gray-500 m-0 mt-0.5 font-semibold text-xs sm:text-sm">Protect your staff account with a strong password</p>
+            </div>
           </div>
 
           <div className="flex flex-col gap-6 w-full max-w-xl mx-auto mt-2">
@@ -132,7 +141,7 @@ export default function CashierChangePassword({ user }: { user?: any }) {
                     setOldPassword(e.target.value);
                     if (message.text) setMessage({ text: '', type: '' });
                   }}
-                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors font-medium pr-10"
+                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-gray-900 bg-white placeholder-gray-400 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 transition-all font-medium pr-10 shadow-2xs"
                   placeholder="Enter current password"
                 />
                 <button onClick={() => setShowOld(!showOld)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#bd00ff] cursor-pointer bg-transparent border-none p-0 flex items-center justify-center transition-colors">
@@ -153,7 +162,7 @@ export default function CashierChangePassword({ user }: { user?: any }) {
                   }}
                   onFocus={() => setIsNewFocused(true)}
                   onBlur={() => setIsNewFocused(false)}
-                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors font-medium pr-10"
+                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-gray-900 bg-white placeholder-gray-400 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 transition-all font-medium pr-10 shadow-2xs"
                   placeholder="Enter new password"
                 />
                 <button onClick={() => setShowNew(!showNew)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#bd00ff] cursor-pointer bg-transparent border-none p-0 flex items-center justify-center transition-colors">
@@ -189,10 +198,10 @@ export default function CashierChangePassword({ user }: { user?: any }) {
                   }}
                   onFocus={() => setIsConfirmFocused(true)}
                   onBlur={() => setIsConfirmFocused(false)}
-                  className={`w-full h-11 border-2 rounded-xl px-4 text-black outline-none transition-colors font-medium pr-10 ${
+                  className={`w-full h-11 border-2 rounded-xl px-4 text-gray-900 bg-white placeholder-gray-400 outline-none transition-all font-medium pr-10 shadow-2xs ${
                     confirmPassword && newPassword !== confirmPassword
-                      ? 'border-red-400 focus:border-red-400'
-                      : 'border-gray-200 focus:border-[#bd00ff]'
+                      ? 'border-red-400 focus:border-red-400 focus:ring-2 focus:ring-red-400/20'
+                      : 'border-gray-200 focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20'
                   }`}
                   placeholder="Confirm new password"
                 />
