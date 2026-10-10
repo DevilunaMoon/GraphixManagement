@@ -118,7 +118,7 @@ export default function CashierProfile({ user }: { user?: any }) {
                     value={userName}
                     onChange={(e) => setUserName(e.target.value)}
                     placeholder="Enter your username"
-                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors font-semibold"
+                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-gray-900 bg-white placeholder-gray-400 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 transition-all font-semibold shadow-2xs"
                   />
                 </div>
               </div>
@@ -132,7 +132,7 @@ export default function CashierProfile({ user }: { user?: any }) {
                     Your registered staff email cannot be updated directly.
                   </div>
                 </label>
-                <div className="flex-1 text-gray-800 font-semibold pl-1 bg-gray-50/80 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                <div className="flex-1 text-gray-800 font-semibold pl-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
                   <span>{user?.email || 'cashier@graphix.com'}</span>
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Primary</span>
                 </div>
@@ -142,7 +142,7 @@ export default function CashierProfile({ user }: { user?: any }) {
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
                 <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">Phone Number</label>
                 <div className="flex-1 flex gap-4 items-center pl-1">
-                  <span className="text-black font-semibold">{phone || 'None'}</span>
+                  <span className="text-gray-900 font-semibold">{phone || 'None'}</span>
                   <button 
                     onClick={() => setIsPhoneModalOpen(true)} 
                     className="text-[#bd00ff] hover:underline bg-transparent border-none cursor-pointer font-bold text-sm p-0"
@@ -159,7 +159,7 @@ export default function CashierProfile({ user }: { user?: any }) {
                   <select 
                     value={gender} 
                     onChange={e => setGender(e.target.value)}
-                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] text-black font-semibold transition-colors bg-white cursor-pointer"
+                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 text-gray-900 font-semibold transition-all bg-white cursor-pointer shadow-2xs"
                   >
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -175,7 +175,7 @@ export default function CashierProfile({ user }: { user?: any }) {
                   <DatePicker 
                     value={dob} 
                     onChange={setDob}
-                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors bg-white font-semibold text-black"
+                    className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 transition-all bg-white font-semibold text-gray-900 shadow-2xs"
                   />
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default function CashierProfile({ user }: { user?: any }) {
               placeholder="e.g. 09123456789" 
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
-              className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] text-black font-semibold tracking-wider transition-colors"
+              className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 text-gray-900 bg-white placeholder-gray-400 font-semibold tracking-wider transition-all shadow-2xs"
             />
             <div className="flex gap-3 w-full">
               <button 
