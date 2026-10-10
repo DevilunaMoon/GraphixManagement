@@ -203,7 +203,7 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
           >
             <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -387,7 +387,7 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
             >
               <Bell size={22} />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-md">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
