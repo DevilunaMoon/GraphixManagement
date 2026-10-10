@@ -842,17 +842,17 @@ export default function CashierMonitoring() {
   };
 
   return (
-    <main className="flex-1 flex flex-col p-4 md:p-6 lg:p-8 gap-6 bg-[#FAF7FF] min-h-screen font-['Inter'] w-full overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-[#E9D8FD] shadow-[0_4px_24px_rgba(147,51,234,0.04)] p-5 md:p-7 flex flex-col gap-6 w-full">
+    <main className="flex-1 flex flex-col p-2.5 sm:p-5 md:p-6 lg:p-8 gap-4 sm:gap-6 bg-[#FAF7FF] min-h-screen font-['Inter'] w-full overflow-y-auto">
+      <div className="bg-white rounded-2xl border border-[#E9D8FD] shadow-[0_4px_24px_rgba(147,51,234,0.04)] p-3.5 sm:p-5 md:p-7 flex flex-col gap-5 sm:gap-6 w-full">
         
         {/* Header and Search */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-5 border-b border-[#F3E8FF]">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 sm:pb-5 border-b border-[#F3E8FF]">
           <div>
-            <h2 className="text-2xl font-bold text-[#1F1728] tracking-tight">Devices Monitoring</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-[#1F1728] tracking-tight">Devices Monitoring</h2>
             <p className="text-xs text-[#7e6a99] mt-0.5 font-medium">Track real-time repair progress, customer devices, and service records</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
             <div className="flex items-center border border-[#E9D8FD] rounded-xl px-3.5 py-2 bg-[#FAF7FF]/60 hover:bg-white focus-within:bg-white focus-within:border-[#9333EA] focus-within:ring-2 focus-within:ring-[#9333EA]/15 transition-all w-full sm:w-[280px] md:w-[320px]">
               <Search size={18} className="text-[#8b7aa8] shrink-0" />
               <input 
@@ -866,7 +866,7 @@ export default function CashierMonitoring() {
 
             <button 
               onClick={() => setAddModalOpen(true)}
-              className="bg-[#9333EA] hover:bg-[#7e22ce] active:scale-[0.98] text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-xs hover:shadow-[0_4px_12px_rgba(147,51,234,0.25)] flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
+              className="bg-[#9333EA] hover:bg-[#7e22ce] active:scale-[0.98] text-white px-4 sm:px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-xs hover:shadow-[0_4px_12px_rgba(147,51,234,0.25)] flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer border-none"
             >
               <Plus size={16} className="stroke-[2.5]" />
               <span>Add Request Form</span>
@@ -874,7 +874,7 @@ export default function CashierMonitoring() {
           </div>
         </div>
 
-        {/* Devices Table */}
+        {/* Devices Table / Mobile Cards */}
         <div className="w-full">
           {isLoading ? (
             <div className="w-full py-20 flex flex-col items-center justify-center gap-4 rounded-2xl border border-[#E9D8FD] bg-[#FAF7FF]/40">
@@ -882,92 +882,183 @@ export default function CashierMonitoring() {
               <p className="text-[#7e6a99] font-medium text-sm animate-pulse">Loading repair requests...</p>
             </div>
           ) : paginatedDevices.length > 0 ? (
-            <div className="overflow-x-auto w-full rounded-2xl border border-[#E9D8FD] bg-white">
-              <table className="w-full text-left border-collapse min-w-[720px]">
-                <thead>
-                  <tr className="bg-[#FAF7FF] border-b border-[#E9D8FD] text-[#5b4a7a]">
-                    <th className="py-3.5 px-4 font-semibold text-center w-24 text-xs uppercase tracking-wider">Device</th>
-                    <th className="py-3.5 px-5 font-semibold text-xs uppercase tracking-wider">Device & Customer</th>
-                    <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Progress</th>
-                    <th className="py-3.5 px-5 font-semibold text-center text-xs uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#F3E8FF]">
-                  {paginatedDevices.map(device => (
-                    <tr key={device.id} className="hover:bg-[#FAF7FF]/70 transition-colors group">
-                      <td className="py-4 px-4 text-center align-middle">
-                        <div className="h-14 w-14 mx-auto shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF] group-hover:border-[#C084FC] transition-colors">
-                          {device.image ? (
-                            <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
-                          ) : (
-                            <span className="text-[10px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 px-5 align-middle">
-                        <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug">{device.deviceName}</div>
-                        {device.ownerName ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCustomerDetailsTarget({ name: device.ownerName });
-                            }}
-                            className="text-xs text-[#7e22ce] hover:text-[#581c87] hover:underline font-medium mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
-                            title="Click to view complete customer details"
-                          >
-                            <User size={13} className="text-[#9333EA]" />
-                            <span>{device.ownerName}</span>
-                          </button>
-                        ) : (
-                          <div className="text-xs text-[#8b7aa8] font-normal mt-1 flex items-center gap-1">
-                            <User size={13} className="text-[#8b7aa8]" />
-                            <span>Walk-in Customer</span>
+            <>
+              {/* --- DESKTOP VIEW: Data Table (Hidden on Mobile) --- */}
+              <div className="hidden md:block overflow-x-auto w-full rounded-2xl border border-[#E9D8FD] bg-white">
+                <table className="w-full text-left border-collapse min-w-[720px]">
+                  <thead>
+                    <tr className="bg-[#FAF7FF] border-b border-[#E9D8FD] text-[#5b4a7a]">
+                      <th className="py-3.5 px-4 font-semibold text-center w-24 text-xs uppercase tracking-wider">Device</th>
+                      <th className="py-3.5 px-5 font-semibold text-xs uppercase tracking-wider">Device & Customer</th>
+                      <th className="py-3.5 px-4 font-semibold text-center text-xs uppercase tracking-wider">Progress</th>
+                      <th className="py-3.5 px-5 font-semibold text-center text-xs uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#F3E8FF]">
+                    {paginatedDevices.map(device => (
+                      <tr key={device.id} className="hover:bg-[#FAF7FF]/70 transition-colors group">
+                        <td className="py-4 px-4 text-center align-middle">
+                          <div className="h-14 w-14 mx-auto shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF] group-hover:border-[#C084FC] transition-colors">
+                            {device.image ? (
+                              <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
+                            ) : (
+                              <span className="text-[10px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
+                            )}
                           </div>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 align-middle text-center">
-                        {renderProgressBadge(device.progress)}
-                      </td>
-                      <td className="py-4 px-5 align-middle">
-                        <div className="flex gap-2 justify-center items-center">
-                          {device.progress?.toLowerCase() === 'pending' && (
+                        </td>
+                        <td className="py-4 px-5 align-middle">
+                          <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug">{device.deviceName}</div>
+                          {device.ownerName ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomerDetailsTarget({ name: device.ownerName });
+                              }}
+                              className="text-xs text-[#7e22ce] hover:text-[#581c87] hover:underline font-medium mt-1 flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                              title="Click to view complete customer details"
+                            >
+                              <User size={13} className="text-[#9333EA]" />
+                              <span>{device.ownerName}</span>
+                            </button>
+                          ) : (
+                            <div className="text-xs text-[#8b7aa8] font-normal mt-1 flex items-center gap-1">
+                              <User size={13} className="text-[#8b7aa8]" />
+                              <span>Walk-in Customer</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-4 px-4 align-middle text-center">
+                          {renderProgressBadge(device.progress)}
+                        </td>
+                        <td className="py-4 px-5 align-middle">
+                          <div className="flex gap-2 justify-center items-center">
+                            {device.progress?.toLowerCase() === 'pending' && (
+                              <button 
+                                onClick={() => {
+                                  setRequestToReview(device);
+                                  setReviewRequestModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer border-none transition-all hover:shadow"
+                                title="Review Customer Repair Request"
+                              >
+                                <Eye size={13} />
+                                <span>Review</span>
+                              </button>
+                            )}
                             <button 
                               onClick={() => {
-                                setRequestToReview(device);
-                                setReviewRequestModalOpen(true);
+                                setDeviceToView(device);
+                                setViewDetailsOpen(true);
                               }}
-                              className="px-3 py-1.5 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-semibold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer border-none transition-all hover:shadow"
-                              title="Review Customer Repair Request"
+                              className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer"
+                              title="View Intake & Material Breakdown"
                             >
-                              <Eye size={13} />
-                              <span>Review</span>
+                              <Receipt size={16} />
                             </button>
-                          )}
-                          <button 
-                            onClick={() => {
-                              setDeviceToView(device);
-                              setViewDetailsOpen(true);
-                            }}
-                            className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer"
-                            title="View Intake & Material Breakdown"
-                          >
-                            <Receipt size={16} />
-                          </button>
-                          <button 
-                            onClick={() => openEditModal(device)}
-                            className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none"
-                            title="Edit Progress"
-                          >
-                            <Pencil size={15} />
-                          </button>
+                            <button 
+                              onClick={() => openEditModal(device)}
+                              className="w-9 h-9 rounded-xl flex justify-center items-center bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none"
+                              title="Edit Progress"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* --- MOBILE VIEW: Responsive Cards (Hidden on Desktop, No Side-Scrolling) --- */}
+              <div className="block md:hidden space-y-3">
+                {paginatedDevices.map(device => (
+                  <div 
+                    key={device.id} 
+                    className="bg-white rounded-2xl border border-[#E9D8FD] p-3.5 shadow-xs flex flex-col gap-3 hover:border-[#C084FC] transition-colors"
+                  >
+                    {/* Top: Device image, info, and progress status */}
+                    <div className="flex items-start gap-3">
+                      <div className="h-14 w-14 shrink-0 rounded-xl border border-[#E9D8FD] flex justify-center items-center overflow-hidden bg-[#FAF7FF]">
+                        {device.image ? (
+                          <img src={device.image} alt={device.deviceName} className="h-full w-full object-contain p-1" />
+                        ) : (
+                          <span className="text-[9px] text-[#8b7aa8] font-bold uppercase tracking-wider">NO IMG</span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-bold text-sm text-[#1F1728] leading-tight break-words">{device.deviceName}</h4>
+                          <div className="shrink-0 scale-90 origin-top-right">
+                            {renderProgressBadge(device.progress)}
+                          </div>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+
+                        <div className="mt-1">
+                          {device.ownerName ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCustomerDetailsTarget({ name: device.ownerName });
+                              }}
+                              className="text-xs text-[#7e22ce] hover:text-[#581c87] font-medium flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                              title="Click to view complete customer details"
+                            >
+                              <User size={13} className="text-[#9333EA] shrink-0" />
+                              <span className="truncate">{device.ownerName}</span>
+                            </button>
+                          ) : (
+                            <div className="text-xs text-[#8b7aa8] font-normal flex items-center gap-1">
+                              <User size={13} className="text-[#8b7aa8] shrink-0" />
+                              <span>Walk-in Customer</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Action Bar */}
+                    <div className="pt-2.5 border-t border-[#F3E8FF] flex items-center justify-end gap-2">
+                      {device.progress?.toLowerCase() === 'pending' && (
+                        <button 
+                          onClick={() => {
+                            setRequestToReview(device);
+                            setReviewRequestModalOpen(true);
+                          }}
+                          className="flex-1 py-2 px-3 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer border-none transition-all active:scale-95"
+                          title="Review Customer Repair Request"
+                        >
+                          <Eye size={14} />
+                          <span>Review</span>
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => {
+                          setDeviceToView(device);
+                          setViewDetailsOpen(true);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl flex justify-center items-center gap-1.5 bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer text-xs font-bold active:scale-95"
+                        title="View Intake & Material Breakdown"
+                      >
+                        <Receipt size={14} />
+                        <span>Breakdown</span>
+                      </button>
+                      <button 
+                        onClick={() => openEditModal(device)}
+                        className="py-2 px-3.5 rounded-xl flex justify-center items-center gap-1.5 bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none text-xs font-bold shrink-0"
+                        title="Edit Progress"
+                      >
+                        <Pencil size={14} />
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="w-full py-16 text-center flex flex-col items-center justify-center rounded-2xl border border-[#E9D8FD] bg-[#FAF7FF]/30 gap-2">
                <div className="w-12 h-12 rounded-2xl bg-[#FAF5FF] border border-[#E9D8FD] flex items-center justify-center text-[#9333EA] mb-1">
