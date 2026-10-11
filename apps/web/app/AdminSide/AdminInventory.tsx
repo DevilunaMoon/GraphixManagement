@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { 
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
-  ArrowRightLeft, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
+  ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
   Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
@@ -2541,24 +2541,28 @@ export default function AdminInventory() {
       {/* 3. STOCK MOVEMENTS & AUDIT HISTORY MODAL                  */}
       {/* ========================================================== */}
       {historyModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
-            <div className="p-5 bg-gradient-to-r from-purple-900 to-indigo-900 text-white flex justify-between items-center shrink-0">
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-purple-900 to-indigo-900 text-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-2.5">
-                <History size={22} />
+                <History size={22} className="shrink-0 text-purple-200" />
                 <div>
-                  <h3 className="font-bold text-lg">Inventory History & Stock Movements</h3>
-                  <p className="text-xs text-purple-200">Complete audit log of transfers, restocks, sales, and manual adjustments.</p>
+                  <h3 className="font-bold text-base sm:text-lg leading-tight">Inventory History & Stock Movements</h3>
+                  <p className="text-xs text-purple-200 mt-0.5">Complete audit log of transfers, restocks, sales, and manual adjustments.</p>
                 </div>
               </div>
-              <button onClick={() => setHistoryModalOpen(false)} className="text-white/80 hover:text-white">
-                <X size={22} />
+              <button 
+                onClick={() => setHistoryModalOpen(false)} 
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Close modal"
+              >
+                <X size={20} />
               </button>
             </div>
 
             {/* Filter controls */}
-            <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="p-3 sm:p-4 bg-gray-50/90 border-b border-gray-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {isSuperAdmin && (
                   <select
                     value={historyBranchFilter}
@@ -2566,7 +2570,7 @@ export default function AdminInventory() {
                       setHistoryBranchFilter(e.target.value);
                       setHistoryPage(1);
                     }}
-                    className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 outline-none"
+                    className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white shadow-sm outline-none cursor-pointer flex-1 sm:flex-none hover:border-purple-300 transition-colors"
                   >
                     <option value="all">All Branches</option>
                     <option value="Tagoloan">Tagoloan</option>
@@ -2580,7 +2584,7 @@ export default function AdminInventory() {
                     setHistoryTypeFilter(e.target.value);
                     setHistoryPage(1);
                   }}
-                  className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-700 outline-none"
+                  className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white shadow-sm outline-none cursor-pointer flex-1 sm:flex-none hover:border-purple-300 transition-colors"
                 >
                   <option value="ALL">All Movement Types</option>
                   <option value="TRANSFER">Transfers</option>
@@ -2591,75 +2595,162 @@ export default function AdminInventory() {
               </div>
               <button
                 onClick={() => fetchHistory(historyPage)}
-                className="text-xs font-bold text-purple-700 hover:text-purple-900 underline"
+                disabled={isHistoryLoading}
+                className="inline-flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs border border-purple-200 shadow-sm transition-all active:scale-95 disabled:opacity-50 cursor-pointer self-end sm:self-auto"
+                title="Refresh stock movement log"
               >
-                Refresh Log
+                <RefreshCw 
+                  size={14} 
+                  className={`text-purple-600 transition-transform ${isHistoryLoading ? 'animate-spin' : 'hover:rotate-180 duration-500'}`} 
+                />
+                <span>Refresh Log</span>
               </button>
             </div>
 
-            {/* Movements Table */}
-            <div className="flex-1 overflow-y-auto p-4">
+            {/* Movements Content */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
               {isHistoryLoading ? (
-                <div className="py-12 text-center text-gray-500 font-semibold animate-pulse">
-                  Loading movements log...
+                <div className="py-16 text-center text-gray-500 font-semibold flex flex-col items-center justify-center gap-2">
+                  <RefreshCw size={24} className="animate-spin text-purple-600" />
+                  <span>Loading movements log...</span>
                 </div>
               ) : movements.length > 0 ? (
-                <table className="w-full text-xs text-left">
-                  <thead>
-                    <tr className="bg-purple-50/70 text-gray-700 font-bold uppercase tracking-wider border-b border-purple-100">
-                      <th className="py-3 px-3">Date & Time</th>
-                      <th className="py-3 px-3">Action</th>
-                      <th className="py-3 px-3">Product Name / ID</th>
-                      <th className="py-3 px-3">Branch Details</th>
-                      <th className="py-3 px-3 text-center">Qty</th>
-                      <th className="py-3 px-3 text-center">Stock Change</th>
-                      <th className="py-3 px-3">Notes & Performed By</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
+                <>
+                  {/* MOBILE VIEW: Responsive Cards (No Horizontal Side-Scrolling) */}
+                  <div className="block md:hidden space-y-3">
                     {movements.map((m) => (
-                      <tr key={m.id} className="hover:bg-gray-50/70">
-                        <td className="py-3 px-3 text-gray-500 whitespace-nowrap">
-                          {new Date(m.createdAt).toLocaleString()}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {m.type}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex flex-col">
-                            <span className="font-bold text-gray-900">{m.productName}</span>
-                            <span className="font-mono text-[11px] text-purple-700">{m.productId}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-3">
-                          {m.type === 'TRANSFER' ? (
-                            <span className="font-bold text-gray-800">
-                              {m.fromBranch} &rarr; <strong className="text-purple-700">{m.toBranch}</strong>
+                      <div 
+                        key={m.id} 
+                        className="bg-white border border-gray-200/90 rounded-xl p-3.5 shadow-sm space-y-2.5 hover:border-purple-300 transition-all"
+                      >
+                        {/* Header: Action Badge, Quantity & Date */}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+                              m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : 
+                              m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : 
+                              m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {m.type}
                             </span>
-                          ) : (
-                            <span className="font-bold text-gray-800">{m.branch}</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-center font-bold text-gray-900">
-                          {m.quantity}
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <span className="text-gray-500 font-medium">
-                            {m.previousStock} &rarr; <strong className="text-gray-900">{m.newStock}</strong>
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="flex flex-col">
-                            <span className="text-gray-700 font-medium">{m.notes || '—'}</span>
-                            <span className="text-[10px] text-gray-400">By: {m.performedBy || 'System'} ({m.userRole || 'User'})</span>
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-800">
+                              Qty: {m.quantity}
+                            </span>
                           </div>
-                        </td>
-                      </tr>
+                          <span className="text-[11px] text-gray-500 font-medium whitespace-nowrap">
+                            {new Date(m.createdAt).toLocaleDateString()} {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900 text-xs sm:text-sm leading-snug">{m.productName}</span>
+                          {m.productId && (
+                            <span className="font-mono text-[10px] text-purple-700 font-medium mt-0.5 break-all">
+                              {m.productId}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Movement Details / Stock Flow */}
+                        <div className="bg-purple-50/40 rounded-lg p-2.5 flex flex-col gap-1.5 text-xs border border-purple-100/60">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500 font-medium">Branch:</span>
+                            {m.type === 'TRANSFER' ? (
+                              <span className="font-bold text-gray-800 flex items-center gap-1">
+                                {m.fromBranch} <ArrowRight size={11} className="text-purple-600 inline" /> <strong className="text-purple-700">{m.toBranch}</strong>
+                              </span>
+                            ) : (
+                              <span className="font-bold text-gray-800">{m.branch}</span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500 font-medium">Stock Change:</span>
+                            <span className="text-gray-600 font-semibold flex items-center gap-1.5">
+                              <span>{m.previousStock ?? '—'}</span>
+                              <ArrowRight size={11} className="text-gray-400 inline" />
+                              <strong className="text-gray-900 font-black">{m.newStock ?? '—'}</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Notes and Performed By */}
+                        <div className="pt-1.5 border-t border-gray-100 flex flex-col gap-0.5 text-[11px]">
+                          {m.notes && (
+                            <p className="text-gray-700 italic break-words">
+                              "{m.notes}"
+                            </p>
+                          )}
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            By: <strong className="text-gray-600 font-semibold">{m.performedBy || 'System'}</strong> ({m.userRole || 'User'})
+                          </span>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+
+                  {/* DESKTOP VIEW: High-Density Table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead>
+                        <tr className="bg-purple-50/70 text-gray-700 font-bold uppercase tracking-wider border-b border-purple-100">
+                          <th className="py-3 px-3">Date & Time</th>
+                          <th className="py-3 px-3">Action</th>
+                          <th className="py-3 px-3">Product Name / ID</th>
+                          <th className="py-3 px-3">Branch Details</th>
+                          <th className="py-3 px-3 text-center">Qty</th>
+                          <th className="py-3 px-3 text-center">Stock Change</th>
+                          <th className="py-3 px-3">Notes & Performed By</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {movements.map((m) => (
+                          <tr key={m.id} className="hover:bg-gray-50/70">
+                            <td className="py-3 px-3 text-gray-500 whitespace-nowrap">
+                              {new Date(m.createdAt).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
+                                {m.type}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-gray-900">{m.productName}</span>
+                                <span className="font-mono text-[11px] text-purple-700">{m.productId}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3">
+                              {m.type === 'TRANSFER' ? (
+                                <span className="font-bold text-gray-800">
+                                  {m.fromBranch} &rarr; <strong className="text-purple-700">{m.toBranch}</strong>
+                                </span>
+                              ) : (
+                                <span className="font-bold text-gray-800">{m.branch}</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-center font-bold text-gray-900">
+                              {m.quantity}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="text-gray-500 font-medium">
+                                {m.previousStock} &rarr; <strong className="text-gray-900">{m.newStock}</strong>
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex flex-col">
+                                <span className="text-gray-700 font-medium">{m.notes || '—'}</span>
+                                <span className="text-[10px] text-gray-400">By: {m.performedBy || 'System'} ({m.userRole || 'User'})</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               ) : (
                 <div className="py-12 text-center text-gray-500 font-semibold">
                   No stock movements recorded yet.
