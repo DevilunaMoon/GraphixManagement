@@ -132,6 +132,17 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
 
+  useEffect(() => {
+    if (selectedTransaction || customerDetailsTarget) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedTransaction, customerDetailsTarget]);
+
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
       <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
@@ -618,12 +629,13 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
       {/* Standardized Digital Receipt Modal (Matches SECOND IMAGE Exactly) */}
       {selectedTransaction && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto overscroll-contain" 
           onClick={() => setSelectedTransaction(null)}
         >
           <div 
-            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-3 sm:p-7 flex flex-col gap-4 my-auto max-h-[95vh] overflow-y-auto" 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-3 sm:p-7 flex flex-col gap-4 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain" 
             onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {/* Downpayment Expiry or Action Notification */}
             {selectedTransaction.isExpired && selectedTransaction.status !== 'Cancelled' && (

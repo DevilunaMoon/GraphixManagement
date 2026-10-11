@@ -137,6 +137,17 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
 
+  useEffect(() => {
+    if (selectedTransaction || customerDetailsTarget || imeiModalTarget) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedTransaction, customerDetailsTarget, imeiModalTarget]);
+
   if (loading) {
     return (
       <main className="flex-1 flex flex-col p-5 gap-5 border-2 border-[#bd00ff] mx-3 my-3 rounded-xl bg-white justify-center items-center h-[70vh]">
@@ -547,12 +558,13 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
       {/* Standardized Digital Receipt Modal (Matches SECOND IMAGE Exactly) */}
       {selectedTransaction && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto overscroll-contain" 
           onClick={() => setSelectedTransaction(null)}
         >
           <div 
-            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-3 sm:p-7 flex flex-col gap-4 my-auto max-h-[95vh] overflow-y-auto" 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-3 sm:p-7 flex flex-col gap-4 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain" 
             onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {/* Standard Digital Receipt Component */}
             <StandardDigitalReceipt 

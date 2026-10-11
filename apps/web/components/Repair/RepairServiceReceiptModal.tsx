@@ -62,6 +62,17 @@ export default function RepairServiceReceiptModal({
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  React.useEffect(() => {
+    if (isOpen && device) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, device]);
+
   if (!isOpen || !device) return null;
 
   // 1. Dynamic Branch Location
@@ -393,8 +404,15 @@ export default function RepairServiceReceiptModal({
       `}</style>
 
       {/* Modal Overlay */}
-      <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
-        <div className="bg-white rounded-3xl p-4 sm:p-6 max-w-[420px] w-full flex flex-col gap-4 shadow-2xl animate-in zoom-in-95 max-h-[96vh] overflow-y-auto border border-gray-200">
+      <div 
+        className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto overscroll-contain no-print"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white rounded-2xl sm:rounded-3xl p-3 sm:p-6 max-w-[420px] w-full flex flex-col gap-4 shadow-2xl animate-in zoom-in-95 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain border border-gray-200"
+          onClick={e => e.stopPropagation()}
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           
           {/* Navigation & Actions Bar */}
           <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-100 no-print">
