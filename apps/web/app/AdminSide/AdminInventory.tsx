@@ -2906,7 +2906,7 @@ export default function AdminInventory() {
                     placeholder="e.g. iPhone 13 Pro Max"
                     value={newDeviceName}
                     onChange={(e) => setNewDeviceName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                     required
                   />
                 </div>
@@ -2915,7 +2915,7 @@ export default function AdminInventory() {
                   <select
                     value={newDeviceIsPreOwned ? 'pre-owned' : 'new'}
                     onChange={(e) => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
-                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-purple-300 bg-white text-[#5c0099] rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                   >
                     <option value="new">New</option>
                     <option value="pre-owned">Pre-Owned</option>
@@ -2935,7 +2935,7 @@ export default function AdminInventory() {
                   <select
                     value={newDeviceCategory}
                     onChange={(e) => setNewDeviceCategory(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   >
                     <option value="">Select Brand...</option>
@@ -2953,7 +2953,7 @@ export default function AdminInventory() {
                     <select
                       value={newDeviceBranch}
                       onChange={(e) => setNewDeviceBranch(e.target.value)}
-                      className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full border border-purple-300 bg-white text-[#5c0099] rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="Tagoloan">Tagoloan Branch</option>
                       <option value="Villanueva">Villanueva Branch</option>
@@ -2973,7 +2973,7 @@ export default function AdminInventory() {
                     placeholder="4500"
                     value={newDeviceCost}
                     onChange={(e) => setNewDeviceCost(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                     required
                   />
                 </div>
@@ -2985,7 +2985,7 @@ export default function AdminInventory() {
                     placeholder="5999"
                     value={newDevicePrice}
                     onChange={(e) => setNewDevicePrice(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white border border-purple-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                     required
                   />
                 </div>
@@ -2994,7 +2994,7 @@ export default function AdminInventory() {
                   <select
                     value={newDeviceType}
                     onChange={(e) => setNewDeviceType(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="Smartphone">Smartphone</option>
                     <option value="Laptop">Laptop</option>
@@ -3027,7 +3027,205 @@ export default function AdminInventory() {
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
+                {/* MOBILE VIEW (Option A): Stacked Cards - NO SIDE SCROLLING */}
+                <div className="flex flex-col gap-3 md:hidden">
+                  {addVariants.map((v, idx) => (
+                    <div 
+                      key={idx} 
+                      className="bg-white rounded-xl p-3.5 border border-purple-200 shadow-xs flex flex-col gap-2.5 text-left"
+                    >
+                      {/* Card Header: Unit Tag + Remove */}
+                      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="bg-purple-100 text-[#5c0099] text-xs font-black px-2.5 py-1 rounded-lg">
+                            {v.storage || v.name || `Unit #${idx + 1}`}
+                          </span>
+                          {v.color && (
+                            <span className="bg-gray-100 text-gray-700 text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                              {v.color}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAddVariants(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Remove Unit"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {/* Row 1: Unit Name & Storage */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit Name</label>
+                          <input
+                            type="text"
+                            value={v.name}
+                            onChange={(e) => {
+                              const updated = [...addVariants];
+                              updated[idx]!.name = e.target.value;
+                              setAddVariants(updated);
+                            }}
+                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="32 GB"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Storage</label>
+                          <input
+                            type="text"
+                            value={v.storage || ''}
+                            onChange={(e) => {
+                              const updated = [...addVariants];
+                              updated[idx]!.storage = e.target.value;
+                              setAddVariants(updated);
+                            }}
+                            className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="32 GB"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 2: Product ID & Color */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
+                          <input
+                            type="text"
+                            value={v.productId || ''}
+                            onChange={(e) => {
+                              const updated = [...addVariants];
+                              updated[idx]!.productId = e.target.value;
+                              setAddVariants(updated);
+                            }}
+                            className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
+                            placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Color</label>
+                          <input
+                            type="text"
+                            value={v.color || ''}
+                            onChange={(e) => {
+                              const updated = [...addVariants];
+                              updated[idx]!.color = e.target.value;
+                              setAddVariants(updated);
+                            }}
+                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="Red"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Row 3: Price */}
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Price (₱)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder={newDevicePrice || "5999"}
+                          value={v.price}
+                          onChange={(e) => {
+                            const updated = [...addVariants];
+                            updated[idx]!.price = e.target.value;
+                            setAddVariants(updated);
+                          }}
+                          className="w-full bg-white text-[#5c0099] border border-purple-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      {/* Row 4: Initial Branch Stocks */}
+                      <div className="pt-1 border-t border-gray-100">
+                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Initial Stocks</label>
+                        {isSuperAdmin ? (
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <span className="text-[10px] text-gray-500 block mb-0.5">Tagoloan</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.tagoloanStock}
+                                onChange={(e) => {
+                                  const updated = [...addVariants];
+                                  updated[idx]!.tagoloanStock = e.target.value;
+                                  setAddVariants(updated);
+                                }}
+                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-500 block mb-0.5">Villanueva</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.villanuevaStock}
+                                onChange={(e) => {
+                                  const updated = [...addVariants];
+                                  updated[idx]!.villanuevaStock = e.target.value;
+                                  setAddVariants(updated);
+                                }}
+                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-gray-500 block mb-0.5">Jasaan</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.jasaanStock}
+                                onChange={(e) => {
+                                  const updated = [...addVariants];
+                                  updated[idx]!.jasaanStock = e.target.value;
+                                  setAddVariants(updated);
+                                }}
+                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-[10px] text-gray-500 block mb-0.5">{userBranch || 'Tagoloan'} Stock</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={
+                                (userBranch || '').toLowerCase() === 'villanueva' ? v.villanuevaStock :
+                                (userBranch || '').toLowerCase() === 'jasaan' ? v.jasaanStock :
+                                v.tagoloanStock
+                              }
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                const val = e.target.value;
+                                const branch = (userBranch || 'Tagoloan').toLowerCase();
+                                if (branch === 'villanueva') {
+                                  updated[idx]!.villanuevaStock = val;
+                                  updated[idx]!.tagoloanStock = '0';
+                                  updated[idx]!.jasaanStock = '0';
+                                } else if (branch === 'jasaan') {
+                                  updated[idx]!.jasaanStock = val;
+                                  updated[idx]!.tagoloanStock = '0';
+                                  updated[idx]!.villanuevaStock = '0';
+                                } else {
+                                  updated[idx]!.tagoloanStock = val;
+                                  updated[idx]!.villanuevaStock = '0';
+                                  updated[idx]!.jasaanStock = '0';
+                                }
+                                setAddVariants(updated);
+                              }}
+                              className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* DESKTOP VIEW: Full Table */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
@@ -3060,7 +3258,7 @@ export default function AdminInventory() {
                                 updated[idx]!.name = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                              className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
                               placeholder="32 GB"
                             />
                           </td>
@@ -3073,7 +3271,7 @@ export default function AdminInventory() {
                                 updated[idx]!.productId = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
                               placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                             />
                           </td>
@@ -3086,7 +3284,7 @@ export default function AdminInventory() {
                                 updated[idx]!.color = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none"
+                              className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
                               placeholder="Red"
                             />
                           </td>
@@ -3099,7 +3297,7 @@ export default function AdminInventory() {
                                 updated[idx]!.storage = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none"
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-2 focus:ring-purple-500"
                               placeholder="32 GB"
                             />
                           </td>
@@ -3115,7 +3313,7 @@ export default function AdminInventory() {
                                     updated[idx]!.tagoloanStock = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
+                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none focus:ring-2 focus:ring-purple-500"
                                 />
                               </td>
                               <td className="py-2 px-3 text-center">
@@ -3128,7 +3326,7 @@ export default function AdminInventory() {
                                     updated[idx]!.villanuevaStock = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
+                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none focus:ring-2 focus:ring-purple-500"
                                 />
                               </td>
                               <td className="py-2 px-3 text-center">
@@ -3141,7 +3339,7 @@ export default function AdminInventory() {
                                     updated[idx]!.jasaanStock = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none"
+                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none focus:ring-2 focus:ring-purple-500"
                                 />
                               </td>
                             </>
@@ -3174,7 +3372,7 @@ export default function AdminInventory() {
                                   }
                                   setAddVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none"
+                                className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none focus:ring-2 focus:ring-purple-500"
                               />
                             </td>
                           )}
@@ -3189,7 +3387,7 @@ export default function AdminInventory() {
                                 updated[idx]!.price = e.target.value;
                                 setAddVariants(updated);
                               }}
-                              className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none"
+                              className="bg-white border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none focus:ring-2 focus:ring-purple-500"
                             />
                           </td>
                           <td className="py-2 px-2 text-center">
@@ -3330,11 +3528,11 @@ export default function AdminInventory() {
               <div>
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Specifications</label>
                 <textarea
-                  rows={2}
+                  rows={4}
                   placeholder="Processor, Screen, RAM, Battery details..."
                   value={newDeviceSpecs}
                   onChange={(e) => setNewDeviceSpecs(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-3 text-sm min-h-[96px] outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                 />
               </div>
 
@@ -3375,7 +3573,7 @@ export default function AdminInventory() {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
+            <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-5 text-left">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Product Name / Model</label>
@@ -3383,7 +3581,7 @@ export default function AdminInventory() {
                     type="text"
                     value={editDeviceName}
                     onChange={(e) => setEditDeviceName(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                     required
                   />
                 </div>
@@ -3392,7 +3590,7 @@ export default function AdminInventory() {
                   <select
                     value={editDeviceIsPreOwned ? 'pre-owned' : 'new'}
                     onChange={(e) => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
-                    className="w-full border border-purple-300 bg-purple-50/50 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    className="w-full border border-purple-300 bg-white text-[#5c0099] rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                   >
                     <option value="new">New</option>
                     <option value="pre-owned">Pre-Owned</option>
@@ -3405,7 +3603,7 @@ export default function AdminInventory() {
                     min="0"
                     value={editDevicePrice}
                     onChange={(e) => setEditDevicePrice(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full bg-white border border-purple-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                     required
                   />
                 </div>
@@ -3446,31 +3644,40 @@ export default function AdminInventory() {
                 </div>
 
                 {editVariants.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
-                      <thead>
-                        <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
-                          <th className="py-2.5 px-3">Unit</th>
-                          <th className="py-2.5 px-3">Product ID</th>
-                          <th className="py-2.5 px-3">Color</th>
-                          <th className="py-2.5 px-3">Internal Storage</th>
-                          {isSuperAdmin ? (
-                            <>
-                              <th className="py-2.5 px-3 text-center">Tagoloan</th>
-                              <th className="py-2.5 px-3 text-center">Villanueva</th>
-                              <th className="py-2.5 px-3 text-center">Jasaan</th>
-                            </>
-                          ) : (
-                            <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
-                          )}
-                          <th className="py-2.5 px-3 text-right">Price (₱)</th>
-                          <th className="py-2.5 px-2 text-center"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {editVariants.map((v, idx) => (
-                          <tr key={v.id || idx}>
-                            <td className="py-2 px-3">
+                  <>
+                    {/* MOBILE VIEW (Option A): Stacked Cards - NO SIDE SCROLLING */}
+                    <div className="flex flex-col gap-3 md:hidden">
+                      {editVariants.map((v, idx) => (
+                        <div 
+                          key={v.id || idx} 
+                          className="bg-white rounded-xl p-3.5 border border-purple-200 shadow-xs flex flex-col gap-2.5 text-left"
+                        >
+                          {/* Card Header: Unit Tag + Trash */}
+                          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="bg-purple-100 text-[#5c0099] text-xs font-black px-2.5 py-1 rounded-lg">
+                                {v.storage || v.name || `Unit #${idx + 1}`}
+                              </span>
+                              {v.color && (
+                                <span className="bg-gray-100 text-gray-700 text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                                  {v.color}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Remove Unit"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+
+                          {/* Row 1: Unit Name & Storage */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit Name</label>
                               <input
                                 type="text"
                                 value={v.name}
@@ -3479,37 +3686,12 @@ export default function AdminInventory() {
                                   updated[idx]!.name = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none"
+                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="e.g. 32 GB"
                               />
-                            </td>
-                            <td className="py-2 px-3">
-                              <input
-                                type="text"
-                                value={v.productId || ''}
-                                onChange={(e) => {
-                                  const updated = [...editVariants];
-                                  updated[idx]!.productId = e.target.value;
-                                  setEditVariants(updated);
-                                }}
-                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase"
-                                placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                              />
-                            </td>
-                            <td className="py-2 px-3">
-                              <input
-                                type="text"
-                                value={v.color || ''}
-                                onChange={(e) => {
-                                  const updated = [...editVariants];
-                                  updated[idx]!.color = e.target.value;
-                                  setEditVariants(updated);
-                                }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none"
-                                placeholder="Red"
-                              />
-                            </td>
-                            <td className="py-2 px-3">
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Storage</label>
                               <input
                                 type="text"
                                 value={v.storage || ''}
@@ -3518,36 +3700,48 @@ export default function AdminInventory() {
                                   updated[idx]!.storage = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none"
+                                className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="32 GB"
                               />
-                            </td>
-                            {isSuperAdmin ? (
-                              <>
-                                <td className="py-2 px-3 text-center">
-                                  <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                    {v.tagoloanStock || 0}
-                                  </span>
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                    {v.villanuevaStock || 0}
-                                  </span>
-                                </td>
-                                <td className="py-2 px-3 text-center">
-                                  <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                    {v.jasaanStock || 0}
-                                  </span>
-                                </td>
-                              </>
-                            ) : (
-                              <td className="py-2 px-3 text-center">
-                                <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                  {userBranch === 'Villanueva' ? (v.villanuevaStock || 0) : userBranch === 'Jasaan' ? (v.jasaanStock || 0) : (v.tagoloanStock || 0)}
-                                </span>
-                              </td>
-                            )}
-                            <td className="py-2 px-3 text-right">
+                            </div>
+                          </div>
+
+                          {/* Row 2: Product ID & Color */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
+                              <input
+                                type="text"
+                                value={v.productId || ''}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.productId = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
+                                placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Color</label>
+                              <input
+                                type="text"
+                                value={v.color || ''}
+                                onChange={(e) => {
+                                  const updated = [...editVariants];
+                                  updated[idx]!.color = e.target.value;
+                                  setEditVariants(updated);
+                                }}
+                                className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="e.g. Space Gray"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Row 3: Price & Branch Stocks */}
+                          <div className="grid grid-cols-2 gap-2 items-end pt-1 border-t border-gray-100">
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Price (₱)</label>
                               <input
                                 type="number"
                                 min="0"
@@ -3558,24 +3752,168 @@ export default function AdminInventory() {
                                   updated[idx]!.price = e.target.value;
                                   setEditVariants(updated);
                                 }}
-                                className="border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none"
+                                className="w-full bg-white text-[#5c0099] border border-purple-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
                               />
-                            </td>
-                            <td className="py-2 px-2 text-center">
-                              <button
-                                type="button"
-                                onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
-                                className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
-                                title="Remove Unit"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </td>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Branch Stocks</label>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {isSuperAdmin ? (
+                                  <>
+                                    <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-1.5 py-1 rounded" title="Tagoloan">
+                                      Tag: {v.tagoloanStock || 0}
+                                    </span>
+                                    <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-1.5 py-1 rounded" title="Villanueva">
+                                      Vil: {v.villanuevaStock || 0}
+                                    </span>
+                                    <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-1.5 py-1 rounded" title="Jasaan">
+                                      Jas: {v.jasaanStock || 0}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-2 py-1 rounded">
+                                    {userBranch}: {userBranch === 'Villanueva' ? (v.villanuevaStock || 0) : userBranch === 'Jasaan' ? (v.jasaanStock || 0) : (v.tagoloanStock || 0)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* DESKTOP VIEW: Clean Table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
+                        <thead>
+                          <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
+                            <th className="py-2.5 px-3">Unit</th>
+                            <th className="py-2.5 px-3">Product ID</th>
+                            <th className="py-2.5 px-3">Color</th>
+                            <th className="py-2.5 px-3">Internal Storage</th>
+                            {isSuperAdmin ? (
+                              <>
+                                <th className="py-2.5 px-3 text-center">Tagoloan</th>
+                                <th className="py-2.5 px-3 text-center">Villanueva</th>
+                                <th className="py-2.5 px-3 text-center">Jasaan</th>
+                              </>
+                            ) : (
+                              <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
+                            )}
+                            <th className="py-2.5 px-3 text-right">Price (₱)</th>
+                            <th className="py-2.5 px-2 text-center"></th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {editVariants.map((v, idx) => (
+                            <tr key={v.id || idx}>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.name}
+                                  onChange={(e) => {
+                                    const updated = [...editVariants];
+                                    updated[idx]!.name = e.target.value;
+                                    setEditVariants(updated);
+                                  }}
+                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="e.g. 32 GB"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.productId || ''}
+                                  onChange={(e) => {
+                                    const updated = [...editVariants];
+                                    updated[idx]!.productId = e.target.value;
+                                    setEditVariants(updated);
+                                  }}
+                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
+                                  placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.color || ''}
+                                  onChange={(e) => {
+                                    const updated = [...editVariants];
+                                    updated[idx]!.color = e.target.value;
+                                    setEditVariants(updated);
+                                  }}
+                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="Red"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.storage || ''}
+                                  onChange={(e) => {
+                                    const updated = [...editVariants];
+                                    updated[idx]!.storage = e.target.value;
+                                    setEditVariants(updated);
+                                  }}
+                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="32 GB"
+                                />
+                              </td>
+                              {isSuperAdmin ? (
+                                <>
+                                  <td className="py-2 px-3 text-center">
+                                    <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
+                                      {v.tagoloanStock || 0}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
+                                      {v.villanuevaStock || 0}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
+                                      {v.jasaanStock || 0}
+                                    </span>
+                                  </td>
+                                </>
+                              ) : (
+                                <td className="py-2 px-3 text-center">
+                                  <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
+                                    {userBranch === 'Villanueva' ? (v.villanuevaStock || 0) : userBranch === 'Jasaan' ? (v.jasaanStock || 0) : (v.tagoloanStock || 0)}
+                                  </span>
+                                </td>
+                              )}
+                              <td className="py-2 px-3 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  placeholder={editDevicePrice || "5999"}
+                                  value={v.price}
+                                  onChange={(e) => {
+                                    const updated = [...editVariants];
+                                    updated[idx]!.price = e.target.value;
+                                    setEditVariants(updated);
+                                  }}
+                                  className="bg-white border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none focus:ring-2 focus:ring-purple-500"
+                                />
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
+                                  className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                                  title="Remove Unit"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-4 bg-white rounded-xl border border-dashed border-gray-200">
                     <p className="text-xs text-gray-500 italic">No specific units configured. Standard single model inventory used.</p>
@@ -3705,11 +4043,11 @@ export default function AdminInventory() {
               <div>
                 <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Specifications</label>
                 <textarea
-                  rows={2}
+                  rows={4}
                   placeholder="Processor, Screen, RAM, Battery details..."
                   value={editDeviceSpecs}
                   onChange={(e) => setEditDeviceSpecs(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-3 text-sm min-h-[96px] outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                 />
               </div>
 
