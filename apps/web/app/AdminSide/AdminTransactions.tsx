@@ -618,11 +618,11 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
       {/* Standardized Digital Receipt Modal (Matches SECOND IMAGE Exactly) */}
       {selectedTransaction && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto" 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" 
           onClick={() => setSelectedTransaction(null)}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-5 sm:p-7 flex flex-col gap-4 my-8" 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-3 sm:p-7 flex flex-col gap-4 my-auto max-h-[95vh] overflow-y-auto" 
             onClick={e => e.stopPropagation()}
           >
             {/* Downpayment Expiry or Action Notification */}

@@ -369,14 +369,14 @@ export default function StandardDigitalReceipt({
     <div className={`flex flex-col gap-4 ${className}`}>
       {/* Top Action Toolbar */}
       {showToolbar && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3.5 sm:pb-4 print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 border-b border-gray-100 pb-2.5 sm:pb-4 print:hidden">
           {onBack ? (
             <button
               onClick={onBack}
               type="button"
-              className="inline-flex items-center gap-1.5 text-gray-600 hover:text-[#bd00ff] bg-transparent border-none cursor-pointer p-0 transition-colors font-bold text-sm w-fit"
+              className="inline-flex items-center gap-1.5 text-gray-600 hover:text-[#bd00ff] bg-transparent border-none cursor-pointer p-0 transition-colors font-bold text-xs sm:text-sm w-fit"
             >
-              <ChevronLeft size={20} className="shrink-0" />
+              <ChevronLeft size={18} className="shrink-0" />
               <span>Back</span>
             </button>
           ) : (
@@ -387,26 +387,26 @@ export default function StandardDigitalReceipt({
             <button
               type="button"
               onClick={handleCopyReceipt}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl text-[11px] sm:text-xs font-bold border border-purple-200 transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-purple-50 hover:bg-purple-100 text-[#bd00ff] rounded-xl text-[10.5px] sm:text-xs font-bold border border-purple-200 transition-colors cursor-pointer shadow-2xs whitespace-nowrap active:scale-95"
             >
-              {copied ? <Check size={14} className="text-green-600 shrink-0" /> : <Copy size={14} className="shrink-0" />}
+              {copied ? <Check size={13} className="text-green-600 shrink-0" /> : <Copy size={13} className="shrink-0" />}
               <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
             <button
               type="button"
               onClick={handlePrint}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 bg-purple-50 text-[#bd00ff] rounded-xl font-bold border border-purple-200 cursor-pointer hover:bg-purple-100 transition-colors text-[11px] sm:text-xs shadow-2xs whitespace-nowrap"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-purple-50 text-[#bd00ff] rounded-xl font-bold border border-purple-200 cursor-pointer hover:bg-purple-100 transition-colors text-[10.5px] sm:text-xs shadow-2xs whitespace-nowrap active:scale-95"
             >
-              <Printer size={14} className="shrink-0" />
+              <Printer size={13} className="shrink-0" />
               <span>Print</span>
             </button>
             <button
               type="button"
               onClick={handleSavePDF}
               disabled={isGeneratingPDF}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-2 bg-gray-900 text-white rounded-xl font-bold border-none cursor-pointer hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[11px] sm:text-xs shadow-sm whitespace-nowrap"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-900 text-white rounded-xl font-bold border-none cursor-pointer hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[10.5px] sm:text-xs shadow-sm whitespace-nowrap active:scale-95"
             >
-              <Download size={14} className="shrink-0" />
+              <Download size={13} className="shrink-0" />
               <span>{isGeneratingPDF ? 'Saving...' : 'Save PDF'}</span>
             </button>
           </div>
@@ -417,102 +417,102 @@ export default function StandardDigitalReceipt({
       <div className="flex justify-center w-full">
         <div
           ref={receiptRef}
-          className="w-full max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-4 sm:p-7 shadow-xs font-mono text-xs text-gray-900 leading-relaxed mx-auto"
+          className="w-full max-w-[340px] sm:max-w-[420px] bg-[#fafaf9] border-2 border-dashed border-gray-300 rounded-2xl p-3 sm:p-7 shadow-xs font-mono text-[10.5px] sm:text-xs text-gray-900 leading-snug sm:leading-relaxed mx-auto transition-all"
         >
           {/* Header & Store Info */}
-          <div className="text-center pb-3 border-b border-dashed border-gray-300">
-            <h3 className="text-base font-black tracking-widest uppercase m-0 text-black">
+          <div className="text-center pb-2.5 sm:pb-3 border-b border-dashed border-gray-300">
+            <h3 className="text-sm sm:text-base font-black tracking-widest uppercase m-0 text-black">
               GRAPHIX STORE
             </h3>
-            <p className="text-xs font-bold text-gray-800 m-0 mt-0.5">
+            <p className="text-[11px] sm:text-xs font-bold text-gray-800 m-0 mt-0.5">
               {branchLocation}
             </p>
-            <p className="text-[11px] text-gray-500 m-0 mt-0.5 font-sans">
+            <p className="text-[10px] sm:text-[11px] text-gray-500 m-0 mt-0.5 font-sans">
               {machineId}
             </p>
-            <p className="text-[11px] text-gray-600 m-0 mt-0.5">
+            <p className="text-[10px] sm:text-[11px] text-gray-600 m-0 mt-0.5">
               {timestamp}
             </p>
           </div>
 
           {/* Invoice Header (Sales Invoice & Purple Transaction ID) */}
-          <div className="py-2.5 border-b border-dashed border-gray-300 text-center">
-            <span className="font-black text-xs tracking-wider uppercase block text-gray-900">
+          <div className="py-2 sm:py-2.5 border-b border-dashed border-gray-300 text-center">
+            <span className="font-black text-[11px] sm:text-xs tracking-wider uppercase block text-gray-900">
               {isDownpayment ? 'DOWNPAYMENT INVOICE' : 'SALES INVOICE'}
             </span>
-            <span className="font-bold text-xs text-[#5c0099] block mt-0.5">
+            <span className="font-bold text-[11px] sm:text-xs text-[#5c0099] block mt-0.5">
               {shortTransId}
             </span>
           </div>
 
           {/* Cart Item Breakdown */}
-          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-2.5">
+          <div className="py-2.5 sm:py-3 border-b border-dashed border-gray-300 flex flex-col gap-2 sm:gap-2.5">
             {resolvedItems.map((item, idx) => {
               const isIphone = (item.name || data.device?.name || '').toLowerCase().includes('iphone');
               return (
                 <div key={idx} className="flex flex-col gap-0.5">
-                  <div className="flex justify-between items-start font-black text-black">
-                    <span className="truncate pr-2 flex items-center gap-1">
-                    <span>{item.name.toUpperCase()}</span>
-                    {((item as any).isPreOwned || (data.device as any)?.isPreOwned || (item.name || '').toLowerCase().includes('pre-owned') || (item.name || '').toLowerCase().includes('pre owned')) && (
-                      <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300">
-                        PRE-OWNED
-                      </span>
-                    )}
-                  </span>
-                  <span className="shrink-0 font-bold">
-                    {item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px] text-gray-600">
-                  <span className="truncate pr-2">
-                    Item: {item.quantity}x ({item.variations})
-                  </span>
-                  <span className="shrink-0">
-                    {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                {(item.imei || data.imei) ? (
-                  <div className="font-mono font-bold text-[10px] text-gray-800 text-left mt-0.5">
-                    IMEI: {item.imei || data.imei}
+                  <div className="flex justify-between items-start font-black text-black text-[10.5px] sm:text-xs">
+                    <span className="truncate pr-1.5 flex items-center gap-1">
+                      <span>{item.name.toUpperCase()}</span>
+                      {((item as any).isPreOwned || (data.device as any)?.isPreOwned || (item.name || '').toLowerCase().includes('pre-owned') || (item.name || '').toLowerCase().includes('pre owned')) && (
+                        <span className="bg-amber-100 text-amber-900 text-[8.5px] sm:text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-300">
+                          PRE-OWNED
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 font-bold whitespace-nowrap">
+                      {item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} V
+                    </span>
                   </div>
-                ) : isIphone ? (
-                  <div className="font-mono font-bold text-[10px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200 inline-block text-left mt-0.5">
-                    IMEI: Pending Pickup <span className="text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
+                  <div className="flex justify-between items-center text-[10px] sm:text-[11px] text-gray-600">
+                    <span className="truncate pr-1.5">
+                      Item: {item.quantity}x ({item.variations})
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap">
+                      {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                   </div>
-                ) : null}
-              </div>
-            );
-          })}
+                  {(item.imei || data.imei) ? (
+                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-gray-800 text-left mt-0.5">
+                      IMEI: {item.imei || data.imei}
+                    </div>
+                  ) : isIphone ? (
+                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200 inline-block text-left mt-0.5">
+                      IMEI: Pending Pickup <span className="text-[8.5px] sm:text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
 
           {/* Financial Totals & Payment Method */}
-          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1.5">
+          <div className="py-2.5 sm:py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 sm:gap-1.5">
             {data.discount && data.discount > 0 && (
-              <div className="flex justify-between items-center text-red-600 text-xs font-bold">
+              <div className="flex justify-between items-center text-red-600 text-[10.5px] sm:text-xs font-bold">
                 <span>Discount</span>
-                <span>-Php {data.discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="whitespace-nowrap">-Php {data.discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             )}
-            <div className="flex justify-between items-center font-black text-black text-sm">
+            <div className="flex justify-between items-center font-black text-black text-xs sm:text-sm">
               <span>Total</span>
-              <span>Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="whitespace-nowrap">Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
 
             {isDownpayment ? (
               <>
                 <div className="flex justify-between items-center text-gray-700">
                   <span>Downpayment Paid</span>
-                  <span>Php {downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="whitespace-nowrap">Php {downpaymentPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-gray-900">
                   <span>Remaining Balance</span>
-                  <span>Php {remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="whitespace-nowrap">Php {remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 {monthlyInstallment > 0 && (
-                  <div className="flex justify-between items-center text-[11px] text-gray-600">
+                  <div className="flex justify-between items-center text-[10px] sm:text-[11px] text-gray-600">
                     <span>Installment (12m)</span>
-                    <span>Php {monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
+                    <span className="whitespace-nowrap">Php {monthlyInstallment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
                   </div>
                 )}
               </>
@@ -520,33 +520,33 @@ export default function StandardDigitalReceipt({
               <>
                 <div className="flex justify-between items-center text-gray-700">
                   <span>Cash</span>
-                  <span>Php {tenderedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="whitespace-nowrap">Php {tenderedCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-gray-900">
                   <span>Change</span>
-                  <span>Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="whitespace-nowrap">Php {changeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </>
             ) : (
               <>
                 <div className="flex justify-between items-center text-gray-700">
                   <span>GCash</span>
-                  <span>Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="whitespace-nowrap">Php {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center font-bold text-gray-900">
                   <span>Change</span>
-                  <span>Php 0.00</span>
+                  <span className="whitespace-nowrap">Php 0.00</span>
                 </div>
               </>
             )}
 
-            <div className="text-center font-black py-1 tracking-wider text-[11px] text-gray-800">
+            <div className="text-center font-black py-1 tracking-wider text-[10px] sm:text-[11px] text-gray-800">
               *** {totalQuantity} ITEM(S) ***
             </div>
           </div>
 
           {/* BIR 12% Tax Breakdown */}
-          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[11px] text-gray-600">
+          <div className="py-2.5 sm:py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[10px] sm:text-[11px] text-gray-600">
             <div className="flex justify-between items-center">
               <span>VATable Sales</span>
               <span>{vatableSales.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -566,14 +566,14 @@ export default function StandardDigitalReceipt({
           </div>
 
           {/* Customer & Audit Details */}
-          <div className="py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[11px] text-gray-700">
+          <div className="py-2.5 sm:py-3 border-b border-dashed border-gray-300 flex flex-col gap-1 text-[10px] sm:text-[11px] text-gray-700">
             <div className="flex justify-between items-center">
               <span className="font-bold">Sold To:</span>
               <span className="font-semibold text-black">{customerName}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Email:</span>
-              <span className="truncate max-w-[200px]">{customerEmail}</span>
+              <span className="truncate max-w-[180px] sm:max-w-[200px]">{customerEmail}</span>
             </div>
             <div className="flex justify-between items-center">
               <span>Phone:</span>
@@ -590,9 +590,9 @@ export default function StandardDigitalReceipt({
           </div>
 
           {/* Footer Note */}
-          <div className="text-center pt-3 text-[11px] text-gray-500 font-sans leading-normal">
+          <div className="text-center pt-2.5 sm:pt-3 text-[10px] sm:text-[11px] text-gray-500 font-sans leading-normal">
             <p className="m-0 font-medium">Thank you for shopping at GraphiX Store!</p>
-            <p className="m-0 text-[10px] text-gray-400 mt-0.5">Keep this receipt for warranty claims.</p>
+            <p className="m-0 text-[9.5px] sm:text-[10px] text-gray-400 mt-0.5">Keep this receipt for warranty claims.</p>
           </div>
         </div>
       </div>
