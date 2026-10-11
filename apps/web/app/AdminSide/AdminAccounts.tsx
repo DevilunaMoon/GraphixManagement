@@ -82,6 +82,27 @@ export default function AdminAccounts() {
     setCurrentPage(1);
   }, [searchQuery, roleFilter, branchFilter, statusFilter]);
 
+  const isAnyModalOpen = Boolean(
+    createModal ||
+    viewModalAccount ||
+    customerDetailsTarget ||
+    editModalAccount ||
+    changeBranchAccount ||
+    resetPasswordAccount ||
+    suspendModal.isOpen
+  );
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyModalOpen]);
+
   // Close menus on outside click
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -1080,8 +1101,15 @@ export default function AdminAccounts() {
 
       {/* 👁️ View Account Details Modal */}
       {viewModalAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto overscroll-contain"
+          onClick={() => setViewModalAccount(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
               <div className="flex items-center gap-2.5">
                 <User size={20} />
@@ -1160,8 +1188,15 @@ export default function AdminAccounts() {
 
       {/* ✏️ Edit Account Modal */}
       {editModalAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto overscroll-contain"
+          onClick={() => setEditModalAccount(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
               <div className="flex items-center gap-2.5">
                 <Edit3 size={20} />
@@ -1240,8 +1275,15 @@ export default function AdminAccounts() {
 
       {/* 📍 Change Branch Modal */}
       {changeBranchAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto overscroll-contain"
+          onClick={() => setChangeBranchAccount(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Building2 size={20} />
@@ -1282,8 +1324,15 @@ export default function AdminAccounts() {
 
       {/* 🔑 Reset Password Modal */}
       {resetPasswordAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in overflow-y-auto overscroll-contain"
+          onClick={() => setResetPasswordAccount(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-purple-100 animate-in zoom-in-95 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Key size={20} />
@@ -1346,8 +1395,15 @@ export default function AdminAccounts() {
 
       {/* 🚫 Suspend Confirmation Modal */}
       {suspendModal.isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSuspendModal({ isOpen: false, id: '', name: '' })}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto overscroll-contain animate-in fade-in" 
+          onClick={() => setSuspendModal({ isOpen: false, id: '', name: '' })}
+        >
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="p-5 border-b border-black/5 flex justify-between items-center bg-gray-50/50">
               <h3 className="font-bold text-gray-900 text-base">Manage Account Access</h3>
               <button className="text-gray-400 hover:text-black transition-colors" onClick={() => setSuspendModal({ isOpen: false, id: '', name: '' })}>
@@ -1422,8 +1478,15 @@ export default function AdminAccounts() {
 
       {/* ➕ Create Account Modal */}
       {createModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto overscroll-contain animate-in fade-in" 
+          onClick={() => setCreateModal(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Plus size={20} />
