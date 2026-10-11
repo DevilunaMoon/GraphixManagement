@@ -153,15 +153,15 @@ export default function CustomerDetailsModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs font-['Inter'] animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2.5 sm:p-5 bg-black/60 backdrop-blur-xs font-['Inter'] animate-in fade-in duration-200 overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div 
-        className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-white w-full max-w-4xl h-[94dvh] sm:h-auto sm:max-h-[90vh] rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 my-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-gradient-to-r from-[#8B00FF] via-[#A825FF] to-[#6A0DAD] text-white p-5 sm:p-6 flex items-center justify-between shrink-0 shadow-sm relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#8B00FF] via-[#A825FF] to-[#6A0DAD] text-white p-3.5 sm:p-6 flex items-center justify-between shrink-0 shadow-sm relative overflow-hidden">
           {/* Subtle decorative circles */}
           <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
           
@@ -221,10 +221,10 @@ export default function CustomerDetailsModal({
           <div className="flex-1 flex flex-col overflow-hidden">
             
             {/* Customer Banner & Quick Info */}
-            <div className="bg-purple-50/50 border-b border-purple-100/60 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-0.5 shadow-sm shrink-0">
-                  <div className="w-full h-full bg-white rounded-[14px] overflow-hidden flex items-center justify-center">
+            <div className="bg-purple-50/50 border-b border-purple-100/60 p-3 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-4 shrink-0">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="w-11 h-11 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-0.5 shadow-sm shrink-0">
+                  <div className="w-full h-full bg-white rounded-[10px] sm:rounded-[14px] overflow-hidden flex items-center justify-center">
                     {customer.image ? (
                       <img 
                         src={customer.image} 
@@ -233,77 +233,77 @@ export default function CustomerDetailsModal({
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <UserCircle2 size={44} className="text-purple-300" />
+                      <UserCircle2 size={36} className="text-purple-300" />
                     )}
                   </div>
                 </div>
 
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base sm:text-xl font-bold text-gray-900 leading-tight truncate">
                       {customer.name || 'Anonymous Customer'}
                     </span>
-                    <span className="text-[11px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md">
+                    <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md shrink-0">
                       {customer.role || 'CUSTOMER'}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-500 font-semibold flex items-center gap-1.5 mt-0.5">
-                    <Mail size={12} className="text-purple-500" /> {customer.email}
+                  <span className="text-xs text-gray-500 font-semibold flex items-center gap-1.5 mt-0.5 truncate">
+                    <Mail size={12} className="text-purple-500 shrink-0" /> <span className="truncate">{customer.email}</span>
                   </span>
                   {customer.phone && (
                     <span className="text-xs text-gray-500 font-semibold flex items-center gap-1.5 mt-0.5">
-                      <Phone size={12} className="text-purple-500" /> {customer.phone}
+                      <Phone size={12} className="text-purple-500 shrink-0" /> {customer.phone}
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Operating Branch & Reg Date */}
-              <div className="flex flex-col sm:items-end gap-1 text-xs font-semibold text-gray-600 self-stretch sm:self-center bg-white sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-purple-100">
-                <div className="flex items-center gap-1.5 text-purple-900 font-bold">
-                  <Building2 size={14} className="text-purple-600" />
+              <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1 text-xs font-semibold text-gray-600 w-full sm:w-auto bg-white/80 sm:bg-transparent p-2 sm:p-0 rounded-xl border sm:border-0 border-purple-100">
+                <div className="flex items-center gap-1.5 text-purple-900 font-bold text-xs">
+                  <Building2 size={13} className="text-purple-600 shrink-0" />
                   <span>Branch: {customer.branch || 'Tagoloan'}</span>
                 </div>
-                <span className="text-gray-400 text-[11px]">
+                <span className="text-gray-400 text-[10px] sm:text-[11px]">
                   Registered: {new Date(customer.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                 </span>
               </div>
             </div>
 
-            {/* Quick KPI Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4 sm:px-6 bg-gray-50/80 border-b border-gray-100 shrink-0">
-              <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-2xs flex flex-col">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Purchases</span>
-                <span className="text-lg font-black text-purple-700 mt-0.5">{stats?.totalPurchases || 0}</span>
-                <span className="text-[10px] text-gray-500 font-semibold mt-0.5">₱{(stats?.totalSpent || 0).toLocaleString()} spent</span>
+            {/* Quick KPI Stats Cards (Compact 4-column row on mobile) */}
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5 p-2 sm:p-3 sm:px-6 bg-gray-50/80 border-b border-gray-100 shrink-0">
+              <div className="bg-white p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs flex flex-col text-center sm:text-left">
+                <span className="text-[9.5px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider truncate">Purchases</span>
+                <span className="text-sm sm:text-lg font-black text-purple-700 mt-0.5 leading-none">{stats?.totalPurchases || 0}</span>
+                <span className="hidden sm:inline text-[10px] text-gray-500 font-semibold mt-0.5 truncate">₱{(stats?.totalSpent || 0).toLocaleString()} spent</span>
               </div>
 
-              <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-2xs flex flex-col">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pending Pickup</span>
-                <span className={`text-lg font-black mt-0.5 ${(stats?.pendingPickupCount || 0) > 0 ? 'text-amber-600' : 'text-gray-700'}`}>
+              <div className="bg-white p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs flex flex-col text-center sm:text-left">
+                <span className="text-[9.5px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider truncate">Pending</span>
+                <span className={`text-sm sm:text-lg font-black mt-0.5 leading-none ${(stats?.pendingPickupCount || 0) > 0 ? 'text-amber-600' : 'text-gray-700'}`}>
                   {stats?.pendingPickupCount || 0}
                 </span>
-                <span className="text-[10px] text-gray-500 font-semibold mt-0.5">Phones awaiting IMEI</span>
+                <span className="hidden sm:inline text-[10px] text-gray-500 font-semibold mt-0.5 truncate">Awaiting pickup</span>
               </div>
 
-              <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-2xs flex flex-col">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Assigned IMEIs</span>
-                <span className="text-lg font-black text-indigo-600 mt-0.5">{stats?.assignedImeiCount || 0}</span>
-                <span className="text-[10px] text-gray-500 font-semibold mt-0.5">Units picked up</span>
+              <div className="bg-white p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs flex flex-col text-center sm:text-left">
+                <span className="text-[9.5px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider truncate">IMEIs</span>
+                <span className="text-sm sm:text-lg font-black text-indigo-600 mt-0.5 leading-none">{stats?.assignedImeiCount || 0}</span>
+                <span className="hidden sm:inline text-[10px] text-gray-500 font-semibold mt-0.5 truncate">Units picked up</span>
               </div>
 
-              <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-2xs flex flex-col">
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Repairs</span>
-                <span className="text-lg font-black text-emerald-600 mt-0.5">{stats?.totalRepairs || 0}</span>
-                <span className="text-[10px] text-gray-500 font-semibold mt-0.5">{stats?.completedRepairs || 0} completed</span>
+              <div className="bg-white p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-100 shadow-2xs flex flex-col text-center sm:text-left">
+                <span className="text-[9.5px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider truncate">Repairs</span>
+                <span className="text-sm sm:text-lg font-black text-emerald-600 mt-0.5 leading-none">{stats?.totalRepairs || 0}</span>
+                <span className="hidden sm:inline text-[10px] text-gray-500 font-semibold mt-0.5 truncate">{stats?.completedRepairs || 0} completed</span>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-1 px-4 sm:px-6 border-b border-gray-200 bg-white overflow-x-auto shrink-0 scrollbar-none">
+            {/* Navigation Tabs (Scrollbar hidden across all mobile browsers) */}
+            <div className="flex items-center gap-1 px-3 sm:px-6 border-b border-gray-200 bg-white overflow-x-auto shrink-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
+                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
                   activeTab === 'profile'
                     ? 'border-[#bd00ff] text-[#bd00ff]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -314,7 +314,7 @@ export default function CustomerDetailsModal({
 
               <button
                 onClick={() => setActiveTab('purchases')}
-                className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
+                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
                   activeTab === 'purchases'
                     ? 'border-[#bd00ff] text-[#bd00ff]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -325,7 +325,7 @@ export default function CustomerDetailsModal({
 
               <button
                 onClick={() => setActiveTab('devices')}
-                className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
+                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
                   activeTab === 'devices'
                     ? 'border-[#bd00ff] text-[#bd00ff]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -336,7 +336,7 @@ export default function CustomerDetailsModal({
 
               <button
                 onClick={() => setActiveTab('repairs')}
-                className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
+                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
                   activeTab === 'repairs'
                     ? 'border-[#bd00ff] text-[#bd00ff]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -347,7 +347,7 @@ export default function CustomerDetailsModal({
 
               <button
                 onClick={() => setActiveTab('reviews')}
-                className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
+                className={`px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition-all cursor-pointer bg-transparent ${
                   activeTab === 'reviews'
                     ? 'border-[#bd00ff] text-[#bd00ff]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -357,8 +357,8 @@ export default function CustomerDetailsModal({
               </button>
             </div>
 
-            {/* Tab Contents Area (Scrollable) */}
-            <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-gray-50/40">
+            {/* Tab Contents Area (Scrollable - Expanded Viewing Area) */}
+            <div className="flex-1 p-3.5 sm:p-6 overflow-y-auto bg-gray-50/40">
               
               {/* TAB 1: PROFILE & ACCOUNT */}
               {activeTab === 'profile' && (
@@ -764,13 +764,13 @@ export default function CustomerDetailsModal({
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 sm:px-6 bg-white border-t border-gray-100 flex items-center justify-between shrink-0">
-              <span className="text-xs text-gray-400 font-semibold">
+            <div className="p-3 sm:p-4 sm:px-6 bg-white border-t border-gray-100 flex items-center justify-between shrink-0">
+              <span className="text-[11px] sm:text-xs text-gray-400 font-semibold truncate">
                 Customer Profile • Graphix Management System
               </span>
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold text-xs transition-colors border-none cursor-pointer"
+                className="px-4 sm:px-5 py-2 sm:py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold text-xs transition-colors border-none cursor-pointer"
               >
                 Close
               </button>
@@ -783,12 +783,13 @@ export default function CustomerDetailsModal({
       {/* Internal Digital Receipt Modal */}
       {selectedReceiptTx && (
         <div 
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-xs overflow-y-auto overscroll-contain"
           onClick={() => setSelectedReceiptTx(null)}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-5 sm:p-7 flex flex-col gap-4 my-8"
+            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 p-3 sm:p-7 flex flex-col gap-4 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain"
             onClick={e => e.stopPropagation()}
+            style={{ WebkitOverflowScrolling: 'touch' }}
           >
             <StandardDigitalReceipt 
               data={selectedReceiptTx as any}
