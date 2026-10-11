@@ -165,33 +165,96 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
+  const renderProfileDropdown = () => (
+    <>
+      <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+      <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-purple-100 py-3 z-50 text-gray-900 animate-in fade-in zoom-in-95 duration-150">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0 text-[#9b1fe8] font-bold text-base shadow-sm">
+            {adminAvatar ? (
+              <img src={adminAvatar} alt={adminName} className="w-full h-full object-cover" />
+            ) : (
+              adminName.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-gray-900 truncate">{adminName}</p>
+            <span className="inline-block text-[11px] font-bold text-[#9b1fe8] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60 mt-0.5">
+              {isSuperAdmin ? 'Super Admin' : 'Branch Admin'}
+            </span>
+            {!isSuperAdmin && (
+              <p className="text-[11px] text-gray-500 font-semibold truncate mt-1">
+                {branchName} Branch
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="p-1.5 space-y-0.5">
+          <Link
+            href="/admin/profile"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
+          >
+            <User size={16} className="text-[#9b1fe8]" />
+            My Profile
+          </Link>
+          <Link
+            href="/admin/change-password"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
+          >
+            <KeyRound size={16} className="text-[#9b1fe8]" />
+            Change Password
+          </Link>
+        </div>
+
+        <div className="pt-1 mt-1 border-t border-gray-100 p-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setIsProfileMenuOpen(false);
+              setIsLogoutModalOpen(true);
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div className={`${bgClass} min-h-screen flex overflow-x-hidden font-['Inter'] transition-colors duration-300`}>
       {/* Mobile Header */}
-      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-4 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
-        <div className="flex items-center gap-3">
+      <div className={`md:hidden w-full h-[60px] bg-gradient-to-r ${styles.gradient} px-3 sm:px-4 flex items-center justify-between fixed top-0 left-0 z-50 shadow-md transition-all duration-300`}>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button 
             onClick={toggleSidebar} 
             aria-label="Open sidebar"
             className="text-white bg-transparent border-none p-0 flex items-center justify-center cursor-pointer shrink-0 active:scale-90 transition-transform"
           >
-            <Menu size={26} />
+            <Menu size={24} />
           </button>
-          <div className="flex items-center gap-2.5">
-            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[32px] h-[32px] rounded-full object-cover" />
-            <span className="text-white text-base font-bold">Graphix Admin</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[30px] h-[30px] rounded-full object-cover shrink-0" />
+            <span className="text-white text-sm sm:text-base font-bold truncate">
+              {isSuperAdmin ? 'Super Admin' : 'Graphix Admin'}
+            </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {isSuperAdmin ? (
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsMobileBranchDropdownOpen(!isMobileBranchDropdownOpen)}
-                className="text-[11px] px-2.5 py-1 bg-white/20 hover:bg-white/30 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white flex items-center gap-1.5 cursor-pointer outline-none transition-all active:scale-95 backdrop-blur-md"
+                className="text-[10.5px] sm:text-[11px] px-2 sm:px-2.5 py-1 bg-white/20 hover:bg-white/30 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white flex items-center gap-1 cursor-pointer outline-none transition-all active:scale-95 backdrop-blur-md"
               >
-                <span>{selectedBranch === 'all' ? 'All Branches' : selectedBranch}</span>
-                <ChevronDown size={11} className={`transition-transform duration-200 ${isMobileBranchDropdownOpen ? 'rotate-180' : ''}`} />
+                <span className="truncate max-w-[70px] sm:max-w-[100px]">{selectedBranch === 'all' ? 'All Branches' : selectedBranch}</span>
+                <ChevronDown size={11} className={`transition-transform duration-200 shrink-0 ${isMobileBranchDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {isMobileBranchDropdownOpen && (
@@ -227,20 +290,37 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               )}
             </div>
           ) : (
-            <span className="text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
+            <span className="text-[10.5px] sm:text-[11px] px-2 py-0.5 bg-white/20 border border-white/30 rounded-full font-bold uppercase tracking-wider text-white">{branchName}</span>
           )}
           <Link 
             href="/admin/notifications"
-            className="relative text-white p-1.5 flex items-center justify-center"
+            className="relative text-white p-1.5 flex items-center justify-center rounded-full hover:bg-white/10"
             title="Notifications"
           >
-            <Bell size={20} />
+            <Bell size={18} />
             {unreadCount > 0 && (
               <span className="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-md">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </Link>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+              title="Admin Profile"
+              className={`relative text-white p-1.5 cursor-pointer rounded-full border border-white/20 flex items-center justify-center overflow-hidden active:scale-95 transition-all ${
+                isProfileMenuOpen ? 'bg-white/30 ring-2 ring-white/50' : 'bg-white/10 hover:bg-white/20'
+              }`}
+            >
+              {adminAvatar ? (
+                <img src={adminAvatar} alt={adminName} className="w-[18px] h-[18px] rounded-full object-cover" />
+              ) : (
+                <User size={18} />
+              )}
+            </button>
+            {isProfileMenuOpen && renderProfileDropdown()}
+          </div>
         </div>
       </div>
 
@@ -400,7 +480,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       <main className={`flex-1 min-w-0 transition-all duration-300 min-h-screen flex flex-col pt-[60px] md:pt-0 ${
         isCollapsed ? 'md:ml-[80px]' : 'md:ml-[260px]'
       }`}>
-        <header className={`bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 flex justify-between items-center shadow-sm transition-all duration-300`}>
+        <header className={`hidden md:flex bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 justify-between items-center shadow-sm transition-all duration-300`}>
           <div>
             <h1 className="text-2xl font-bold">
               {isSuperAdmin ? "Super Admin Portal" : "Dashboard Overview"}
@@ -537,66 +617,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </button>
 
-              {isProfileMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
-                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-2xl border border-purple-100 py-3 z-50 text-gray-900 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center overflow-hidden shrink-0 text-[#9b1fe8] font-bold text-base shadow-sm">
-                        {adminAvatar ? (
-                          <img src={adminAvatar} alt={adminName} className="w-full h-full object-cover" />
-                        ) : (
-                          adminName.charAt(0).toUpperCase()
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-900 truncate">{adminName}</p>
-                        <span className="inline-block text-[11px] font-bold text-[#9b1fe8] bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200/60 mt-0.5">
-                          {isSuperAdmin ? 'Super Admin' : 'Branch Admin'}
-                        </span>
-                        {!isSuperAdmin && (
-                          <p className="text-[11px] text-gray-500 font-semibold truncate mt-1">
-                            {branchName} Branch
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="p-1.5 space-y-0.5">
-                      <Link
-                        href="/admin/profile"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
-                      >
-                        <User size={16} className="text-[#9b1fe8]" />
-                        My Profile
-                      </Link>
-                      <Link
-                        href="/admin/change-password"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
-                      >
-                        <KeyRound size={16} className="text-[#9b1fe8]" />
-                        Change Password
-                      </Link>
-                    </div>
-
-                    <div className="pt-1 mt-1 border-t border-gray-100 p-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsProfileMenuOpen(false);
-                          setIsLogoutModalOpen(true);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
-                      >
-                        <LogOut size={16} />
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+              {isProfileMenuOpen && renderProfileDropdown()}
             </div>
 
             <button 
@@ -609,7 +630,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <div className="p-4 md:p-8 flex-1">
+        <div className="p-3.5 sm:p-4 md:p-8 flex-1">
           {children}
         </div>
       </main>
