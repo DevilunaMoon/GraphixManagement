@@ -1284,23 +1284,23 @@ export default function AdminInventory() {
   return (
     <div className="flex flex-col gap-6 font-['Inter']">
       {/* Top Header & Multi-Branch Selector Bar */}
-      <div className="flex flex-wrap justify-between items-center gap-4 bg-white/95 backdrop-blur-md p-5 rounded-2xl border-2 border-purple-500/20 shadow-sm">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-3">
-            <h2 className="text-[1.6rem] font-bold text-[#111] tracking-tight">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 sm:gap-4 bg-white/95 backdrop-blur-md p-3.5 sm:p-5 rounded-2xl border-2 border-purple-500/20 shadow-sm">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h2 className="text-lg sm:text-2xl font-bold text-[#111] tracking-tight">
               {isSuperAdmin ? 'Multi-Branch Inventory' : `${userBranch} Branch Inventory`}
             </h2>
             {isSuperAdmin ? (
-              <span className="bg-purple-100 text-[#5c0099] text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider border border-purple-200 flex items-center gap-1.5">
-                <ShieldCheck size={14} /> Super Admin (All Branches)
+              <span className="bg-purple-100 text-[#5c0099] text-[10px] sm:text-xs font-black px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider border border-purple-200 inline-flex items-center gap-1.5 shrink-0">
+                <ShieldCheck size={13} className="shrink-0" /> Super Admin (All Branches)
               </span>
             ) : (
-              <span className="bg-blue-100 text-blue-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider border border-blue-200 flex items-center gap-1.5">
-                <Building2 size={14} /> {userBranch.toUpperCase()} BRANCH ADMIN
+              <span className="bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-black px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider border border-blue-200 inline-flex items-center gap-1.5 shrink-0">
+                <Building2 size={13} className="shrink-0" /> {userBranch.toUpperCase()} BRANCH ADMIN
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-gray-500">
             {isSuperAdmin 
               ? 'Organized by Product Name/Model with internal storage units and live stock tracking across Tagoloan, Villanueva, and Jasaan.'
               : `Organized by Product Name/Model with internal storage units and live stock tracking for ${userBranch} branch.`
@@ -1308,16 +1308,18 @@ export default function AdminInventory() {
           </p>
         </div>
 
-        {/* Branch Selector (Super Admin) or Locked Badge (Branch Admin) */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Branch Selector (Super Admin) or Locked Badge (Branch Admin) + Actions */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
           {isSuperAdmin ? (
-            <div className="flex items-center gap-2 bg-purple-50 border-2 border-[#5c0099]/30 rounded-xl px-3 py-1.5">
-              <Building2 size={18} className="text-[#5c0099]" />
-              <span className="text-xs font-bold text-[#5c0099] uppercase tracking-wider">Branch View:</span>
+            <div className="flex items-center justify-between sm:justify-start gap-2 bg-purple-50/80 border border-purple-300 rounded-xl px-2.5 sm:px-3 py-1.5 w-full sm:w-auto">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Building2 size={16} className="text-[#5c0099]" />
+                <span className="text-[11px] sm:text-xs font-bold text-[#5c0099] uppercase tracking-wider whitespace-nowrap">Branch View:</span>
+              </div>
               <select
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                className="bg-white border border-purple-300 rounded-lg px-2.5 py-1 text-sm font-bold text-gray-800 outline-none cursor-pointer focus:ring-2 focus:ring-[#5c0099]"
+                className="bg-white border border-purple-300 rounded-lg px-2 sm:px-2.5 py-1 text-xs sm:text-sm font-bold text-gray-800 outline-none cursor-pointer focus:ring-2 focus:ring-[#5c0099] min-w-0 flex-1 sm:flex-none"
               >
                 <option value="all">🌐 All Branches (Global)</option>
                 <option value="Tagoloan">📍 Tagoloan Branch</option>
@@ -1326,36 +1328,38 @@ export default function AdminInventory() {
               </select>
             </div>
           ) : (
-            <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-xl px-4 py-2 text-sm font-bold text-gray-700">
-              <Building2 size={18} className="text-blue-600" />
+            <div className="flex items-center gap-2 bg-gray-100 border border-gray-300 rounded-xl px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold text-gray-700">
+              <Building2 size={16} className="text-blue-600 shrink-0" />
               <span>Assigned Branch: <strong className="text-blue-700">{userBranch}</strong></span>
             </div>
           )}
 
-          {/* Super Admin Quick Actions */}
-          {isSuperAdmin && (
-            <button
-              onClick={() => {
-                setTransferDeviceId(products[0]?.id || '');
-                setTransferModalOpen(true);
-              }}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold hover:brightness-110 transition-all shadow-sm cursor-pointer text-sm"
-              title="Transfer stock between branches"
-            >
-              <ArrowRightLeft size={16} />
-              <span>Transfer Stock</span>
-            </button>
-          )}
+          {/* Super Admin Quick Actions & Audit History Button */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+            {isSuperAdmin && (
+              <button
+                onClick={() => {
+                  setTransferDeviceId(products[0]?.id || '');
+                  setTransferModalOpen(true);
+                }}
+                className="flex items-center justify-center gap-1 sm:gap-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold hover:brightness-110 transition-all shadow-sm cursor-pointer text-xs sm:text-sm whitespace-nowrap"
+                title="Transfer stock between branches"
+              >
+                <ArrowRightLeft size={14} className="shrink-0" />
+                <span>Transfer Stock</span>
+              </button>
+            )}
 
-          {/* Audit History Button */}
-          <button
-            onClick={() => setHistoryModalOpen(true)}
-            className="flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3.5 py-2.5 rounded-xl font-bold transition-colors text-sm border border-gray-300 cursor-pointer"
-            title="View stock movement history"
-          >
-            <History size={16} className="text-purple-600" />
-            <span>Stock History</span>
-          </button>
+            {/* Audit History Button */}
+            <button
+              onClick={() => setHistoryModalOpen(true)}
+              className={`flex items-center justify-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold transition-colors text-xs sm:text-sm border border-gray-300 cursor-pointer whitespace-nowrap ${!isSuperAdmin ? 'col-span-2 sm:col-span-1' : ''}`}
+              title="View stock movement history"
+            >
+              <History size={14} className="text-purple-600 shrink-0" />
+              <span>Stock History</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1364,41 +1368,41 @@ export default function AdminInventory() {
         {/* Row 1: Search Input + Stock Status Segmented Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
           {/* Search Input */}
-          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:min-w-[280px] shadow-sm flex-1`}>
-            <Search className={`${styles.textActive} w-5 h-5 mr-2 shrink-0`} />
+          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 w-full sm:min-w-[280px] shadow-sm flex-1`}>
+            <Search className={`${styles.textActive} w-4 h-4 sm:w-5 sm:h-5 mr-2 shrink-0`} />
             <input 
               type="text" 
               placeholder="Search Model, Storage, Specs..." 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
-              className="border-none outline-none w-full text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400" 
+              className="border-none outline-none w-full text-xs sm:text-[0.95rem] text-[#111] bg-transparent placeholder-gray-400" 
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer">
-                <X size={16} />
+                <X size={15} />
               </button>
             )}
           </div>
 
           {/* Stock Status Filter Pills */}
-          <div className="flex items-center justify-between sm:justify-start bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1 shrink-0 overflow-x-auto">
+          <div className="flex items-center justify-between sm:justify-start bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
             <button
               onClick={() => setStockStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors shrink-0 cursor-pointer ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-colors shrink-0 cursor-pointer ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               All Stock
             </button>
             <button
               onClick={() => setStockStatusFilter('low')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${stockStatusFilter === 'low' ? 'bg-amber-500 text-white' : 'text-amber-700 hover:bg-amber-50'}`}
             >
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-amber-400"></span> Low Stock (&lt;5)
             </button>
             <button
               onClick={() => setStockStatusFilter('out')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${stockStatusFilter === 'out' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'}`}
             >
-              <span className="w-2 h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-400"></span> Out of Stock (0)
             </button>
           </div>
         </div>
