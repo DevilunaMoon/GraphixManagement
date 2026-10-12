@@ -691,8 +691,10 @@ export default function AdminAboutEditor() {
                   value={mainText}
                   onChange={(e) => setMainText(e.target.value)}
                   disabled={!isSuperAdmin}
-                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed resize-y transition-all ${
-                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-1 focus:ring-[#bd00ff]'
+                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm font-medium leading-relaxed resize-y transition-all ${
+                    !isSuperAdmin 
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                      : 'bg-white text-gray-900 focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100 shadow-xs'
                   }`}
                   placeholder="Enter main platform description..."
                 />
@@ -724,8 +726,10 @@ export default function AdminAboutEditor() {
                   value={purchasePolicy}
                   onChange={(e) => setPurchasePolicy(e.target.value)}
                   disabled={!isSuperAdmin}
-                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed min-h-[95px] sm:min-h-[105px] resize-y transition-all ${
-                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100'
+                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm font-medium leading-relaxed min-h-[95px] sm:min-h-[105px] resize-y transition-all ${
+                    !isSuperAdmin 
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                      : 'bg-white text-gray-900 focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100 shadow-xs'
                   }`}
                   placeholder="Enter online purchase policy statement..."
                 />
@@ -741,8 +745,10 @@ export default function AdminAboutEditor() {
                   value={downpaymentPolicy}
                   onChange={(e) => setDownpaymentPolicy(e.target.value)}
                   disabled={!isSuperAdmin}
-                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm text-gray-800 font-medium leading-relaxed min-h-[145px] sm:min-h-[155px] resize-y transition-all ${
-                    !isSuperAdmin ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100'
+                  className={`w-full p-3.5 sm:p-4 border border-gray-200 rounded-xl outline-none text-sm font-medium leading-relaxed min-h-[145px] sm:min-h-[155px] resize-y transition-all ${
+                    !isSuperAdmin 
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                      : 'bg-white text-gray-900 focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-100 shadow-xs'
                   }`}
                   placeholder="Enter in-store downpayment notice..."
                 />
