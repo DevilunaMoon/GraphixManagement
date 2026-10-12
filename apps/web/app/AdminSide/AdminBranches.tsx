@@ -352,7 +352,7 @@ export default function AdminBranches() {
             return (
               <div 
                 key={branch.id} 
-                className={`w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all flex flex-col gap-5 sm:gap-6 ${
+                className={`w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all flex flex-col gap-5 sm:gap-6 overflow-hidden ${
                   branch.status === 'Active' ? 'border-gray-100' : 'border-red-200 bg-red-50/20'
                 }`}
               >
@@ -514,44 +514,48 @@ export default function AdminBranches() {
             return (
             <div 
               key={branch.id} 
-              className={`bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border transition-all hover:shadow-md flex flex-col justify-between gap-5 ${
+              className={`bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm border transition-all hover:shadow-md flex flex-col justify-between gap-5 overflow-hidden ${
                 branch.status === 'Active' ? 'border-gray-100' : 'border-red-200 bg-red-50/20'
               }`}
             >
-              <div>
+              <div className="min-w-0">
                 {/* Branch Header */}
-                <div className="flex justify-between items-start gap-2 mb-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 m-0">{branch.name}</h3>
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                      <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{branch.address || 'No address specified'}</span>
-                    </div>
-                    {branch.phone && (
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-                        <Phone size={14} className="text-gray-400 flex-shrink-0" />
-                        <span>{branch.phone}</span>
-                      </div>
-                    )}
-                    {branch.email && (
-                      <div className="flex items-center gap-1.5 text-xs text-purple-700 font-medium mt-1">
-                        <Mail size={14} className="text-[#bd00ff] flex-shrink-0" />
-                        <span className="truncate">{branch.email}</span>
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-start justify-between gap-2.5 mb-2.5 min-w-0">
+                  <h3 className="text-xl font-bold text-gray-900 m-0 min-w-0 truncate">{branch.name}</h3>
                   <button
                     onClick={() => handleToggleStatus(branch)}
                     title={`Click to ${branch.status === 'Active' ? 'Deactivate' : 'Activate'}`}
-                    className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border-none ${
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all border-none shrink-0 whitespace-nowrap ${
                       branch.status === 'Active' 
                         ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                         : 'bg-red-100 text-red-700 hover:bg-red-200'
                     }`}
                   >
-                    {branch.status === 'Active' ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
-                    {branch.status}
+                    {branch.status === 'Active' ? <CheckCircle2 size={13} className="shrink-0" /> : <XCircle size={13} className="shrink-0" />}
+                    <span>{branch.status}</span>
                   </button>
+                </div>
+
+                {/* Contact & Location Info */}
+                <div className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <MapPin size={14} className="text-gray-400 shrink-0" />
+                    <span className="truncate" title={branch.address || 'No address specified'}>
+                      {branch.address || 'No address specified'}
+                    </span>
+                  </div>
+                  {branch.phone && (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Phone size={14} className="text-gray-400 shrink-0" />
+                      <span className="truncate">{branch.phone}</span>
+                    </div>
+                  )}
+                  {branch.email && (
+                    <div className="flex items-center gap-1.5 text-xs text-purple-700 font-medium min-w-0">
+                      <Mail size={14} className="text-[#bd00ff] shrink-0" />
+                      <span className="truncate" title={branch.email}>{branch.email}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Metrics Breakdown */}
