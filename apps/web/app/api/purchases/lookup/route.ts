@@ -98,7 +98,7 @@ export async function GET(req: Request) {
     const formatted = purchases.map(p => {
       const createdAtMs = new Date(p.createdAt).getTime();
       const expiresAtMs = createdAtMs + 8 * 60 * 60 * 1000;
-      const isExpired = now >= expiresAtMs && p.status !== 'Paid';
+      const isExpired = now >= expiresAtMs && p.status !== 'Paid' && p.status !== 'Completed';
       const remainingMs = Math.max(0, expiresAtMs - now);
 
       return {
@@ -110,7 +110,7 @@ export async function GET(req: Request) {
         variations: p.variations,
         paymentType: p.paymentType,
         branch: p.branch,
-        status: (p.status === 'For Verification' || p.status === 'Paid' || p.status === 'Rejected') ? p.status : (isExpired ? 'Expired' : p.status),
+        status: (p.status === 'For Verification' || p.status === 'Paid' || p.status === 'Completed' || p.status === 'Rejected') ? p.status : (isExpired ? 'Expired' : p.status),
         isSettled: p.isSettled,
         receiptUrl: p.receiptUrl || null,
         createdAt: p.createdAt,

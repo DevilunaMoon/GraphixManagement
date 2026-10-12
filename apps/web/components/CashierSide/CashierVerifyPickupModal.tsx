@@ -281,7 +281,7 @@ export default function CashierVerifyPickupModal({
   });
 
   const gcashPendingCount = reservations.filter(r => 
-    (r.paymentType?.toLowerCase().includes('gcash') || Boolean(r.receiptUrl) || r.status === 'For Verification') && r.status !== 'Paid' && r.status !== 'Rejected'
+    (r.paymentType?.toLowerCase().includes('gcash') || Boolean(r.receiptUrl) || r.status === 'For Verification') && r.status !== 'Paid' && r.status !== 'Rejected' && r.status !== 'Completed'
   ).length;
 
   const totalPages = Math.max(1, Math.ceil(filteredReservations.length / itemsPerPage));
@@ -779,6 +779,7 @@ export default function CashierVerifyPickupModal({
                 <>
                   <div className="flex flex-col gap-2.5">
                     {currentReservations.map((resItem) => {
+                      const isCompleted = resItem.status === 'Completed';
                       const isPaid = resItem.status === 'Paid';
                       const isGcash = resItem.paymentType?.toLowerCase().includes('gcash') || Boolean(resItem.receiptUrl) || resItem.status === 'For Verification';
                       const isForVerification = resItem.status === 'For Verification';
@@ -788,7 +789,9 @@ export default function CashierVerifyPickupModal({
                           key={resItem.id}
                           onClick={() => handleSelectOrder(resItem)}
                           className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
-                            isPaid
+                            isCompleted
+                              ? 'bg-emerald-50/40 border-emerald-200 hover:border-emerald-300'
+                              : isPaid
                               ? 'bg-gray-50 border-gray-200 opacity-75'
                               : isForVerification
                               ? 'bg-blue-50/50 border-blue-200 hover:border-[#005ce6] hover:shadow-md'
@@ -823,7 +826,11 @@ export default function CashierVerifyPickupModal({
                               <span className="font-black text-sm text-black block">
                                 ₱{resItem.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </span>
-                              {isPaid ? (
+                              {isCompleted ? (
+                                <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center justify-end gap-1">
+                                  <Check size={11} strokeWidth={3} /> COMPLETED
+                                </span>
+                              ) : isPaid ? (
                                 <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                                   VERIFIED
                                 </span>
@@ -846,7 +853,29 @@ export default function CashierVerifyPickupModal({
                               )}
                             </div>
 
-                            {isPaid ? null : (
+                            {isCompleted ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectOrder(resItem);
+                                }}
+                                className="px-3 py-1.5 font-bold text-xs rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 cursor-pointer shadow-xs transition-all flex items-center gap-1"
+                              >
+                                <span>Details</span>
+                              </button>
+                            ) : isPaid ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectOrder(resItem);
+                                }}
+                                className="px-3 py-1.5 font-bold text-xs rounded-xl border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 cursor-pointer shadow-xs transition-all"
+                              >
+                                <span>View</span>
+                              </button>
+                            ) : (
                               <button
                                 type="button"
                                 onClick={(e) => {
