@@ -1408,7 +1408,7 @@ export default function AdminInventory() {
         </div>
 
         {/* Row 2: Dropdown Filters, Exports & Action Buttons */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 w-full">
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5 sm:gap-3 w-full">
           {/* Dropdown Filters + Export Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Brand Dropdown */}

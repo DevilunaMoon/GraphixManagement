@@ -1170,11 +1170,11 @@ export default function CashierDevices() {
       </div>
 
       {/* Filter & Action Controls Bar */}
-      <div className="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 w-full">
-        {/* Search & Stock Status */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+      <div className="flex flex-col gap-3 w-full">
+        {/* Row 1: Search & Stock Status */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 w-full">
           {/* Search */}
-          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:min-w-[240px] shadow-sm`}>
+          <div className={`flex items-center bg-white border-2 ${styles.borderMain} rounded-full px-4 py-2 w-full sm:min-w-[280px] shadow-sm flex-1`}>
             <Search className={`${styles.textActive} w-4 h-4 mr-2 shrink-0`} />
             <input 
               type="text" 
@@ -1187,14 +1187,14 @@ export default function CashierDevices() {
               className="border-none outline-none w-full text-xs sm:text-sm text-[#111] bg-transparent placeholder-gray-400 font-medium" 
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black">
+              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer">
                 <X size={15} />
               </button>
             )}
           </div>
 
           {/* Stock Status Filter Pills */}
-          <div className="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1 overflow-x-auto max-w-full shrink-0">
+          <div className="flex items-center bg-white border border-gray-200 rounded-full p-1 shadow-sm gap-1 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
             <button
               onClick={() => { setStockStatusFilter('all'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer shrink-0 ${stockStatusFilter === 'all' ? 'bg-[#5c0099] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
@@ -1216,109 +1216,117 @@ export default function CashierDevices() {
           </div>
         </div>
 
-        {/* Brand, Type, Condition Filters + Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Brand Dropdown */}
-          <div className="relative">
-            <button 
-              onClick={() => setIsFilterOpen(!isFilterOpen)} 
-              className={`flex items-center gap-1.5 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
-            >
-              <Filter size={14} />
-              <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
-              <ChevronDown size={14} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {isFilterOpen && (
-              <div className="absolute top-[115%] right-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
-                <button 
-                  onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); setCurrentPage(1); }} 
-                  className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                >
-                  All Brands
-                </button>
-                {categories.map(cat => (
+        {/* Row 2: Dropdown Filters, Exports & Action Buttons */}
+        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5 sm:gap-3 w-full">
+          {/* Dropdown Filters + Export Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Brand Dropdown */}
+            <div className="relative">
+              <button 
+                onClick={() => setIsFilterOpen(!isFilterOpen)} 
+                className={`flex items-center gap-1.5 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
+              >
+                <Filter size={14} />
+                <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
+                <ChevronDown size={14} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {isFilterOpen && (
+                <div className="absolute top-[115%] left-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
                   <button 
-                    key={cat.id} 
-                    onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); setCurrentPage(1); }} 
-                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
+                    onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); setCurrentPage(1); }} 
+                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
                   >
-                    {cat.name}
+                    All Brands
                   </button>
-                ))}
-                <div className="border-t border-purple-100 mt-1 pt-1">
-                  <button 
-                    onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
-                    className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Plus size={14} /> + Add / Manage Brands
-                  </button>
+                  {categories.map(cat => (
+                    <button 
+                      key={cat.id} 
+                      onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); setCurrentPage(1); }} 
+                      className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                  <div className="border-t border-purple-100 mt-1 pt-1">
+                    <button 
+                      onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Plus size={14} /> + Add / Manage Brands
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Type Dropdown */}
+            <select 
+              value={selectedDeviceType} 
+              onChange={(e) => { setSelectedDeviceType(e.target.value); setCurrentPage(1); }} 
+              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+            >
+              <option value="all">All Types</option>
+              <option value="smartphone">Smartphones</option>
+              <option value="laptop">Laptops</option>
+              <option value="ipad">iPads/Tablets</option>
+              <option value="tv">TVs</option>
+              <option value="speaker">Speakers</option>
+              <option value="phone accessories">Accessories</option>
+            </select>
+
+            {/* Condition Filter Dropdown */}
+            <select
+              value={selectedCondition}
+              onChange={(e) => { setSelectedCondition(e.target.value as any); setCurrentPage(1); }}
+              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
+            >
+              <option value="all">All Conditions</option>
+              <option value="new">New</option>
+              <option value="pre-owned">Pre-Owned</option>
+            </select>
+
+            {/* Export Buttons */}
+            <div className="flex items-center gap-1.5">
+              <button onClick={downloadPDF} className="flex items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
+                <FileText size={13} /> PDF
+              </button>
+              <button onClick={downloadExcel} className="flex items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
+                <FileText size={13} /> Excel
+              </button>
+            </div>
           </div>
 
-          {/* Type Dropdown */}
-          <select 
-            value={selectedDeviceType} 
-            onChange={(e) => { setSelectedDeviceType(e.target.value); setCurrentPage(1); }} 
-            className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-          >
-            <option value="all">All Types</option>
-            <option value="smartphone">Smartphones</option>
-            <option value="laptop">Laptops</option>
-            <option value="ipad">iPads/Tablets</option>
-            <option value="tv">TVs</option>
-            <option value="speaker">Speakers</option>
-            <option value="phone accessories">Accessories</option>
-          </select>
+          {/* Action Buttons Bar (+ Add Brand, + Add Product, + Discount) */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Add Brand Button */}
+            <button 
+              onClick={() => setCategoriesModalOpen(true)} 
+              className="flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-3.5 py-1.5 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200 shrink-0"
+              title="Add & Manage Brands"
+            >
+              <Plus size={14} />
+              <span>Add Brand</span>
+            </button>
 
-          {/* Condition Filter Dropdown */}
-          <select
-            value={selectedCondition}
-            onChange={(e) => { setSelectedCondition(e.target.value as any); setCurrentPage(1); }}
-            className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-          >
-            <option value="all">All Conditions</option>
-            <option value="new">New</option>
-            <option value="pre-owned">Pre-Owned</option>
-          </select>
+            {/* Add Product Button */}
+            <button 
+              onClick={() => setIsAddModalOpen(true)} 
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-[#5c0099] hover:bg-[#470077] text-white px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap active:scale-95"
+            >
+              <Plus size={16} />
+              <span>Add Product</span>
+            </button>
 
-          {/* Export Buttons */}
-          <button onClick={downloadPDF} className="flex items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
-            <FileText size={13} /> PDF
-          </button>
-          <button onClick={downloadExcel} className="flex items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
-            <FileText size={13} /> Excel
-          </button>
-
-          {/* Add Brand Button */}
-          <button 
-            onClick={() => setCategoriesModalOpen(true)} 
-            className="flex items-center gap-1 bg-purple-100 hover:bg-purple-200 text-[#5c0099] px-3 py-1.5 rounded-full font-bold text-xs shadow-xs transition-all cursor-pointer border border-purple-200"
-            title="Add & Manage Brands"
-          >
-            <Plus size={14} />
-            <span>Add Brand</span>
-          </button>
-
-          {/* Add Product Button */}
-          <button 
-            onClick={() => setIsAddModalOpen(true)} 
-            className="flex items-center gap-1.5 bg-[#5c0099] hover:bg-[#470077] text-white px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap"
-          >
-            <Plus size={16} />
-            <span>Add Product</span>
-          </button>
-
-          {/* Add Discount Product Button */}
-          <button 
-            onClick={() => handleOpenAddDiscount()} 
-            className="flex items-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer border border-purple-400/40 whitespace-nowrap"
-            title="Apply discount to an existing product and variant"
-          >
-            <Percent size={15} className="text-amber-300" />
-            <span>+ Add Discount</span>
-          </button>
+            {/* Add Discount Product Button */}
+            <button 
+              onClick={() => handleOpenAddDiscount()} 
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer border border-purple-400/40 whitespace-nowrap active:scale-95"
+              title="Apply discount to an existing product and variant"
+            >
+              <Percent size={15} className="text-amber-300" />
+              <span>+ Add Discount</span>
+            </button>
+          </div>
         </div>
       </div>
 
