@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Download, UserCircle2, Search, ReceiptText, CheckCircle2, Smartphone, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, UserCircle2, Search, ReceiptText, CheckCircle2, Smartphone, Calendar, Edit2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
 import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
@@ -300,13 +300,41 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                           Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                         </span>
                         {tx.imei ? (
-                          <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                            IMEI: {tx.imei}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit">
+                              IMEI: {tx.imei}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImeiModalTarget(tx);
+                              }}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                              title="Edit IMEI"
+                            >
+                              <Edit2 size={10} />
+                              <span>Edit</span>
+                            </button>
+                          </div>
                         ) : isIPhoneProduct(tx.device?.name || '') ? (
-                          <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                            IMEI: Pending Pickup
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit">
+                              IMEI: Pending Pickup
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImeiModalTarget(tx);
+                              }}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                              title="Assign IMEI"
+                            >
+                              <Edit2 size={10} />
+                              <span>Assign</span>
+                            </button>
+                          </div>
                         ) : null}
                       </div>
                     </div>
@@ -465,12 +493,40 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
                       Qty: <strong className="text-gray-700">{tx.quantity}</strong> {tx.variations && `• ${formatVariations(tx.variations)}`}
                     </div>
                     {tx.imei ? (
-                      <div className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                        IMEI: {tx.imei}
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <div className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit">
+                          IMEI: {tx.imei}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImeiModalTarget(tx);
+                          }}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                          title="Edit IMEI"
+                        >
+                          <Edit2 size={10} />
+                          <span>Edit</span>
+                        </button>
                       </div>
                     ) : isIPhoneProduct(tx.device?.name || '') ? (
-                      <div className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                        IMEI: Pending Pickup
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <div className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit">
+                          IMEI: Pending Pickup
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImeiModalTarget(tx);
+                          }}
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                          title="Assign IMEI"
+                        >
+                          <Edit2 size={10} />
+                          <span>Assign</span>
+                        </button>
                       </div>
                     ) : null}
                   </div>
@@ -612,6 +668,9 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
           deviceName={imeiModalTarget.device?.name || 'iPhone'}
           referenceId={imeiModalTarget.referenceId}
           customerName={imeiModalTarget.user?.name}
+          branch={imeiModalTarget.branch}
+          variations={imeiModalTarget.variations}
+          quantity={imeiModalTarget.quantity}
           initialImei={imeiModalTarget.imei}
           onSaved={handleImeiSaved}
         />

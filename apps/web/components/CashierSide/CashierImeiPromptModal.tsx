@@ -92,6 +92,7 @@ export default function CashierImeiPromptModal({
 
   const totalQty = Math.max(1, quantity || 1);
   const { color, storage } = parseVariantDetails(variations);
+  const isEditing = Boolean(initialImei && initialImei !== 'Pending Pickup');
 
   useEffect(() => {
     if (isOpen) {
@@ -99,7 +100,7 @@ export default function CashierImeiPromptModal({
       const initialList = (initialImei || '')
         .split(',')
         .map(s => s.trim())
-        .filter(Boolean);
+        .filter(s => s && s.toLowerCase() !== 'pending pickup');
       
       const filled: string[] = [];
       for (let i = 0; i < totalQty; i++) {
@@ -316,12 +317,14 @@ export default function CashierImeiPromptModal({
             </div>
             <div>
               <h3 className="text-xl font-black m-0 leading-tight tracking-wide">
-                {step === 'confirm' ? 'Confirm Device Pickup' : 'Record iPhone IMEI'}
+                {step === 'confirm' 
+                  ? (isEditing ? 'Confirm Updated IMEI' : 'Confirm Device Pickup')
+                  : (isEditing ? 'Edit Device IMEI' : 'Record iPhone IMEI')}
               </h3>
               <p className="text-xs text-purple-200 m-0 mt-1">
                 {step === 'confirm' 
-                  ? 'Verify handover details before permanently linking IMEI'
-                  : 'Enter the IMEI of the actual iPhone unit being handed to customer'}
+                  ? (isEditing ? 'Verify updated IMEI details before saving' : 'Verify handover details before permanently linking IMEI')
+                  : (isEditing ? 'Update the 15-digit IMEI assigned to this purchase' : 'Enter the IMEI of the actual iPhone unit being handed to customer')}
               </p>
             </div>
           </div>
@@ -335,8 +338,14 @@ export default function CashierImeiPromptModal({
             <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl flex items-center gap-3 text-emerald-900 animate-in zoom-in-95">
               <CheckCircle2 size={28} className="text-emerald-600 shrink-0" />
               <div>
-                <p className="font-black m-0 text-sm">Pickup Completed & IMEI Linked!</p>
-                <p className="text-xs text-emerald-700 m-0 mt-0.5">Physical device recorded for customer warranty and sales history.</p>
+                <p className="font-black m-0 text-sm">
+                  {isEditing ? 'IMEI Successfully Updated!' : 'Pickup Completed & IMEI Linked!'}
+                </p>
+                <p className="text-xs text-emerald-700 m-0 mt-0.5">
+                  {isEditing 
+                    ? 'Device IMEI updated in sales records and warranty system.' 
+                    : 'Physical device recorded for customer warranty and sales history.'}
+                </p>
               </div>
             </div>
           )}
@@ -572,7 +581,9 @@ export default function CashierImeiPromptModal({
               <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-semibold text-amber-950 flex items-center gap-2">
                 <HelpCircle size={18} className="text-amber-600 shrink-0" />
                 <span>
-                  <strong>Question:</strong> Are you sure this is the exact physical device being handed to the customer?
+                  <strong>Question:</strong> {isEditing 
+                    ? 'Are you sure you want to update the recorded IMEI for this order?' 
+                    : 'Are you sure this is the exact physical device being handed to the customer?'}
                 </span>
               </div>
 
@@ -596,12 +607,12 @@ export default function CashierImeiPromptModal({
                   {isSubmitting ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      <span>Completing Pickup...</span>
+                      <span>{isEditing ? 'Updating IMEI...' : 'Completing Pickup...'}</span>
                     </>
                   ) : (
                     <>
                       <Check size={16} />
-                      <span>Confirm Pickup</span>
+                      <span>{isEditing ? 'Save & Update IMEI' : 'Confirm Pickup'}</span>
                     </>
                   )}
                 </button>

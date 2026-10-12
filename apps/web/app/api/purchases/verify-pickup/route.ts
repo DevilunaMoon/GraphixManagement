@@ -110,9 +110,9 @@ export async function POST(req: Request) {
     }
 
     // =========================================================================
-    // 2. COMPLETE_PICKUP ACTION (Device Handover & Physical IMEI Assignment)
+    // 2. COMPLETE_PICKUP / UPDATE_IMEI ACTION (Device Handover & Physical IMEI Assignment)
     // =========================================================================
-    if (action === 'COMPLETE_PICKUP') {
+    if (action === 'COMPLETE_PICKUP' || action === 'UPDATE_IMEI') {
       const isIPhone = isIPhoneProduct(purchase.device);
       const qty = Math.max(1, purchase.quantity || 1);
 
@@ -194,8 +194,8 @@ export async function POST(req: Request) {
               }, { status: 400 });
             }
 
-            // Must not be already Sold
-            if (registeredUnit.status === 'Sold' && registeredUnit.purchaseId !== purchase.id) {
+            // Must not be already Sold to another purchase
+            if (registeredUnit.status === 'Sold' && registeredUnit.purchaseId && registeredUnit.purchaseId !== purchase.id) {
               return NextResponse.json({
                 error: `IMEI ${clean} is already marked as Sold in inventory.`
               }, { status: 409 });
@@ -236,6 +236,25 @@ export async function POST(req: Request) {
           }
         }
 
+        const isEditingImei = Boolean(purchase.imei && purchase.imei !== 'Pending Pickup');
+
+        // If updating an existing IMEI on an already recorded order, release the old DeviceUnit
+        if (purchase.imei && purchase.imei !== finalImeiString) {
+          const oldImeis = purchase.imei.split(',').map(s => s.trim()).filter(Boolean);
+          for (const old of oldImeis) {
+            if (!cleanImeis.includes(old)) {
+              try {
+                await prisma.deviceUnit.updateMany({
+                  where: { imei: old, purchaseId: purchase.id },
+                  data: { status: 'Available', purchaseId: null }
+                });
+              } catch (err) {
+                console.error(`Error releasing old DeviceUnit for IMEI ${old}:`, err);
+              }
+            }
+          }
+        }
+
         // Update purchase record to Completed / Picked Up
         const completedPurchase = await prisma.purchase.update({
           where: { id: purchase.id },
@@ -269,14 +288,17 @@ export async function POST(req: Request) {
           }
         }
 
-        // Log pickup completion activity
+        // Log pickup completion or IMEI edit activity
         try {
           await logActivity({
-            action: 'RECORD_IMEI',
-            description: `Handed over "${purchase.device?.name || 'iPhone'}" and recorded IMEI ${finalImeiString} for Order #${purchase.referenceId || purchase.id}`,
+            action: isEditingImei ? 'UPDATE_IMEI' : 'RECORD_IMEI',
+            description: isEditingImei
+              ? `Updated IMEI for "${purchase.device?.name || 'iPhone'}" on Order #${purchase.referenceId || purchase.id}: was "${purchase.imei}", now "${finalImeiString}"`
+              : `Handed over "${purchase.device?.name || 'iPhone'}" and recorded IMEI ${finalImeiString} for Order #${purchase.referenceId || purchase.id}`,
             details: JSON.stringify({
               purchaseId: purchase.id,
               referenceId: purchase.referenceId,
+              previousImei: purchase.imei || null,
               imei: finalImeiString,
               deviceName: purchase.device?.name,
               customerName: purchase.user?.name || 'Customer',
@@ -288,13 +310,17 @@ export async function POST(req: Request) {
           console.error('Failed to log activity for IMEI record:', logErr);
         }
 
-        // Dispatch customer handover notification
+        // Dispatch customer handover or update notification
         if (purchase.userId) {
           await prisma.notification.create({
             data: {
               userId: purchase.userId,
-              title: `Device Handed Over — Order ${purchase.referenceId || purchase.id}`,
-              message: `Your ${purchase.device?.name || 'Device'} has been successfully picked up at GraphiX ${purchase.branch}! Recorded Serial/IMEI: ${finalImeiString}. Thank you for purchasing at GraphiX!`,
+              title: isEditingImei
+                ? `Updated Device IMEI — Order ${purchase.referenceId || purchase.id}`
+                : `Device Handed Over — Order ${purchase.referenceId || purchase.id}`,
+              message: isEditingImei
+                ? `The recorded serial/IMEI for your ${purchase.device?.name || 'Device'} has been updated to: ${finalImeiString}.`
+                : `Your ${purchase.device?.name || 'Device'} has been successfully picked up at GraphiX ${purchase.branch}! Recorded Serial/IMEI: ${finalImeiString}. Thank you for purchasing at GraphiX!`,
               branch: purchase.branch,
               type: 'SYSTEM'
             }
