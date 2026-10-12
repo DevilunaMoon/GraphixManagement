@@ -31,36 +31,53 @@ export default function DatePicker({ value, onChange, className = '', placeholde
     setIsOpen(false);
   };
 
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange('');
+  };
+
   return (
     <>
       <div 
         onClick={() => setIsOpen(true)}
-        className={`flex items-center justify-between cursor-pointer ${className}`}
+        className={`flex items-center justify-between cursor-pointer select-none transition-all ${className}`}
       >
-        <span className={selectedDate ? 'text-black font-semibold' : 'text-gray-400'}>
+        <span className={`truncate mr-2 ${selectedDate ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
           {selectedDate ? format(selectedDate, 'MMM d, yyyy') : placeholder}
         </span>
-        <CalendarIcon size={18} className="text-gray-500 shrink-0" />
+        <div className="flex items-center gap-1 shrink-0">
+          {value && (
+            <button
+              type="button"
+              onClick={handleClear}
+              title="Clear date"
+              className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center"
+            >
+              <X size={14} />
+            </button>
+          )}
+          <CalendarIcon size={18} className="text-gray-500 shrink-0" />
+        </div>
       </div>
 
       {isOpen && (
         <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 p-3 overscroll-contain"
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-200 m-4 flex flex-col items-center"
+            className="bg-white rounded-3xl shadow-2xl p-4 sm:p-6 relative animate-in zoom-in-95 duration-200 flex flex-col items-center max-w-[94vw] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors z-10"
+              className="absolute top-4 right-4 p-2 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-500 transition-colors z-10 border-none cursor-pointer"
             >
               <X size={18} />
             </button>
             
-            <div className="mb-4 pr-8 w-full text-left">
-              <h3 className="text-lg font-bold text-gray-900 m-0">Select Date</h3>
+            <div className="mb-3 pr-8 w-full text-left">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 m-0">Select Date</h3>
             </div>
 
             <style dangerouslySetInnerHTML={{__html: `

@@ -151,69 +151,98 @@ export default function AdminActivityLogs() {
       </div>
 
       {/* Filters Card */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center gap-3">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm border border-gray-100 flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3">
         {/* Search */}
-        <div className="w-full md:flex-1 flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200">
-          <Search size={18} className="text-gray-400" />
+        <div className="w-full md:flex-1 flex items-center gap-2.5 px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 rounded-xl sm:rounded-2xl border border-gray-200">
+          <Search size={18} className="text-gray-400 shrink-0" />
           <input
             type="text"
             placeholder="Search descriptions, actors, or details..."
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
+            className="w-full bg-transparent outline-none text-xs sm:text-sm text-gray-800 placeholder-gray-400 font-medium"
           />
+          {searchTerm && (
+            <button
+              onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
+              className="text-gray-400 hover:text-gray-600 p-0.5 bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0"
+              title="Clear search"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
 
-        {/* Branch Filter */}
-        <div className="w-full md:w-auto min-w-[180px]">
-          <select
-            value={selectedBranchFilter}
-            onChange={(e) => { setSelectedBranchFilter(e.target.value); setCurrentPage(1); }}
-            className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-700 outline-none cursor-pointer"
+        {/* Filters Group */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:flex items-center gap-2.5 sm:gap-3 w-full md:w-auto">
+          {/* Branch Filter */}
+          <div className="w-full md:w-auto md:min-w-[170px]">
+            <select
+              value={selectedBranchFilter}
+              onChange={(e) => { setSelectedBranchFilter(e.target.value); setCurrentPage(1); }}
+              className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 rounded-xl sm:rounded-2xl border border-gray-200 text-xs sm:text-sm font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-100/60 transition-colors"
+            >
+              <option value="all">🌐 All Branches</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.name}>📍 {b.name} Branch</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action Filter */}
+          <div className="w-full md:w-auto md:min-w-[170px]">
+            <select
+              value={selectedActionFilter}
+              onChange={(e) => { setSelectedActionFilter(e.target.value); setCurrentPage(1); }}
+              className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 rounded-xl sm:rounded-2xl border border-gray-200 text-xs sm:text-sm font-semibold text-gray-700 outline-none cursor-pointer hover:bg-gray-100/60 transition-colors"
+            >
+              <option value="all">⚡ All Actions</option>
+              <option value="CREATE_BRANCH">Create Branch</option>
+              <option value="UPDATE_BRANCH">Update Branch</option>
+              <option value="DEACTIVATE_BRANCH">Deactivate Branch</option>
+              <option value="DELETE_BRANCH">Delete Branch</option>
+              <option value="CREATE_ACCOUNT">Create Staff Account</option>
+              <option value="EDIT_ACCOUNT">Edit Staff Account</option>
+              <option value="SUSPEND_ACCOUNT">Suspend Account</option>
+              <option value="LIFT_SUSPENSION">Reactivate Account</option>
+              <option value="DELETE_ACCOUNT">Delete Account</option>
+              <option value="ADD_DEVICE">Add Inventory Product</option>
+              <option value="CREATE_FAQ">Create FAQ</option>
+              <option value="UPDATE_FAQ">Update FAQ</option>
+              <option value="DELETE_FAQ">Delete FAQ</option>
+            </select>
+          </div>
+
+          {/* Date Filter */}
+          <div className="w-full md:w-auto md:min-w-[170px]">
+            <DatePicker
+              value={filterDate}
+              onChange={(val) => { setFilterDate(val); setCurrentPage(1); }}
+              placeholder="Filter by date..."
+              className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 hover:bg-gray-100/60 rounded-xl sm:rounded-2xl border border-gray-200 text-xs sm:text-sm font-semibold text-gray-700 outline-none cursor-pointer transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Reset Filter Button if any filter active */}
+        {(searchTerm || selectedBranchFilter !== 'all' || selectedActionFilter !== 'all' || filterDate) && (
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedBranchFilter('all');
+              setSelectedActionFilter('all');
+              setFilterDate('');
+              setCurrentPage(1);
+            }}
+            className="text-xs font-bold text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-3 py-2 sm:py-2.5 rounded-xl border border-purple-200 transition-colors cursor-pointer shrink-0 text-center"
           >
-            <option value="all">🌐 All Branches</option>
-            {branches.map(b => (
-              <option key={b.id} value={b.name}>📍 {b.name} Branch</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Action Filter */}
-        <div className="w-full md:w-auto min-w-[180px]">
-          <select
-            value={selectedActionFilter}
-            onChange={(e) => { setSelectedActionFilter(e.target.value); setCurrentPage(1); }}
-            className="w-full px-4 py-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-700 outline-none cursor-pointer"
-          >
-            <option value="all">⚡ All Actions</option>
-            <option value="CREATE_BRANCH">Create Branch</option>
-            <option value="UPDATE_BRANCH">Update Branch</option>
-            <option value="DEACTIVATE_BRANCH">Deactivate Branch</option>
-            <option value="DELETE_BRANCH">Delete Branch</option>
-            <option value="CREATE_ACCOUNT">Create Staff Account</option>
-            <option value="EDIT_ACCOUNT">Edit Staff Account</option>
-            <option value="SUSPEND_ACCOUNT">Suspend Account</option>
-            <option value="LIFT_SUSPENSION">Reactivate Account</option>
-            <option value="DELETE_ACCOUNT">Delete Account</option>
-            <option value="ADD_DEVICE">Add Inventory Product</option>
-            <option value="CREATE_FAQ">Create FAQ</option>
-            <option value="UPDATE_FAQ">Update FAQ</option>
-            <option value="DELETE_FAQ">Delete FAQ</option>
-          </select>
-        </div>
-
-        {/* Date Filter */}
-        <div className="w-full md:w-auto">
-          <DatePicker
-            value={filterDate}
-            onChange={(val) => { setFilterDate(val); setCurrentPage(1); }}
-            placeholder="Filter by date..."
-          />
-        </div>
+            Reset Filters
+          </button>
+        )}
       </div>
 
-      {/* Logs Table */}
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 overflow-hidden">
+      {/* Logs Container */}
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="w-10 h-10 border-4 border-purple-200 border-t-[#bd00ff] rounded-full animate-spin"></div>
@@ -225,61 +254,110 @@ export default function AdminActivityLogs() {
             <p className="text-sm text-gray-500 mt-1">There are no logged events matching your filter criteria.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wider text-gray-400">
-                  <th className="py-3.5 px-4">Action</th>
-                  <th className="py-3.5 px-4">Description</th>
-                  <th className="py-3.5 px-4">Branch</th>
-                  <th className="py-3.5 px-4">Actor</th>
-                  <th className="py-3.5 px-4">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 text-sm font-medium text-gray-800">
-                {logs.map((log) => {
-                  const badge = getActionBadge(log.action);
-                  return (
-                    <tr 
-                      key={log.id} 
-                      onClick={() => setSelectedLog(log)}
-                      className="hover:bg-purple-50/40 transition-colors cursor-pointer"
-                    >
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${badge.bg}`}>
-                          {badge.icon} {log.action.replace(/_/g, ' ')}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-gray-900 max-w-md truncate">
-                        {log.description}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-semibold">
-                          📍 {log.branch || 'Tagoloan'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-gray-900">{log.userName || 'System'}</span>
-                          <span className="text-[11px] text-gray-400">{log.userRole || 'Admin'}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-gray-500 whitespace-nowrap">
+          <>
+            {/* Desktop Table View (≥ md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-100 text-xs font-bold uppercase tracking-wider text-gray-400">
+                    <th className="py-3.5 px-4">Action</th>
+                    <th className="py-3.5 px-4">Description</th>
+                    <th className="py-3.5 px-4">Branch</th>
+                    <th className="py-3.5 px-4">Actor</th>
+                    <th className="py-3.5 px-4">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 text-sm font-medium text-gray-800">
+                  {logs.map((log) => {
+                    const badge = getActionBadge(log.action);
+                    return (
+                      <tr 
+                        key={log.id} 
+                        onClick={() => setSelectedLog(log)}
+                        className="hover:bg-purple-50/40 transition-colors cursor-pointer"
+                      >
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${badge.bg}`}>
+                            {badge.icon} {log.action.replace(/_/g, ' ')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-gray-900 max-w-md truncate">
+                          {log.description}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-semibold">
+                            📍 {log.branch || 'Tagoloan'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-gray-900">{log.userName || 'System'}</span>
+                            <span className="text-[11px] text-gray-400">{log.userRole || 'Admin'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-xs text-gray-500 whitespace-nowrap">
+                          {new Date(log.createdAt).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards View (< md) - Zero Horizontal Scrolling */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {logs.map((log) => {
+                const badge = getActionBadge(log.action);
+                return (
+                  <div
+                    key={log.id}
+                    onClick={() => setSelectedLog(log)}
+                    className="p-3.5 bg-gray-50 hover:bg-purple-50/50 rounded-2xl border border-gray-200/80 transition-all cursor-pointer flex flex-col gap-2.5 active:scale-[0.99]"
+                  >
+                    {/* Card Top: Action Badge + Time */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border shrink-0 ${badge.bg}`}>
+                        {badge.icon} <span>{log.action.replace(/_/g, ' ')}</span>
+                      </span>
+                      <span className="text-[11px] text-gray-500 font-medium shrink-0 flex items-center gap-1">
+                        <Clock size={11} className="text-gray-400" />
                         {new Date(log.createdAt).toLocaleString('en-US', {
                           month: 'short',
                           day: 'numeric',
-                          year: 'numeric',
                           hour: 'numeric',
                           minute: '2-digit',
                           hour12: true
                         })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </span>
+                    </div>
+
+                    {/* Card Body: Description */}
+                    <div className="text-xs sm:text-sm font-bold text-gray-900 leading-snug break-words">
+                      {log.description}
+                    </div>
+
+                    {/* Card Footer: Branch & Actor Meta Pills */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-200/60 text-[11px]">
+                      <span className="px-2 py-0.5 bg-white text-gray-700 rounded-md font-semibold border border-gray-200 truncate max-w-[50%]">
+                        📍 {log.branch || 'Tagoloan'}
+                      </span>
+                      <span className="text-gray-500 font-medium truncate text-right">
+                        <strong className="text-gray-800">{log.userName || 'System'}</strong> ({log.userRole || 'Admin'})
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* Pagination Footer */}
