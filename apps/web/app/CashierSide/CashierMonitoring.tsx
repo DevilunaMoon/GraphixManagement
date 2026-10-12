@@ -292,6 +292,39 @@ export default function CashierMonitoring() {
   const [reviewRequestModalOpen, setReviewRequestModalOpen] = useState(false);
   const [requestToReview, setRequestToReview] = useState<DeviceProgress | null>(null);
 
+  // Lock background scrolling when any modal is open
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(
+      completeModalOpen ||
+      successCompleteOpen ||
+      cancelModalOpen ||
+      addModalOpen ||
+      viewDetailsOpen ||
+      editModalOpen ||
+      reviewRequestModalOpen ||
+      customerDetailsTarget
+    );
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [
+    completeModalOpen,
+    successCompleteOpen,
+    cancelModalOpen,
+    addModalOpen,
+    viewDetailsOpen,
+    editModalOpen,
+    reviewRequestModalOpen,
+    customerDetailsTarget
+  ]);
+
   const getProgressColor = (progress: string) => {
     const prog = (progress || '').toLowerCase();
     switch (prog) {
@@ -1099,7 +1132,7 @@ export default function CashierMonitoring() {
 
       {/* Complete Confirmation Modal */}
       {completeModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overscroll-contain">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <AlertCircle className="text-yellow-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">Complete Request?</h3>
@@ -1127,7 +1160,7 @@ export default function CashierMonitoring() {
 
       {/* Cancel Confirmation Modal */}
       {cancelModalOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 overscroll-contain">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <AlertCircle className="text-red-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">Cancel Repair Request?</h3>
@@ -1155,7 +1188,7 @@ export default function CashierMonitoring() {
 
       {/* Success Modal */}
       {successCompleteOpen && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 overscroll-contain">
           <div className="bg-white rounded-2xl p-8 max-w-[400px] w-full text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center">
             <CheckCircle2 className="text-green-500 w-16 h-16 mb-5" />
             <h3 className="text-xl font-bold mb-3 text-black">Completed Successfully</h3>
@@ -1174,8 +1207,8 @@ export default function CashierMonitoring() {
 
       {/* Edit Progress Modal */}
       {editModalOpen && deviceToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overscroll-contain">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -1635,8 +1668,8 @@ export default function CashierMonitoring() {
 
       {/* Add Device Request Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overscroll-contain">
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100">
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -2120,8 +2153,8 @@ export default function CashierMonitoring() {
         }
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto border border-purple-100">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overscroll-contain">
+            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100">
               
               {/* Header */}
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
