@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box, Edit2 } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
+import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
 import { formatDisplayInvoiceId } from '../../lib/invoice';
 import { isIPhoneProduct } from '../../lib/imei';
 
@@ -63,6 +64,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [customerDetailsTarget, setCustomerDetailsTarget] = useState<{ id?: string; email?: string; name?: string } | null>(null);
+  const [imeiModalTarget, setImeiModalTarget] = useState<Transaction | null>(null);
   const itemsPerPage = 8;
 
   const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
@@ -73,6 +75,17 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     setTimeout(() => {
       setToast(null);
     }, 3500);
+  };
+
+  const handleImeiSaved = (newImei: string) => {
+    if (imeiModalTarget) {
+      setTransactions(prev => prev.map(t => t.id === imeiModalTarget.id ? { ...t, imei: newImei } : t));
+      if (selectedTransaction && selectedTransaction.id === imeiModalTarget.id) {
+        setSelectedTransaction({ ...selectedTransaction, imei: newImei });
+      }
+      showToast('IMEI updated successfully!', 'success');
+    }
+    setImeiModalTarget(null);
   };
 
   const handleSettleBalance = async (txId: string) => {
@@ -316,13 +329,41 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                           Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                         </span>
                         {tx.imei ? (
-                          <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                            IMEI: {tx.imei}
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit">
+                              IMEI: {tx.imei}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImeiModalTarget(tx);
+                              }}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                              title="Edit IMEI"
+                            >
+                              <Edit2 size={10} />
+                              <span>Edit</span>
+                            </button>
+                          </div>
                         ) : isIPhoneProduct(tx.device?.name || '') ? (
-                          <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                            IMEI: Pending Pickup
-                          </span>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit">
+                              IMEI: Pending Pickup
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setImeiModalTarget(tx);
+                              }}
+                              className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                              title="Assign IMEI"
+                            >
+                              <Edit2 size={10} />
+                              <span>Assign</span>
+                            </button>
+                          </div>
                         ) : null}
                       </div>
                     </div>
@@ -488,13 +529,41 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                               Qty: {tx.quantity} {tx.variations && `• ${formatVariations(tx.variations)}`}
                             </span>
                             {tx.imei ? (
-                              <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                                IMEI: {tx.imei}
-                              </span>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded w-fit">
+                                  IMEI: {tx.imei}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setImeiModalTarget(tx);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                                  title="Edit IMEI"
+                                >
+                                  <Edit2 size={10} />
+                                  <span>Edit</span>
+                                </button>
+                              </div>
                             ) : isIPhoneProduct(tx.device?.name || '') ? (
-                              <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit mt-1">
-                                IMEI: Pending Pickup
-                              </span>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-fit">
+                                  IMEI: Pending Pickup
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setImeiModalTarget(tx);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 hover:text-amber-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-1.5 py-0.5 rounded transition-all cursor-pointer shadow-2xs"
+                                  title="Assign IMEI"
+                                >
+                                  <Edit2 size={10} />
+                                  <span>Assign</span>
+                                </button>
+                              </div>
                             ) : null}
                           </div>
                         </div>
@@ -709,6 +778,23 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             ✕
           </button>
         </div>
+      )}
+
+      {/* iPhone IMEI Prompt Modal */}
+      {imeiModalTarget && (
+        <CashierImeiPromptModal
+          isOpen={Boolean(imeiModalTarget)}
+          onClose={() => setImeiModalTarget(null)}
+          purchaseId={imeiModalTarget.id}
+          deviceName={imeiModalTarget.device?.name || 'iPhone'}
+          referenceId={imeiModalTarget.referenceId}
+          customerName={imeiModalTarget.user?.name}
+          branch={imeiModalTarget.branch}
+          variations={imeiModalTarget.variations}
+          quantity={imeiModalTarget.quantity}
+          initialImei={imeiModalTarget.imei}
+          onSaved={handleImeiSaved}
+        />
       )}
     </div>
   );
