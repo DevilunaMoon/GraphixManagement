@@ -52,6 +52,24 @@ function parseVariantDetails(variationsStr: string | null | undefined): { color:
   return { color, storage };
 }
 
+interface ImeiCheckConflict {
+  type?: string;
+  orderRef?: string;
+  deviceName?: string;
+  customerName?: string;
+  branch?: string;
+  status?: string;
+  reason?: string;
+}
+
+interface ImeiCheckResult {
+  loading: boolean;
+  checkedImei?: string;
+  available?: boolean;
+  conflict?: ImeiCheckConflict;
+  error?: string;
+}
+
 export default function CashierImeiPromptModal({
   isOpen,
   onClose,
@@ -67,6 +85,7 @@ export default function CashierImeiPromptModal({
 }: CashierImeiPromptModalProps) {
   const [step, setStep] = useState<'input' | 'confirm'>('input');
   const [imeis, setImeis] = useState<string[]>(['']);
+  const [checkStatuses, setCheckStatuses] = useState<Record<number, ImeiCheckResult>>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -87,11 +106,105 @@ export default function CashierImeiPromptModal({
         filled.push(initialList[i] || '');
       }
       setImeis(filled);
+      setCheckStatuses({});
       setError(null);
       setIsSuccess(false);
       setIsSubmitting(false);
     }
   }, [isOpen, initialImei, purchaseId, totalQty]);
+
+  // Debounced live IMEI duplicate & availability checker
+  useEffect(() => {
+    if (!isOpen) return;
+    const timers: NodeJS.Timeout[] = [];
+
+    imeis.forEach((val, idx) => {
+      if (val.length === 15) {
+        if (checkStatuses[idx]?.checkedImei !== val) {
+          // Check internal duplicates within current form first
+          const firstDuplicateIdx = imeis.findIndex((other, oIdx) => oIdx < idx && other === val);
+          if (firstDuplicateIdx !== -1) {
+            setCheckStatuses(prev => ({
+              ...prev,
+              [idx]: {
+                loading: false,
+                checkedImei: val,
+                available: false,
+                conflict: {
+                  type: 'INTERNAL_DUPLICATE',
+                  reason: `Duplicate IMEI entered. Unit ${idx + 1} and Unit ${firstDuplicateIdx + 1} have the same IMEI.`
+                }
+              }
+            }));
+            return;
+          }
+
+          // Local format & Luhn validation
+          const validation = validateImeiFormat(val);
+          if (!validation.valid) {
+            setCheckStatuses(prev => ({
+              ...prev,
+              [idx]: {
+                loading: false,
+                checkedImei: val,
+                available: false,
+                error: validation.error || 'Invalid 15-digit IMEI checksum.'
+              }
+            }));
+            return;
+          }
+
+          setCheckStatuses(prev => ({
+            ...prev,
+            [idx]: { loading: true, checkedImei: val }
+          }));
+
+          const timer = setTimeout(async () => {
+            try {
+              const res = await fetch(`/api/purchases/check-imei?imei=${encodeURIComponent(val)}&purchaseId=${encodeURIComponent(purchaseId)}`);
+              const data = await res.json();
+              if (res.ok && data.available) {
+                setCheckStatuses(prev => ({
+                  ...prev,
+                  [idx]: { loading: false, checkedImei: val, available: true }
+                }));
+              } else {
+                setCheckStatuses(prev => ({
+                  ...prev,
+                  [idx]: {
+                    loading: false,
+                    checkedImei: val,
+                    available: false,
+                    conflict: data.conflict,
+                    error: data.error
+                  }
+                }));
+              }
+            } catch (err) {
+              setCheckStatuses(prev => ({
+                ...prev,
+                [idx]: { loading: false, checkedImei: val, available: false, error: 'Network error checking IMEI.' }
+              }));
+            }
+          }, 250);
+
+          timers.push(timer);
+        }
+      } else {
+        if (checkStatuses[idx]?.checkedImei) {
+          setCheckStatuses(prev => {
+            const next = { ...prev };
+            delete next[idx];
+            return next;
+          });
+        }
+      }
+    });
+
+    return () => {
+      timers.forEach(t => clearTimeout(t));
+    };
+  }, [imeis, isOpen, purchaseId]);
 
   if (!isOpen) return null;
 
@@ -123,6 +236,19 @@ export default function CashierImeiPromptModal({
         return;
       }
       seen.add(validation.cleanImei);
+    }
+
+    // Check for any unresolved conflict or loading state
+    const isAnyChecking = Object.values(checkStatuses).some(s => s?.loading);
+    if (isAnyChecking) {
+      setError('Please wait a moment while the system verifies IMEI availability.');
+      return;
+    }
+
+    const hasConflict = Object.values(checkStatuses).some(s => s?.available === false);
+    if (hasConflict) {
+      setError('Cannot proceed: One or more IMEIs are already used or invalid. Please check the alert messages above.');
+      return;
     }
 
     setStep('confirm');
@@ -164,6 +290,9 @@ export default function CashierImeiPromptModal({
   };
 
   const allComplete = imeis.length === totalQty && imeis.every(i => i.length === 15);
+  const isAnyChecking = Object.values(checkStatuses).some(s => s?.loading);
+  const hasAnyConflict = Object.values(checkStatuses).some(s => s?.available === false);
+  const canProceed = allComplete && !isAnyChecking && !hasAnyConflict;
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -261,15 +390,29 @@ export default function CashierImeiPromptModal({
                 {Array.from({ length: totalQty }).map((_, idx) => {
                   const val = imeis[idx] || '';
                   const isUnitComplete = val.length === 15;
-                  const isLuhnValid = isUnitComplete && checkLuhnChecksum(val);
+                  const status = checkStatuses[idx];
+                  const isChecking = Boolean(status?.loading);
+                  const isConflict = status?.available === false;
+                  const isAvailable = status?.available === true;
 
                   return (
-                    <div key={idx} className="flex flex-col gap-1.5 bg-gray-50/70 border border-gray-200 rounded-2xl p-3.5">
+                    <div 
+                      key={idx} 
+                      className={`flex flex-col gap-2 rounded-2xl p-3.5 transition-all ${
+                        isConflict
+                          ? 'bg-rose-50/60 border-2 border-rose-300'
+                          : isAvailable
+                          ? 'bg-emerald-50/50 border-2 border-emerald-300'
+                          : 'bg-gray-50/70 border border-gray-200'
+                      }`}
+                    >
                       <div className="flex justify-between items-center">
                         <label htmlFor={`imei-input-${idx}`} className="text-xs font-black text-gray-800 uppercase tracking-wide">
                           {totalQty > 1 ? `Unit ${idx + 1} — 15-Digit IMEI Number` : '15-Digit IMEI Number'} <span className="text-red-500">*</span>
                         </label>
-                        <span className={`text-xs font-mono font-extrabold ${isUnitComplete ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        <span className={`text-xs font-mono font-extrabold ${
+                          isConflict ? 'text-rose-600' : isAvailable ? 'text-emerald-600' : isUnitComplete ? 'text-purple-600' : 'text-gray-400'
+                        }`}>
                           {val.length} / 15
                         </span>
                       </div>
@@ -285,14 +428,74 @@ export default function CashierImeiPromptModal({
                           onChange={(e) => handleImeiChange(idx, e.target.value)}
                           maxLength={15}
                           disabled={isSubmitting}
-                          className="w-full h-12 px-4 rounded-xl border-2 border-purple-200 focus:border-[#bd00ff] focus:ring-4 focus:ring-purple-100 outline-none font-mono text-base font-bold tracking-widest text-black bg-white transition-all placeholder:text-gray-300 placeholder:tracking-normal placeholder:font-normal"
+                          className={`w-full h-12 px-4 rounded-xl border-2 font-mono text-base font-bold tracking-widest text-black bg-white transition-all outline-none placeholder:text-gray-300 placeholder:tracking-normal placeholder:font-normal ${
+                            isChecking
+                              ? 'border-purple-400 ring-4 ring-purple-100'
+                              : isConflict
+                              ? 'border-rose-500 ring-4 ring-rose-100 bg-rose-50/20'
+                              : isAvailable
+                              ? 'border-emerald-500 ring-4 ring-emerald-100 bg-emerald-50/10'
+                              : 'border-purple-200 focus:border-[#bd00ff] focus:ring-4 focus:ring-purple-100'
+                          }`}
                         />
-                        {isUnitComplete && (
-                          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                            <ShieldCheck size={20} className={isLuhnValid ? "text-emerald-500" : "text-purple-500"} />
-                          </div>
-                        )}
+                        
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                          {isChecking ? (
+                            <Loader2 size={18} className="animate-spin text-purple-600" />
+                          ) : isConflict ? (
+                            <AlertCircle size={20} className="text-rose-600" />
+                          ) : isAvailable ? (
+                            <CheckCircle2 size={20} className="text-emerald-600" />
+                          ) : isUnitComplete ? (
+                            <ShieldCheck size={20} className="text-purple-500" />
+                          ) : null}
+                        </div>
                       </div>
+
+                      {/* Real-time Status / Conflict Banner */}
+                      {isChecking && (
+                        <div className="flex items-center gap-2 text-xs font-semibold text-purple-800 bg-purple-100/70 px-3 py-1.5 rounded-xl border border-purple-200 animate-pulse">
+                          <Loader2 size={13} className="animate-spin text-purple-600 shrink-0" />
+                          <span>Checking IMEI in system records...</span>
+                        </div>
+                      )}
+
+                      {isConflict && (
+                        <div className="flex flex-col gap-1 text-xs text-rose-900 bg-rose-100/80 p-3 rounded-xl border border-rose-300 animate-in fade-in">
+                          <div className="flex items-center gap-1.5 font-black text-rose-700">
+                            <AlertCircle size={15} className="shrink-0" />
+                            <span>THIS IMEI IS ALREADY USED</span>
+                          </div>
+                          {status.conflict ? (
+                            <p className="m-0 text-[11px] text-rose-900 leading-normal font-semibold">
+                              {status.conflict.reason ? (
+                                status.conflict.reason
+                              ) : (
+                                <>
+                                  Already permanently assigned to <strong>{status.conflict.deviceName || 'a device'}</strong>
+                                  {status.conflict.orderRef && <> under Order <strong>{status.conflict.orderRef}</strong></>}
+                                  {status.conflict.customerName && <> (Customer: <strong>{status.conflict.customerName}</strong>)</>}
+                                  {status.conflict.branch && <> at <strong>{status.conflict.branch} Branch</strong></>}.
+                                </>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="m-0 text-[11px] text-rose-900 leading-normal font-semibold">
+                              {status.error || 'This IMEI number is invalid or not accepted.'}
+                            </p>
+                          )}
+                          <span className="text-[10px] font-black text-rose-700 uppercase tracking-wide pt-0.5">
+                            ⚠️ Please verify the physical device and enter its unique, unused IMEI.
+                          </span>
+                        </div>
+                      )}
+
+                      {isAvailable && (
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-3 py-1.5 rounded-xl border border-emerald-300 animate-in fade-in">
+                          <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                          <span>IMEI is available and valid for this unit.</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -317,7 +520,7 @@ export default function CashierImeiPromptModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={!allComplete || isSubmitting}
+                  disabled={!canProceed || isSubmitting}
                   className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none"
                 >
                   <span>Review & Confirm Pickup</span>
