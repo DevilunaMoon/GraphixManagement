@@ -1054,39 +1054,41 @@ export default function CashierMonitoring() {
                     </div>
 
                     {/* Bottom Action Bar */}
-                    <div className="pt-2.5 border-t border-[#F3E8FF] flex items-center justify-end gap-2">
+                    <div className="pt-2.5 border-t border-[#F3E8FF] flex flex-col gap-2">
                       {device.progress?.toLowerCase() === 'pending' && (
                         <button 
                           onClick={() => {
                             setRequestToReview(device);
                             setReviewRequestModalOpen(true);
                           }}
-                          className="flex-1 py-2 px-3 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer border-none transition-all active:scale-95"
+                          className="w-full py-2.5 px-3 bg-[#9333EA] hover:bg-[#7e22ce] text-white rounded-xl font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 cursor-pointer border-none transition-all active:scale-[0.98]"
                           title="Review Customer Repair Request"
                         >
                           <Eye size={14} />
-                          <span>Review</span>
+                          <span>Review Customer Request</span>
                         </button>
                       )}
-                      <button 
-                        onClick={() => {
-                          setDeviceToView(device);
-                          setViewDetailsOpen(true);
-                        }}
-                        className="flex-1 py-2 px-3 rounded-xl flex justify-center items-center gap-1.5 bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer text-xs font-bold active:scale-95"
-                        title="View Intake & Material Breakdown"
-                      >
-                        <Receipt size={14} />
-                        <span>Breakdown</span>
-                      </button>
-                      <button 
-                        onClick={() => openEditModal(device)}
-                        className="py-2 px-3.5 rounded-xl flex justify-center items-center gap-1.5 bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none text-xs font-bold shrink-0"
-                        title="Edit Progress"
-                      >
-                        <Pencil size={14} />
-                        <span>Edit</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => {
+                            setDeviceToView(device);
+                            setViewDetailsOpen(true);
+                          }}
+                          className="flex-1 py-2 px-3 rounded-xl flex justify-center items-center gap-1.5 bg-[#FAF5FF] text-[#7e22ce] hover:bg-[#9333EA] hover:text-white transition-all shadow-xs border border-[#E9D8FD] cursor-pointer text-xs font-bold active:scale-95"
+                          title="View Intake & Material Breakdown"
+                        >
+                          <Receipt size={14} />
+                          <span>Breakdown</span>
+                        </button>
+                        <button 
+                          onClick={() => openEditModal(device)}
+                          className="flex-1 py-2 px-3.5 rounded-xl flex justify-center items-center gap-1.5 bg-[#9333EA] text-white hover:bg-[#7e22ce] active:scale-95 transition-all shadow-xs cursor-pointer border-none text-xs font-bold"
+                          title="Edit Progress"
+                        >
+                          <Pencil size={14} />
+                          <span>Edit</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
