@@ -83,11 +83,19 @@ export async function POST(req: Request) {
 
       // Dispatch rejection notification to the customer
       if (purchase.userId) {
+        const isGcashVerification = purchase.status === 'For Verification' || Boolean(purchase.receiptUrl);
+        const notifTitle = isGcashVerification 
+          ? `GCash Payment Rejected — Order ${purchase.referenceId || purchase.id}`
+          : `Order Reservation Cancelled — Order ${purchase.referenceId || purchase.id}`;
+        const notifMsg = isGcashVerification
+          ? `Your submitted GCash payment proof for "${purchase.device?.name || 'Device'}" at ${purchase.branch || 'store'} was not approved. Reason: "${formattedReason}". Please review and resubmit your payment receipt.`
+          : `Your in-store reservation for "${purchase.device?.name || 'Device'}" at ${purchase.branch || 'store'} has been cancelled. Reason: "${formattedReason}".`;
+
         await prisma.notification.create({
           data: {
             userId: purchase.userId,
-            title: `GCash Payment Rejected — Order ${purchase.referenceId || purchase.id}`,
-            message: `Your submitted GCash payment proof for "${purchase.device?.name || 'Device'}" at ${purchase.branch || 'store'} was not approved. Reason: "${formattedReason}". Please review and resubmit your payment receipt.`,
+            title: notifTitle,
+            message: notifMsg,
             branch: purchase.branch,
             type: 'PAYMENT'
           }

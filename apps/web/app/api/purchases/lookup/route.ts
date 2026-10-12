@@ -43,6 +43,7 @@ export async function GET(req: Request) {
       purchases = await prisma.purchase.findMany({
         where: {
           branch: { contains: cleanBranch, mode: 'insensitive' },
+          status: { not: 'Rejected' },
           OR: orConditions
         },
         take: 20,
@@ -60,7 +61,10 @@ export async function GET(req: Request) {
       // 2. If nothing found in this branch, fallback across all branches
       if (purchases.length === 0) {
         purchases = await prisma.purchase.findMany({
-          where: { OR: orConditions },
+          where: {
+            status: { not: 'Rejected' },
+            OR: orConditions
+          },
           take: 20,
           orderBy: { createdAt: 'desc' },
           include: {
@@ -79,7 +83,8 @@ export async function GET(req: Request) {
       purchases = await prisma.purchase.findMany({
         where: {
           branch: { contains: cleanBranch, mode: 'insensitive' },
-          createdAt: { gte: twoDaysAgo }
+          createdAt: { gte: twoDaysAgo },
+          status: { not: 'Rejected' }
         },
         take: 20,
         orderBy: { createdAt: 'desc' },

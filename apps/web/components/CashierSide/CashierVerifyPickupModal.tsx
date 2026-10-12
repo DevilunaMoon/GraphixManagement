@@ -100,6 +100,7 @@ export default function CashierVerifyPickupModal({
   const [verifying, setVerifying] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [orderToReject, setOrderToReject] = useState<PickupReservation | null>(null);
   const [rejectionReasonInput, setRejectionReasonInput] = useState('');
   const [showReceiptImageModal, setShowReceiptImageModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -212,38 +213,46 @@ export default function CashierVerifyPickupModal({
   };
 
   const handleRejectPayment = async () => {
-    if (!selectedOrder) return;
+    const target = orderToReject || selectedOrder;
+    if (!target) return;
     setRejecting(true);
     setErrorMessage(null);
+
+    const isExpired = target.isExpired;
+    const defaultReason = isExpired 
+      ? 'Reservation expired without customer claim.' 
+      : 'Payment receipt does not match expected amount or is invalid.';
 
     try {
       const res = await fetch('/api/purchases/verify-pickup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          purchaseId: selectedOrder.id,
-          referenceId: selectedOrder.referenceId,
+          purchaseId: target.id,
+          referenceId: target.referenceId,
           action: 'REJECT',
-          rejectionReason: rejectionReasonInput.trim() || 'Payment receipt does not match expected amount or is invalid.'
+          rejectionReason: rejectionReasonInput.trim() || defaultReason
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSuccessMessage(`GCash payment rejected for Order ${selectedOrder.referenceId}. Customer has been notified.`);
-        setReservations(prev =>
-          prev.map(r => r.id === selectedOrder.id ? { ...r, status: 'Rejected', isSettled: false } : r)
-        );
-        setSelectedOrder(prev => prev ? { ...prev, status: 'Rejected', isSettled: false } : null);
+        setSuccessMessage(`Order ${target.referenceId} has been rejected and removed.`);
+        // Immediately vanish the rejected order from the in-store reservations queue!
+        setReservations(prev => prev.filter(r => r.id !== target.id));
+        if (selectedOrder?.id === target.id) {
+          setSelectedOrder(null);
+        }
         setShowRejectDialog(false);
+        setOrderToReject(null);
         setRejectionReasonInput('');
         if (onSuccess) onSuccess();
       } else {
-        setErrorMessage(data.error || 'Failed to reject payment');
+        setErrorMessage(data.error || 'Failed to reject order');
       }
     } catch (err: any) {
       console.error('Failed to reject:', err);
-      setErrorMessage('Network error while rejecting payment.');
+      setErrorMessage('Network error while rejecting order.');
     } finally {
       setRejecting(false);
     }
@@ -633,50 +642,6 @@ export default function CashierVerifyPickupModal({
                 </div>
               )}
 
-              {/* Rejection Form Dialog */}
-              {showRejectDialog && (
-                <div className="p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl flex flex-col gap-2.5 animate-in fade-in">
-                  <div className="flex items-center justify-between">
-                    <h5 className="font-bold text-xs text-rose-950 m-0">Reject GCash Payment</h5>
-                    <button
-                      type="button"
-                      onClick={() => setShowRejectDialog(false)}
-                      className="text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
-                    >
-                      <X size={15} />
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-rose-900/80 m-0">
-                    Please provide a reason for rejecting this GCash payment receipt. The customer will be notified to resubmit.
-                  </p>
-                  <textarea
-                    rows={2}
-                    value={rejectionReasonInput}
-                    onChange={(e) => setRejectionReasonInput(e.target.value)}
-                    placeholder="E.g., Payment amount does not match, blurred receipt, duplicate reference number..."
-                    className="w-full p-2.5 bg-white border border-rose-200 rounded-xl text-xs outline-none focus:border-rose-500 resize-none font-medium"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowRejectDialog(false)}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border-none cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={rejecting}
-                      onClick={handleRejectPayment}
-                      className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      {rejecting ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
-                      <span>Confirm Rejection</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* ACTION BUTTONS: Payment Verification vs Physical Handover */}
               {selectedOrder.status !== 'Paid' && selectedOrder.status !== 'Completed' ? (
                 <div className="flex flex-col gap-2 pt-1">
@@ -700,12 +665,47 @@ export default function CashierVerifyPickupModal({
 
                       <button
                         type="button"
-                        onClick={() => setShowRejectDialog(true)}
+                        onClick={() => {
+                          setOrderToReject(selectedOrder);
+                          setRejectionReasonInput('Payment receipt does not match expected amount or is invalid.');
+                          setShowRejectDialog(true);
+                        }}
                         disabled={verifying || rejecting}
                         className="px-5 py-3.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         <XCircle size={16} />
                         <span>Reject Receipt</span>
+                      </button>
+                    </div>
+                  ) : selectedOrder.isExpired ? (
+                    /* Expired Cash on Pickup: Override Verification vs Reject */
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <button
+                        type="button"
+                        onClick={handleConfirmVerification}
+                        disabled={verifying || rejecting}
+                        className="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 border-none cursor-pointer disabled:opacity-50"
+                      >
+                        {verifying ? (
+                          <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                          <CheckCircle2 size={18} />
+                        )}
+                        <span>Override & Confirm Payment</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrderToReject(selectedOrder);
+                          setRejectionReasonInput('Reservation expired without customer claim.');
+                          setShowRejectDialog(true);
+                        }}
+                        disabled={verifying || rejecting}
+                        className="px-5 py-3.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle size={16} />
+                        <span>Reject Expired Order</span>
                       </button>
                     </div>
                   ) : (
@@ -875,6 +875,32 @@ export default function CashierVerifyPickupModal({
                               >
                                 <span>View</span>
                               </button>
+                            ) : resItem.isExpired ? (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOrderToReject(resItem);
+                                    setRejectionReasonInput('Reservation expired without customer claim.');
+                                    setShowRejectDialog(true);
+                                  }}
+                                  className="px-3 py-1.5 font-bold text-xs rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 cursor-pointer shadow-xs transition-all flex items-center gap-1"
+                                >
+                                  <XCircle size={13} />
+                                  <span>Reject</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectOrder(resItem);
+                                  }}
+                                  className="px-3.5 py-1.5 font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all text-white bg-rose-600 hover:bg-rose-700"
+                                >
+                                  Verify
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 type="button"
@@ -885,8 +911,6 @@ export default function CashierVerifyPickupModal({
                                 className={`px-3.5 py-1.5 font-bold text-xs rounded-xl border-none cursor-pointer shadow-sm transition-all text-white ${
                                   isForVerification
                                     ? 'bg-[#005ce6] hover:bg-[#0047b3]'
-                                    : resItem.isExpired
-                                    ? 'bg-rose-600 hover:bg-rose-700'
                                     : 'bg-[#bd00ff] hover:bg-[#9c00d6]'
                                 }`}
                               >
@@ -1033,6 +1057,79 @@ export default function CashierVerifyPickupModal({
           initialImei={imeiModalTarget.initialImei}
           onSaved={handleImeiSaved}
         />
+      )}
+
+      {/* Rejection Form Dialog Modal */}
+      {showRejectDialog && (
+        <div 
+          className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => { setShowRejectDialog(false); setOrderToReject(null); }}
+        >
+          <div 
+            className="bg-white rounded-3xl p-5 max-w-md w-full shadow-2xl border border-gray-100 flex flex-col gap-3 relative animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                  <XCircle size={18} />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-gray-900 m-0">
+                    {(orderToReject || selectedOrder)?.isExpired ? 'Reject Expired Reservation' : 'Reject Order Reservation'}
+                  </h4>
+                  <p className="text-[10px] text-gray-400 m-0">
+                    Order: {(orderToReject || selectedOrder)?.referenceId} • Customer: {(orderToReject || selectedOrder)?.user.name || 'Customer'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowRejectDialog(false); setOrderToReject(null); }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 m-0 leading-relaxed">
+              {(orderToReject || selectedOrder)?.isExpired 
+                ? 'This reservation has expired. Rejecting it will cancel the order and immediately remove it from your in-store reservations queue.'
+                : 'Please specify the reason for rejection. This order will be cancelled and removed from your queue.'}
+            </p>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-700">Reason for Rejection / Cancellation:</label>
+              <textarea
+                rows={3}
+                value={rejectionReasonInput}
+                onChange={(e) => setRejectionReasonInput(e.target.value)}
+                placeholder="Reason for cancellation..."
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:border-rose-500 focus:bg-white resize-none font-medium text-gray-900 transition-all"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                disabled={rejecting}
+                onClick={() => { setShowRejectDialog(false); setOrderToReject(null); }}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl border-none cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={rejecting}
+                onClick={handleRejectPayment}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl border-none cursor-pointer flex items-center gap-1.5 disabled:opacity-50 transition-colors shadow-sm"
+              >
+                {rejecting ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />}
+                <span>Reject & Remove Order</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
