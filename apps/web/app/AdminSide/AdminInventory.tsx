@@ -4438,37 +4438,40 @@ export default function AdminInventory() {
             : null;
 
         return (
-          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[94vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
               
               {/* Modal Header */}
-              <div className="p-5 bg-gradient-to-r from-[#5c0099] via-purple-800 to-indigo-900 text-white flex justify-between items-center shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-amber-300 border border-white/20 shadow-inner">
-                    <Percent size={20} />
+              <div className="p-3.5 sm:p-5 bg-gradient-to-r from-[#5c0099] via-purple-800 to-indigo-900 text-white flex justify-between items-center shrink-0 gap-2">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-amber-300 border border-white/20 shadow-inner shrink-0">
+                    <Percent size={18} className="sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <h3 className="font-black text-lg m-0 flex items-center gap-2">
-                      <span>Add Discount Product</span>
-                      <span className="bg-amber-400/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full border border-amber-300/30 uppercase tracking-widest font-extrabold">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <h3 className="font-black text-base sm:text-lg m-0 leading-tight">
+                        Add Discount Product
+                      </h3>
+                      <span className="bg-amber-400/20 text-amber-300 text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full border border-amber-300/30 uppercase tracking-wider font-extrabold whitespace-nowrap">
                         Limited Time Offer
                       </span>
-                    </h3>
-                    <p className="text-xs text-white/80 m-0 mt-0.5">
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-white/80 m-0 mt-0.5 line-clamp-1 sm:line-clamp-none">
                       Apply a discount to an existing product and variant without duplicating products.
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setDiscountModalOpen(false)} 
-                  className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all border-none cursor-pointer"
+                  className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 sm:p-2 rounded-xl transition-all border-none cursor-pointer shrink-0"
+                  aria-label="Close modal"
                 >
-                  <X size={20} />
+                  <X size={18} className="sm:w-5 sm:h-5" />
                 </button>
               </div>
 
               {/* Modal Body Form */}
-              <form onSubmit={handleSaveDiscount} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+              <form onSubmit={handleSaveDiscount} className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-5">
                 
                 {discountError && (
                   <div className="bg-rose-50 border-2 border-rose-200 p-3 rounded-2xl flex items-center gap-2.5 text-rose-700 text-xs font-bold animate-shake">
@@ -4481,7 +4484,7 @@ export default function AdminInventory() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Filter by Brand */}
                   <div>
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
                       Filter Brand
                     </label>
                     <select
@@ -4508,7 +4511,7 @@ export default function AdminInventory() {
 
                   {/* Select Product */}
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
                       Select Existing Product <span className="text-rose-500">*</span>
                     </label>
                     <select
@@ -4517,7 +4520,7 @@ export default function AdminInventory() {
                         setDiscountDeviceId(e.target.value);
                         setDiscountVariantId('');
                       }}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white truncate"
                       required
                     >
                       {brandFiltered.map(p => (
@@ -4530,16 +4533,16 @@ export default function AdminInventory() {
                 </div>
 
                 {/* 2. Storage / Variant & Branch */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Select Storage/Variant */}
                   <div>
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
                       Storage / Variant <span className="text-gray-400 font-normal">(Optional)</span>
                     </label>
                     <select
                       value={discountVariantId}
                       onChange={(e) => setDiscountVariantId(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white truncate"
                     >
                       <option value="">Base Device (All Variants) – ₱{Number(selectedProd?.price || 0).toLocaleString()}</option>
                       {variantsList.map(v => (
@@ -4552,7 +4555,7 @@ export default function AdminInventory() {
 
                   {/* Branch Assignment */}
                   <div>
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
                       Branch Application <span className="text-rose-500">*</span>
                     </label>
                     {isSuperAdmin ? (
@@ -4578,13 +4581,13 @@ export default function AdminInventory() {
                 </div>
 
                 {/* 3. Discount Type & Value */}
-                <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200/80 flex flex-col gap-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className="bg-purple-50/50 p-3 sm:p-4 rounded-2xl border border-purple-200/80 flex flex-col gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-start sm:items-center">
                     <div>
-                      <label className="text-xs font-bold text-gray-800 uppercase tracking-wide block mb-1">
+                      <label className="text-[11px] sm:text-xs font-bold text-gray-800 uppercase tracking-wide block mb-1">
                         Discount Type
                       </label>
-                      <div className="grid grid-cols-2 gap-2 bg-white p-1 rounded-xl border border-purple-200 shadow-2xs">
+                      <div className="grid grid-cols-2 gap-1.5 sm:gap-2 bg-white p-1 rounded-xl border border-purple-200 shadow-2xs">
                         <button
                           type="button"
                           onClick={() => setDiscountType('PERCENTAGE')}
@@ -4594,7 +4597,7 @@ export default function AdminInventory() {
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <Percent size={14} /> Percentage (%)
+                          <Percent size={13} /> Percentage (%)
                         </button>
                         <button
                           type="button"
@@ -4605,13 +4608,13 @@ export default function AdminInventory() {
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          <span>₱</span> Fixed Amount (₱)
+                          <span className="font-bold">₱</span> Fixed Amount (₱)
                         </button>
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-xs font-bold text-gray-800 uppercase tracking-wide block mb-1">
+                      <label className="text-[11px] sm:text-xs font-bold text-gray-800 uppercase tracking-wide block mb-1">
                         Discount Value {discountType === 'FIXED' ? '(₱)' : '(%)'} <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
@@ -4631,45 +4634,45 @@ export default function AdminInventory() {
                         />
                       </div>
                       {discountType === 'FIXED' && (
-                        <span className="text-[10px] text-amber-700 font-bold block mt-1">
-                          ⚠️ For fixed discounts, the discount amount must be LESS THAN ₱2,000.
+                        <span className="text-[10px] text-amber-700 font-bold block mt-1 leading-tight">
+                          ⚠️ Fixed discount must be LESS THAN ₱2,000.
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Live Price Breakdown Card */}
-                  <div className="bg-white rounded-xl p-3.5 border border-purple-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-gray-400 font-bold uppercase">Original Price</span>
-                      <span className="text-sm font-bold text-gray-700 line-through">
-                        ₱ {originalBasePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className="bg-white rounded-xl p-3 sm:p-3.5 border border-purple-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                    <div className="flex items-center justify-between sm:justify-start gap-3 flex-1">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-wider">Original Price</span>
+                        <span className="text-xs sm:text-sm font-bold text-gray-600 line-through">
+                          ₱ {originalBasePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+
+                      <div className="text-purple-600 font-black text-sm px-1">
+                        &minus;
+                      </div>
+
+                      <div className="flex flex-col text-right sm:text-left">
+                        <span className="text-[10px] sm:text-[11px] text-rose-500 font-bold uppercase tracking-wider">Discount Amount</span>
+                        <span className="text-xs sm:text-sm font-black text-rose-600">
+                          ₱ {calculatedDiscountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {discountType === 'FIXED' && originalBasePrice > 0 && (
+                            <span className="text-[10px] text-gray-400 font-normal ml-1">
+                              ({((calculatedDiscountAmount / originalBasePrice) * 100).toFixed(1)}%)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-2 bg-gradient-to-r from-purple-50 to-indigo-50/70 p-2.5 sm:px-3 sm:py-2 rounded-xl border border-purple-200">
+                      <span className="text-[10px] sm:text-[11px] text-purple-900 font-extrabold uppercase tracking-wide">
+                        Final Price:
                       </span>
-                    </div>
-
-                    <div className="flex items-center text-purple-600 font-black text-sm">
-                      &minus;
-                    </div>
-
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-rose-500 font-bold uppercase">Discount Amount</span>
-                      <span className="text-sm font-black text-rose-600">
-                        ₱ {calculatedDiscountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        {discountType === 'FIXED' && originalBasePrice > 0 && (
-                          <span className="text-[10px] text-gray-400 font-normal ml-1">
-                            ({((calculatedDiscountAmount / originalBasePrice) * 100).toFixed(1)}%)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center text-purple-600 font-black text-sm">
-                      &rarr;
-                    </div>
-
-                    <div className="flex flex-col items-end bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200">
-                      <span className="text-[10px] text-purple-800 font-extrabold uppercase tracking-wide">Final Discounted Price</span>
-                      <span className="text-base font-black text-[#5c0099]">
+                      <span className="text-base sm:text-lg font-black text-[#5c0099]">
                         ₱ {calculatedFinalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -4677,48 +4680,48 @@ export default function AdminInventory() {
                 </div>
 
                 {/* 4. Schedule Start & End Dates / Times */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Start Date & Time */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide">
                       Discount Start <span className="text-rose-500">*</span>
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-5 gap-2">
                       <input
                         type="date"
                         value={discountStartDate}
                         onChange={(e) => setDiscountStartDate(e.target.value)}
-                        className="col-span-2 border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        className="col-span-3 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                         required
                       />
                       <input
                         type="time"
                         value={discountStartTime}
                         onChange={(e) => setDiscountStartTime(e.target.value)}
-                        className="border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        className="col-span-2 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white min-w-0"
                         required
                       />
                     </div>
                   </div>
 
                   {/* End Date & Time */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide">
                       Discount End <span className="text-rose-500">*</span>
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-5 gap-2">
                       <input
                         type="date"
                         value={discountEndDate}
                         onChange={(e) => setDiscountEndDate(e.target.value)}
-                        className="col-span-2 border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        className="col-span-3 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                         required
                       />
                       <input
                         type="time"
                         value={discountEndTime}
                         onChange={(e) => setDiscountEndTime(e.target.value)}
-                        className="border border-gray-300 rounded-xl p-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                        className="col-span-2 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-bold text-black outline-none focus:ring-2 focus:ring-purple-500 bg-white min-w-0"
                         required
                       />
                     </div>
@@ -4726,7 +4729,7 @@ export default function AdminInventory() {
                 </div>
 
                 {/* 5. Live Real-Time Countdown Preview */}
-                <div className="bg-gradient-to-r from-gray-900 to-purple-950 text-white p-3.5 rounded-2xl border border-purple-500/30 flex items-center justify-between gap-3 shadow-inner">
+                <div className="bg-gradient-to-r from-gray-900 to-purple-950 text-white p-3 sm:p-3.5 rounded-2xl border border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-inner">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0">
                       <Clock size={16} />
@@ -4735,19 +4738,21 @@ export default function AdminInventory() {
                       <span className="text-[10px] text-purple-300 font-bold uppercase tracking-wider block">
                         Live Countdown Preview
                       </span>
-                      <span className="text-xs text-white/90 font-medium">
+                      <span className="text-[11px] sm:text-xs text-white/90 font-medium">
                         Automatic expiration and restoration
                       </span>
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="w-full sm:w-auto text-center sm:text-right">
                     {previewEndIso ? (
-                      <CountdownTimer 
-                        targetDate={previewEndIso} 
-                        format="full" 
-                        className="text-amber-300 bg-black/40 px-3 py-1.5 rounded-xl border border-amber-400/30" 
-                      />
+                      <div className="inline-block w-full sm:w-auto">
+                        <CountdownTimer 
+                          targetDate={previewEndIso} 
+                          format="full" 
+                          className="text-amber-300 bg-black/50 px-3 py-1.5 rounded-xl border border-amber-400/30 font-mono text-xs font-bold block sm:inline-block text-center" 
+                        />
+                      </div>
                     ) : (
                       <span className="text-xs text-gray-400 font-mono">Select end date &amp; time</span>
                     )}
@@ -4755,21 +4760,21 @@ export default function AdminInventory() {
                 </div>
 
                 {/* Form Action Buttons */}
-                <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setDiscountModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200 text-center"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSavingDiscount}
-                    className="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#5c0099] to-indigo-700 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center gap-2 border-none"
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#5c0099] to-indigo-700 hover:brightness-110 transition-all disabled:opacity-50 cursor-pointer shadow-md flex items-center justify-center gap-2 border-none"
                   >
-                    <Percent size={16} />
-                    {isSavingDiscount ? 'Saving Discount...' : 'Save & Activate Discount'}
+                    <Percent size={15} />
+                    <span>{isSavingDiscount ? 'Saving Discount...' : 'Save & Activate Discount'}</span>
                   </button>
                 </div>
 

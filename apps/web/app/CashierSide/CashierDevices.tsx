@@ -2144,41 +2144,45 @@ export default function CashierDevices() {
       {/* 2. ADD DISCOUNT PRODUCT MODAL                             */}
       {/* ========================================================== */}
       {discountModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
-            <div className="p-5 bg-gradient-to-r from-purple-800 via-indigo-800 to-purple-900 text-white flex justify-between items-center shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-white/10 rounded-xl">
-                  <Percent size={20} className="text-amber-300" />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[94vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-purple-100 animate-in zoom-in-95 overflow-hidden">
+            <div className="p-3.5 sm:p-5 bg-gradient-to-r from-purple-800 via-indigo-800 to-purple-900 text-white flex justify-between items-center shrink-0 gap-2">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="p-2 bg-white/10 rounded-xl shrink-0">
+                  <Percent size={18} className="text-amber-300 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-tight">Apply Product Discount</h3>
-                  <p className="text-xs text-purple-200">Configure discounts for {userBranch} branch</p>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-base sm:text-lg leading-tight truncate">Apply Product Discount</h3>
+                  <p className="text-[11px] sm:text-xs text-purple-200 mt-0.5 truncate">Configure discounts for {userBranch} branch</p>
                 </div>
               </div>
-              <button onClick={() => setDiscountModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
-                <X size={22} />
+              <button 
+                onClick={() => setDiscountModalOpen(false)} 
+                className="text-white/80 hover:text-white p-1.5 sm:p-2 rounded-xl hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                aria-label="Close modal"
+              >
+                <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDiscount} className="flex-1 overflow-y-auto p-6 flex flex-col gap-5 text-left">
+            <form onSubmit={handleSaveDiscount} className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 sm:gap-5 text-left">
               {discountError && (
                 <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <AlertCircle size={16} className="shrink-0" />
+                  <AlertCircle size={16} className="shrink-0 text-rose-600" />
                   <span>{discountError}</span>
                 </div>
               )}
 
               {/* Product Selection */}
               <div>
-                <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Select Product *</label>
+                <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Select Product *</label>
                 <select
                   value={discountDeviceId}
                   onChange={(e) => {
                     setDiscountDeviceId(e.target.value);
                     setDiscountVariantId('');
                   }}
-                  className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-gray-800 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                  className="w-full border border-gray-300 rounded-xl p-2.5 text-xs sm:text-sm font-bold text-gray-800 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer truncate bg-white"
                   required
                 >
                   {allEligibleProducts.map((p) => (
@@ -2196,11 +2200,11 @@ export default function CashierDevices() {
                 if (vars.length === 0) return null;
                 return (
                   <div>
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Target Storage Variant (Optional)</label>
+                    <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Target Storage Variant (Optional)</label>
                     <select
                       value={discountVariantId}
                       onChange={(e) => setDiscountVariantId(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                      className="w-full border border-gray-300 rounded-xl p-2.5 text-xs sm:text-sm font-medium text-gray-800 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer truncate bg-white"
                     >
                       <option value="">All Storage Variants (Base Model)</option>
                       {vars.map((v: any) => (
@@ -2214,9 +2218,9 @@ export default function CashierDevices() {
               })()}
 
               {/* Discount Type & Value */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Discount Type *</label>
+                  <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Discount Type *</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -2236,7 +2240,7 @@ export default function CashierDevices() {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
+                  <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">
                     {discountType === 'PERCENTAGE' ? 'Discount Percentage (%) *' : 'Discount Amount (₱ < 2,000) *'}
                   </label>
                   <input
@@ -2247,48 +2251,48 @@ export default function CashierDevices() {
                     placeholder={discountType === 'PERCENTAGE' ? 'e.g. 50' : 'e.g. 500'}
                     value={discountValue}
                     onChange={(e) => setDiscountValue(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-xs sm:text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                     required
                   />
                 </div>
               </div>
 
               {/* Start & End Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Start Date & Time *</label>
-                  <div className="flex gap-2">
+                  <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Start Date & Time *</label>
+                  <div className="grid grid-cols-5 gap-2">
                     <input
                       type="date"
                       value={discountStartDate}
                       onChange={(e) => setDiscountStartDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      className="col-span-3 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                       required
                     />
                     <input
                       type="time"
                       value={discountStartTime}
                       onChange={(e) => setDiscountStartTime(e.target.value)}
-                      className="border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      className="col-span-2 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white min-w-0"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">End Date & Time *</label>
-                  <div className="flex gap-2">
+                  <label className="text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">End Date & Time *</label>
+                  <div className="grid grid-cols-5 gap-2">
                     <input
                       type="date"
                       value={discountEndDate}
                       onChange={(e) => setDiscountEndDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      className="col-span-3 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white"
                       required
                     />
                     <input
                       type="time"
                       value={discountEndTime}
                       onChange={(e) => setDiscountEndTime(e.target.value)}
-                      className="border border-gray-300 rounded-xl p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500"
+                      className="col-span-2 border border-gray-300 rounded-xl px-2.5 py-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-purple-500 bg-white min-w-0"
                     />
                   </div>
                 </div>
@@ -2308,16 +2312,16 @@ export default function CashierDevices() {
                 }
 
                 return (
-                  <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-4 flex flex-col gap-2">
-                    <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">Live Discount Preview</span>
-                    <div className="flex items-center justify-between">
+                  <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-3.5 sm:p-4 flex flex-col gap-2">
+                    <span className="text-[10px] sm:text-xs font-bold text-purple-900 uppercase tracking-wider">Live Discount Preview</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
                         <span className="text-xs text-gray-500 line-through">₱ {basePrice.toLocaleString()}</span>
                         <div className="text-lg font-black text-[#5c0099]">
                           ₱ {discountedPrice.toLocaleString()}
                         </div>
                       </div>
-                      <span className="bg-rose-100 text-rose-700 text-xs font-black px-3 py-1 rounded-full border border-rose-300">
+                      <span className="bg-rose-100 text-rose-700 text-xs font-black px-3 py-1 rounded-full border border-rose-300 self-start sm:self-auto">
                         {discountType === 'PERCENTAGE' ? `${numVal}% OFF` : `₱${numVal} OFF`}
                       </span>
                     </div>
@@ -2325,18 +2329,18 @@ export default function CashierDevices() {
                 );
               })()}
 
-              <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-2 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setDiscountModalOpen(false)}
-                  className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 border border-gray-300 rounded-xl text-xs sm:text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingDiscount}
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-xl text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50 text-center"
                 >
                   {isSavingDiscount ? 'Applying...' : 'Save & Apply Discount'}
                 </button>
