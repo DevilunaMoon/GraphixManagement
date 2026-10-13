@@ -16,7 +16,9 @@ import {
   Info,
   Crown,
   ShieldCheck,
-  Users
+  Users,
+  Mail,
+  MapPin
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { updateProfile } from '../../actions/user';
@@ -145,7 +147,7 @@ export default function AdminProfile({ user }: { user?: any }) {
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] transition-colors font-semibold"
+                  className="w-full h-11 border-2 border-gray-200 bg-white rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] focus:bg-white transition-colors font-semibold"
                 />
               </div>
             </div>
@@ -365,7 +367,71 @@ export default function AdminProfile({ user }: { user?: any }) {
             </span>
           </div>
 
-          <div className="overflow-x-auto border border-purple-100 rounded-2xl bg-white shadow-xs">
+          {/* Mobile View: Zero horizontal scrolling responsive cards */}
+          <div className="block sm:hidden flex flex-col gap-3">
+            {isStaffLoading ? (
+              <div className="p-6 text-center text-gray-400 font-semibold bg-gray-50/50 rounded-2xl border border-gray-100 animate-pulse text-xs">
+                Loading staff records...
+              </div>
+            ) : staffList.length > 0 ? (
+              staffList.map((st) => (
+                <div 
+                  key={st.id} 
+                  className="p-4 rounded-2xl bg-white border border-purple-100/90 shadow-xs flex flex-col gap-2.5 transition-all hover:border-purple-200"
+                >
+                  {/* Top row: Staff Name + Role Badge */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-gray-900 leading-tight">
+                      {st.name || 'Staff Member'}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wider shrink-0 ${
+                      st.role === 'SUPER_ADMIN'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black'
+                        : st.role === 'ADMIN'
+                          ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                          : 'bg-blue-100 text-blue-900 border border-blue-200'
+                    }`}>
+                      {st.role === 'SUPER_ADMIN' ? 'Super Admin' : (st.role === 'ADMIN' ? 'Branch Admin' : 'Cashier')}
+                    </span>
+                  </div>
+
+                  {/* Middle row: Staff ID & Status */}
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-gray-400 font-semibold">ID:</span>
+                      <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200 text-[11px] font-mono font-bold">
+                        {formatStaffId(st)}
+                      </span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                      st.status === 'Inactive' ? 'bg-gray-100 text-gray-600' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}>
+                      {st.status || 'Active'}
+                    </span>
+                  </div>
+
+                  {/* Bottom row: Branch & Email */}
+                  <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+                    <span className="text-[11px] font-bold text-purple-800 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100 flex items-center gap-1">
+                      <MapPin size={11} className="text-[#bd00ff]" />
+                      <span>{st.branch || 'Tagoloan'}</span>
+                    </span>
+                    <span className="text-gray-500 text-[11px] font-medium flex items-center gap-1 truncate max-w-[200px]" title={st.email}>
+                      <Mail size={11} className="text-gray-400 shrink-0" />
+                      <span className="truncate">{st.email}</span>
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-6 text-center text-gray-400 font-semibold bg-gray-50/50 rounded-2xl border border-gray-100 text-xs">
+                No staff accounts found for this branch.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop View: Full 6-column data table */}
+          <div className="hidden sm:block overflow-x-auto border border-purple-100 rounded-2xl bg-white shadow-xs">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-purple-50/70 text-purple-900 font-bold border-b border-purple-100 uppercase tracking-wider">
@@ -503,7 +569,7 @@ export default function AdminProfile({ user }: { user?: any }) {
               placeholder="e.g. 09123456789" 
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
-              className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] text-black font-semibold tracking-wider transition-colors"
+              className="w-full h-11 border-2 border-gray-200 bg-white rounded-xl px-4 outline-none focus:border-[#bd00ff] focus:bg-white text-black font-semibold tracking-wider transition-colors"
             />
             <div className="flex gap-3 w-full">
               <button 
