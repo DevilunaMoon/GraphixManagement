@@ -266,7 +266,7 @@ export default function AdminFaqs() {
         {isSuperAdmin && (
           <button
             onClick={handleOpenAddModal}
-            className="px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm rounded-xl border-none cursor-pointer shadow-md shadow-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 self-start sm:self-auto"
+            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] hover:opacity-95 text-white font-extrabold text-xs sm:text-sm rounded-xl border-none cursor-pointer shadow-md shadow-purple-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0"
           >
             <Plus size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
             <span>Add FAQ</span>
@@ -351,31 +351,31 @@ export default function AdminFaqs() {
                   {/* Header / Question Row */}
                   <div
                     onClick={() => setOpenFaqId(isOpen ? null : faq.id)}
-                    className="p-4 sm:p-5 flex items-start sm:items-center justify-between gap-4 cursor-pointer bg-white select-none"
+                    className="p-3.5 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer bg-white select-none transition-colors"
                   >
-                    <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                      <div className="w-8 h-8 rounded-xl bg-purple-50 text-[#bd00ff] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 sm:mt-0">
-                        Q
-                      </div>
-                      <div className="flex flex-col gap-1 min-w-0">
+                    {/* Top Row: Q Icon + Question Title + Mobile Chevron */}
+                    <div className="flex items-start justify-between gap-3 flex-1 min-w-0">
+                      <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-[#bd00ff] flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                          Q
+                        </div>
                         <span className="font-extrabold text-gray-900 text-sm sm:text-base leading-snug">
                           {faq.question}
                         </span>
-                        <div className="flex items-center gap-2 flex-wrap sm:hidden">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
-                            faq.isActive 
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
-                              : 'bg-gray-100 text-gray-400 border border-gray-200'
-                          }`}>
-                            {faq.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
+                      </div>
+                      
+                      {/* Mobile Chevron toggle icon */}
+                      <div className="sm:hidden shrink-0 mt-1">
+                        <ChevronDown
+                          size={18}
+                          className={`text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-[#bd00ff]' : ''}`}
+                        />
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
-                      {/* Status Badge */}
-                      <span className={`hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                    {/* Mobile Controls Row: Status Badge (Left) + Actions (Right) */}
+                    <div className="flex sm:hidden items-center justify-between pt-2.5 border-t border-gray-100 w-full">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
                         faq.isActive 
                           ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
                           : 'bg-gray-100 text-gray-500 border border-gray-200'
@@ -392,7 +392,56 @@ export default function AdminFaqs() {
                           <button
                             type="button"
                             onClick={() => handleToggleStatus(faq)}
-                            className={`p-2 rounded-xl transition-all cursor-pointer border shadow-2xs ${
+                            className={`p-2 rounded-xl transition-all cursor-pointer border shadow-2xs active:scale-90 ${
+                              faq.isActive 
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' 
+                                : 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200'
+                            }`}
+                            title={faq.isActive ? 'Deactivate FAQ' : 'Activate FAQ'}
+                          >
+                            <Power size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(faq)}
+                            className="p-2 bg-purple-50 text-[#bd00ff] hover:bg-purple-100 rounded-xl transition-all cursor-pointer border border-purple-200 shadow-2xs active:scale-90"
+                            title="Edit FAQ"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDeleteModal(faq)}
+                            className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer border border-rose-200 shadow-2xs active:scale-90"
+                            title="Delete FAQ"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop Right Cluster (Status + Actions + Chevron) */}
+                    <div className="hidden sm:flex items-center gap-3 shrink-0">
+                      {/* Status Badge */}
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${
+                        faq.isActive 
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
+                          : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      }`}>
+                        {faq.isActive ? 'Active' : 'Inactive'}
+                      </span>
+
+                      {/* Management Controls (Super Admin Only) */}
+                      {isSuperAdmin && (
+                        <div 
+                          className="flex items-center gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(faq)}
+                            className={`p-2 rounded-xl transition-all cursor-pointer border shadow-2xs active:scale-95 ${
                               faq.isActive 
                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100' 
                                 : 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200'
@@ -404,7 +453,7 @@ export default function AdminFaqs() {
                           <button
                             type="button"
                             onClick={() => handleOpenEditModal(faq)}
-                            className="p-2 bg-purple-50 text-[#bd00ff] hover:bg-purple-100 rounded-xl transition-all cursor-pointer border border-purple-200 shadow-2xs"
+                            className="p-2 bg-purple-50 text-[#bd00ff] hover:bg-purple-100 rounded-xl transition-all cursor-pointer border border-purple-200 shadow-2xs active:scale-95"
                             title="Edit FAQ"
                           >
                             <Edit2 size={15} />
@@ -412,7 +461,7 @@ export default function AdminFaqs() {
                           <button
                             type="button"
                             onClick={() => handleOpenDeleteModal(faq)}
-                            className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer border border-rose-200 shadow-2xs"
+                            className="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all cursor-pointer border border-rose-200 shadow-2xs active:scale-95"
                             title="Delete FAQ"
                           >
                             <Trash2 size={15} />
