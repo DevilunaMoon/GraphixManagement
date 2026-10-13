@@ -174,6 +174,30 @@ export default function AdminTermsConditions() {
             </p>
           </div>
         </div>
+
+        {/* Quick Save Header Button for Super Admin */}
+        {isSuperAdmin && (
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-purple-100">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white hover:opacity-95 px-4 sm:px-5 py-2.5 rounded-xl font-bold shadow-xs hover:shadow-md transition-all disabled:opacity-50 border-none cursor-pointer text-xs sm:text-sm active:scale-95"
+              title="Save All Changes"
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save size={15} />
+                  <span>Save Changes</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {errorMsg && (
@@ -199,10 +223,10 @@ export default function AdminTermsConditions() {
             </div>
           </div>
 
-          <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 self-start sm:self-auto shrink-0">
+          <div className="w-full sm:w-auto grid grid-cols-2 sm:flex bg-gray-100 p-1 rounded-2xl border border-gray-200 shrink-0 text-center">
             <button
               onClick={() => setActiveTab('terms')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                 activeTab === 'terms' 
                   ? 'bg-white text-[#BF00FF] shadow-xs' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -212,7 +236,7 @@ export default function AdminTermsConditions() {
             </button>
             <button
               onClick={() => setActiveTab('privacy')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                 activeTab === 'privacy' 
                   ? 'bg-white text-[#BF00FF] shadow-xs' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -411,23 +435,23 @@ export default function AdminTermsConditions() {
 
             {/* Action Buttons for Super Admin */}
             {isSuperAdmin ? (
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-purple-100 mt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-5 border-t border-purple-100 mt-2">
                 {activeTab === 'terms' ? (
                   <button
                     type="button"
                     onClick={handleAddCustomPolicy}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-[#BF00FF] font-bold text-sm rounded-xl border border-purple-200 transition-colors cursor-pointer"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 sm:py-2.5 bg-purple-50 hover:bg-purple-100 text-[#BF00FF] font-bold text-xs sm:text-sm rounded-xl border border-purple-200 hover:border-purple-300 transition-all cursor-pointer shadow-2xs active:scale-[0.99]"
                   >
                     <Plus size={16} /> Add Custom Policy Section
                   </button>
                 ) : (
-                  <div></div>
+                  <div className="hidden sm:block"></div>
                 )}
 
                 <button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white hover:opacity-95 px-8 py-3 rounded-xl font-bold shadow-md transition-all disabled:opacity-50 border-none cursor-pointer text-sm ml-auto"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-[#BF00FF] to-[#6B21A8] text-white hover:opacity-95 px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl font-extrabold shadow-md hover:shadow-lg transition-all disabled:opacity-50 border-none cursor-pointer text-sm sm:ml-auto active:scale-[0.99]"
                 >
                   {isSaving ? (
                     <>
