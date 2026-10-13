@@ -55,10 +55,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const storedTheme = localStorage.getItem('customer_theme') as ThemeColor;
-    const storedBg = localStorage.getItem('customer_bg') as BgColor;
-    if (storedTheme && themeStyleMap[storedTheme]) setActiveTheme(storedTheme);
-    if (storedBg && bgStyleMap[storedBg]) setActiveBg(storedBg);
+    // Standardize and lock on GraphiX official purple signature brand theme
+    setActiveTheme('purple');
+    setActiveBg('bg1');
+    try {
+      localStorage.removeItem('customer_theme');
+      localStorage.removeItem('customer_bg');
+    } catch (e) {}
   }, []);
 
   const handleSetTheme = (theme: ThemeColor) => {

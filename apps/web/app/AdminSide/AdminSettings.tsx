@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { Palette, MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle, Lock } from 'lucide-react';
+import { MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle, Lock } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
 export default function AdminSettings() {
@@ -27,13 +27,6 @@ export default function AdminSettings() {
             label="Branch & Contact Settings"
             sublabel="Manage store contact email, phone, location address, and checkout GCash"
             onClick={() => navigate('/admin/branches')}
-          />
-
-          <SettingsItem 
-            icon={<Palette className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
-            label="Themes"
-            sublabel="Customize dashboard color theme and aesthetics"
-            onClick={() => navigate('/admin/themes')}
           />
           
           <SettingsItem 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Palette, HelpCircle, ChevronRight, Settings } from 'lucide-react';
+import { Bell, HelpCircle, ChevronRight, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function CustomerSettings() {
@@ -29,20 +29,20 @@ export default function CustomerSettings() {
           
           <div className="flex flex-col gap-3.5">
             
-            {/* Themes Row */}
+            {/* Notification Preferences Row */}
             <button 
-              onClick={() => navigate('/customer/settings/themes')}
+              onClick={() => navigate('/customer/settings/notifications')}
               className="flex items-center p-4 sm:p-5 rounded-2xl border border-purple-100/90 hover:border-purple-300 hover:shadow-md transition-all group bg-white cursor-pointer w-full text-left"
             >
               <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100/80 flex justify-center items-center mr-4 sm:mr-5 shrink-0 group-hover:bg-gradient-to-r group-hover:from-[#8b00cc] group-hover:to-[#bd00ff] transition-all shadow-xs">
-                <Palette size={22} className="text-[#8b00cc] group-hover:text-white transition-colors" />
+                <Bell size={22} className="text-[#8b00cc] group-hover:text-white transition-colors" />
               </div>
               <div className="flex flex-col flex-1 min-w-0">
                 <h3 className="text-sm sm:text-base font-bold text-gray-900 m-0 mb-0.5 group-hover:text-[#8b00cc] transition-colors border-none truncate">
-                  Themes
+                  Notification Preferences
                 </h3>
                 <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">
-                  Customize the appearance, layout, and colors
+                  Manage alerts for orders, repair progress, and payments
                 </p>
               </div>
               <ChevronRight size={20} className="text-gray-400 group-hover:text-[#8b00cc] group-hover:translate-x-1 transition-all shrink-0 ml-2" />

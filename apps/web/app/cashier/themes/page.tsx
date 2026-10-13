@@ -1,5 +1,5 @@
-import CashierThemes from '../../CashierSide/CashierThemes';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <CashierThemes />;
+  redirect('/cashier/settings');
 }

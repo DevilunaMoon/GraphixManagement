@@ -1,5 +1,5 @@
-import CustomerThemes from '../../../../CustomerSide/CustomerThemes';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <CustomerThemes />;
+  redirect('/customer/settings');
 }
