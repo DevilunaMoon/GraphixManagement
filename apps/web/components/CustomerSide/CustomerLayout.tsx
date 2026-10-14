@@ -432,9 +432,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             </div>
             <div className="flex flex-col gap-2.5 font-semibold">
               <h4 className="text-gray-900 font-black text-sm mb-1 uppercase tracking-wider">Platform</h4>
-              <a href="/homepage#home" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Home Selection</a>
-              <a href="/homepage#about" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Our Approach</a>
-              <a href="/homepage#features" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Feature Set</a>
+              <Link href="/customer/dashboard" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Dashboard</Link>
+              <Link href="/customer/products" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Products Catalog</Link>
+              <Link href="/customer/monitoring" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Device Monitoring</Link>
+              <Link href="/customer/about" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">About & Branches</Link>
             </div>
             <div className="flex flex-col gap-2.5 font-semibold">
               <h4 className="text-gray-900 font-black text-sm mb-1 uppercase tracking-wider">Legal</h4>
