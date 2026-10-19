@@ -19,6 +19,36 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
+  const scrollToAbsoluteTop = () => {
+    if (typeof window === 'undefined') return;
+    const html = document.documentElement;
+    const prevScrollBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    html.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+    scrollables.forEach((el) => {
+      (el as HTMLElement).scrollTop = 0;
+    });
+
+    requestAnimationFrame(() => {
+      html.style.scrollBehavior = prevScrollBehavior;
+    });
+  };
+
+  useEffect(() => {
+    scrollToAbsoluteTop();
+    const rafId = requestAnimationFrame(scrollToAbsoluteTop);
+    const timer = setTimeout(scrollToAbsoluteTop, 120);
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
+  }, [pathname]);
+
   useEffect(() => {
     if (isLogoutModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -138,7 +168,10 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="p-1.5 space-y-0.5">
           <Link
             href="/cashier/profile"
-            onClick={() => setIsProfileMenuOpen(false)}
+            onClick={() => {
+              setIsProfileMenuOpen(false);
+              scrollToAbsoluteTop();
+            }}
             className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
           >
             <User size={16} className="text-[#9b1fe8]" />
@@ -146,7 +179,10 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/cashier/change-password"
-            onClick={() => setIsProfileMenuOpen(false)}
+            onClick={() => {
+              setIsProfileMenuOpen(false);
+              scrollToAbsoluteTop();
+            }}
             className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
           >
             <KeyRound size={16} className="text-[#9b1fe8]" />
@@ -186,7 +222,10 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
           <img 
             src="/Images/graphix-logo.jpg" 
             alt="Graphix Logo" 
-            onClick={() => router.push('/cashier/dashboard')}
+            onClick={() => {
+              router.push('/cashier/dashboard');
+              scrollToAbsoluteTop();
+            }}
             className="w-[28px] h-[28px] rounded-full object-cover cursor-pointer border border-white/30" 
           />
           <span className="text-white text-[15px] font-bold tracking-wide">Graphix POS</span>
@@ -314,7 +353,10 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            onClick={() => setIsSidebarOpen(false)}
+                            onClick={() => {
+                              setIsSidebarOpen(false);
+                              scrollToAbsoluteTop();
+                            }}
                             className={`pl-14 py-3 text-[14px] font-semibold transition-colors border-l-4 text-left ${
                               isSubActive 
                                 ? 'text-[#7e22ce] bg-white border-[#9b1fe8] shadow-[0_1px_3px_rgba(126,34,206,0.12)] font-bold' 
@@ -338,6 +380,7 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
                 onClick={() => {
                    router.push(item.href);
                    setIsSidebarOpen(false);
+                   scrollToAbsoluteTop();
                 }}
                 title={isCollapsed ? item.label : undefined}
                 className={`w-full cursor-pointer bg-transparent border-none ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'text-left px-5 py-3.5 border-b border-[#e4d8fb]/40'} flex items-center font-semibold transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] ${

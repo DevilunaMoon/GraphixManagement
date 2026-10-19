@@ -51,6 +51,36 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { styles, bgClass } = useTheme();
 
+  const scrollToAbsoluteTop = () => {
+    if (typeof window === 'undefined') return;
+    const html = document.documentElement;
+    const prevScrollBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    html.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+    scrollables.forEach((el) => {
+      (el as HTMLElement).scrollTop = 0;
+    });
+
+    requestAnimationFrame(() => {
+      html.style.scrollBehavior = prevScrollBehavior;
+    });
+  };
+
+  useEffect(() => {
+    scrollToAbsoluteTop();
+    const rafId = requestAnimationFrame(scrollToAbsoluteTop);
+    const timer = setTimeout(scrollToAbsoluteTop, 120);
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
+  }, [pathname]);
+
   const branchOptions = [
     { value: 'all', label: 'All Branches', description: 'System-wide consolidated data' },
     ...(branches && branches.length > 0
@@ -193,7 +223,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="p-1.5 space-y-0.5">
           <Link
             href="/admin/profile"
-            onClick={() => setIsProfileMenuOpen(false)}
+            onClick={() => {
+              setIsProfileMenuOpen(false);
+              scrollToAbsoluteTop();
+            }}
             className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
           >
             <User size={16} className="text-[#9b1fe8]" />
@@ -201,7 +234,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/admin/change-password"
-            onClick={() => setIsProfileMenuOpen(false)}
+            onClick={() => {
+              setIsProfileMenuOpen(false);
+              scrollToAbsoluteTop();
+            }}
             className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
           >
             <KeyRound size={16} className="text-[#9b1fe8]" />
@@ -419,7 +455,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                         <Link
                           key={sub.href}
                           href={sub.href}
-                          onClick={() => setIsSidebarOpen(false)}
+                          onClick={() => {
+                            setIsSidebarOpen(false);
+                            scrollToAbsoluteTop();
+                          }}
                           className={`pl-14 py-3 text-sm font-medium transition-colors ${
                             pathname === sub.href 
                               ? 'text-[#7e22ce] bg-white border-l-4 border-[#9b1fe8] font-bold shadow-[0_1px_3px_rgba(126,34,206,0.12)]' 
@@ -440,7 +479,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               <Link 
                 key={item.href}
                 href={item.href} 
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={() => {
+                  setIsSidebarOpen(false);
+                  scrollToAbsoluteTop();
+                }}
                 title={isCollapsed ? item.label : undefined}
                 className={`relative flex items-center text-lg font-medium transition-all hover:bg-[rgba(155,31,232,0.08)] hover:text-[#7e22ce] ${isCollapsed ? 'px-0 py-4 justify-center rounded-xl my-1 border-b border-b-transparent' : 'px-6 py-4 gap-4 border-b border-[#e4d8fb]/40 text-[#5b4a7a]'} ${
                   isActive 

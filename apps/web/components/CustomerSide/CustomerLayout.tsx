@@ -32,6 +32,36 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  const scrollToAbsoluteTop = () => {
+    if (typeof window === 'undefined') return;
+    const html = document.documentElement;
+    const prevScrollBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    html.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const scrollables = document.querySelectorAll('main, .overflow-y-auto');
+    scrollables.forEach((el) => {
+      (el as HTMLElement).scrollTop = 0;
+    });
+
+    requestAnimationFrame(() => {
+      html.style.scrollBehavior = prevScrollBehavior;
+    });
+  };
+
+  useEffect(() => {
+    scrollToAbsoluteTop();
+    const rafId = requestAnimationFrame(scrollToAbsoluteTop);
+    const timer = setTimeout(scrollToAbsoluteTop, 120);
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timer);
+    };
+  }, [pathname]);
+
   useEffect(() => {
     if (isLogoutModalOpen || isPolicyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -171,7 +201,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         </button>
         <Link 
           href="/customer/dashboard"
-          onClick={() => setIsSidebarOpen(false)}
+          onClick={() => {
+            setIsSidebarOpen(false);
+            scrollToAbsoluteTop();
+          }}
           className="flex items-center gap-3 no-underline cursor-pointer active:opacity-80 transition-opacity"
         >
           <img src="/Images/graphix-logo.jpg" alt="Graphix Logo" className="w-[35px] h-[35px] rounded-full object-cover border-2 border-white shadow-sm" />
@@ -209,7 +242,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
         <div className={`p-5 flex ${isCollapsed ? 'flex-col items-center justify-center' : 'items-center justify-between'} border-b border-[#e9ddff] h-[85px]`}>
           <Link 
             href="/customer/dashboard"
-            onClick={() => setIsSidebarOpen(false)}
+            onClick={() => {
+              setIsSidebarOpen(false);
+              scrollToAbsoluteTop();
+            }}
             className="flex items-center gap-3 cursor-pointer group no-underline text-inherit"
           >
             <div className="p-0.5 rounded-full bg-white shadow-xs border border-[#e4d8fb] group-hover:border-[#bd00ff] transition-all shrink-0">
@@ -246,7 +282,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
               <Link 
                 key={item.href}
                 href={item.href} 
-                onClick={() => setIsSidebarOpen(false)}
+                onClick={() => {
+                  setIsSidebarOpen(false);
+                  scrollToAbsoluteTop();
+                }}
                 title={isCollapsed ? item.label : undefined}
                 className={`flex items-center text-sm font-bold transition-all rounded-2xl no-underline relative group ${
                   isCollapsed ? 'px-0 py-3.5 justify-center my-0.5' : 'px-4 py-3 gap-3.5'
@@ -432,10 +471,10 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
             </div>
             <div className="flex flex-col gap-2.5 font-semibold">
               <h4 className="text-gray-900 font-black text-sm mb-1 uppercase tracking-wider">Platform</h4>
-              <Link href="/customer/dashboard" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Dashboard</Link>
-              <Link href="/customer/products" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Products Catalog</Link>
-              <Link href="/customer/monitoring" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Device Monitoring</Link>
-              <Link href="/customer/about" className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">About & Branches</Link>
+              <Link href="/customer/dashboard" onClick={scrollToAbsoluteTop} className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Dashboard</Link>
+              <Link href="/customer/products" onClick={scrollToAbsoluteTop} className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Products Catalog</Link>
+              <Link href="/customer/monitoring" onClick={scrollToAbsoluteTop} className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">Device Monitoring</Link>
+              <Link href="/customer/about" onClick={scrollToAbsoluteTop} className="hover:text-[#8b00cc] transition-colors text-xs sm:text-sm text-gray-500 no-underline font-medium">About & Branches</Link>
             </div>
             <div className="flex flex-col gap-2.5 font-semibold">
               <h4 className="text-gray-900 font-black text-sm mb-1 uppercase tracking-wider">Legal</h4>
