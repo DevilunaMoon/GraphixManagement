@@ -1251,9 +1251,9 @@ export default function CashierMonitoring() {
                     <input 
                       type="text" 
                       value={editOwnerName} 
-                      onChange={(e) => setEditOwnerName(e.target.value)} 
+                      readOnly
                       placeholder="e.g. Juan Dela Cruz" 
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-4 text-gray-700 text-sm outline-none cursor-not-allowed select-none font-medium" 
                     />
                   </div>
 
@@ -1262,9 +1262,9 @@ export default function CashierMonitoring() {
                     <input 
                       type="text" 
                       value={editCustomerPhone} 
-                      onChange={(e) => setEditCustomerPhone(e.target.value)} 
+                      readOnly
                       placeholder="e.g. 09123456789" 
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-4 text-gray-700 text-sm outline-none cursor-not-allowed select-none font-medium" 
                     />
                   </div>
 
@@ -1273,9 +1273,9 @@ export default function CashierMonitoring() {
                     <input 
                       type="email" 
                       value={editCustomerEmail} 
-                      onChange={(e) => setEditCustomerEmail(e.target.value)} 
+                      readOnly
                       placeholder="customer@example.com" 
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors" 
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-4 text-gray-700 text-sm outline-none cursor-not-allowed select-none font-medium" 
                     />
                   </div>
                 </div>
@@ -1297,8 +1297,8 @@ export default function CashierMonitoring() {
                     </label>
                     <select
                       value={editBranch}
-                      onChange={(e) => setEditBranch(e.target.value)}
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                      disabled
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-3 text-gray-700 text-sm outline-none font-medium cursor-not-allowed"
                     >
                       {BRANCH_OPTIONS.map(b => (
                         <option key={b} value={b}>{b} Branch</option>
@@ -1311,8 +1311,8 @@ export default function CashierMonitoring() {
                     <label className="font-semibold text-xs text-gray-700">Brand</label>
                     <select
                       value={editBrand}
-                      onChange={(e) => setEditBrand(e.target.value)}
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                      disabled
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-3 text-gray-700 text-sm outline-none font-medium cursor-not-allowed"
                     >
                       {BRAND_OPTIONS.map(b => (
                         <option key={b} value={b}>{b}</option>
@@ -1322,9 +1322,9 @@ export default function CashierMonitoring() {
                       <input 
                         type="text"
                         value={editCustomBrand}
-                        onChange={(e) => setEditCustomBrand(e.target.value)}
+                        readOnly
                         placeholder="Specify brand..."
-                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                        className="h-9 border border-gray-200 bg-gray-100 rounded-lg px-3 text-xs text-gray-700 outline-none mt-1 cursor-not-allowed"
                       />
                     )}
                   </div>
@@ -1334,8 +1334,8 @@ export default function CashierMonitoring() {
                     <label className="font-semibold text-xs text-gray-700">Device Type</label>
                     <select
                       value={editDeviceType}
-                      onChange={(e) => setEditDeviceType(e.target.value)}
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-3 text-black text-sm outline-none transition-colors font-medium"
+                      disabled
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-3 text-gray-700 text-sm outline-none font-medium cursor-not-allowed"
                     >
                       {DEVICE_TYPES.map(t => (
                         <option key={t} value={t}>{t}</option>
@@ -1345,9 +1345,9 @@ export default function CashierMonitoring() {
                       <input 
                         type="text"
                         value={editCustomDeviceType}
-                        onChange={(e) => setEditCustomDeviceType(e.target.value)}
+                        readOnly
                         placeholder="Specify type..."
-                        className="h-9 border border-[#bd00ff] rounded-lg px-3 text-xs text-black outline-none mt-1"
+                        className="h-9 border border-gray-200 bg-gray-100 rounded-lg px-3 text-xs text-gray-700 outline-none mt-1 cursor-not-allowed"
                       />
                     )}
                   </div>
@@ -1358,9 +1358,9 @@ export default function CashierMonitoring() {
                     <input 
                       type="text" 
                       value={editDeviceName} 
-                      onChange={(e) => setEditDeviceName(e.target.value)} 
+                      readOnly
                       placeholder="e.g. iPhone 11 Pro" 
-                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 text-black text-sm outline-none transition-colors font-semibold" 
+                      className="h-10 border-2 border-gray-200 bg-gray-100 rounded-xl px-4 text-gray-700 text-sm outline-none font-semibold cursor-not-allowed select-none" 
                     />
                   </div>
                 </div>
