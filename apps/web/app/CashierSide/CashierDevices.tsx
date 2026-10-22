@@ -40,6 +40,22 @@ export default function CashierDevices() {
 
   // Action Menu State
   const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
+  const [actionMenuPosition, setActionMenuPosition] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const handleCloseMenu = () => {
+      if (activeActionMenuId) {
+        setActiveActionMenuId(null);
+        setActionMenuPosition(null);
+      }
+    };
+    window.addEventListener('scroll', handleCloseMenu, true);
+    window.addEventListener('resize', handleCloseMenu);
+    return () => {
+      window.removeEventListener('scroll', handleCloseMenu, true);
+      window.removeEventListener('resize', handleCloseMenu);
+    };
+  }, [activeActionMenuId]);
 
   // Search, Filter & Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -1468,7 +1484,20 @@ export default function CashierDevices() {
                           <div className="relative inline-block text-left">
                             <button
                               type="button"
-                              onClick={() => setActiveActionMenuId(activeActionMenuId === prod.id ? null : prod.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeActionMenuId === prod.id) {
+                                  setActiveActionMenuId(null);
+                                  setActionMenuPosition(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setActionMenuPosition({
+                                    top: rect.bottom + 6,
+                                    left: Math.max(10, rect.right - 192),
+                                  });
+                                  setActiveActionMenuId(prod.id);
+                                }
+                              }}
                               className={`p-2 rounded-xl transition-all cursor-pointer border ${
                                 activeActionMenuId === prod.id
                                   ? 'bg-[#bd00ff] text-white border-[#bd00ff] shadow-sm'
@@ -1479,17 +1508,25 @@ export default function CashierDevices() {
                               <MoreVertical size={18} />
                             </button>
 
-                            {activeActionMenuId === prod.id && (
+                            {activeActionMenuId === prod.id && actionMenuPosition && (
                               <>
                                 <div 
                                   className="fixed inset-0 z-40" 
-                                  onClick={(e) => { e.stopPropagation(); setActiveActionMenuId(null); }} 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveActionMenuId(null);
+                                    setActionMenuPosition(null);
+                                  }} 
                                 />
-                                <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-2xl shadow-xl border border-purple-200/80 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left">
+                                <div 
+                                  className="fixed w-48 bg-white rounded-2xl shadow-2xl border border-purple-200/80 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left"
+                                  style={{ top: `${actionMenuPosition.top}px`, left: `${actionMenuPosition.left}px` }}
+                                >
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setActiveActionMenuId(null);
+                                      setActionMenuPosition(null);
                                       handleEditClick(prod);
                                     }}
                                     className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
@@ -1502,6 +1539,7 @@ export default function CashierDevices() {
                                     type="button"
                                     onClick={() => {
                                       setActiveActionMenuId(null);
+                                      setActionMenuPosition(null);
                                       handleOpenAddDiscount(prod);
                                     }}
                                     className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
@@ -1516,6 +1554,7 @@ export default function CashierDevices() {
                                     type="button"
                                     onClick={() => {
                                       setActiveActionMenuId(null);
+                                      setActionMenuPosition(null);
                                       setProductToDelete(prod.id);
                                       setDeleteModalOpen(true);
                                     }}
