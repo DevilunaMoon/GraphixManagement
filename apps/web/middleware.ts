@@ -26,6 +26,7 @@ export async function middleware(request: NextRequest) {
 
   const isAdmin = role === 'admin' || role === 'super_admin' || role === 'branch_admin';
   const isCashier = role === 'cashier';
+  const isTechnician = role === 'technician';
   const isCustomer = role === 'customer';
 
   // 1. Auto-Redirect logged-in users from Landing Page, Homepage, or Login page to their Dashboard
@@ -33,6 +34,7 @@ export async function middleware(request: NextRequest) {
     if (session) {
       if (isAdmin) return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       if (isCashier) return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
+      if (isTechnician) return NextResponse.redirect(new URL('/technician/dashboard', request.url));
       return NextResponse.redirect(new URL('/customer/dashboard', request.url));
     }
     // If not logged in, allow them to view landing page or login page
@@ -49,11 +51,19 @@ export async function middleware(request: NextRequest) {
   // 3. Strict Role-based routing protection
   if (session && currentPath.startsWith('/admin') && !isAdmin) {
     if (isCashier) return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
+    if (isTechnician) return NextResponse.redirect(new URL('/technician/dashboard', request.url));
     return NextResponse.redirect(new URL('/customer/dashboard', request.url));
   }
   
   if (session && currentPath.startsWith('/cashier') && !isCashier) {
     if (isAdmin) return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    if (isTechnician) return NextResponse.redirect(new URL('/technician/dashboard', request.url));
+    return NextResponse.redirect(new URL('/customer/dashboard', request.url));
+  }
+
+  if (session && currentPath.startsWith('/technician') && !isTechnician) {
+    if (isAdmin) return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    if (isCashier) return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
     return NextResponse.redirect(new URL('/customer/dashboard', request.url));
   }
 
@@ -61,9 +71,11 @@ export async function middleware(request: NextRequest) {
     if (currentPath.startsWith('/customer/monitoring')) {
       if (isAdmin) return NextResponse.redirect(new URL('/admin/monitoring', request.url));
       if (isCashier) return NextResponse.redirect(new URL('/cashier/monitoring', request.url));
+      if (isTechnician) return NextResponse.redirect(new URL('/technician/monitoring', request.url));
     }
     if (isAdmin) return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     if (isCashier) return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
+    if (isTechnician) return NextResponse.redirect(new URL('/technician/dashboard', request.url));
   }
   
   // 4. Attach No-Cache Headers to Protected Routes to prevent Back-Button access after logout

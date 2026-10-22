@@ -123,6 +123,7 @@ export default function AdminAccounts() {
     if (roleFilter === 'Super Admin') roleParam = 'SUPER_ADMIN';
     else if (roleFilter === 'Admin') roleParam = 'ADMIN';
     else if (roleFilter === 'Cashier') roleParam = 'CASHIER';
+    else if (roleFilter === 'Technician') roleParam = 'TECHNICIAN';
     else if (roleFilter === 'Customer') roleParam = 'CUSTOMER';
 
     let branchParam = 'all';
@@ -491,7 +492,7 @@ export default function AdminAccounts() {
 
               {isRoleDropdownOpen && (
                 <div className="absolute top-[115%] left-0 w-44 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                  {['All Accounts', 'Super Admin', 'Admin', 'Cashier', 'Customer'].map((role) => (
+                  {['All Accounts', 'Super Admin', 'Admin', 'Cashier', 'Technician', 'Customer'].map((role) => (
                     <button 
                       key={role}
                       type="button"
@@ -753,7 +754,9 @@ export default function AdminAccounts() {
                           ? 'bg-purple-100 text-purple-900 border border-purple-200' 
                           : acc.role === 'CASHIER' 
                             ? 'bg-blue-100 text-blue-900 border border-blue-200' 
-                            : 'bg-gray-100 text-gray-700'
+                            : acc.role === 'TECHNICIAN'
+                              ? 'bg-teal-100 text-teal-900 border border-teal-200'
+                              : 'bg-gray-100 text-gray-700'
                     }`}>
                       {acc.role === 'SUPER_ADMIN' && <Crown size={10} />}
                       {acc.role || 'Customer'}
@@ -869,7 +872,6 @@ export default function AdminAccounts() {
                         )}
                       </td>
 
-                      {/* Role Badge */}
                       <td className="py-3 px-4 text-center">
                         <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider inline-flex items-center gap-1 ${
                           acc.role === 'SUPER_ADMIN' 
@@ -878,7 +880,9 @@ export default function AdminAccounts() {
                               ? 'bg-purple-100 text-purple-900 border border-purple-200' 
                               : acc.role === 'CASHIER' 
                                 ? 'bg-blue-100 text-blue-900 border border-blue-200' 
-                                : 'bg-gray-100 text-gray-700'
+                                : acc.role === 'TECHNICIAN'
+                                  ? 'bg-teal-100 text-teal-900 border border-teal-200'
+                                  : 'bg-gray-100 text-gray-700'
                         }`}>
                           {acc.role === 'SUPER_ADMIN' && <Crown size={10} />}
                           {acc.role || 'Customer'}
@@ -1245,6 +1249,7 @@ export default function AdminAccounts() {
                     className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white"
                   >
                     <option value="CUSTOMER">Customer</option>
+                    <option value="TECHNICIAN">Technician</option>
                     <option value="CASHIER">Cashier</option>
                     <option value="ADMIN">Admin</option>
                     <option value="SUPER_ADMIN">Super Admin</option>
@@ -1543,6 +1548,7 @@ export default function AdminAccounts() {
                 <div className="flex flex-col gap-1">
                   <label className="font-bold text-gray-700">Role</label>
                   <select name="role" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="TECHNICIAN">Technician</option>
                     <option value="CASHIER">Cashier</option>
                     <option value="ADMIN">Admin</option>
                     {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}

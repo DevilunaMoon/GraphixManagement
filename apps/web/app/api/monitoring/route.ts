@@ -11,7 +11,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const isCustomer = session.role === 'CUSTOMER';
-    
+    const isTechnician = session.role === 'TECHNICIAN';
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const { searchParams } = new URL(req.url);
     const pageParam = searchParams.get('page');
@@ -19,13 +19,19 @@ export async function GET(req: Request) {
     const search = searchParams.get('search') || '';
     const sort = searchParams.get('sort') || 'Newest';
     const branchParam = searchParams.get('branch');
+    const assignedOnly = searchParams.get('assignedOnly') === 'true';
 
     const whereClause: any = isCustomer && session?.userId
       ? { userId: session.userId }
       : {};
 
     if (!isCustomer) {
-      if (isSuperAdmin) {
+      if (isTechnician) {
+        whereClause.branch = session.branch || 'Tagoloan';
+        if (assignedOnly && session.name) {
+          whereClause.technician = { equals: session.name, mode: 'insensitive' };
+        }
+      } else if (isSuperAdmin) {
         if (branchParam && branchParam !== 'all') {
           whereClause.branch = branchParam;
         }
@@ -248,21 +254,15 @@ export async function POST(req: Request) {
     const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const baseUrl = `${protocol}://${host}`;
 
-    // If customer submitted a new repair request, notify Branch Admin, Cashier, and Super Admin
+    // If customer submitted a new repair request, notify ONLY the chosen branch's Cashier & Admin, plus Customer confirmation
     if (isCustomer) {
       try {
-        // Find admins and cashiers assigned to this branch
+        // Find admins and cashiers assigned strictly to the chosen branch
         const branchStaff = await prisma.user.findMany({
           where: {
-            OR: [
-              {
-                role: { in: ['ADMIN', 'CASHIER'] },
-                branch: { equals: operatingBranch, mode: 'insensitive' }
-              },
-              {
-                role: 'SUPER_ADMIN'
-              }
-            ]
+            role: { in: ['ADMIN', 'CASHIER'] },
+            branch: { equals: operatingBranch, mode: 'insensitive' },
+            status: 'Active'
           },
           select: { id: true, role: true, branch: true }
         });
@@ -271,8 +271,8 @@ export async function POST(req: Request) {
           prisma.notification.create({
             data: {
               userId: staff.id,
-              title: 'New Repair Request',
-              message: `Customer ${ownerName || 'Customer'} submitted a new repair request for ${deviceName} at ${operatingBranch} branch.`,
+              title: 'New Branch Repair Request',
+              message: `New repair request for ${deviceName} submitted to ${operatingBranch} branch by ${ownerName || 'Customer'}.`,
               type: 'REPAIR_REQUEST',
               branch: operatingBranch,
               isRead: false
@@ -280,9 +280,25 @@ export async function POST(req: Request) {
           })
         );
 
+        // Also notify customer confirming their request
+        if (session.userId) {
+          notifPromises.push(
+            prisma.notification.create({
+              data: {
+                userId: session.userId,
+                title: 'Repair Request Received',
+                message: `Your repair request for ${deviceName} has been submitted to Graphix (${operatingBranch} Branch). Our team is reviewing it.`,
+                type: 'REPAIR_REQUEST',
+                branch: operatingBranch,
+                isRead: false
+              }
+            })
+          );
+        }
+
         await Promise.all(notifPromises);
       } catch (notifErr) {
-        console.error('Error creating staff notifications for repair request:', notifErr);
+        console.error('Error creating branch-isolated notifications for repair request:', notifErr);
       }
     } else if (targetUserId) {
       // Staff created device intake for customer, send email notification

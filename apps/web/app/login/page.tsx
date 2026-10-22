@@ -116,6 +116,8 @@ function LoginContent() {
         window.location.href = isLoggingIntoMonitoring ? "/admin/monitoring" : "/admin/dashboard";
       } else if (userRole === "CASHIER") {
         window.location.href = isLoggingIntoMonitoring ? "/cashier/monitoring" : "/cashier/dashboard";
+      } else if (userRole === "TECHNICIAN") {
+        window.location.href = isLoggingIntoMonitoring ? "/technician/monitoring" : "/technician/dashboard";
       } else {
         window.location.href = redirectUrl || "/customer/dashboard";
       }

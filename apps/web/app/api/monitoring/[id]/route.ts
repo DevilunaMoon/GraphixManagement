@@ -167,11 +167,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (request.userId) {
       try {
         if (action === 'ACCEPT' || updateData.progress === 'Accepted') {
+          const techMsg = request.technician ? ` Assigned Technician: ${request.technician}.` : '';
           await prisma.notification.create({
             data: {
               userId: request.userId,
               title: 'Repair Request Accepted',
-              message: `Your repair request for ${request.deviceName} has been accepted by the ${request.branch || 'Tagoloan'} branch.`,
+              message: `Your repair request for ${request.deviceName} has been accepted by the ${request.branch || 'Tagoloan'} branch.${techMsg}`,
               type: 'REPAIR',
               branch: request.branch || 'Tagoloan',
               isRead: false
@@ -191,6 +192,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
       } catch (notifErr) {
         console.error('Error sending customer notification on repair request update:', notifErr);
+      }
+    }
+
+    // Notify assigned technician if assigned
+    if (request.technician) {
+      try {
+        const techUser = await prisma.user.findFirst({
+          where: {
+            name: { equals: request.technician, mode: 'insensitive' },
+            role: 'TECHNICIAN'
+          }
+        });
+        if (techUser) {
+          await prisma.notification.create({
+            data: {
+              userId: techUser.id,
+              title: 'New Repair Job Assigned',
+              message: `You have been assigned to repair ${request.deviceName} (Owner: ${request.ownerName || 'Customer'}) at ${request.branch || 'Tagoloan'} branch.`,
+              type: 'REPAIR_ASSIGNMENT',
+              branch: request.branch || 'Tagoloan',
+              isRead: false
+            }
+          });
+        }
+      } catch (techNotifErr) {
+        console.error('Error notifying assigned technician:', techNotifErr);
       }
     }
 

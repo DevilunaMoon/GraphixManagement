@@ -42,6 +42,22 @@ export default function RepairRequestReviewModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [technicians, setTechnicians] = useState<{ id: string; name: string; branch?: string }[]>([]);
+  const [selectedTechnician, setSelectedTechnician] = useState<string>(request?.technician || '');
+
+  useEffect(() => {
+    if (isOpen && request) {
+      const branch = request.branch || 'Tagoloan';
+      fetch(`/api/technicians?branch=${encodeURIComponent(branch)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setTechnicians(data);
+          }
+        })
+        .catch(err => console.error('Failed to load branch technicians:', err));
+    }
+  }, [isOpen, request]);
 
   useEffect(() => {
     if (isOpen) {
@@ -145,7 +161,8 @@ export default function RepairRequestReviewModal({
         body: JSON.stringify({
           action,
           progress: action === 'ACCEPT' ? 'Accepted' : 'Rejected',
-          status: action === 'ACCEPT' ? 'Active' : 'Cancelled'
+          status: action === 'ACCEPT' ? 'Active' : 'Cancelled',
+          technician: action === 'ACCEPT' && selectedTechnician ? selectedTechnician : undefined
         })
       });
 
@@ -429,25 +446,41 @@ export default function RepairRequestReviewModal({
             </button>
 
             {isPending && (
-              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleAction('REJECT')}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto px-3 sm:px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <XCircle size={15} className="shrink-0" />
-                  <span className="truncate">Reject Request</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleAction('ACCEPT')}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto px-3 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-[#bd00ff] hover:from-purple-700 hover:to-[#9c00d6] text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <CheckCircle size={15} className="shrink-0" />
-                  <span className="truncate">Accept / Approve</span>
-                </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+                <div className="flex items-center gap-1.5 bg-purple-50/60 border border-purple-200/80 rounded-xl px-2.5 py-1.5">
+                  <span className="text-[11px] font-black text-purple-900 uppercase tracking-wide whitespace-nowrap">Assign Tech:</span>
+                  <select
+                    value={selectedTechnician}
+                    onChange={(e) => setSelectedTechnician(e.target.value)}
+                    className="text-xs py-1 px-2 bg-white border border-purple-200 rounded-lg font-bold text-gray-800 outline-none focus:ring-1 focus:ring-purple-500 cursor-pointer"
+                  >
+                    <option value="">-- Unassigned --</option>
+                    {technicians.map((t) => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleAction('REJECT')}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto px-3 sm:px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm shadow-sm transition-colors cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <XCircle size={15} className="shrink-0" />
+                    <span className="truncate">Reject</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAction('ACCEPT')}
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto px-3 sm:px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-[#bd00ff] hover:from-purple-700 hover:to-[#9c00d6] text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <CheckCircle size={15} className="shrink-0" />
+                    <span className="truncate">Accept & Assign</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
