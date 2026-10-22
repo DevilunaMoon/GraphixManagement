@@ -451,8 +451,9 @@ export default function AdminMonitoring() {
   const openEditModal = (device: DeviceProgress) => {
     setDeviceToEdit(device);
     setEditOwnerName(device.ownerName || '');
-    const currentProgress = formatProgress(device.progress) || 'Accepted';
-    setEditProgress(currentProgress);
+    const currentProgress = formatProgress(device.progress) || 'Diagnostic';
+    const activeProgress = currentProgress === 'Accepted' ? 'Diagnostic' : currentProgress;
+    setEditProgress(activeProgress);
     setInitialEditProgress(currentProgress);
     setEditCause(device.cause || '');
     setEditTechnician(device.technician || '');
@@ -1462,7 +1463,6 @@ export default function AdminMonitoring() {
                         }}
                         className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(editProgress)}`}
                       >
-                        <option value="Accepted" disabled={progressLevels.indexOf('Accepted') < initialProgressIndex} className="text-purple-600 font-semibold">Accepted</option>
                         <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-blue-500 font-semibold">Diagnostic</option>
                         <option value="Repairing" disabled={progressLevels.indexOf('Repairing') < initialProgressIndex} className="text-yellow-500 font-semibold">Repairing</option>
                         <option value="Completed" disabled={progressLevels.indexOf('Completed') < initialProgressIndex} className="text-green-600 font-semibold">Completed</option>
