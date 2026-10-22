@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Wrench, Search, Cpu, CheckCircle2, ArrowRight, Clock, 
-  AlertCircle, Smartphone, User, RefreshCw, Sparkles, ChevronRight
+  AlertCircle, Smartphone, User, RefreshCw, ChevronRight
 } from 'lucide-react';
 
 export default function TechnicianDashboard() {
@@ -108,41 +108,37 @@ export default function TechnicianDashboard() {
   return (
     <main className="flex-1 p-3.5 sm:p-6 md:p-8 flex flex-col gap-5 sm:gap-6 max-w-7xl w-full mx-auto font-['Inter']">
       
-      {/* 1. Header Banner */}
-      <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-[#8b00cc] rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        
-        <div className="relative z-10 flex flex-col gap-1.5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 w-fit text-xs font-bold tracking-wide">
-            <Sparkles size={14} className="text-amber-300" />
-            <span>Technician Station</span>
-            <span className="text-white/40">•</span>
-            <span className="text-purple-200">📍 {technician?.branch || 'Tagoloan'} Branch</span>
+      {/* Clean Header Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-purple-100 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight m-0">
+              Technician Dashboard
+            </h1>
+            <span className="text-[11px] font-bold bg-purple-100 text-[#8b00cc] px-2.5 py-0.5 rounded-full border border-purple-200">
+              📍 {technician?.branch || 'Tagoloan'} Branch
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight m-0">
-            Welcome back, {technician?.name || 'Technician'}!
-          </h1>
-          <p className="text-xs sm:text-sm text-purple-200/90 font-medium m-0 max-w-xl">
-            You have <strong className="text-white">{stats.active} active device repairs</strong> in your branch queue today. Keep track of diagnostics and repair progress.
+          <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
+            Overview of branch repair queue, active diagnostics, and bench workload.
           </p>
         </div>
 
-        <div className="relative z-10 flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 self-end sm:self-auto">
           <button
             onClick={loadData}
             disabled={isLoading}
-            className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all cursor-pointer flex items-center justify-center disabled:opacity-50"
+            className="p-2.5 rounded-xl bg-white hover:bg-gray-100 text-gray-600 border border-gray-200 transition-all cursor-pointer flex items-center justify-center shadow-xs disabled:opacity-50"
             title="Refresh Data"
           >
-            <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
           </button>
           <Link
             href="/technician/monitoring"
-            className="px-5 py-3 rounded-2xl bg-white text-purple-950 font-black text-xs sm:text-sm shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 no-underline"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:brightness-110 text-white font-bold text-xs sm:text-sm shadow-sm transition-all flex items-center gap-2 no-underline"
           >
-            <Wrench size={16} className="text-[#8b00cc]" />
+            <Wrench size={15} />
             <span>Open Gadget Repair</span>
-            <ArrowRight size={16} />
           </Link>
         </div>
       </div>
