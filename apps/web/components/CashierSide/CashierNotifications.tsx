@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, Wrench, RefreshCw } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, Wrench, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
 
@@ -64,7 +64,7 @@ export default function CashierNotifications() {
     return () => clearInterval(interval);
   }, [page]);
 
-  const handleAction = async (id: string, action: 'PAID' | 'UNPAID' | 'READ' | 'RELEASE_STOCK') => {
+  const handleAction = async (id: string, action: 'PAID' | 'UNPAID' | 'READ' | 'RELEASE_STOCK', showFeedback = true) => {
     try {
       const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
@@ -77,16 +77,18 @@ export default function CashierNotifications() {
           prev.map(n => n.id === id ? { ...n, isRead: true, title: updated.title || n.title } : n)
         );
         setUnreadCount(prev => Math.max(prev - 1, 0));
-        if (action === 'PAID') {
-          setFeedbackMessage('Transaction marked as PAID successfully!');
-        } else if (action === 'UNPAID') {
-          setFeedbackMessage('Unpaid pending notification sent to customer successfully!');
-        } else if (action === 'RELEASE_STOCK') {
-          setFeedbackMessage('Stock released back to inventory and customer notified successfully!');
-        } else {
-          setFeedbackMessage('Notification marked as read.');
+        if (showFeedback) {
+          if (action === 'PAID') {
+            setFeedbackMessage('Transaction marked as PAID successfully!');
+          } else if (action === 'UNPAID') {
+            setFeedbackMessage('Unpaid pending notification sent to customer successfully!');
+          } else if (action === 'RELEASE_STOCK') {
+            setFeedbackMessage('Stock released back to inventory and customer notified successfully!');
+          } else {
+            setFeedbackMessage('Notification marked as read.');
+          }
+          setTimeout(() => setFeedbackMessage(null), 3000);
         }
-        setTimeout(() => setFeedbackMessage(null), 3000);
       }
     } catch (error) {
       console.error(`Failed to mark notification:`, error);
@@ -115,8 +117,8 @@ export default function CashierNotifications() {
 
   const openRepairRequest = async (notif: Notification) => {
     try {
-      handleAction(notif.id, 'READ');
-      const res = await fetch(`/api/monitoring?limit=30&branch=all`);
+      handleAction(notif.id, 'READ', false);
+      const res = await fetch(`/api/monitoring?limit=50&branch=all`);
       const data = await res.json();
       const reqList = Array.isArray(data) ? data : (data?.requests || []);
       
@@ -138,6 +140,10 @@ export default function CashierNotifications() {
     switch (type) {
       case 'RESTOCK':
         return <Package size={20} className="text-white" />;
+      case 'REPAIR_ACCEPTED':
+        return <CheckCircle2 size={20} className="text-white" />;
+      case 'REPAIR_REJECTED':
+        return <X size={20} className="text-white" />;
       case 'REPAIR_REQUEST':
       case 'REPAIR':
         return <Wrench size={20} className="text-white" />;
@@ -235,10 +241,20 @@ export default function CashierNotifications() {
               const remainingHrs = Math.floor(diffMs / (1000 * 60 * 60));
               const remainingMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-              const isRepairRequest = notification.type === 'REPAIR_REQUEST';
+              const isRepairAccepted = notification.type === 'REPAIR_ACCEPTED' || 
+                notification.title.toLowerCase().includes('accepted') || 
+                notification.message.toLowerCase().includes('has been accepted');
+              const isRepairRejected = notification.type === 'REPAIR_REJECTED' || 
+                notification.title.toLowerCase().includes('rejected');
+              const isRepairRequest = (notification.type === 'REPAIR_REQUEST' || notification.type === 'REPAIR') && !isRepairAccepted && !isRepairRejected;
+
               let iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-300';
               if (isRestock) {
                 iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
+              } else if (isRepairAccepted) {
+                iconBg = 'bg-emerald-600';
+              } else if (isRepairRejected) {
+                iconBg = 'bg-rose-500';
               } else if (isRepairRequest) {
                 iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
               } else if (isStockOut) {
@@ -253,9 +269,13 @@ export default function CashierNotifications() {
               }
 
               let cardBg = 'hover:bg-gray-50';
-              if (!notification.isRead) {
+              if (isRepairAccepted) {
+                cardBg = 'bg-emerald-50/40 hover:bg-emerald-50/60 border-l-4 border-l-emerald-500';
+              } else if (isRepairRejected) {
+                cardBg = 'bg-rose-50/30 hover:bg-rose-50/50 border-l-4 border-l-rose-400';
+              } else if (!notification.isRead) {
                 if (isRestock) cardBg = 'bg-emerald-50/40 hover:bg-emerald-50/60';
-                else if (isRepairRequest) cardBg = 'bg-purple-50/70 hover:bg-purple-100/50';
+                else if (isRepairRequest) cardBg = 'bg-purple-50/70 hover:bg-purple-100/50 border-l-4 border-l-purple-500';
                 else if (isStockOut) cardBg = 'bg-rose-50/40 hover:bg-rose-50/60';
                 else if (isStockLow) cardBg = 'bg-amber-50/40 hover:bg-amber-50/60';
                 else if (isCashReservation) {
@@ -288,9 +308,20 @@ export default function CashierNotifications() {
                           RESTOCK
                         </span>
                       )}
+                      {isRepairAccepted && (
+                        <span className="shrink-0 bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-emerald-300 flex items-center gap-1">
+                          <CheckCircle2 size={13} className="text-emerald-700" />
+                          ACCEPTED & ASSIGNED
+                        </span>
+                      )}
+                      {isRepairRejected && (
+                        <span className="shrink-0 bg-rose-100 text-rose-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-rose-300">
+                          REJECTED
+                        </span>
+                      )}
                       {isRepairRequest && (
-                        <span className="shrink-0 bg-purple-100 text-[#bd00ff] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-200">
-                          REPAIR REQUEST
+                        <span className="shrink-0 bg-amber-100 text-amber-900 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-amber-300 flex items-center gap-1 animate-pulse">
+                          AWAITING REVIEW
                         </span>
                       )}
                       {isStockOut && (
@@ -375,7 +406,14 @@ export default function CashierNotifications() {
                         <Package size={14} /> View Inventory
                       </Link>
                     )}
-                    {isRepairRequest ? (
+                    {isRepairAccepted ? (
+                      <Link 
+                        href="/cashier/monitoring"
+                        className="shrink-0 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
+                      >
+                        <Wrench size={14} /> View in Gadget Repair
+                      </Link>
+                    ) : isRepairRequest ? (
                       <button 
                         onClick={() => openRepairRequest(notification)}
                         className="shrink-0 px-3.5 py-2 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer border-none"

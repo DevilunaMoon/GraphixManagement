@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
 import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
@@ -62,7 +62,7 @@ export default function AdminNotifications() {
     setPage(1);
   }, [selectedBranch]);
 
-  const handleAction = async (id: string, action: 'READ' | 'PAID' | 'UNPAID') => {
+  const handleAction = async (id: string, action: 'READ' | 'PAID' | 'UNPAID', showFeedback = true) => {
     try {
       const res = await fetch('/api/notifications/mark-read', {
         method: 'POST',
@@ -75,8 +75,10 @@ export default function AdminNotifications() {
           prev.map(n => n.id === id ? { ...n, isRead: true, title: updated.title || n.title } : n)
         );
         setUnreadCount(prev => Math.max(prev - 1, 0));
-        setFeedbackMessage('Notification marked as read.');
-        setTimeout(() => setFeedbackMessage(null), 3000);
+        if (showFeedback) {
+          setFeedbackMessage('Notification marked as read.');
+          setTimeout(() => setFeedbackMessage(null), 3000);
+        }
       }
     } catch (error) {
       console.error('Failed to mark notification:', error);
@@ -108,9 +110,9 @@ export default function AdminNotifications() {
 
   const openRepairRequest = async (notif: Notification) => {
     try {
-      handleAction(notif.id, 'READ');
+      handleAction(notif.id, 'READ', false);
       const branchParam = isSuperAdmin ? (selectedBranch || 'all') : 'all';
-      const res = await fetch(`/api/monitoring?limit=30&branch=${encodeURIComponent(branchParam)}`);
+      const res = await fetch(`/api/monitoring?limit=50&branch=${encodeURIComponent(branchParam)}`);
       const data = await res.json();
       const reqList = Array.isArray(data) ? data : (data?.requests || []);
       
@@ -132,6 +134,10 @@ export default function AdminNotifications() {
     switch (type) {
       case 'RESTOCK':
         return <Package size={20} className="text-white" />;
+      case 'REPAIR_ACCEPTED':
+        return <CheckCircle2 size={20} className="text-white" />;
+      case 'REPAIR_REJECTED':
+        return <X size={20} className="text-white" />;
       case 'REPAIR_REQUEST':
       case 'REPAIR':
         return <Wrench size={20} className="text-white" />;
@@ -211,13 +217,20 @@ export default function AdminNotifications() {
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
               const isRestock = notification.type === 'RESTOCK';
-              const isRepairRequest = notification.type === 'REPAIR_REQUEST';
+              const isRepairAccepted = notification.type === 'REPAIR_ACCEPTED' || 
+                notification.title.toLowerCase().includes('accepted') || 
+                notification.message.toLowerCase().includes('has been accepted');
+              const isRepairRejected = notification.type === 'REPAIR_REJECTED' || 
+                notification.title.toLowerCase().includes('rejected');
+              const isRepairRequest = (notification.type === 'REPAIR_REQUEST' || notification.type === 'REPAIR') && !isRepairAccepted && !isRepairRejected;
               const isStockOut = notification.type === 'STOCK_OUT';
               const isStockLow = notification.type === 'STOCK_LOW';
               const isStockAlert = isStockOut || isStockLow;
 
               let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
               if (isRestock) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
+              else if (isRepairAccepted) iconBg = 'bg-emerald-600';
+              else if (isRepairRejected) iconBg = 'bg-rose-500';
               else if (isRepairRequest) iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
               else if (isStockOut) iconBg = !notification.isRead ? 'bg-rose-500' : 'bg-gray-400';
               else if (isStockLow) iconBg = !notification.isRead ? 'bg-amber-500' : 'bg-gray-400';
@@ -229,17 +242,21 @@ export default function AdminNotifications() {
                     if (isRepairRequest) openRepairRequest(notification);
                   }}
                   className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isRepairRequest ? 'cursor-pointer' : ''} ${
-                    !notification.isRead 
-                      ? isRestock
-                        ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
-                        : isRepairRequest
-                        ? 'bg-purple-50/70 hover:bg-purple-100/50'
-                        : isStockOut 
-                        ? 'bg-rose-50/40 hover:bg-rose-50/60' 
-                        : isStockLow 
-                          ? 'bg-amber-50/40 hover:bg-amber-50/60' 
-                          : 'bg-purple-50/50 hover:bg-purple-50' 
-                      : 'hover:bg-gray-50'
+                    isRepairAccepted
+                      ? 'bg-emerald-50/40 hover:bg-emerald-50/60 border-l-4 border-l-emerald-500'
+                      : isRepairRejected
+                      ? 'bg-rose-50/30 hover:bg-rose-50/50 border-l-4 border-l-rose-400'
+                      : !notification.isRead 
+                        ? isRestock
+                          ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
+                          : isRepairRequest
+                          ? 'bg-purple-50/70 hover:bg-purple-100/50 border-l-4 border-l-purple-500'
+                          : isStockOut 
+                          ? 'bg-rose-50/40 hover:bg-rose-50/60' 
+                          : isStockLow 
+                            ? 'bg-amber-50/40 hover:bg-amber-50/60' 
+                            : 'bg-purple-50/50 hover:bg-purple-50' 
+                        : 'hover:bg-gray-50'
                   }`}
                 >
                   <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${iconBg}`}>
@@ -256,9 +273,20 @@ export default function AdminNotifications() {
                           RESTOCK
                         </span>
                       )}
+                      {isRepairAccepted && (
+                        <span className="shrink-0 bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-emerald-300 flex items-center gap-1">
+                          <CheckCircle2 size={13} className="text-emerald-700" />
+                          ACCEPTED & ASSIGNED
+                        </span>
+                      )}
+                      {isRepairRejected && (
+                        <span className="shrink-0 bg-rose-100 text-rose-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-rose-300">
+                          REJECTED
+                        </span>
+                      )}
                       {isRepairRequest && (
-                        <span className="shrink-0 bg-purple-100 text-[#bd00ff] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-200">
-                          REPAIR REQUEST
+                        <span className="shrink-0 bg-amber-100 text-amber-900 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-amber-300 flex items-center gap-1 animate-pulse">
+                          AWAITING REVIEW
                         </span>
                       )}
                       {isStockOut && (
@@ -297,6 +325,14 @@ export default function AdminNotifications() {
                         className="shrink-0 px-3.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline border border-emerald-200"
                       >
                         <Package size={14} /> View Inventory
+                      </Link>
+                    )}
+                    {isRepairAccepted && (
+                      <Link 
+                        href="/admin/monitoring"
+                        className="shrink-0 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
+                      >
+                        <Wrench size={14} /> View in Gadget Repair
                       </Link>
                     )}
                     {isRepairRequest && (

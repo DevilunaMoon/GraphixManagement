@@ -195,6 +195,40 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
+    // Update existing branch staff notifications to REPAIR_ACCEPTED or REPAIR_REJECTED
+    try {
+      if (action === 'ACCEPT' || updateData.progress === 'Accepted') {
+        const assignedTech = request.technician ? ` (Assigned Tech: ${request.technician})` : '';
+        await prisma.notification.updateMany({
+          where: {
+            type: 'REPAIR_REQUEST',
+            branch: { equals: request.branch || 'Tagoloan', mode: 'insensitive' },
+            message: { contains: request.deviceName }
+          },
+          data: {
+            title: 'Repair Request Accepted',
+            type: 'REPAIR_ACCEPTED',
+            message: `Repair request for ${request.deviceName} (${request.ownerName || 'Customer'}) has been accepted at ${request.branch || 'Tagoloan'} branch.${assignedTech}`
+          }
+        });
+      } else if (action === 'REJECT' || updateData.progress === 'Rejected') {
+        await prisma.notification.updateMany({
+          where: {
+            type: 'REPAIR_REQUEST',
+            branch: { equals: request.branch || 'Tagoloan', mode: 'insensitive' },
+            message: { contains: request.deviceName }
+          },
+          data: {
+            title: 'Repair Request Rejected',
+            type: 'REPAIR_REJECTED',
+            message: `Repair request for ${request.deviceName} (${request.ownerName || 'Customer'}) was rejected at ${request.branch || 'Tagoloan'} branch.`
+          }
+        });
+      }
+    } catch (updateNotifErr) {
+      console.error('Error updating staff notifications for repair request status:', updateNotifErr);
+    }
+
     // Notify assigned technician if assigned
     if (request.technician) {
       try {

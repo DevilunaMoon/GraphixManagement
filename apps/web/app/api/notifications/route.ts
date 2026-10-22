@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, etc.
     if (isSuperAdmin || isAdmin || isCashier) {
-      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY'] };
+      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR_ACCEPTED', 'REPAIR_REJECTED', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY'] };
     }
 
     // Branch filtering
