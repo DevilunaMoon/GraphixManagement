@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCheck, Clock, Wrench, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Bell, CheckCheck, Clock, Wrench, RefreshCw, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 interface NotificationItem {
@@ -19,17 +19,27 @@ export default function TechnicianNotifications() {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = async () => {
+  // Pagination states (10 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 10;
+
+  const fetchNotifications = async (pageToFetch = currentPage) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/notifications?limit=50');
+      const res = await fetch(`/api/notifications?page=${pageToFetch}&limit=${itemsPerPage}`);
       const data = await res.json();
       if (data && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
         setUnreadCount(data.unreadCount || 0);
+        setTotalPages(data.totalPages || 1);
+        setTotalCount(data.totalCount || 0);
       } else if (Array.isArray(data)) {
         setNotifications(data);
         setUnreadCount(data.filter((n: any) => !n.isRead).length);
+        setTotalPages(Math.ceil(data.length / itemsPerPage) || 1);
+        setTotalCount(data.length);
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
@@ -39,26 +49,51 @@ export default function TechnicianNotifications() {
   };
 
   useEffect(() => {
-    fetchNotifications();
-  }, []);
+    fetchNotifications(currentPage);
+  }, [currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}`, { method: 'PATCH' });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'READ' })
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notificationsUpdated'));
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to mark notification as read:', err);
     }
   };
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'POST' });
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true })
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notificationsUpdated'));
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to mark all notifications as read:', err);
     }
   };
 
@@ -98,7 +133,7 @@ export default function TechnicianNotifications() {
             </button>
           )}
           <button
-            onClick={fetchNotifications}
+            onClick={() => fetchNotifications(currentPage)}
             disabled={loading}
             className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer border-none"
             title="Refresh"
@@ -160,6 +195,41 @@ export default function TechnicianNotifications() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-purple-100">
+          <span className="text-xs font-semibold text-gray-500">
+            Showing <span className="text-gray-900 font-bold">{totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="text-gray-900 font-bold">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of <span className="text-gray-900 font-bold">{totalCount}</span> notifications
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-3 bg-[#FAF7FF] px-3.5 py-1.5 rounded-xl border border-[#E9D8FD]">
+              <button
+                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                disabled={currentPage === 1 || loading}
+                className="w-8 h-8 rounded-lg bg-white border border-[#E9D8FD] text-[#5b4a7a] hover:text-[#9333EA] hover:border-[#9333EA] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#5b4a7a] disabled:hover:border-[#E9D8FD] flex justify-center items-center cursor-pointer transition-all shadow-2xs"
+                title="Previous Page"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <span className="font-semibold text-xs text-[#5b4a7a] px-1">
+                Page <span className="text-[#1F1728] font-bold">{currentPage}</span> of <span className="text-[#1F1728] font-bold">{totalPages}</span>
+              </span>
+
+              <button
+                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                disabled={currentPage === totalPages || loading}
+                className="w-8 h-8 rounded-lg bg-white border border-[#E9D8FD] text-[#5b4a7a] hover:text-[#9333EA] hover:border-[#9333EA] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[#5b4a7a] disabled:hover:border-[#E9D8FD] flex justify-center items-center cursor-pointer transition-all shadow-2xs"
+                title="Next Page"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </main>

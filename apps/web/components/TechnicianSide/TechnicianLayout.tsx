@@ -117,7 +117,17 @@ function TechnicianLayoutContent({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchActiveCounts();
     const interval = setInterval(fetchActiveCounts, 12000);
-    return () => clearInterval(interval);
+
+    const handleNotificationsUpdated = () => {
+      fetchActiveCounts();
+    };
+
+    window.addEventListener('notificationsUpdated', handleNotificationsUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificationsUpdated', handleNotificationsUpdated);
+    };
   }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
