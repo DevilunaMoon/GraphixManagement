@@ -233,6 +233,20 @@ export default function TechnicianInventory() {
     return { all: sparePartsOnly.length, low, out };
   }, [sparePartsOnly, activeBranch]);
 
+  const handleCloseAndResetModal = () => {
+    setIsAddModalOpen(false);
+    setAddPartName('');
+    setAddCompatibleModel('');
+    setAddCategory(PART_CATEGORIES[1]);
+    setAddStock('10');
+    setAddCost('');
+    setAddPrice('');
+    setAddImageFile(null);
+    setAddImagePreview(null);
+    setAddModalError(null);
+    setAddModalSuccess(null);
+  };
+
   // Handle Add Part
   const handleAddPartSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -281,15 +295,7 @@ export default function TechnicianInventory() {
       if (res.ok) {
         setAddModalSuccess('Spare part added successfully to branch inventory!');
         setTimeout(() => {
-          setIsAddModalOpen(false);
-          setAddPartName('');
-          setAddCompatibleModel('');
-          setAddCost('');
-          setAddPrice('');
-          setAddStock('10');
-          setAddImageFile(null);
-          setAddImagePreview(null);
-          setAddModalSuccess(null);
+          handleCloseAndResetModal();
           fetchInventory();
         }, 1200);
       } else {
@@ -617,12 +623,6 @@ export default function TechnicianInventory() {
                   <p className="text-xs text-gray-500 m-0">Add replacement part to {activeBranch} branch inventory</p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             {addModalError && (
@@ -766,7 +766,7 @@ export default function TechnicianInventory() {
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={handleCloseAndResetModal}
                   disabled={isSubmitting}
                   className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 cursor-pointer bg-white"
                 >
