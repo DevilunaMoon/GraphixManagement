@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../../../lib/cloudinary';
-import { getSession } from '../../../../../lib/session';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,7 +39,7 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     }
 
     const contentType = req.headers.get('content-type') || '';
-    let updateData: any = {};
+    const updateData: any = {};
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
