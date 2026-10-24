@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { sendNotificationEmail } from '../../../../lib/email';
 import { uploadToCloudinary } from '../../../../lib/cloudinary';
+import { getSession } from '../../../../lib/session';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -58,6 +59,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getSession();
     const { id } = await params;
     const existingRequest = await prisma.repairRequest.findUnique({
       where: { id }
@@ -257,8 +259,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       console.error('Error updating staff notifications for repair request status:', updateNotifErr);
     }
 
-    // Notify assigned technician ONLY if newly assigned or technician changed
-    if (isNewlyAssignedTechnician && request.technician) {
+    // Notify assigned technician ONLY if newly assigned by someone else (e.g. Admin or Cashier dispatching a job)
+    // Never notify if the action is done by the technician themselves in their own workbench
+    const isActorTheTechnician = session?.role === 'TECHNICIAN' || 
+      (Boolean(session?.name && newTech && session.name.trim().toLowerCase() === newTech));
+
+    if (isNewlyAssignedTechnician && request.technician && !isActorTheTechnician) {
       try {
         const techUser = await prisma.user.findFirst({
           where: {
@@ -266,7 +272,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             role: 'TECHNICIAN'
           }
         });
-        if (techUser) {
+        if (techUser && techUser.id !== session?.userId) {
           await prisma.notification.create({
             data: {
               userId: techUser.id,
