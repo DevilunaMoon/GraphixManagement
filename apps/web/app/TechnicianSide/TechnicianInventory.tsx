@@ -63,6 +63,7 @@ export default function TechnicianInventory() {
   const [addModalError, setAddModalError] = useState<string | null>(null);
   const [addModalSuccess, setAddModalSuccess] = useState<string | null>(null);
 
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const activeBranch = technician?.branch || 'Tagoloan';
 
   const fetchInventory = async () => {
@@ -72,6 +73,17 @@ export default function TechnicianInventory() {
       if (profRes.ok) {
         const prof = await profRes.json();
         setTechnician(prof);
+      }
+
+      // Fetch categories
+      try {
+        const catRes = await fetch('/api/categories?t=' + Date.now());
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          if (Array.isArray(catData)) setCategories(catData);
+        }
+      } catch (cErr) {
+        console.warn('Could not load categories:', cErr);
       }
 
       const res = await fetch(`/api/devices?limit=100&branch=${encodeURIComponent(activeBranch)}&t=${Date.now()}`);
@@ -236,11 +248,24 @@ export default function TechnicianInventory() {
     const formData = new FormData();
     formData.append('deviceName', addPartName.trim());
     formData.append('deviceType', 'Spare Part');
+    formData.append('type', 'Spare Part');
     formData.append('deviceSpecs', `Compatible: ${addCompatibleModel.trim() || 'Universal'} | Category: ${addCategory}`);
     formData.append('deviceStocks', addStock || '0');
     formData.append('devicePrice', addPrice || '0');
     formData.append('deviceCost', addCost || '0');
     formData.append('branch', activeBranch);
+
+    // Link category if found
+    const catSearch = (addCategory || '').toLowerCase();
+    const matchingCat = categories.find(c => 
+      c.name.toLowerCase() === catSearch ||
+      c.name.toLowerCase().includes('spare') ||
+      c.name.toLowerCase().includes('part')
+    );
+    if (matchingCat) {
+      formData.append('deviceCategory', matchingCat.id);
+      formData.append('categoryId', matchingCat.id);
+    }
 
     if (addImageFile) {
       formData.append('deviceImage', addImageFile);
