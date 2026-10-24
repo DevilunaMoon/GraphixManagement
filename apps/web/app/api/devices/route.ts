@@ -312,9 +312,9 @@ export async function POST(req: Request) {
 
     const name = formData.get('deviceName') as string;
     const priceStr = formData.get('devicePrice') as string;
-    const costStr = formData.get('deviceCost') as string;
+    const costStr = (formData.get('deviceCost') as string) || (formData.get('cost') as string) || '0';
     const stockStr = formData.get('deviceStocks') as string;
-    const categoryId = formData.get('deviceCategory') as string;
+    const categoryIdInput = (formData.get('deviceCategory') as string) || (formData.get('categoryId') as string);
     const specs = formData.get('deviceSpecs') as string;
     const asLowAs = formData.get('deviceAsLowAs') as string;
     const warranty = formData.get('deviceWarranty') as string;
@@ -332,6 +332,24 @@ export async function POST(req: Request) {
       try {
         variations = JSON.parse(variationsStr);
       } catch (e) { }
+    }
+
+    let categoryId = categoryIdInput;
+    if (!categoryId) {
+      try {
+        const spareCatName = type === 'Spare Part' ? 'Spare Parts' : 'General';
+        let defaultCat = await prisma.category.findFirst({
+          where: { name: { in: ['Spare Parts', 'Spare Part', 'Repair Materials', 'Materials', spareCatName], mode: 'insensitive' } }
+        });
+        if (!defaultCat) {
+          defaultCat = await prisma.category.create({
+            data: { name: spareCatName }
+          });
+        }
+        categoryId = defaultCat.id;
+      } catch (catErr) {
+        console.error('Error auto-resolving category:', catErr);
+      }
     }
 
     if (!name || !priceStr || !costStr || !stockStr || !categoryId) {
