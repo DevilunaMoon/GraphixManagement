@@ -45,10 +45,8 @@ export default function AdminInventory() {
         setActionMenuPosition(null);
       }
     };
-    window.addEventListener('scroll', handleCloseMenu, true);
     window.addEventListener('resize', handleCloseMenu);
     return () => {
-      window.removeEventListener('scroll', handleCloseMenu, true);
       window.removeEventListener('resize', handleCloseMenu);
     };
   }, [activeActionMenuId]);
@@ -1538,9 +1536,9 @@ export default function AdminInventory() {
       </div>
 
       {/* Main Model-Based Inventory Table with Expandable Storage Variants */}
-      <div className={`bg-white/95 backdrop-blur-md border-2 ${styles.borderMain} rounded-2xl overflow-hidden shadow-sm flex flex-col`}>
+      <div className={`bg-white border-2 ${styles.borderMain} rounded-2xl shadow-sm flex flex-col`}>
         {/* Desktop Table View */}
-        <div className="hidden md:block w-full overflow-x-auto">
+        <div className="hidden md:block w-full overflow-x-auto rounded-2xl">
           <table className="w-full border-collapse text-left min-w-[750px]">
             <thead>
               <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
