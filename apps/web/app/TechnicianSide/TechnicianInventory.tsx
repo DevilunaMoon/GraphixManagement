@@ -5,7 +5,7 @@ import {
   Package, Search, RefreshCw, AlertTriangle, CheckCircle2, 
   Wrench, Plus, ChevronLeft, ChevronRight, Filter, X, 
   Layers, DollarSign, Smartphone, Sparkles, Box, ShieldCheck, Tag,
-  Pencil, Trash2
+  Pencil, Trash2, MoreVertical
 } from 'lucide-react';
 
 interface SparePartItem {
@@ -81,6 +81,10 @@ export default function TechnicianInventory() {
 
   // Delete State
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  // 3-dots Action Menu
+  const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
+  const [actionMenuPosition, setActionMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const activeBranch = technician?.branch || 'Tagoloan';
@@ -707,26 +711,77 @@ export default function TechnicianInventory() {
                         </span>
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions (3 Vertical Dots Dropdown) */}
                       <td className="py-3.5 px-6 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                        <div className="relative inline-block text-center">
                           <button
                             type="button"
-                            onClick={() => handleOpenEditModal(item)}
-                            className="p-1.5 rounded-lg text-purple-700 bg-purple-50 hover:bg-purple-100 hover:text-purple-900 border border-purple-200 transition-colors cursor-pointer shadow-xs"
-                            title="Edit Part & Stock"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (activeActionMenuId === item.id) {
+                                setActiveActionMenuId(null);
+                                setActionMenuPosition(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setActionMenuPosition({
+                                  top: rect.bottom + 6,
+                                  left: Math.max(10, rect.right - 145),
+                                });
+                                setActiveActionMenuId(item.id);
+                              }
+                            }}
+                            className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                              activeActionMenuId === item.id
+                                ? 'bg-[#8b00cc] text-white border-[#8b00cc] shadow-sm'
+                                : 'text-gray-500 hover:text-purple-900 hover:bg-purple-50 border-gray-200 bg-white'
+                            }`}
+                            title="Actions"
                           >
-                            <Pencil size={14} />
+                            <MoreVertical size={16} />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeletePart(item.id, item.name)}
-                            disabled={isDeleting === item.id}
-                            className="p-1.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 border border-red-200 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
-                            title="Delete Part"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+
+                          {activeActionMenuId === item.id && actionMenuPosition && (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-40" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveActionMenuId(null);
+                                  setActionMenuPosition(null);
+                                }} 
+                              />
+                              <div 
+                                className="fixed w-36 bg-white rounded-2xl shadow-xl border border-purple-100 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left"
+                                style={{ top: `${actionMenuPosition.top}px`, left: `${actionMenuPosition.left}px` }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    setActionMenuPosition(null);
+                                    handleOpenEditModal(item);
+                                  }}
+                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                >
+                                  <Pencil size={14} className="text-purple-600" />
+                                  <span>Edit</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveActionMenuId(null);
+                                    setActionMenuPosition(null);
+                                    handleDeletePart(item.id, item.name);
+                                  }}
+                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                >
+                                  <Trash2 size={14} className="text-red-500" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
