@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
+import MaterialBreakdownEditor, { MaterialItem } from '../../components/Repair/MaterialBreakdownEditor';
 import imageCompression from 'browser-image-compression';
 
 interface DeviceItem {
@@ -649,18 +650,28 @@ export default function TechnicianMonitoring() {
 
       {/* 1. View Intake & Material Breakdown Modal */}
       {viewDetailsOpen && deviceToView && (() => {
-        let items: { item: string; cost: number }[] = [];
+        let items: MaterialItem[] = [];
+        let parsedMethod: 'Cash' | 'GCash' | 'Split' = 'Cash';
+        let parsedCash = '';
+        let parsedGcash = '';
         if (deviceToView.materials) {
           try {
-            if (deviceToView.materials.trim().startsWith('[')) {
-              items = JSON.parse(deviceToView.materials);
-            } else if (deviceToView.materials.trim().startsWith('{')) {
-              const parsed = JSON.parse(deviceToView.materials);
+            const parsed = JSON.parse(deviceToView.materials);
+            if (Array.isArray(parsed)) {
+              items = parsed;
+            } else if (parsed && typeof parsed === 'object') {
               items = parsed.items || [];
+              if (parsed.paymentMethod) parsedMethod = parsed.paymentMethod;
+              if (parsed.cashAmount !== undefined) parsedCash = String(parsed.cashAmount);
+              if (parsed.gcashAmount !== undefined) parsedGcash = String(parsed.gcashAmount);
             }
           } catch (e) {
             console.error(e);
           }
+        }
+        if (!parsedCash && !parsedGcash && deviceToView.downpayment) {
+          if (parsedMethod === 'GCash') parsedGcash = deviceToView.downpayment;
+          else parsedCash = deviceToView.downpayment;
         }
 
         const { parsed, cleanNotes } = parseRepairDetails(deviceToView.repairHistory);
@@ -717,21 +728,79 @@ export default function TechnicianMonitoring() {
                 </div>
               </div>
 
+              {/* Customer Contact & Account Info */}
+              {(parsed?.customerEmail || parsed?.customerPhone || deviceToView.ownerName || deviceToView.user?.email || deviceToView.user?.phone) && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                    <User size={14} className="text-[#bd00ff]" />
+                    Customer Information (Auto-retrieved)
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-700">
+                    <div><strong className="text-black">Full Name:</strong> {deviceToView.ownerName || parsed?.customerName || deviceToView.user?.name || 'Walk-in Customer'}</div>
+                    <div><strong className="text-black">Email:</strong> {parsed?.customerEmail || deviceToView.user?.email || 'Not provided'}</div>
+                    <div><strong className="text-black">Phone:</strong> {parsed?.customerPhone || deviceToView.user?.phone || 'Not provided'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Structured Device Details */}
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
+                <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                  <Smartphone size={14} className="text-[#bd00ff]" />
+                  Device & Diagnostic Details
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-700">
+                  <div><strong className="text-black">Brand:</strong> {parsed?.brand || 'Apple'}</div>
+                  <div><strong className="text-black">Device Type:</strong> {parsed?.deviceType || 'Smartphone'}</div>
+                  <div><strong className="text-black">IMEI/Serial:</strong> {parsed?.imei || 'N/A'}</div>
+                  <div><strong className="text-black">Assigned Tech:</strong> {deviceToView.technician || 'Pending'}</div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700 pt-2 border-t border-gray-200">
+                  <div><strong className="text-black">Working Condition:</strong> {parsed?.isWorking || 'Yes'}</div>
+                  <div><strong className="text-black">Visible Damage:</strong> {parsed?.hasPhysicalDamage || 'No'}</div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                  <div><strong className="text-black">Reported Issue:</strong> {parsed?.problem ? `${parsed.problem} - ${parsed.problemDescription || ''}` : (deviceToView.cause || 'Diagnostic required')}</div>
+                </div>
+
+                {parsed?.suggestedRepair && (
+                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                    <div><strong className="text-black">Suggested Repair:</strong> {parsed.suggestedRepair}</div>
+                  </div>
+                )}
+
+                {parsed?.suggestionForRepair && (
+                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                    <div><strong className="text-black">Suggestion for Repair:</strong> {parsed.suggestionForRepair}</div>
+                  </div>
+                )}
+
+                {cleanNotes && (
+                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
+                    <div><strong className="text-black">Repair History Notes:</strong> {cleanNotes}</div>
+                  </div>
+                )}
+              </div>
+
               {/* Photos Gallery */}
               {photosList.length > 0 && (
-                <div>
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 mb-2.5">
-                    Attached Photos ({photosList.length})
-                  </h4>
-                  <div className="flex flex-wrap gap-2.5">
-                    {photosList.map((imgUrl, idx) => (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                    <Camera size={14} className="text-[#bd00ff]" />
+                    Uploaded Device Photos ({photosList.length})
+                  </span>
+                  <div className="flex flex-wrap gap-3 items-center pt-1">
+                    {photosList.map((photo, idx) => (
                       <div 
-                        key={idx}
-                        onClick={() => setLightboxImage(imgUrl)}
-                        className="w-20 h-20 rounded-xl border border-[#E9D8FD] overflow-hidden bg-gray-50 cursor-pointer hover:border-purple-500 transition-all group relative"
+                        key={idx} 
+                        onClick={() => setLightboxImage(photo)}
+                        className="w-24 h-24 rounded-2xl border-2 border-purple-200 overflow-hidden hover:scale-105 transition-transform bg-white shadow-sm flex items-center justify-center p-1 cursor-pointer group relative"
+                        title="Click to zoom image"
                       >
-                        <img src={imgUrl} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                        <img src={photo} alt={`Device photo ${idx+1}`} className="w-full h-full object-contain" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold rounded-2xl">
                           Zoom
                         </div>
                       </div>
@@ -740,57 +809,46 @@ export default function TechnicianMonitoring() {
                 </div>
               )}
 
-              {/* Diagnosis & Notes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                  <span className="text-xs font-bold text-gray-700 block mb-1">Reported Problem / Cause</span>
-                  <p className="text-xs text-gray-600 m-0 whitespace-pre-wrap">
-                    {deviceToView.cause || parsed?.problemDescription || 'No diagnosis logged yet.'}
-                  </p>
-                </div>
-                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200">
-                  <span className="text-xs font-bold text-gray-700 block mb-1">Customer / Service Notes</span>
-                  <p className="text-xs text-gray-600 m-0 whitespace-pre-wrap">
-                    {cleanNotes || 'No additional notes provided.'}
-                  </p>
-                </div>
-              </div>
+              {/* Render Read-Only Material Breakdown */}
+              <MaterialBreakdownEditor
+                readOnly
+                items={items}
+                paymentMethod={parsedMethod}
+                cashAmount={parsedCash}
+                gcashAmount={parsedGcash}
+                downpayment={deviceToView.downpayment || '0'}
+                deviceName={deviceToView.deviceName}
+                customerName={deviceToView.ownerName || 'Walk-in Customer'}
+                branch={deviceToView.branch}
+              />
 
-              {/* Materials Breakdown */}
-              {items.length > 0 && (
-                <div className="border border-purple-100 rounded-2xl overflow-hidden">
-                  <div className="p-3 bg-purple-50 border-b border-purple-100 text-xs font-bold text-purple-900">
-                    Logged Materials & Parts Breakdown
-                  </div>
-                  <div className="divide-y divide-gray-100">
-                    {items.map((m, idx) => (
-                      <div key={idx} className="p-3 flex items-center justify-between text-xs">
-                        <span className="font-medium text-gray-800">{m.item}</span>
-                        <span className="font-bold text-purple-700">₱{(Number(m.cost) || 0).toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Proof Image */}
+              {/* Completion Proof Photo */}
               {deviceToView.proofImage && (
-                <div>
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500 mb-2">Completion Proof Photo</h4>
-                  <div 
-                    onClick={() => setLightboxImage(deviceToView.proofImage!)}
-                    className="w-32 h-32 rounded-2xl border border-emerald-200 overflow-hidden bg-emerald-50/50 cursor-pointer"
-                  >
-                    <img src={deviceToView.proofImage} alt="Completion Proof" className="w-full h-full object-cover" />
+                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <CheckCircle2 size={14} className="text-emerald-600" />
+                    Completion Proof Photo
+                  </span>
+                  <div className="pt-1">
+                    <div 
+                      onClick={() => setLightboxImage(deviceToView.proofImage!)}
+                      className="w-24 h-24 rounded-2xl border-2 border-emerald-300 overflow-hidden hover:scale-105 transition-transform bg-white shadow-sm flex items-center justify-center p-1 cursor-pointer group relative"
+                      title="Click to zoom completion proof"
+                    >
+                      <img src={deviceToView.proofImage} alt="Completion Proof" className="w-full h-full object-contain" />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold rounded-2xl">
+                        Zoom
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="flex justify-end pt-2 border-t border-gray-100">
+              <div className="flex justify-end pt-3 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setViewDetailsOpen(false)}
-                  className="px-6 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs cursor-pointer border-none"
+                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors cursor-pointer border-none"
                 >
                   Close
                 </button>
