@@ -260,7 +260,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     // Notify assigned technician ONLY if newly assigned by someone else (e.g. Admin or Cashier dispatching a job)
-    // Never notify if the action is done by the technician themselves in their own workbench
+    // Never notify with "New Repair Job Assigned" if the action is done by the technician themselves in their own workbench
     const isActorTheTechnician = session?.role === 'TECHNICIAN' || 
       (Boolean(session?.name && newTech && session.name.trim().toLowerCase() === newTech));
 
@@ -285,7 +285,33 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           });
         }
       } catch (techNotifErr) {
-        console.error('Error notifying assigned technician:', techNotifErr);
+        console.error('Error notifying assigned technician of assignment:', techNotifErr);
+      }
+    }
+
+    // Notify technician when repair progress is updated
+    if (isProgressChanged && progress && request.technician) {
+      try {
+        const techUser = await prisma.user.findFirst({
+          where: {
+            name: { equals: request.technician, mode: 'insensitive' },
+            role: 'TECHNICIAN'
+          }
+        });
+        if (techUser) {
+          await prisma.notification.create({
+            data: {
+              userId: techUser.id,
+              title: 'Repair Progress Updated',
+              message: `Progress for ${request.deviceName} (Owner: ${request.ownerName || 'Customer'}) was updated to "${progress}".`,
+              type: 'REPAIR_PROGRESS',
+              branch: request.branch || 'Tagoloan',
+              isRead: false
+            }
+          });
+        }
+      } catch (techProgressNotifErr) {
+        console.error('Error creating technician progress update notification:', techProgressNotifErr);
       }
     }
 
