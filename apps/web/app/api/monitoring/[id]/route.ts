@@ -59,6 +59,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const existingRequest = await prisma.repairRequest.findUnique({
+      where: { id }
+    });
+
+    if (!existingRequest) {
+      return NextResponse.json({ error: 'Repair request not found' }, { status: 404 });
+    }
+
     const contentType = req.headers.get('content-type') || '';
     
     let updateData: any = {};
@@ -163,10 +171,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       }
     });
 
-    // Notify customer on acceptance or rejection
+    // Compute changed flags
+    const isNewlyAccepted = (action === 'ACCEPT' || updateData.progress === 'Accepted') && existingRequest.progress !== 'Accepted';
+    const isNewlyRejected = (action === 'REJECT' || updateData.progress === 'Rejected') && existingRequest.progress !== 'Rejected';
+    const isProgressChanged = progress !== undefined && progress !== existingRequest.progress;
+
+    const prevTech = existingRequest.technician?.trim().toLowerCase() || '';
+    const newTech = request.technician?.trim().toLowerCase() || '';
+    const isNewlyAssignedTechnician = Boolean(newTech && (!prevTech || prevTech !== newTech));
+
+    // Notify customer on acceptance, rejection, or progress update
     if (request.userId) {
       try {
-        if (action === 'ACCEPT' || updateData.progress === 'Accepted') {
+        if (isNewlyAccepted) {
           const techMsg = request.technician ? ` Assigned Technician: ${request.technician}.` : '';
           await prisma.notification.create({
             data: {
@@ -178,12 +195,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
               isRead: false
             }
           });
-        } else if (action === 'REJECT' || updateData.progress === 'Rejected') {
+        } else if (isNewlyRejected) {
           await prisma.notification.create({
             data: {
               userId: request.userId,
               title: 'Repair Request Rejected',
               message: `Your repair request for ${request.deviceName} could not be accepted at this time.`,
+              type: 'REPAIR',
+              branch: request.branch || 'Tagoloan',
+              isRead: false
+            }
+          });
+        } else if (isProgressChanged && !['Accepted', 'Rejected'].includes(progress || '')) {
+          await prisma.notification.create({
+            data: {
+              userId: request.userId,
+              title: 'Repair Progress Updated',
+              message: `Your device ${request.deviceName} is now in "${progress}" stage.`,
               type: 'REPAIR',
               branch: request.branch || 'Tagoloan',
               isRead: false
@@ -197,7 +225,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     // Update existing branch staff notifications to REPAIR_ACCEPTED or REPAIR_REJECTED
     try {
-      if (action === 'ACCEPT' || updateData.progress === 'Accepted') {
+      if (isNewlyAccepted) {
         const assignedTech = request.technician ? ` (Assigned Tech: ${request.technician})` : '';
         await prisma.notification.updateMany({
           where: {
@@ -211,7 +239,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             message: `Repair request for ${request.deviceName} (${request.ownerName || 'Customer'}) has been accepted at ${request.branch || 'Tagoloan'} branch.${assignedTech}`
           }
         });
-      } else if (action === 'REJECT' || updateData.progress === 'Rejected') {
+      } else if (isNewlyRejected) {
         await prisma.notification.updateMany({
           where: {
             type: 'REPAIR_REQUEST',
@@ -229,8 +257,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       console.error('Error updating staff notifications for repair request status:', updateNotifErr);
     }
 
-    // Notify assigned technician if assigned
-    if (request.technician) {
+    // Notify assigned technician ONLY if newly assigned or technician changed
+    if (isNewlyAssignedTechnician && request.technician) {
       try {
         const techUser = await prisma.user.findFirst({
           where: {
@@ -260,7 +288,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const baseUrl = `${protocol}://${host}`;
 
-    if (progress !== undefined && request.user && request.user.email) {
+    if (isProgressChanged && progress && request.user && request.user.email) {
       await sendNotificationEmail(request.user.email, request.deviceName, progress, false, baseUrl);
     }
 
