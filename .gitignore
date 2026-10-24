@@ -20,6 +20,9 @@ dist/
 *.key
 *.cert
 *.sqlite
+packages/database/prisma/seed.ts
+seed.sql
+seed-categories.sql
 
 # OS Generated Files
 .DS_Store
