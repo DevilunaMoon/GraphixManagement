@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Package, Search, RefreshCw, AlertTriangle, CheckCircle2, 
   Wrench, Plus, ChevronLeft, ChevronRight, Filter, X, 
-  Layers, DollarSign, Smartphone, Sparkles, Box, ShieldCheck, Tag
+  Layers, DollarSign, Smartphone, Sparkles, Box, ShieldCheck, Tag,
+  Pencil, Trash2
 } from 'lucide-react';
 
 interface SparePartItem {
@@ -62,6 +63,24 @@ export default function TechnicianInventory() {
   const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
   const [addModalError, setAddModalError] = useState<string | null>(null);
   const [addModalSuccess, setAddModalSuccess] = useState<string | null>(null);
+
+  // Edit Spare Part Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingPart, setEditingPart] = useState<SparePartItem | null>(null);
+  const [editPartName, setEditPartName] = useState('');
+  const [editCompatibleModel, setEditCompatibleModel] = useState('');
+  const [editCategory, setEditCategory] = useState(PART_CATEGORIES[1]);
+  const [editStock, setEditStock] = useState('0');
+  const [editCost, setEditCost] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editModalError, setEditModalError] = useState<string | null>(null);
+  const [editModalSuccess, setEditModalSuccess] = useState<string | null>(null);
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+
+  // Delete State
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const activeBranch = technician?.branch || 'Tagoloan';
@@ -247,6 +266,127 @@ export default function TechnicianInventory() {
     setAddModalSuccess(null);
   };
 
+  // Open Edit Modal
+  const handleOpenEditModal = (item: SparePartItem) => {
+    setEditingPart(item);
+    setEditPartName(item.name || '');
+
+    const specs = item.specs || '';
+    const compMatch = specs.match(/Compatible:\s*([^|]+)/i);
+    setEditCompatibleModel(compMatch && compMatch[1] ? compMatch[1].trim() : (specs.trim() || ''));
+
+    const catMatch = specs.match(/Category:\s*(.+)$/i);
+    const catName = catMatch && catMatch[1] 
+      ? catMatch[1].trim() 
+      : (typeof item.category === 'string' ? item.category : item.category?.name || PART_CATEGORIES[1]);
+    setEditCategory(catName);
+
+    const branchLower = activeBranch.toLowerCase();
+    const currentStock = branchLower === 'villanueva'
+      ? (item.villanuevaStock ?? item.stock ?? 0)
+      : branchLower === 'jasaan'
+      ? (item.jasaanStock ?? item.stock ?? 0)
+      : (item.tagoloanStock ?? item.stock ?? 0);
+    setEditStock(String(currentStock));
+
+    setEditCost(item.cost !== undefined && item.cost !== null ? String(item.cost) : '');
+    setEditPrice(item.price !== undefined && item.price !== null ? String(item.price) : '');
+    setEditImageFile(null);
+    setEditImagePreview(item.image || null);
+    setEditModalError(null);
+    setEditModalSuccess(null);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Edit Part Submit
+  const handleEditPartSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPart) return;
+    if (!editPartName.trim()) {
+      setEditModalError('Part / Material name is required');
+      return;
+    }
+
+    setIsEditSubmitting(true);
+    setEditModalError(null);
+    setEditModalSuccess(null);
+
+    const formData = new FormData();
+    formData.append('deviceName', editPartName.trim());
+    formData.append('deviceType', 'Spare Part');
+    formData.append('type', 'Spare Part');
+    formData.append('deviceSpecs', `Compatible: ${editCompatibleModel.trim() || 'Universal'} | Category: ${editCategory}`);
+    formData.append('deviceStocks', editStock || '0');
+    formData.append('devicePrice', editPrice || '0');
+    formData.append('deviceCost', editCost || '0');
+    formData.append('branch', activeBranch);
+
+    const catSearch = (editCategory || '').toLowerCase();
+    const matchingCat = categories.find(c => 
+      c.name.toLowerCase() === catSearch ||
+      c.name.toLowerCase().includes('spare') ||
+      c.name.toLowerCase().includes('part')
+    );
+    if (matchingCat) {
+      formData.append('deviceCategory', matchingCat.id);
+      formData.append('categoryId', matchingCat.id);
+    }
+
+    if (editImageFile) {
+      formData.append('deviceImage', editImageFile);
+      formData.append('deviceImages', editImageFile);
+    } else if (editImagePreview) {
+      formData.append('existingImages', JSON.stringify([editImagePreview]));
+    }
+
+    try {
+      const res = await fetch(`/api/devices/${editingPart.id}`, {
+        method: 'PUT',
+        body: formData
+      });
+
+      if (res.ok) {
+        setEditModalSuccess('Spare part updated successfully!');
+        setTimeout(() => {
+          setIsEditModalOpen(false);
+          setEditingPart(null);
+          setEditModalSuccess(null);
+          fetchInventory();
+        }, 1000);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setEditModalError(errData.error || 'Failed to update spare part.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setEditModalError(err.message || 'Error updating spare part.');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  // Handle Delete Part
+  const handleDeletePart = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove "${name}" from spare parts inventory?`)) {
+      return;
+    }
+    setIsDeleting(id);
+    try {
+      const res = await fetch(`/api/devices/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchInventory();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to delete spare part');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting spare part');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
   // Handle Add Part
   const handleAddPartSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -429,13 +569,14 @@ export default function TechnicianInventory() {
                 <th className="py-4 px-4 text-center">Category</th>
                 <th className="py-4 px-4 text-center">{activeBranch} Stock</th>
                 <th className="py-4 px-4 text-right">Unit Price</th>
-                <th className="py-4 px-6 text-center">Status</th>
+                <th className="py-4 px-4 text-center">Status</th>
+                <th className="py-4 px-6 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={7} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-9 h-9 border-3 border-purple-200 border-t-[#8b00cc] rounded-full animate-spin"></div>
                       <span className="text-gray-500 font-semibold text-xs">
@@ -446,7 +587,7 @@ export default function TechnicianInventory() {
                 </tr>
               ) : paginatedParts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={7} className="py-16 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto p-4">
                       <div className="w-14 h-14 rounded-2xl bg-purple-50 text-[#8b00cc] flex items-center justify-center mb-1">
                         <Box size={28} />
@@ -556,7 +697,7 @@ export default function TechnicianInventory() {
                       </td>
 
                       {/* Status Badge */}
-                      <td className="py-3.5 px-6 text-center">
+                      <td className="py-3.5 px-4 text-center">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                           isOut ? 'bg-red-100 text-red-700' :
                           isLow ? 'bg-amber-100 text-amber-800' :
@@ -564,6 +705,29 @@ export default function TechnicianInventory() {
                         }`}>
                           {isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
                         </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-6 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditModal(item)}
+                            className="p-1.5 rounded-lg text-purple-700 bg-purple-50 hover:bg-purple-100 hover:text-purple-900 border border-purple-200 transition-colors cursor-pointer shadow-xs"
+                            title="Edit Part & Stock"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePart(item.id, item.name)}
+                            disabled={isDeleting === item.id}
+                            className="p-1.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 border border-red-200 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                            title="Delete Part"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -778,6 +942,181 @@ export default function TechnicianInventory() {
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold text-xs hover:from-[#7a00b3] hover:to-[#a900e6] cursor-pointer border-none shadow-md shadow-purple-500/20 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Saving Part...' : 'Save Part to Inventory'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Spare Part Modal */}
+      {isEditModalOpen && editingPart && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 border border-purple-100 shadow-2xl animate-in zoom-in-95 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-purple-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                  <Pencil size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 m-0">Edit Spare Part / Material</h3>
+                  <p className="text-xs text-gray-500 m-0">Update inventory details and stock for {activeBranch} branch</p>
+                </div>
+              </div>
+            </div>
+
+            {editModalError && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+                {editModalError}
+              </div>
+            )}
+
+            {editModalSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 size={16} />
+                <span>{editModalSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleEditPartSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">
+                  Part / Material Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. LCD Screen, iPhone Battery, Charging Flex"
+                  value={editPartName}
+                  onChange={(e) => setEditPartName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    Compatible Device / Model
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. iPhone 13, Galaxy S21"
+                    value={editCompatibleModel}
+                    onChange={(e) => setEditCompatibleModel(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  >
+                    {PART_CATEGORIES.filter(c => c !== 'All Categories').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    {activeBranch} Stock (pcs) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={editStock}
+                    onChange={(e) => setEditStock(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    Cost Price (₱)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={editCost}
+                    onChange={(e) => setEditCost(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    Selling Price (₱) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="0"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1">
+                  Part Photo (Optional)
+                </label>
+                <div className="flex items-center gap-3">
+                  {editImagePreview ? (
+                    <div className="relative w-14 h-14 rounded-xl border border-purple-200 overflow-hidden shrink-0">
+                      <img src={editImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => { setEditImageFile(null); setEditImagePreview(null); }}
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-0.5 cursor-pointer border-none"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ) : null}
+                  <label className="flex-1 px-3 py-2 border-2 border-dashed border-gray-200 hover:border-purple-300 rounded-xl text-center cursor-pointer bg-gray-50/50 hover:bg-purple-50/30 transition-colors">
+                    <span className="text-xs text-purple-700 font-bold">
+                      {editImagePreview ? 'Change Part Photo' : '+ Upload Part Photo'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setEditImageFile(file);
+                          setEditImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditModalOpen(false); setEditingPart(null); }}
+                  disabled={isEditSubmitting}
+                  className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-bold text-xs hover:bg-gray-50 cursor-pointer bg-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditSubmitting}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold text-xs hover:from-[#7a00b3] hover:to-[#a900e6] cursor-pointer border-none shadow-md shadow-purple-500/20 disabled:opacity-50"
+                >
+                  {isEditSubmitting ? 'Saving Changes...' : 'Save Changes'}
                 </button>
               </div>
             </form>

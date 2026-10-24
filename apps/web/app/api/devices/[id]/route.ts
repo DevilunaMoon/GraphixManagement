@@ -140,11 +140,12 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
     const { id } = params;
     const formData = await req.formData();
 
+    const session = await getSession();
     const name = formData.get('deviceName') as string;
     const priceStr = formData.get('devicePrice') as string;
     const costStr = formData.get('deviceCost') as string;
     const stockStr = formData.get('deviceStocks') as string;
-    const categoryId = formData.get('deviceCategory') as string;
+    const categoryId = (formData.get('deviceCategory') as string) || (formData.get('categoryId') as string);
     const specs = formData.get('deviceSpecs') as string;
     const asLowAs = formData.get('deviceAsLowAs') as string;
     const warranty = formData.get('deviceWarranty') as string;
@@ -302,6 +303,66 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
                 }
               });
             }
+          }
+        }
+      } else if (stockStr) {
+        const branchParam = (formData.get('branch') as string) || session?.branch || 'Tagoloan';
+        const newStock = parseInt(stockStr, 10);
+
+        const stdVar = await tx.deviceVariation.findFirst({
+          where: { deviceId: id }
+        });
+
+        if (stdVar) {
+          await tx.deviceVariation.update({
+            where: { id: stdVar.id },
+            data: {
+              ...(name && { name }),
+              ...(priceStr && { price: parseFloat(priceStr) }),
+              ...(costStr && { cost: parseFloat(costStr) }),
+              stock: newStock
+            }
+          });
+
+          const bs = await tx.branchStock.findFirst({
+            where: { deviceId: id, branch: branchParam }
+          });
+          if (bs) {
+            await tx.branchStock.update({
+              where: { id: bs.id },
+              data: { stock: newStock }
+            });
+          } else {
+            await tx.branchStock.create({
+              data: {
+                deviceId: id,
+                variationId: stdVar.id,
+                branch: branchParam,
+                productId: stdVar.productId || formatProductId(name || updatedDevice.name, 'STD'),
+                stock: newStock,
+                sold: 0
+              }
+            });
+          }
+        } else {
+          const bs = await tx.branchStock.findFirst({
+            where: { deviceId: id, branch: branchParam }
+          });
+          if (bs) {
+            await tx.branchStock.update({
+              where: { id: bs.id },
+              data: { stock: newStock }
+            });
+          } else {
+            await tx.branchStock.create({
+              data: {
+                deviceId: id,
+                branch: branchParam,
+                productId: formatProductId(name || updatedDevice.name, 'STD'),
+                stock: newStock,
+                sold: 0
+              }
+            });
           }
         }
       }
