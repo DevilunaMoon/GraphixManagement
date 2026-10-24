@@ -44,21 +44,39 @@ export default function TechnicianNotifications() {
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      await fetch(`/api/notifications/${id}`, { method: 'PATCH' });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'READ' })
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notificationsUpdated'));
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to mark notification as read:', err);
     }
   };
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', { method: 'POST' });
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      const res = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true })
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notificationsUpdated'));
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to mark all notifications as read:', err);
     }
   };
 
