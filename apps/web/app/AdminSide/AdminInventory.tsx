@@ -1609,11 +1609,17 @@ export default function AdminInventory() {
                                 <button className="text-purple-700 bg-purple-100 hover:bg-purple-200 p-1.5 rounded-lg transition-transform">
                                   {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                 </button>
-                                <img 
-                                  src={prod.image || '/Images/Aula.jpg'} 
-                                  alt={prod.name} 
-                                  className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" 
-                                />
+                                {prod.image ? (
+                                  <img 
+                                    src={prod.image} 
+                                    alt={prod.name} 
+                                    className="w-10 h-10 object-cover rounded-lg border border-gray-200 shrink-0" 
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg border border-gray-200 bg-purple-50/50 text-purple-600 flex items-center justify-center shrink-0">
+                                    <Package size={18} />
+                                  </div>
+                                )}
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-bold text-gray-900 text-[0.95rem] hover:text-[#5c0099] transition-colors">
@@ -2016,11 +2022,17 @@ export default function AdminInventory() {
                   {/* Top Row: Thumbnail + Title + Badges + Action Menu */}
                   <div className="flex items-start justify-between gap-2.5">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <img 
-                        src={prod.image || '/Images/Aula.jpg'} 
-                        alt={prod.name} 
-                        className="w-12 h-12 object-cover rounded-xl border border-purple-100 shadow-xs shrink-0" 
-                      />
+                      {prod.image ? (
+                        <img 
+                          src={prod.image} 
+                          alt={prod.name} 
+                          className="w-12 h-12 object-cover rounded-xl border border-purple-100 shadow-xs shrink-0" 
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl border border-purple-100 bg-purple-50/50 text-purple-600 flex items-center justify-center shadow-xs shrink-0">
+                          <Package size={20} />
+                        </div>
+                      )}
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="font-bold text-gray-900 text-sm leading-snug truncate">
                           {prod.name}
@@ -4931,11 +4943,17 @@ export default function AdminInventory() {
                         className="bg-white rounded-2xl p-4 border border-purple-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-3 relative overflow-hidden"
                       >
                         <div className="flex items-start gap-3">
-                          <img 
-                            src={d.image || '/Images/Aula.jpg'} 
-                            alt={d.deviceName} 
-                            className="w-14 h-14 object-cover rounded-xl border border-gray-200 shrink-0 bg-gray-50"
-                          />
+                          {d.image ? (
+                            <img 
+                              src={d.image} 
+                              alt={d.deviceName} 
+                              className="w-14 h-14 object-cover rounded-xl border border-gray-200 shrink-0 bg-gray-50"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-xl border border-gray-200 bg-purple-50/50 text-purple-600 flex items-center justify-center shrink-0">
+                              <Package size={22} />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <h4 className="font-black text-sm text-gray-900 truncate m-0">{d.deviceName}</h4>

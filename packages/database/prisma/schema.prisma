@@ -437,4 +437,24 @@ model BranchDocumentation {
   @@index([createdAt])
 }
 
+model SparePart {
+  id               String   @id @default(cuid())
+  name             String
+  compatibleDevice String?
+  category         String   @default("Other Materials")
+  branch           String   @default("Tagoloan")
+  stock            Int      @default(0)
+  cost             Float    @default(0)
+  price            Float    @default(0)
+  image            String?
+  sku              String?
+  status           String   @default("In Stock")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([branch])
+  @@index([category])
+  @@index([name])
+}
+
 

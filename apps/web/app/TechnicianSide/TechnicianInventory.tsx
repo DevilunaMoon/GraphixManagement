@@ -11,15 +11,20 @@ import {
 interface SparePartItem {
   id: string;
   name: string;
-  type?: string;
-  price?: number;
-  cost?: number;
-  stock?: number;
-  specs?: string;
-  image?: string;
+  compatibleDevice?: string;
+  category?: string;
   branch?: string;
-  category?: { id: string; name: string } | string;
-  branchStocks?: { branch: string; stock: number }[];
+  stock?: number;
+  cost?: number;
+  price?: number;
+  image?: string;
+  sku?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Backward compatibility fields if needed
+  type?: string;
+  specs?: string;
   tagoloanStock?: number;
   villanuevaStock?: number;
   jasaanStock?: number;
@@ -55,7 +60,7 @@ export default function TechnicianInventory() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addPartName, setAddPartName] = useState('');
   const [addCompatibleModel, setAddCompatibleModel] = useState('');
-  const [addCategory, setAddCategory] = useState(PART_CATEGORIES[1]);
+  const [addCategory, setAddCategory] = useState<string>(PART_CATEGORIES[1] || 'Screen & Display');
   const [addStock, setAddStock] = useState('10');
   const [addCost, setAddCost] = useState('');
   const [addPrice, setAddPrice] = useState('');
@@ -69,7 +74,7 @@ export default function TechnicianInventory() {
   const [editingPart, setEditingPart] = useState<SparePartItem | null>(null);
   const [editPartName, setEditPartName] = useState('');
   const [editCompatibleModel, setEditCompatibleModel] = useState('');
-  const [editCategory, setEditCategory] = useState(PART_CATEGORIES[1]);
+  const [editCategory, setEditCategory] = useState<string>(PART_CATEGORIES[1] || 'Screen & Display');
   const [editStock, setEditStock] = useState('0');
   const [editCost, setEditCost] = useState('');
   const [editPrice, setEditPrice] = useState('');
@@ -86,33 +91,23 @@ export default function TechnicianInventory() {
   const [activeActionMenuId, setActiveActionMenuId] = useState<string | null>(null);
   const [actionMenuPosition, setActionMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const activeBranch = technician?.branch || 'Tagoloan';
 
   const fetchInventory = async () => {
     setLoading(true);
     try {
+      let currentBranch = 'Tagoloan';
       const profRes = await fetch('/api/profile');
       if (profRes.ok) {
         const prof = await profRes.json();
         setTechnician(prof);
+        if (prof?.branch) currentBranch = prof.branch;
       }
 
-      // Fetch categories
-      try {
-        const catRes = await fetch('/api/categories?t=' + Date.now());
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          if (Array.isArray(catData)) setCategories(catData);
-        }
-      } catch (cErr) {
-        console.warn('Could not load categories:', cErr);
-      }
-
-      const res = await fetch(`/api/devices?limit=100&branch=${encodeURIComponent(activeBranch)}&t=${Date.now()}`);
+      const res = await fetch(`/api/technician/spare-parts?branch=${encodeURIComponent(currentBranch)}&t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data) ? data : data?.devices || [];
+        const list = Array.isArray(data) ? data : [];
         setItems(list);
       }
     } catch (err) {
@@ -126,96 +121,26 @@ export default function TechnicianInventory() {
     fetchInventory();
   }, []);
 
-  /**
-   * Filter out complete retail devices (e.g. iPhone 11 Pro Max, finished phones/laptops/tablets)
-   * Only show genuine repair spare parts, replacement components, and materials.
-   */
-  const sparePartsOnly = useMemo(() => {
-    return items.filter((item) => {
-      const type = (item.type || '').toLowerCase();
-      const name = (item.name || '').toLowerCase();
-      const cat = typeof item.category === 'string' 
-        ? item.category.toLowerCase() 
-        : (item.category?.name || '').toLowerCase();
-
-      // If explicitly marked as Spare Part or Material
-      if (
-        type === 'spare part' || 
-        type === 'spare_part' || 
-        type === 'part' || 
-        type === 'material' || 
-        type === 'tool' ||
-        cat.includes('part') || 
-        cat.includes('material') ||
-        cat.includes('component')
-      ) {
-        return true;
-      }
-
-      // Check for retail phones / complete gadgets (e.g., iPhone 11 Pro Max, Smartphone, Laptop, Tablet)
-      const isRetailDevice = 
-        type === 'smartphone' || 
-        type === 'phone' || 
-        type === 'laptop' || 
-        type === 'tablet' ||
-        name === 'iphone 11 pro max' ||
-        cat.includes('smartphone') ||
-        cat.includes('phones');
-
-      if (isRetailDevice) {
-        // Exclude completely UNLESS it is specifically labeled as a component/part (e.g., "iPhone 11 Pro Max LCD Screen")
-        const isExplicitPart = 
-          name.includes('lcd') || 
-          name.includes('screen') || 
-          name.includes('battery') || 
-          name.includes('flex') || 
-          name.includes('port') || 
-          name.includes('glass') || 
-          name.includes('housing') || 
-          name.includes('camera') || 
-          name.includes('adhesive') || 
-          name.includes('speaker') || 
-          name.includes('ic') || 
-          name.includes('part') ||
-          name.includes('ribbon');
-
-        return isExplicitPart;
-      }
-
-      return true;
-    });
-  }, [items]);
-
   // Search & Filtered items
   const filteredParts = useMemo(() => {
-    return sparePartsOnly.filter((item) => {
+    return items.filter((item) => {
       const q = search.trim().toLowerCase();
       const name = (item.name || '').toLowerCase();
-      const specs = (item.specs || '').toLowerCase();
-      const type = (item.type || '').toLowerCase();
-      const cat = typeof item.category === 'string' 
-        ? item.category.toLowerCase() 
-        : (item.category?.name || '').toLowerCase();
+      const comp = (item.compatibleDevice || item.specs || '').toLowerCase();
+      const cat = typeof item.category === 'string' ? item.category.toLowerCase() : '';
+      const sku = (item.sku || '').toLowerCase();
 
       // Search match
-      const matchesSearch = !q || name.includes(q) || specs.includes(q) || type.includes(q) || cat.includes(q);
+      const matchesSearch = !q || name.includes(q) || comp.includes(q) || cat.includes(q) || sku.includes(q);
 
       // Category match
       let matchesCategory = true;
       if (selectedCategory !== 'All Categories') {
-        const catKey = selectedCategory.toLowerCase().split(' ')[0] || '';
-        matchesCategory = cat.includes(catKey) || name.includes(catKey) || type.includes(catKey) || specs.includes(catKey);
+        matchesCategory = cat.includes(selectedCategory.toLowerCase()) || selectedCategory.toLowerCase().includes(cat);
       }
 
-      // Branch Stock
-      const branchLower = activeBranch.toLowerCase();
-      const stock = branchLower === 'villanueva'
-        ? (item.villanuevaStock ?? item.stock ?? 0)
-        : branchLower === 'jasaan'
-        ? (item.jasaanStock ?? item.stock ?? 0)
-        : (item.tagoloanStock ?? item.stock ?? 0);
-
       // Stock status filter
+      const stock = item.stock ?? 0;
       let matchesStock = true;
       if (stockFilter === 'low') {
         matchesStock = stock > 0 && stock < 5;
@@ -225,7 +150,7 @@ export default function TechnicianInventory() {
 
       return matchesSearch && matchesCategory && matchesStock;
     });
-  }, [sparePartsOnly, search, selectedCategory, stockFilter, activeBranch]);
+  }, [items, search, selectedCategory, stockFilter]);
 
   // Pagination calculations
   const totalCount = filteredParts.length;
@@ -243,24 +168,19 @@ export default function TechnicianInventory() {
   const stockCounts = useMemo(() => {
     let low = 0;
     let out = 0;
-    sparePartsOnly.forEach((item) => {
-      const branchLower = activeBranch.toLowerCase();
-      const s = branchLower === 'villanueva'
-        ? (item.villanuevaStock ?? item.stock ?? 0)
-        : branchLower === 'jasaan'
-        ? (item.jasaanStock ?? item.stock ?? 0)
-        : (item.tagoloanStock ?? item.stock ?? 0);
+    items.forEach((item) => {
+      const s = item.stock ?? 0;
       if (s === 0) out++;
       else if (s < 5) low++;
     });
-    return { all: sparePartsOnly.length, low, out };
-  }, [sparePartsOnly, activeBranch]);
+    return { all: items.length, low, out };
+  }, [items]);
 
   const handleCloseAndResetModal = () => {
     setIsAddModalOpen(false);
     setAddPartName('');
     setAddCompatibleModel('');
-    setAddCategory(PART_CATEGORIES[1]);
+    setAddCategory(PART_CATEGORIES[1] || 'Screen & Display');
     setAddStock('10');
     setAddCost('');
     setAddPrice('');
@@ -274,25 +194,9 @@ export default function TechnicianInventory() {
   const handleOpenEditModal = (item: SparePartItem) => {
     setEditingPart(item);
     setEditPartName(item.name || '');
-
-    const specs = item.specs || '';
-    const compMatch = specs.match(/Compatible:\s*([^|]+)/i);
-    setEditCompatibleModel(compMatch && compMatch[1] ? compMatch[1].trim() : (specs.trim() || ''));
-
-    const catMatch = specs.match(/Category:\s*(.+)$/i);
-    const catName = catMatch && catMatch[1] 
-      ? catMatch[1].trim() 
-      : (typeof item.category === 'string' ? item.category : item.category?.name || PART_CATEGORIES[1]);
-    setEditCategory(catName);
-
-    const branchLower = activeBranch.toLowerCase();
-    const currentStock = branchLower === 'villanueva'
-      ? (item.villanuevaStock ?? item.stock ?? 0)
-      : branchLower === 'jasaan'
-      ? (item.jasaanStock ?? item.stock ?? 0)
-      : (item.tagoloanStock ?? item.stock ?? 0);
-    setEditStock(String(currentStock));
-
+    setEditCompatibleModel(item.compatibleDevice || item.specs?.replace(/Compatible:\s*/i, '').split('|')[0]?.trim() || '');
+    setEditCategory(item.category || PART_CATEGORIES[1] || 'Screen & Display');
+    setEditStock(String(item.stock ?? 0));
     setEditCost(item.cost !== undefined && item.cost !== null ? String(item.cost) : '');
     setEditPrice(item.price !== undefined && item.price !== null ? String(item.price) : '');
     setEditImageFile(null);
@@ -316,35 +220,20 @@ export default function TechnicianInventory() {
     setEditModalSuccess(null);
 
     const formData = new FormData();
-    formData.append('deviceName', editPartName.trim());
-    formData.append('deviceType', 'Spare Part');
-    formData.append('type', 'Spare Part');
-    formData.append('deviceSpecs', `Compatible: ${editCompatibleModel.trim() || 'Universal'} | Category: ${editCategory}`);
-    formData.append('deviceStocks', editStock || '0');
-    formData.append('devicePrice', editPrice || '0');
-    formData.append('deviceCost', editCost || '0');
+    formData.append('name', editPartName.trim());
+    formData.append('compatibleDevice', editCompatibleModel.trim() || 'Universal');
+    formData.append('category', editCategory || 'Other Materials');
+    formData.append('stock', editStock || '0');
+    formData.append('price', editPrice || '0');
+    formData.append('cost', editCost || '0');
     formData.append('branch', activeBranch);
 
-    const catSearch = (editCategory || '').toLowerCase();
-    const matchingCat = categories.find(c => 
-      c.name.toLowerCase() === catSearch ||
-      c.name.toLowerCase().includes('spare') ||
-      c.name.toLowerCase().includes('part')
-    );
-    if (matchingCat) {
-      formData.append('deviceCategory', matchingCat.id);
-      formData.append('categoryId', matchingCat.id);
-    }
-
     if (editImageFile) {
-      formData.append('deviceImage', editImageFile);
-      formData.append('deviceImages', editImageFile);
-    } else if (editImagePreview) {
-      formData.append('existingImages', JSON.stringify([editImagePreview]));
+      formData.append('image', editImageFile);
     }
 
     try {
-      const res = await fetch(`/api/devices/${editingPart.id}`, {
+      const res = await fetch(`/api/technician/spare-parts/${editingPart.id}`, {
         method: 'PUT',
         body: formData
       });
@@ -376,7 +265,7 @@ export default function TechnicianInventory() {
     }
     setIsDeleting(id);
     try {
-      const res = await fetch(`/api/devices/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/technician/spare-parts/${id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchInventory();
       } else {
@@ -404,34 +293,20 @@ export default function TechnicianInventory() {
     setAddModalSuccess(null);
 
     const formData = new FormData();
-    formData.append('deviceName', addPartName.trim());
-    formData.append('deviceType', 'Spare Part');
-    formData.append('type', 'Spare Part');
-    formData.append('deviceSpecs', `Compatible: ${addCompatibleModel.trim() || 'Universal'} | Category: ${addCategory}`);
-    formData.append('deviceStocks', addStock || '0');
-    formData.append('devicePrice', addPrice || '0');
-    formData.append('deviceCost', addCost || '0');
+    formData.append('name', addPartName.trim());
+    formData.append('compatibleDevice', addCompatibleModel.trim() || 'Universal');
+    formData.append('category', addCategory || 'Other Materials');
+    formData.append('stock', addStock || '0');
+    formData.append('price', addPrice || '0');
+    formData.append('cost', addCost || '0');
     formData.append('branch', activeBranch);
 
-    // Link category if found
-    const catSearch = (addCategory || '').toLowerCase();
-    const matchingCat = categories.find(c => 
-      c.name.toLowerCase() === catSearch ||
-      c.name.toLowerCase().includes('spare') ||
-      c.name.toLowerCase().includes('part')
-    );
-    if (matchingCat) {
-      formData.append('deviceCategory', matchingCat.id);
-      formData.append('categoryId', matchingCat.id);
-    }
-
     if (addImageFile) {
-      formData.append('deviceImage', addImageFile);
-      formData.append('deviceImages', addImageFile);
+      formData.append('image', addImageFile);
     }
 
     try {
-      const res = await fetch('/api/devices', {
+      const res = await fetch('/api/technician/spare-parts', {
         method: 'POST',
         body: formData
       });
@@ -623,26 +498,12 @@ export default function TechnicianInventory() {
                 </tr>
               ) : (
                 paginatedParts.map((item) => {
-                  const branchLower = activeBranch.toLowerCase();
-                  const stock = branchLower === 'villanueva'
-                    ? (item.villanuevaStock ?? item.stock ?? 0)
-                    : branchLower === 'jasaan'
-                    ? (item.jasaanStock ?? item.stock ?? 0)
-                    : (item.tagoloanStock ?? item.stock ?? 0);
-
+                  const stock = item.stock ?? 0;
                   const isOut = stock === 0;
                   const isLow = stock > 0 && stock < 5;
-
-                  // Parse compatible model from specs
-                  const specs = item.specs || '';
-                  const compMatch = specs.match(/Compatible:\s*([^|]+)/i);
-                  const compatibleDevice = compMatch && compMatch[1] ? compMatch[1].trim() : (specs.trim() || 'Universal');
-
-                  // Parse category
-                  const catMatch = specs.match(/Category:\s*(.+)$/i);
-                  const categoryName = catMatch && catMatch[1]
-                    ? catMatch[1].trim() 
-                    : (typeof item.category === 'string' ? item.category : item.category?.name || item.type || 'Spare Part');
+                  const compatibleDevice = item.compatibleDevice || 'Universal';
+                  const categoryName = item.category || 'Other Materials';
+                  const sku = item.sku || `SP-${item.id.slice(-4).toUpperCase()}`;
 
                   return (
                     <tr key={item.id} className="hover:bg-purple-50/30 transition-colors">
@@ -661,7 +522,7 @@ export default function TechnicianInventory() {
                               {item.name}
                             </span>
                             <span className="text-[11px] text-gray-400 font-mono">
-                              SKU: GRPX-PART-{item.id.slice(-4).toUpperCase()}
+                              SKU: {sku}
                             </span>
                           </div>
                         </div>
