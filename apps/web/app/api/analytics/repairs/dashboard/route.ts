@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../../lib/session';
 import {
-  STORE_PAPER_RECEIPTS,
   extractRepairCost,
   normalizeRepairStatus,
 } from '../../../../../lib/repairAnalyticsHelper';
@@ -19,10 +18,9 @@ export async function GET(req: Request) {
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const { searchParams } = new URL(req.url);
     const branchQuery = searchParams.get('branch');
+    const timeframe = (searchParams.get('timeframe') || 'month').toLowerCase(); // 'month' or 'all'
 
     // Strict branch scoping:
-    // Super Admin can view a specific branch or all branches.
-    // Branch Admin and Cashier are strictly locked to their assigned branch.
     let targetBranch: string | null = null;
     if (isSuperAdmin) {
       if (branchQuery && branchQuery.toLowerCase() !== 'all') {
@@ -40,14 +38,18 @@ export async function GET(req: Request) {
 
     const now = new Date();
     const currentYear = now.getFullYear();
+    const currentMonthName = now.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const currentMonthShort = now.toLocaleString('en-US', { month: 'short' });
+
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const startOfYesterday = new Date(startOfToday);
     startOfYesterday.setDate(startOfYesterday.getDate() - 1);
     const startOfWeek = new Date(startOfToday);
     startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    // 1. Fetch all repairs matching the query scope
+    // 1. Fetch all repairs matching branch scope
     const allRepairs = await prisma.repairRequest.findMany({
       where: branchWhere,
       include: {
@@ -58,21 +60,17 @@ export async function GET(req: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // 2. Identify paper receipts to include for Tagoloan / All Branches (avoiding duplicate DB repairIds)
-    const dbIds = new Set(allRepairs.map((r) => r.id));
-    let matchingPaper = STORE_PAPER_RECEIPTS.filter((p) => !dbIds.has(p.repairId));
+    // 2. Compute status counts & time metrics
+    let allPendingCount = 0;
+    let allAcceptedCount = 0;
+    let allInProgressCount = 0;
+    let allCompletedCount = 0;
+    let allCancelledCount = 0;
 
-    if (targetBranch) {
-      const tbLower = targetBranch.toLowerCase();
-      matchingPaper = matchingPaper.filter((p) => (p.branch || '').toLowerCase().includes(tbLower));
-    }
-
-    // 3. Status Categorization & Counts
-    let pendingCount = 0;
-    let acceptedCount = 0;
-    let inProgressCount = 0;
-    let completedCount = 0;
-    let cancelledCount = 0;
+    let monthNewRequestsCount = 0;
+    let monthCompletedCount = 0;
+    let monthCancelledCount = 0;
+    let monthCarriedOverActiveCount = 0;
 
     let totalRepairRevenue = 0;
     let todayRevenue = 0;
@@ -83,15 +81,40 @@ export async function GET(req: Request) {
     const monthlyActivity = Array(12).fill(0);
     const monthlyRevenueArray = Array(12).fill(0);
 
-    allRepairs.forEach((repair) => {
+    allRepairs.forEach((repair: any) => {
       const normStatus = normalizeRepairStatus(repair.status, repair.progress);
-      if (normStatus === 'Pending') pendingCount++;
-      else if (normStatus === 'Accepted') acceptedCount++;
-      else if (normStatus === 'In Progress') inProgressCount++;
-      else if (normStatus === 'Completed') completedCount++;
-      else if (normStatus === 'Cancelled') cancelledCount++;
-
       const createdAt = new Date(repair.createdAt);
+      const updatedAt = repair.updatedAt ? new Date(repair.updatedAt) : createdAt;
+
+      const isCreatedThisMonth = createdAt >= startOfMonth && createdAt <= endOfMonth;
+      const isCompletedThisMonth = updatedAt >= startOfMonth && updatedAt <= endOfMonth;
+
+      // Active repairs carry over continuously until marked completed
+      if (normStatus === 'Pending') {
+        allPendingCount++;
+        if (createdAt < startOfMonth) monthCarriedOverActiveCount++;
+      } else if (normStatus === 'Accepted') {
+        allAcceptedCount++;
+        if (createdAt < startOfMonth) monthCarriedOverActiveCount++;
+      } else if (normStatus === 'In Progress') {
+        allInProgressCount++;
+        if (createdAt < startOfMonth) monthCarriedOverActiveCount++;
+      } else if (normStatus === 'Completed') {
+        allCompletedCount++;
+        if (isCompletedThisMonth || isCreatedThisMonth) {
+          monthCompletedCount++;
+        }
+      } else if (normStatus === 'Cancelled') {
+        allCancelledCount++;
+        if (isCreatedThisMonth) {
+          monthCancelledCount++;
+        }
+      }
+
+      if (isCreatedThisMonth) {
+        monthNewRequestsCount++;
+      }
+
       if (createdAt.getFullYear() === currentYear) {
         monthlyActivity[createdAt.getMonth()] += 1;
       }
@@ -102,85 +125,77 @@ export async function GET(req: Request) {
         if (totalCost > 0) {
           totalRepairRevenue += totalCost;
 
-          if (createdAt >= startOfToday) todayRevenue += totalCost;
-          else if (createdAt >= startOfYesterday && createdAt < startOfToday) yesterdayRevenue += totalCost;
+          if (updatedAt >= startOfToday || createdAt >= startOfToday) todayRevenue += totalCost;
+          else if ((updatedAt >= startOfYesterday && updatedAt < startOfToday) || (createdAt >= startOfYesterday && createdAt < startOfToday)) {
+            yesterdayRevenue += totalCost;
+          }
 
-          if (createdAt >= startOfWeek) weeklyRevenue += totalCost;
-          if (createdAt >= startOfMonth) monthlyRevenue += totalCost;
+          if (updatedAt >= startOfWeek || createdAt >= startOfWeek) weeklyRevenue += totalCost;
+          if (updatedAt >= startOfMonth || createdAt >= startOfMonth) monthlyRevenue += totalCost;
 
-          if (createdAt.getFullYear() === currentYear) {
-            monthlyRevenueArray[createdAt.getMonth()] += totalCost;
+          const revDate = isCompletedThisMonth ? updatedAt : createdAt;
+          if (revDate.getFullYear() === currentYear) {
+            monthlyRevenueArray[revDate.getMonth()] += totalCost;
           }
         }
       }
     });
 
-    // Incorporate store paper receipts
-    matchingPaper.forEach((p) => {
-      completedCount++;
-      const createdAt = new Date(p.createdAt);
-      const amt = p.amount || 0;
-      totalRepairRevenue += amt;
+    const isMonthView = timeframe === 'month';
+    const activeRequestsTotal = isMonthView ? monthNewRequestsCount : allRepairs.length;
+    const activeCompletedCount = isMonthView ? monthCompletedCount : allCompletedCount;
+    const activeCancelledCount = isMonthView ? monthCancelledCount : allCancelledCount;
+    const activeRevenue = isMonthView ? monthlyRevenue : totalRepairRevenue;
 
-      if (createdAt >= startOfToday) todayRevenue += amt;
-      else if (createdAt >= startOfYesterday && createdAt < startOfToday) yesterdayRevenue += amt;
+    const chartTotal = isMonthView
+      ? (allPendingCount + allAcceptedCount + allInProgressCount + monthCompletedCount + monthCancelledCount)
+      : allRepairs.length;
 
-      if (createdAt >= startOfWeek) weeklyRevenue += amt;
-      if (createdAt >= startOfMonth) monthlyRevenue += amt;
-
-      if (createdAt.getFullYear() === currentYear) {
-        monthlyActivity[createdAt.getMonth()] += 1;
-        monthlyRevenueArray[createdAt.getMonth()] += amt;
-      }
-    });
-
-    const totalRequests = allRepairs.length + matchingPaper.length;
-
-    // 4. Status Distribution with percentages
+    // 3. Status Distribution with percentages
     const statusDistribution = [
       {
         status: 'Pending',
         label: 'Pending Approval',
-        count: pendingCount,
-        percentage: totalRequests > 0 ? Math.round((pendingCount / totalRequests) * 100) : 0,
+        count: allPendingCount,
+        percentage: chartTotal > 0 ? Math.round((allPendingCount / chartTotal) * 100) : 0,
         color: '#f59e0b', // Amber
         badgeBg: 'bg-amber-100 text-amber-800 border-amber-200',
       },
       {
         status: 'Accepted',
         label: 'Accepted',
-        count: acceptedCount,
-        percentage: totalRequests > 0 ? Math.round((acceptedCount / totalRequests) * 100) : 0,
+        count: allAcceptedCount,
+        percentage: chartTotal > 0 ? Math.round((allAcceptedCount / chartTotal) * 100) : 0,
         color: '#8b5cf6', // Purple
         badgeBg: 'bg-purple-100 text-purple-800 border-purple-200',
       },
       {
         status: 'In Progress',
         label: 'In Progress',
-        count: inProgressCount,
-        percentage: totalRequests > 0 ? Math.round((inProgressCount / totalRequests) * 100) : 0,
+        count: allInProgressCount,
+        percentage: chartTotal > 0 ? Math.round((allInProgressCount / chartTotal) * 100) : 0,
         color: '#3b82f6', // Blue
         badgeBg: 'bg-blue-100 text-blue-800 border-blue-200',
       },
       {
         status: 'Completed',
         label: 'Completed',
-        count: completedCount,
-        percentage: totalRequests > 0 ? Math.round((completedCount / totalRequests) * 100) : 0,
+        count: activeCompletedCount,
+        percentage: chartTotal > 0 ? Math.round((activeCompletedCount / chartTotal) * 100) : 0,
         color: '#10b981', // Green
         badgeBg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       },
       {
         status: 'Cancelled',
         label: 'Cancelled',
-        count: cancelledCount,
-        percentage: totalRequests > 0 ? Math.round((cancelledCount / totalRequests) * 100) : 0,
+        count: activeCancelledCount,
+        percentage: chartTotal > 0 ? Math.round((activeCancelledCount / chartTotal) * 100) : 0,
         color: '#ef4444', // Red
         badgeBg: 'bg-rose-100 text-rose-800 border-rose-200',
       },
     ];
 
-    // 5. Recent Repairs for quick preview list
+    // 4. Recent Repairs for quick preview list
     const recentRepairs = allRepairs.slice(0, 8).map((r) => {
       const { totalCost } = extractRepairCost(r);
       const normStatus = normalizeRepairStatus(r.status, r.progress);
@@ -197,7 +212,7 @@ export async function GET(req: Request) {
       };
     });
 
-    // 6. Multi-Branch Performance Comparison (for Super Admin system-wide view)
+    // 5. Multi-Branch Performance Comparison (for Super Admin system-wide view)
     let branchComparison: any[] = [];
     if (isSuperAdmin && (!targetBranch || targetBranch === 'all')) {
       const systemBranches = ['Tagoloan', 'Villanueva', 'Jasaan'];
@@ -214,40 +229,47 @@ export async function GET(req: Request) {
           stats[matchKey] = { branch: matchKey, requests: 0, completed: 0, inProgress: 0, revenue: 0 };
         }
 
-        stats[matchKey].requests += 1;
         const normStatus = normalizeRepairStatus(r.status, r.progress);
+        const createdAt = new Date(r.createdAt);
+        const isThisMonth = createdAt >= startOfMonth && createdAt <= endOfMonth;
+
+        if (!isMonthView || isThisMonth) {
+          stats[matchKey].requests += 1;
+        }
+
         if (normStatus === 'Completed') {
-          stats[matchKey].completed += 1;
-          const { totalCost } = extractRepairCost(r);
-          stats[matchKey].revenue += totalCost;
+          if (!isMonthView || isThisMonth) {
+            stats[matchKey].completed += 1;
+            const { totalCost } = extractRepairCost(r);
+            stats[matchKey].revenue += totalCost;
+          }
         } else if (normStatus === 'In Progress') {
           stats[matchKey].inProgress += 1;
         }
-      });
-
-      matchingPaper.forEach((p) => {
-        const bName = p.branch || 'Tagoloan';
-        const matchKey = systemBranches.find((s) => s.toLowerCase() === bName.toLowerCase()) || bName;
-        if (!stats[matchKey]) {
-          stats[matchKey] = { branch: matchKey, requests: 0, completed: 0, inProgress: 0, revenue: 0 };
-        }
-        stats[matchKey].requests += 1;
-        stats[matchKey].completed += 1;
-        stats[matchKey].revenue += p.amount || 0;
       });
 
       branchComparison = systemBranches.map((b) => stats[b] || { branch: b, requests: 0, completed: 0, inProgress: 0, revenue: 0 });
     }
 
     return NextResponse.json({
+      timeframe,
+      currentMonthName,
+      currentMonthShort,
       summary: {
-        totalRequests,
-        pendingRepairs: pendingCount,
-        acceptedRepairs: acceptedCount,
-        inProgressRepairs: inProgressCount,
-        completedRepairs: completedCount,
-        cancelledRepairs: cancelledCount,
-        repairRevenue: totalRepairRevenue,
+        totalRequests: activeRequestsTotal,
+        pendingRepairs: allPendingCount,
+        acceptedRepairs: allAcceptedCount,
+        inProgressRepairs: allInProgressCount,
+        completedRepairs: activeCompletedCount,
+        cancelledRepairs: activeCancelledCount,
+        repairRevenue: activeRevenue,
+        carriedOverCount: monthCarriedOverActiveCount,
+        thisMonthRequestsCount: monthNewRequestsCount,
+        thisMonthCompletedCount: monthCompletedCount,
+        thisMonthRevenue: monthlyRevenue,
+        allTimeRequestsCount: allRepairs.length,
+        allTimeCompletedCount: allCompletedCount,
+        allTimeRevenue: totalRepairRevenue,
       },
       revenue: {
         today: todayRevenue,
