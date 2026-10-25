@@ -172,7 +172,7 @@ export default function TechnicianMonitoring() {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DIAGNOSTIC' | 'REPAIRING' | 'COMPLETED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DIAGNOSTIC' | 'REPAIRING' | 'DOWNPAYMENTS' | 'COMPLETED'>('ALL');
   const [technician, setTechnician] = useState<any>(null);
 
   // Pagination
@@ -267,6 +267,9 @@ export default function TechnicianMonitoring() {
       if (profRes.ok) {
         profile = await profRes.json();
         setTechnician(profile);
+        if (profile?.branch) {
+          setEditBranch(profile.branch);
+        }
       }
 
       const res = await fetch('/api/monitoring?limit=100');
@@ -402,15 +405,29 @@ export default function TechnicianMonitoring() {
     let gcash = '';
     if (device.materials) {
       try {
-        const parsedMats = JSON.parse(device.materials);
+        const parsedMats = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
+        let rawItems: any[] = [];
         if (Array.isArray(parsedMats)) {
-          items = parsedMats;
+          rawItems = parsedMats;
         } else if (parsedMats && typeof parsedMats === 'object') {
-          items = parsedMats.items || [];
+          rawItems = parsedMats.items || [];
           if (parsedMats.paymentMethod) method = parsedMats.paymentMethod;
           if (parsedMats.cashAmount !== undefined) cash = String(parsedMats.cashAmount);
           if (parsedMats.gcashAmount !== undefined) gcash = String(parsedMats.gcashAmount);
         }
+        items = rawItems.map((it: any, idx: number) => {
+          const qty = Math.max(1, parseInt(String(it.qty || it.quantity || 1), 10) || 1);
+          const unitPrice = Math.max(0, parseFloat(String(it.unitPrice ?? it.price ?? it.cost ?? 0).replace(/[^0-9.]/g, '')) || 0);
+          const itemTotal = parseFloat(String(it.total).replace(/[^0-9.]/g, ''));
+          const lineTotal = !isNaN(itemTotal) && itemTotal > 0 ? itemTotal : (qty * unitPrice);
+          return {
+            id: it.id || `mat-${Date.now()}-${idx}`,
+            qty,
+            description: it.description || it.item || it.name || it.part || `${device.deviceName || 'Device'} Replacement Part`,
+            unitPrice,
+            total: lineTotal
+          };
+        });
       } catch (e) {
         console.error("Failed to parse materials:", e);
       }
@@ -418,6 +435,20 @@ export default function TechnicianMonitoring() {
     if (!cash && !gcash && device.downpayment) {
       if (method === 'GCash') gcash = device.downpayment;
       else cash = device.downpayment;
+    }
+    // If no materials were itemized yet, but repairCost exists, initialize a repair service item so cost is preserved
+    if (items.length === 0 && device.repairCost) {
+      const parsedCost = parseFloat(String(device.repairCost).replace(/[^0-9.]/g, '')) || 0;
+      if (parsedCost > 0) {
+        items = [{
+          id: `mat-${Date.now()}-0`,
+          qty: 1,
+          description: `${device.deviceName || 'Device'} Repair Service`,
+          unitPrice: parsedCost,
+          total: parsedCost
+        }];
+        if (!cash && !gcash) cash = String(parsedCost);
+      }
     }
     setEditMaterials(items);
     setEditPaymentMethod(method);
@@ -613,6 +644,46 @@ export default function TechnicianMonitoring() {
     if (statusFilter === 'REPAIRING') {
       return prog === 'repairing';
     }
+    if (statusFilter === 'DOWNPAYMENTS') {
+      // 1. Exclude if device is completed or cancelled
+      if (stat === 'completed' || prog === 'completed' || prog === '100%' || stat === 'cancelled' || prog === 'cancelled') {
+        return false;
+      }
+
+      // 2. Parse materials safely to check payment status
+      let isFullyPaid = false;
+      let balanceDue: number | null = null;
+      let matsPaid = 0;
+
+      if (d.materials) {
+        try {
+          const parsed = typeof d.materials === 'string' ? JSON.parse(d.materials) : d.materials;
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.isFullyPaid === true) isFullyPaid = true;
+            if (parsed.balanceDue !== undefined && parsed.balanceDue !== null) {
+              const b = parseFloat(String(parsed.balanceDue).replace(/[^0-9.]/g, ''));
+              if (!isNaN(b)) balanceDue = b;
+            }
+            matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+          }
+        } catch (e) {
+          console.error("Error parsing materials in downpayment filter:", e);
+        }
+      }
+
+      const downVal = parseFloat(String(d.downpayment || '0').replace(/[^0-9.]/g, '')) || 0;
+      const totalCost = parseFloat(String(d.repairCost || '0').replace(/[^0-9.]/g, '')) || 0;
+      const totalPaid = matsPaid > 0 ? matsPaid : downVal;
+
+      // 3. Exclude if marked fully paid or recorded balance is 0 or less
+      if (isFullyPaid) return false;
+      if (balanceDue !== null && balanceDue <= 0 && totalPaid > 0) return false;
+      if (totalCost > 0 && totalPaid >= totalCost) return false;
+
+      // 4. Must have an initial deposit paid and an outstanding balance due
+      const hasBalance = balanceDue !== null ? balanceDue > 0 : (totalCost > 0 ? totalPaid < totalCost : true);
+      return totalPaid > 0 && hasBalance;
+    }
     if (statusFilter === 'COMPLETED') {
       return stat === 'completed' || prog === 'completed';
     }
@@ -674,7 +745,7 @@ export default function TechnicianMonitoring() {
 
         {/* Filter Pills Bar */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'COMPLETED'] as const).map((tab) => (
+          {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'DOWNPAYMENTS', 'COMPLETED'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -688,7 +759,7 @@ export default function TechnicianMonitoring() {
                   : 'bg-[#FAF7FF] text-[#5b4a7a] border-[#E9D8FD] hover:bg-white hover:text-[#9333EA]'
               }`}
             >
-              {tab === 'ALL' ? 'All Assigned' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+              {tab === 'ALL' ? 'All Assigned' : tab === 'DOWNPAYMENTS' ? 'Downpayments' : tab.charAt(0) + tab.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
@@ -730,13 +801,61 @@ export default function TechnicianMonitoring() {
                           </div>
                         </td>
                         <td className="py-4 px-5 align-middle">
-                          <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug flex items-center gap-2">
+                          <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug flex items-center gap-2 flex-wrap">
                             <span>{device.deviceName}</span>
                             {device.trackingNumber && (
                               <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                                 {device.trackingNumber}
                               </span>
                             )}
+                            {(() => {
+                              const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, '')) || 0;
+                              let matsPaid = 0;
+                              let isFullyPaid = false;
+                              let balanceDue: number | null = null;
+
+                              if (device.materials) {
+                                try {
+                                  const parsed = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
+                                  if (parsed && typeof parsed === 'object') {
+                                    if (parsed.isFullyPaid === true) isFullyPaid = true;
+                                    if (parsed.balanceDue !== undefined && parsed.balanceDue !== null) {
+                                      const b = parseFloat(String(parsed.balanceDue).replace(/[^0-9.]/g, ''));
+                                      if (!isNaN(b)) balanceDue = b;
+                                    }
+                                    matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                  }
+                                } catch {}
+                              }
+                              const paid = downVal > 0 ? downVal : matsPaid;
+                              const cost = parseFloat(String(device.repairCost || '0').replace(/[^0-9.]/g, '')) || 0;
+                              const isCompleted = (device.status || '').toLowerCase() === 'completed' || (device.progress || '').toLowerCase() === 'completed' || device.progress === '100%';
+
+                              if (isCompleted || isFullyPaid || (cost > 0 && paid >= cost) || (balanceDue !== null && balanceDue <= 0 && paid > 0)) {
+                                if (paid > 0) {
+                                  return (
+                                    <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                                      <CheckCircle2 size={10} className="text-emerald-600" />
+                                      ₱{paid.toLocaleString()} Paid in Full
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              }
+
+                              if (paid > 0) {
+                                const remaining = balanceDue !== null ? balanceDue : (cost > paid ? cost - paid : null);
+                                return (
+                                  <span className="font-mono text-[10px] font-extrabold text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 flex items-center gap-1">
+                                    <span>💰 ₱{paid.toLocaleString()} Deposit</span>
+                                    {remaining !== null && remaining > 0 && (
+                                      <span className="text-amber-700">(₱{remaining.toLocaleString()} Due)</span>
+                                    )}
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           {device.ownerName ? (
                             <button
@@ -822,11 +941,61 @@ export default function TechnicianMonitoring() {
                           </div>
                         </div>
 
-                        {device.trackingNumber && (
-                          <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 inline-block mt-1">
-                            {device.trackingNumber}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          {device.trackingNumber && (
+                            <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 inline-block">
+                              {device.trackingNumber}
+                            </span>
+                          )}
+                          {(() => {
+                            const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, '')) || 0;
+                            let matsPaid = 0;
+                            let isFullyPaid = false;
+                            let balanceDue: number | null = null;
+
+                            if (device.materials) {
+                              try {
+                                const parsed = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
+                                if (parsed && typeof parsed === 'object') {
+                                  if (parsed.isFullyPaid === true) isFullyPaid = true;
+                                  if (parsed.balanceDue !== undefined && parsed.balanceDue !== null) {
+                                    const b = parseFloat(String(parsed.balanceDue).replace(/[^0-9.]/g, ''));
+                                    if (!isNaN(b)) balanceDue = b;
+                                  }
+                                  matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                }
+                              } catch {}
+                            }
+                            const paid = downVal > 0 ? downVal : matsPaid;
+                            const cost = parseFloat(String(device.repairCost || '0').replace(/[^0-9.]/g, '')) || 0;
+                            const isCompleted = (device.status || '').toLowerCase() === 'completed' || (device.progress || '').toLowerCase() === 'completed' || device.progress === '100%';
+
+                            if (isCompleted || isFullyPaid || (cost > 0 && paid >= cost) || (balanceDue !== null && balanceDue <= 0 && paid > 0)) {
+                              if (paid > 0) {
+                                return (
+                                  <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                                    <CheckCircle2 size={10} className="text-emerald-600" />
+                                    ₱{paid.toLocaleString()} Paid in Full
+                                  </span>
+                                );
+                              }
+                              return null;
+                            }
+
+                            if (paid > 0) {
+                              const remaining = balanceDue !== null ? balanceDue : (cost > paid ? cost - paid : null);
+                              return (
+                                <span className="font-mono text-[10px] font-extrabold text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 flex items-center gap-1">
+                                  <span>💰 ₱{paid.toLocaleString()} Deposit</span>
+                                  {remaining !== null && remaining > 0 && (
+                                    <span className="text-amber-700">(₱{remaining.toLocaleString()} Due)</span>
+                                  )}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
 
                         <div className="mt-1">
                           {device.ownerName ? (

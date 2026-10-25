@@ -116,7 +116,7 @@ export default function TechnicianDashboard() {
               Technician Dashboard
             </h1>
             <span className="text-[11px] font-bold bg-purple-100 text-[#8b00cc] px-2.5 py-0.5 rounded-full border border-purple-200">
-              📍 {technician?.branch || 'Tagoloan'} Branch
+              📍 {technician?.branch ? (technician.branch.toLowerCase().includes('branch') ? technician.branch : `${technician.branch} Branch`) : 'Tagoloan Branch'}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">

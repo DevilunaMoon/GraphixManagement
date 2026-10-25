@@ -115,7 +115,7 @@ function LoginContent() {
       if (userRole === "SUPER_ADMIN" || userRole === "ADMIN" || userRole === "BRANCH_ADMIN") {
         window.location.href = isLoggingIntoMonitoring ? "/admin/monitoring" : "/admin/dashboard";
       } else if (userRole === "CASHIER") {
-        window.location.href = isLoggingIntoMonitoring ? "/cashier/monitoring" : "/cashier/dashboard";
+        window.location.href = "/cashier/dashboard";
       } else if (userRole === "TECHNICIAN") {
         window.location.href = isLoggingIntoMonitoring ? "/technician/monitoring" : "/technician/dashboard";
       } else {

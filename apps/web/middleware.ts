@@ -67,10 +67,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/customer/dashboard', request.url));
   }
 
+  if (session && isCashier && (currentPath.startsWith('/cashier/monitoring') || currentPath.startsWith('/cashier/edit-progress') || currentPath.startsWith('/cashier/repairs'))) {
+    return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
+  }
+
   if (session && currentPath.startsWith('/customer') && !isCustomer) {
     if (currentPath.startsWith('/customer/monitoring')) {
       if (isAdmin) return NextResponse.redirect(new URL('/admin/monitoring', request.url));
-      if (isCashier) return NextResponse.redirect(new URL('/cashier/monitoring', request.url));
+      if (isCashier) return NextResponse.redirect(new URL('/cashier/dashboard', request.url));
       if (isTechnician) return NextResponse.redirect(new URL('/technician/monitoring', request.url));
     }
     if (isAdmin) return NextResponse.redirect(new URL('/admin/dashboard', request.url));

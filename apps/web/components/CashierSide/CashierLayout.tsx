@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Wrench, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User, Settings, KeyRound } from 'lucide-react';
+import { List, X, LogOut, Paintbrush, ChevronLeft, ChevronRight, ShoppingCart, Smartphone, Bell, ReceiptText, ChevronDown, ChevronUp, User, Settings, KeyRound } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { BranchProvider, useBranch } from '../../context/BranchContext';
 
@@ -127,17 +127,9 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: '/cashier/dashboard', label: 'POS', icon: ShoppingCart },
-    { href: '/cashier/monitoring', label: 'Gadget Repair', icon: Wrench },
     { href: '/cashier/devices', label: 'Product Inventory', icon: Smartphone },
     { href: '/cashier/notifications', label: 'Notifications', icon: Bell },
-    { 
-      label: 'Order History', 
-      icon: ReceiptText,
-      subItems: [
-        { href: '/cashier/records', label: 'Completed Purchases' },
-        { href: '/cashier/repairs/transactions', label: 'Completed Repairs' },
-      ]
-    },
+    { href: '/cashier/records', label: 'Order History', icon: ReceiptText },
     { href: '/cashier/profile', label: 'My Profile', icon: User },
     { href: '/cashier/settings', label: 'Settings', icon: Settings },
   ];

@@ -1,5 +1,5 @@
-import CashierMonitoring from '../../CashierSide/CashierMonitoring';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <CashierMonitoring />;
+  redirect('/cashier/dashboard');
 }

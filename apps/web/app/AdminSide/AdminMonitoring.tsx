@@ -548,15 +548,29 @@ export default function AdminMonitoring() {
     let gcash = '';
     if (device.materials) {
       try {
-        const parsedMats = JSON.parse(device.materials);
+        const parsedMats = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
+        let rawItems: any[] = [];
         if (Array.isArray(parsedMats)) {
-          items = parsedMats;
+          rawItems = parsedMats;
         } else if (parsedMats && typeof parsedMats === 'object') {
-          items = parsedMats.items || [];
+          rawItems = parsedMats.items || [];
           if (parsedMats.paymentMethod) method = parsedMats.paymentMethod;
           if (parsedMats.cashAmount !== undefined) cash = String(parsedMats.cashAmount);
           if (parsedMats.gcashAmount !== undefined) gcash = String(parsedMats.gcashAmount);
         }
+        items = rawItems.map((it: any, idx: number) => {
+          const qty = Math.max(1, parseInt(String(it.qty || it.quantity || 1), 10) || 1);
+          const unitPrice = Math.max(0, parseFloat(String(it.unitPrice ?? it.price ?? it.cost ?? 0).replace(/[^0-9.]/g, '')) || 0);
+          const itemTotal = parseFloat(String(it.total).replace(/[^0-9.]/g, ''));
+          const lineTotal = !isNaN(itemTotal) && itemTotal > 0 ? itemTotal : (qty * unitPrice);
+          return {
+            id: it.id || `mat-${Date.now()}-${idx}`,
+            qty,
+            description: it.description || it.item || it.name || it.part || `${device.deviceName || 'Device'} Replacement Part`,
+            unitPrice,
+            total: lineTotal
+          };
+        });
       } catch (e) {
         console.error("Failed to parse materials:", e);
       }
@@ -564,6 +578,20 @@ export default function AdminMonitoring() {
     if (!cash && !gcash && device.downpayment) {
       if (method === 'GCash') gcash = device.downpayment;
       else cash = device.downpayment;
+    }
+    // If no materials were itemized yet, but repairCost exists, initialize a repair service item so cost is preserved
+    if (items.length === 0 && device.repairCost) {
+      const parsedCost = parseFloat(String(device.repairCost).replace(/[^0-9.]/g, '')) || 0;
+      if (parsedCost > 0) {
+        items = [{
+          id: `mat-${Date.now()}-0`,
+          qty: 1,
+          description: `${device.deviceName || 'Device'} Repair Service`,
+          unitPrice: parsedCost,
+          total: parsedCost
+        }];
+        if (!cash && !gcash) cash = String(parsedCost);
+      }
     }
     setEditMaterials(items);
     setEditPaymentMethod(method);
@@ -775,6 +803,13 @@ export default function AdminMonitoring() {
 
     const formData = new FormData();
     formData.append('progress', editProgress);
+    if (editProgress === 'Completed') {
+      formData.append('status', 'Completed');
+    } else if (editProgress === 'Cancelled') {
+      formData.append('status', 'Cancelled');
+    } else {
+      formData.append('status', 'Active');
+    }
     if (editOwnerName !== null) formData.append('ownerName', editOwnerName);
     formData.append('cause', finalCause);
     if (editTechnician !== null) formData.append('technician', editTechnician);

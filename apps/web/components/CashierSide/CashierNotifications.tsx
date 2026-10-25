@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, Wrench, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, RefreshCw, CheckCircle2, Wrench } from 'lucide-react';
 import Link from 'next/link';
-import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
 
 interface Notification {
   id: string;
@@ -31,8 +30,6 @@ export default function CashierNotifications() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [selectedRepairRequest, setSelectedRepairRequest] = useState<any>(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Update clock every 30 seconds for live 8-hour countdown and auto-expiration
@@ -115,26 +112,7 @@ export default function CashierNotifications() {
     }
   };
 
-  const openRepairRequest = async (notif: Notification) => {
-    try {
-      handleAction(notif.id, 'READ', false);
-      const res = await fetch(`/api/monitoring?limit=50&branch=all`);
-      const data = await res.json();
-      const reqList = Array.isArray(data) ? data : (data?.requests || []);
-      
-      const matched = reqList.find((r: any) => 
-        (r.ownerName && notif.message.includes(r.ownerName)) || 
-        (r.deviceName && notif.message.includes(r.deviceName))
-      ) || reqList[0];
 
-      if (matched) {
-        setSelectedRepairRequest(matched);
-        setIsReviewModalOpen(true);
-      }
-    } catch (err) {
-      console.error('Error opening repair request from cashier notification:', err);
-    }
-  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -289,10 +267,7 @@ export default function CashierNotifications() {
               return (
                 <div 
                   key={notification.id} 
-                  onClick={() => {
-                    if (isRepairRequest) openRepairRequest(notification);
-                  }}
-                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isRepairRequest ? 'cursor-pointer' : ''} ${cardBg}`}
+                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${cardBg}`}
                 >
                   <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${iconBg}`}>
                     {getIcon(notification.type)}
@@ -406,21 +381,7 @@ export default function CashierNotifications() {
                         <Package size={14} /> View Inventory
                       </Link>
                     )}
-                    {isRepairAccepted ? (
-                      <Link 
-                        href="/cashier/monitoring"
-                        className="shrink-0 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 no-underline"
-                      >
-                        <Wrench size={14} /> View in Gadget Repair
-                      </Link>
-                    ) : isRepairRequest ? (
-                      <button 
-                        onClick={() => openRepairRequest(notification)}
-                        className="shrink-0 px-3.5 py-2 bg-[#bd00ff] hover:bg-[#9c00d6] text-white font-bold text-xs rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer border-none"
-                      >
-                        <Wrench size={14} /> Review Request
-                      </button>
-                    ) : isStockAlert ? (
+                    {isStockAlert ? (
                       <>
                         <Link 
                           href="/cashier/devices"
@@ -501,15 +462,6 @@ export default function CashierNotifications() {
         )}
       </div>
 
-      {/* Repair Request Review Modal */}
-      <RepairRequestReviewModal
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-        request={selectedRepairRequest}
-        onStatusChange={() => {
-          fetchNotifications(page);
-        }}
-      />
 
       {/* Pagination Controls */}
       {totalPages > 1 && (

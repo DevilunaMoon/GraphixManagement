@@ -17,7 +17,8 @@ import {
   CheckCheck, 
   AlertCircle,
   HelpCircle,
-  Banknote
+  Banknote,
+  Calendar
 } from 'lucide-react';
 
 const formatCurrency = (val: number) => {
@@ -57,20 +58,21 @@ export default function RepairDashboardView({
   setSelectedBranch,
   isSuperAdmin,
 }: RepairDashboardViewProps) {
+  const [timeframe, setTimeframe] = useState<'month' | 'all'>('month');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/analytics/repairs/dashboard?branch=${encodeURIComponent(selectedBranch)}`)
+    fetch(`/api/analytics/repairs/dashboard?branch=${encodeURIComponent(selectedBranch)}&timeframe=${timeframe}`)
       .then((res) => res.json())
       .then((json) => {
         setData(json);
       })
       .catch((err) => console.error('Failed to fetch repair dashboard data:', err))
       .finally(() => setLoading(false));
-  }, [selectedBranch]);
+  }, [selectedBranch, timeframe]);
 
   const summary = data?.summary || {
     totalRequests: 0,
@@ -120,18 +122,62 @@ export default function RepairDashboardView({
   }
 
   return (
-    <div className="flex flex-col gap-8 animate-in fade-in duration-300">
+    <div className="flex flex-col gap-6 animate-in fade-in duration-300">
+      {/* Timeframe Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-purple-500/15 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Calendar size={14} className="text-[#bd00ff]" /> Timeframe:
+          </span>
+          <div className="inline-flex p-1 bg-purple-50/70 rounded-xl border border-purple-100 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setTimeframe('month')}
+              className={`px-3.5 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                timeframe === 'month'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800 bg-transparent'
+              }`}
+            >
+              <span>This Month ({data?.currentMonthShort || 'Current Month'})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimeframe('all')}
+              className={`px-3.5 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer border-none flex items-center gap-1.5 ${
+                timeframe === 'all'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-800 bg-transparent'
+              }`}
+            >
+              <span>All-Time</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="text-xs text-gray-500 font-medium flex items-center gap-2">
+          {timeframe === 'month' ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Resets on the 1st of every month • Uncompleted workbench devices carry over</span>
+            </>
+          ) : (
+            <span>Showing cumulative all-time records & revenue</span>
+          )}
+        </div>
+      </div>
+
       {/* 6 Repair Metric Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* 1. Repair Requests */}
         <Link href="/admin/repairs/transactions" className="block transition-transform hover:-translate-y-1 no-underline">
           <StatCard
             icon={<Smartphone size={20} />}
-            label="Repair Requests"
+            label={timeframe === 'month' ? "New Requests" : "Repair Requests"}
             value={`${summary.totalRequests ?? 0}`}
             subText={
               <span className="text-purple-700 font-semibold text-[11px] truncate block">
-                Total repair volume
+                {timeframe === 'month' ? `Received in ${data?.currentMonthShort || 'this month'}` : 'Total repair volume'}
               </span>
             }
             iconBg="bg-purple-100"
@@ -179,7 +225,9 @@ export default function RepairDashboardView({
             value={`${summary.inProgressRepairs ?? 0}`}
             subText={
               <span className="text-blue-600 font-semibold text-[11px] truncate block">
-                Diagnostic / Repairing
+                {timeframe === 'month' && summary.carriedOverCount > 0
+                  ? `${summary.carriedOverCount} active carried over`
+                  : 'Diagnostic / Repairing'}
               </span>
             }
             iconBg="bg-blue-100"
@@ -195,7 +243,7 @@ export default function RepairDashboardView({
             value={`${summary.completedRepairs ?? 0}`}
             subText={
               <span className="text-emerald-600 font-semibold text-[11px] truncate block">
-                Finished & ready
+                {timeframe === 'month' ? `Finished in ${data?.currentMonthShort || 'this month'}` : 'All-time finished'}
               </span>
             }
             iconBg="bg-emerald-100"
@@ -206,7 +254,7 @@ export default function RepairDashboardView({
         {/* 6. Repair Revenue */}
         <StatCard
           icon={<span className="text-xl font-bold">₱</span>}
-          label="Repair Revenue"
+          label={timeframe === 'month' ? "Monthly Revenue" : "Repair Revenue"}
           value={totalRevenueFormatted}
           subText={
             <span className="text-purple-700 font-semibold text-[11px] truncate block">
@@ -270,10 +318,12 @@ export default function RepairDashboardView({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold text-[#111]">Repair Status Overview</h3>
-                <p className="text-xs text-[#666] mt-0.5">Distribution across repair lifecycles</p>
+                <p className="text-xs text-[#666] mt-0.5">
+                  {timeframe === 'month' ? `Active & monthly status distribution (${data?.currentMonthShort || 'This Month'})` : 'Distribution across repair lifecycles'}
+                </p>
               </div>
               <span className="text-xs font-bold bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full border border-purple-200">
-                {summary.totalRequests} Total
+                {summary.totalRequests} {timeframe === 'month' ? 'This Month' : 'Total'}
               </span>
             </div>
 

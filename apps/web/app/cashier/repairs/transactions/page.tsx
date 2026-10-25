@@ -1,5 +1,5 @@
-import AdminRepairTransactions from '../../../AdminSide/AdminRepairTransactions';
+import { redirect } from 'next/navigation';
 
 export default function CashierCompletedRepairsPage() {
-  return <AdminRepairTransactions />;
+  redirect('/cashier/dashboard');
 }

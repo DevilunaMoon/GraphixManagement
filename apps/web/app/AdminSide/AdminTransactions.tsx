@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box, Edit2 } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import { useBranch } from '../../context/BranchContext';
@@ -165,9 +166,13 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
               <ReceiptText size={28} />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 m-0">{type === "downpayment" ? "Downpayments" : "Order History"}</h2>
-              <p className="text-gray-500 m-0 text-sm">
-                {type === "downpayment" ? "View all downpayment purchases" : "View all completed purchases"}
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl font-bold text-gray-900 m-0">
+                  {type === "downpayment" ? "Reservation Downpayments" : "Order History"}
+                </h2>
+              </div>
+              <p className="text-gray-500 m-0 text-sm mt-0.5">
+                {type === "downpayment" ? "View all downpayment purchases and balances" : "View all completed purchases"}
                 {isSuperAdmin && (
                   <span className="ml-2 font-bold text-purple-600">
                     • {selectedBranch === 'all' ? 'All Branches' : `${selectedBranch} Branch`}
