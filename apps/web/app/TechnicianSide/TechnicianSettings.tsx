@@ -21,7 +21,7 @@ import {
 
 export default function TechnicianSettings() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'branch' | 'terms' | 'faqs'>('menu');
+  const [activeSection, setActiveSection] = useState<'menu' | 'branch' | 'terms' | 'faqs'>('menu');
 
   // Technician & Branch state
   const [profile, setProfile] = useState<any>(null);
@@ -124,13 +124,6 @@ export default function TechnicianSettings() {
             <ul className="flex flex-col list-none m-0 p-0">
               
               <SettingsItem 
-                icon={<User className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
-                label="Profile & Account Information"
-                sublabel="View your technician credentials, contact phone, and assigned branch"
-                onClick={() => setActiveSection('profile')}
-              />
-
-              <SettingsItem 
                 icon={<Building2 className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
                 label="Branch Information"
                 sublabel="View your assigned store branch location, address, and contact details"
@@ -154,71 +147,6 @@ export default function TechnicianSettings() {
               />
 
             </ul>
-          </div>
-        </div>
-      )}
-
-      {/* 2. Profile & Account Information Sub-View */}
-      {activeSection === 'profile' && (
-        <div className="flex flex-col gap-5 sm:gap-6 w-full pb-10 animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setActiveSection('menu')}
-              className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0 flex items-center gap-1 font-bold text-sm"
-              title="Back to Settings"
-            >
-              <ChevronLeft size={24} />
-              <span>Back to Settings</span>
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-purple-200/80 shadow-xs flex flex-col gap-6 w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#8b00cc] to-[#bd00ff] text-white flex items-center justify-center font-black text-2xl shadow-md shadow-purple-500/20 shrink-0">
-                  {profile?.image ? (
-                    <img src={profile.image} alt={profile?.name || 'T'} className="w-full h-full rounded-2xl object-cover" />
-                  ) : (
-                    profile?.name ? profile.name.charAt(0).toUpperCase() : 'T'
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 m-0">
-                    {profile?.name || 'Technician'}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[11px] font-bold text-[#8b00cc] bg-purple-100 px-3 py-0.5 rounded-full uppercase tracking-wider">
-                      Staff Technician
-                    </span>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      Active
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="divide-y divide-gray-100 text-sm sm:text-base">
-              <div className="py-4 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Email Address</span>
-                <span className="font-bold text-gray-900">{profile?.email || 'N/A'}</span>
-              </div>
-              <div className="py-4 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Contact Phone</span>
-                <span className="font-bold text-gray-900">{profile?.phone || 'N/A'}</span>
-              </div>
-              <div className="py-4 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Operating Branch</span>
-                <span className="font-bold text-purple-900 bg-purple-50 px-3 py-1 rounded-full border border-purple-200/60">
-                  📍 {branchDisplayName}
-                </span>
-              </div>
-              <div className="py-4 flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Account Role</span>
-                <span className="font-bold text-gray-900">Branch Technician</span>
-              </div>
-            </div>
           </div>
         </div>
       )}

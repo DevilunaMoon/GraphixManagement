@@ -218,7 +218,7 @@ function TechnicianLayoutContent({ children }: { children: React.ReactNode }) {
 
         <div className="p-1.5 space-y-0.5">
           <Link
-            href="/technician/settings"
+            href="/technician/profile"
             onClick={() => {
               setIsProfileMenuOpen(false);
               scrollToAbsoluteTop();
