@@ -156,28 +156,6 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 m-0 leading-tight">
                   {type === "downpayment" ? "Repair Downpayments" : "Completed Repairs"}
                 </h2>
-                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
-                  <Link
-                    href="/admin/repairs/transactions"
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all text-decoration-none ${
-                      type === "full"
-                        ? "bg-white text-purple-700 shadow-xs"
-                        : "text-gray-500 hover:text-gray-900"
-                    }`}
-                  >
-                    Completed
-                  </Link>
-                  <Link
-                    href="/admin/repairs/transactions/downpayments"
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all text-decoration-none ${
-                      type === "downpayment"
-                        ? "bg-white text-purple-700 shadow-xs"
-                        : "text-gray-500 hover:text-gray-900"
-                    }`}
-                  >
-                    Downpayments
-                  </Link>
-                </div>
               </div>
               <p className="text-gray-500 m-0 text-xs sm:text-sm mt-0.5">
                 {isSuperAdmin 

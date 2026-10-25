@@ -54,11 +54,24 @@ export async function GET(req: Request) {
     // 2. Progress / Status condition
     if (type === 'downpayment') {
       andConditions.push({
-        status: { not: { equals: 'Completed', mode: 'insensitive' } },
-        progress: { notIn: ['Completed', '100%'] },
         OR: [
-          { progress: { in: ['25%', '50%', '75%', 'Diagnostic', 'Repairing'] } },
-          { downpayment: { not: null } }
+          { status: null },
+          { status: { not: { equals: 'Completed', mode: 'insensitive' } } }
+        ],
+        AND: [
+          {
+            OR: [
+              { progress: null },
+              { progress: { notIn: ['Completed', '100%'] } }
+            ]
+          },
+          {
+            OR: [
+              { progress: { in: ['25%', '50%', '75%', 'Diagnostic', 'Repairing', 'diagnosis', 'accepted', 'Accepted'] } },
+              { downpayment: { not: null } },
+              { materials: { not: null } }
+            ]
+          }
         ]
       });
     } else {
@@ -243,7 +256,7 @@ export async function GET(req: Request) {
           variations: repair.cause || (parsedHistory?.problem ? `${parsedHistory.problem} - ${parsedHistory.problemDescription || ''}` : 'General Repair'),
           paymentType: isDownpayment ? 'Downpayment' : 'Full',
           source: 'In-Store',
-          status: repair.status || 'Completed',
+          status: repair.status || (isDownpayment ? 'Active' : 'Completed'),
           isExpired: false,
           downpaymentAmount,
           remainingBalance,
@@ -275,9 +288,10 @@ export async function GET(req: Request) {
 
       if (type === 'downpayment') {
         dbTransactions = dbTransactions.filter((tx) => {
-          if (tx.status?.toLowerCase() === 'completed') return false;
-          if (tx.remainingBalance <= 0) return false;
+          const isFinished = tx.status?.toLowerCase() === 'completed' || tx.status?.toLowerCase() === 'cancelled';
+          if (isFinished) return false;
           if (tx.isSettled) return false;
+          if (tx.downpaymentAmount <= 0) return false;
           return true;
         });
       }
