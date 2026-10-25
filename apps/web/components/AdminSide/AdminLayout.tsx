@@ -172,7 +172,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       label: 'Order History', 
       icon: ReceiptText,
       subItems: [
-        { href: '/admin/transactions', label: 'Completed Purchases' }
+        { href: '/admin/transactions', label: 'Completed Purchases' },
+        { href: '/admin/transactions/downpayments', label: 'Reservation Downpayments' }
       ]
     },
     { href: '/admin/accounts', label: 'User Management', icon: User },
@@ -182,7 +183,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       icon: Wrench,
       subItems: [
         { href: '/admin/monitoring', label: 'Devices Monitoring' },
-        { href: '/admin/repairs/transactions', label: 'Completed Repairs' }
+        { href: '/admin/repairs/transactions', label: 'Completed Repairs' },
+        { href: '/admin/repairs/transactions/downpayments', label: 'Repair Downpayments' }
       ]
     },
     ...(isSuperAdmin ? [
