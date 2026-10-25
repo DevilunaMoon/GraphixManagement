@@ -254,13 +254,13 @@ export async function POST(req: Request) {
     const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const baseUrl = `${protocol}://${host}`;
 
-    // If customer submitted a new repair request, notify ONLY the chosen branch's Cashier & Admin, plus Customer confirmation
+    // If customer submitted a new repair request, notify ONLY the chosen branch's Admin & Technician, plus Customer confirmation
     if (isCustomer) {
       try {
-        // Find admins and cashiers assigned strictly to the chosen branch
+        // Find admins and technicians assigned strictly to the chosen branch
         const branchStaff = await prisma.user.findMany({
           where: {
-            role: { in: ['ADMIN', 'CASHIER'] },
+            role: { in: ['ADMIN', 'TECHNICIAN'] },
             branch: { equals: operatingBranch, mode: 'insensitive' },
             status: 'Active'
           },

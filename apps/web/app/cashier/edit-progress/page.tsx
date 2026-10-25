@@ -1,5 +1,5 @@
-import CashierEditProgress from '../../CashierSide/CashierEditProgress';
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <CashierEditProgress />;
+  redirect('/cashier/dashboard');
 }
