@@ -4,29 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   User, 
-  KeyRound, 
   Building2, 
   FileText, 
   HelpCircle, 
   ChevronRight, 
   ChevronLeft, 
   Lock, 
-  CheckCircle2, 
-  AlertCircle, 
   ShieldCheck, 
   Phone, 
   Mail, 
   MapPin, 
   Search, 
   ChevronDown, 
-  ChevronUp, 
-  Wrench, 
-  Loader2 
+  ChevronUp 
 } from 'lucide-react';
 
 export default function TechnicianSettings() {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'branch' | 'password' | 'terms' | 'faqs'>('menu');
+  const [activeSection, setActiveSection] = useState<'menu' | 'profile' | 'branch' | 'terms' | 'faqs'>('menu');
 
   // Technician & Branch state
   const [profile, setProfile] = useState<any>(null);
@@ -36,14 +31,6 @@ export default function TechnicianSettings() {
   const [faqSearch, setFaqSearch] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [activePolicyTab, setActivePolicyTab] = useState<'repair' | 'terms' | 'privacy'>('repair');
-
-  // Password Change state
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [pwdLoading, setPwdLoading] = useState(false);
-  const [pwdError, setPwdError] = useState<string | null>(null);
-  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     // 1. Fetch Profile
@@ -103,44 +90,6 @@ export default function TechnicianSettings() {
   const assignedBranch = profile?.branch || branchDetails?.name || 'Tagoloan';
   const branchDisplayName = assignedBranch.toLowerCase().includes('branch') ? assignedBranch : `${assignedBranch} Branch`;
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwdError(null);
-    setPwdSuccess(null);
-
-    if (newPassword.length < 6) {
-      setPwdError('New password must be at least 6 characters long.');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPwdError('New passwords do not match.');
-      return;
-    }
-
-    setPwdLoading(true);
-    try {
-      const res = await fetch('/api/profile/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to change password');
-      }
-
-      setPwdSuccess('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      setPwdError(err.message || 'Error changing password.');
-    } finally {
-      setPwdLoading(false);
-    }
-  };
-
   const filteredFaqs = faqs.filter(faq => 
     faq.question?.toLowerCase().includes(faqSearch.toLowerCase()) ||
     faq.answer?.toLowerCase().includes(faqSearch.toLowerCase())
@@ -189,13 +138,6 @@ export default function TechnicianSettings() {
               />
 
               <SettingsItem 
-                icon={<KeyRound className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7 -rotate-45" />}
-                label="Change Password"
-                sublabel="Update your technician account login credentials and security password"
-                onClick={() => setActiveSection('password')}
-              />
-
-              <SettingsItem 
                 icon={<FileText className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
                 label="Terms & Privacy Policies"
                 badge="View Only"
@@ -218,7 +160,7 @@ export default function TechnicianSettings() {
 
       {/* 2. Profile & Account Information Sub-View */}
       {activeSection === 'profile' && (
-        <div className="flex flex-col gap-5 sm:gap-6 w-full max-w-4xl mx-auto pb-10 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-5 sm:gap-6 w-full pb-10 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setActiveSection('menu')}
@@ -230,10 +172,10 @@ export default function TechnicianSettings() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200/80 shadow-xs flex flex-col gap-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-purple-200/80 shadow-xs flex flex-col gap-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
-              <div className="flex items-center gap-3.5">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#8b00cc] to-[#bd00ff] text-white flex items-center justify-center font-black text-2xl shadow-md shadow-purple-500/20 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#8b00cc] to-[#bd00ff] text-white flex items-center justify-center font-black text-2xl shadow-md shadow-purple-500/20 shrink-0">
                   {profile?.image ? (
                     <img src={profile.image} alt={profile?.name || 'T'} className="w-full h-full rounded-2xl object-cover" />
                   ) : (
@@ -241,45 +183,38 @@ export default function TechnicianSettings() {
                   )}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 m-0">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 m-0">
                     {profile?.name || 'Technician'}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[11px] font-bold text-[#8b00cc] bg-purple-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[11px] font-bold text-[#8b00cc] bg-purple-100 px-3 py-0.5 rounded-full uppercase tracking-wider">
                       Staff Technician
                     </span>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                       Active
                     </span>
                   </div>
                 </div>
               </div>
-
-              <button
-                onClick={() => setActiveSection('password')}
-                className="px-4 py-2 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[#8b00cc] font-bold text-xs transition-colors flex items-center gap-2 self-start sm:self-auto cursor-pointer"
-              >
-                <KeyRound size={15} />
-                <span>Change Password</span>
-              </button>
             </div>
 
-            <div className="divide-y divide-gray-100 text-sm">
-              <div className="py-3.5 flex justify-between items-center">
+            <div className="divide-y divide-gray-100 text-sm sm:text-base">
+              <div className="py-4 flex justify-between items-center">
                 <span className="text-gray-500 font-medium">Email Address</span>
                 <span className="font-bold text-gray-900">{profile?.email || 'N/A'}</span>
               </div>
-              <div className="py-3.5 flex justify-between items-center">
+              <div className="py-4 flex justify-between items-center">
                 <span className="text-gray-500 font-medium">Contact Phone</span>
                 <span className="font-bold text-gray-900">{profile?.phone || 'N/A'}</span>
               </div>
-              <div className="py-3.5 flex justify-between items-center">
+              <div className="py-4 flex justify-between items-center">
                 <span className="text-gray-500 font-medium">Operating Branch</span>
                 <span className="font-bold text-purple-900 bg-purple-50 px-3 py-1 rounded-full border border-purple-200/60">
                   📍 {branchDisplayName}
                 </span>
               </div>
-              <div className="py-3.5 flex justify-between items-center">
+              <div className="py-4 flex justify-between items-center">
                 <span className="text-gray-500 font-medium">Account Role</span>
                 <span className="font-bold text-gray-900">Branch Technician</span>
               </div>
@@ -290,7 +225,7 @@ export default function TechnicianSettings() {
 
       {/* 3. Branch Information Sub-View */}
       {activeSection === 'branch' && (
-        <div className="flex flex-col gap-5 sm:gap-6 w-full max-w-4xl mx-auto pb-10 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-5 sm:gap-6 w-full pb-10 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setActiveSection('menu')}
@@ -302,62 +237,62 @@ export default function TechnicianSettings() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200/80 shadow-xs flex flex-col gap-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-purple-200/80 shadow-xs flex flex-col gap-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center shrink-0">
-                  <Building2 size={24} />
+                <div className="w-14 h-14 rounded-2xl bg-purple-100 text-[#BF00FF] flex items-center justify-center shrink-0">
+                  <Building2 size={28} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 m-0">
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 m-0">
                     {branchDisplayName}
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium m-0 mt-0.5">
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
                     Your assigned store branch and operational contact details
                   </p>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 flex items-center gap-1.5 self-start sm:self-auto">
+              <span className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 flex items-center gap-1.5 self-start sm:self-auto">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Active Branch
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
-              <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3">
-                <MapPin className="text-[#BF00FF] shrink-0 mt-0.5" size={18} />
+              <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3.5">
+                <MapPin className="text-[#BF00FF] shrink-0 mt-0.5" size={20} />
                 <div>
-                  <span className="font-bold text-gray-900 block mb-0.5">Store Location Address</span>
+                  <span className="font-bold text-gray-900 block mb-0.5 text-sm">Store Location Address</span>
                   <span className="text-gray-600 leading-relaxed">
                     {branchDetails?.address || `${assignedBranch}, Misamis Oriental, Philippines`}
                   </span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3">
-                <Phone className="text-[#BF00FF] shrink-0 mt-0.5" size={18} />
+              <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3.5">
+                <Phone className="text-[#BF00FF] shrink-0 mt-0.5" size={20} />
                 <div>
-                  <span className="font-bold text-gray-900 block mb-0.5">Contact Hotline</span>
+                  <span className="font-bold text-gray-900 block mb-0.5 text-sm">Contact Hotline</span>
                   <span className="text-gray-600">
                     {branchDetails?.phone || '+63 912 345 6789'}
                   </span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3">
-                <Mail className="text-[#BF00FF] shrink-0 mt-0.5" size={18} />
+              <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3.5">
+                <Mail className="text-[#BF00FF] shrink-0 mt-0.5" size={20} />
                 <div>
-                  <span className="font-bold text-gray-900 block mb-0.5">Official Email</span>
+                  <span className="font-bold text-gray-900 block mb-0.5 text-sm">Official Email</span>
                   <span className="text-gray-600">
                     {branchDetails?.email || `support.${assignedBranch.toLowerCase()}@graphix.com`}
                   </span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3">
-                <ShieldCheck className="text-[#BF00FF] shrink-0 mt-0.5" size={18} />
+              <div className="p-5 rounded-2xl bg-purple-50/50 border border-purple-100 flex items-start gap-3.5">
+                <ShieldCheck className="text-[#BF00FF] shrink-0 mt-0.5" size={20} />
                 <div>
-                  <span className="font-bold text-gray-900 block mb-0.5">Branch Code</span>
+                  <span className="font-bold text-gray-900 block mb-0.5 text-sm">Branch Code</span>
                   <span className="text-gray-600 font-bold uppercase tracking-wider">
                     {assignedBranch.toUpperCase()}
                   </span>
@@ -368,107 +303,9 @@ export default function TechnicianSettings() {
         </div>
       )}
 
-      {/* 4. Change Password Sub-View */}
-      {activeSection === 'password' && (
-        <div className="flex flex-col gap-5 sm:gap-6 w-full max-w-xl mx-auto pb-10 animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => {
-                setActiveSection('menu');
-                setPwdError(null);
-                setPwdSuccess(null);
-              }}
-              className="text-black hover:text-[#bd00ff] transition-colors border-none bg-transparent cursor-pointer p-1 -ml-1 shrink-0 flex items-center gap-1 font-bold text-sm"
-              title="Back to Settings"
-            >
-              <ChevronLeft size={24} />
-              <span>Back to Settings</span>
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200/80 shadow-xs flex flex-col gap-5">
-            <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
-              <div className="p-2.5 rounded-2xl bg-purple-50 text-[#BF00FF]">
-                <KeyRound size={22} className="-rotate-45" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 m-0">Change Password</h3>
-                <p className="text-xs text-gray-500 m-0 mt-0.5">Update your technician login credentials</p>
-              </div>
-            </div>
-
-            {pwdError && (
-              <div className="p-3.5 rounded-xl bg-red-50 text-red-600 font-bold text-xs border border-red-200 flex items-center gap-2">
-                <AlertCircle size={16} className="shrink-0" />
-                <span>{pwdError}</span>
-              </div>
-            )}
-            {pwdSuccess && (
-              <div className="p-3.5 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200 flex items-center gap-2">
-                <CheckCircle2 size={16} className="shrink-0" />
-                <span>{pwdSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword} className="flex flex-col gap-4 text-xs sm:text-sm">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-gray-700">Current Password</label>
-                <input
-                  type="password"
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter current password"
-                  className="p-3 rounded-xl bg-gray-50 border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all text-xs sm:text-sm"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-gray-700">New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                  className="p-3 rounded-xl bg-gray-50 border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all text-xs sm:text-sm"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="font-bold text-gray-700">Confirm New Password</label>
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Repeat new password"
-                  className="p-3 rounded-xl bg-gray-50 border border-gray-200 font-medium outline-none focus:ring-2 focus:ring-purple-500 transition-all text-xs sm:text-sm"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={pwdLoading}
-                className="mt-2 py-3 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:brightness-110 text-white font-bold transition-all shadow-md shadow-purple-500/20 cursor-pointer border-none disabled:opacity-50 flex items-center justify-center gap-2 text-xs sm:text-sm"
-              >
-                {pwdLoading ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    <span>Updating Password...</span>
-                  </>
-                ) : (
-                  <span>Save New Password</span>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 5. Terms & Privacy Policies Sub-View */}
+      {/* 4. Terms & Privacy Policies Sub-View */}
       {activeSection === 'terms' && (
-        <div className="flex flex-col gap-5 sm:gap-6 w-full max-w-4xl mx-auto pb-10 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-5 sm:gap-6 w-full pb-10 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setActiveSection('menu')}
@@ -480,21 +317,21 @@ export default function TechnicianSettings() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200/80 shadow-xs flex flex-col gap-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-purple-200/80 shadow-xs flex flex-col gap-6 w-full">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 m-0">Store Terms & Policies</h3>
-                <p className="text-xs text-gray-500 m-0 mt-0.5">Technician operating standards, repair policies, and warranties</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 m-0">Store Terms & Policies</h3>
+                <p className="text-xs sm:text-sm text-gray-500 m-0 mt-0.5">Technician operating standards, repair policies, and warranties</p>
               </div>
-              <span className="px-3 py-1 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] rounded-full border border-purple-200 flex items-center gap-1">
+              <span className="px-3.5 py-1 bg-purple-50 text-[#bd00ff] font-extrabold text-[11px] rounded-full border border-purple-200 flex items-center gap-1">
                 <Lock size={11} /> View Only
               </span>
             </div>
 
-            <div className="flex gap-2 border-b border-gray-100 pb-3">
+            <div className="flex gap-2 border-b border-gray-100 pb-3 flex-wrap">
               <button
                 onClick={() => setActivePolicyTab('repair')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border cursor-pointer ${
                   activePolicyTab === 'repair'
                     ? 'bg-[#8b00cc] text-white border-[#8b00cc]'
                     : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
@@ -504,7 +341,7 @@ export default function TechnicianSettings() {
               </button>
               <button
                 onClick={() => setActivePolicyTab('terms')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border cursor-pointer ${
                   activePolicyTab === 'terms'
                     ? 'bg-[#8b00cc] text-white border-[#8b00cc]'
                     : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
@@ -514,7 +351,7 @@ export default function TechnicianSettings() {
               </button>
               <button
                 onClick={() => setActivePolicyTab('privacy')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border cursor-pointer ${
                   activePolicyTab === 'privacy'
                     ? 'bg-[#8b00cc] text-white border-[#8b00cc]'
                     : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
@@ -524,7 +361,7 @@ export default function TechnicianSettings() {
               </button>
             </div>
 
-            <div className="p-4 sm:p-6 rounded-2xl bg-purple-50/30 border border-purple-100 text-xs sm:text-sm text-gray-700 leading-relaxed font-medium">
+            <div className="p-5 sm:p-7 rounded-2xl bg-purple-50/30 border border-purple-100 text-xs sm:text-sm text-gray-700 leading-relaxed font-medium">
               {activePolicyTab === 'repair' && repairPolicy}
               {activePolicyTab === 'terms' && termsPolicy}
               {activePolicyTab === 'privacy' && privacyPolicy}
@@ -533,9 +370,9 @@ export default function TechnicianSettings() {
         </div>
       )}
 
-      {/* 6. FAQs Sub-View */}
+      {/* 5. FAQs Sub-View */}
       {activeSection === 'faqs' && (
-        <div className="flex flex-col gap-5 sm:gap-6 w-full max-w-4xl mx-auto pb-10 animate-in fade-in duration-200">
+        <div className="flex flex-col gap-5 sm:gap-6 w-full pb-10 animate-in fade-in duration-200">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setActiveSection('menu')}
@@ -547,14 +384,14 @@ export default function TechnicianSettings() {
             </button>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-purple-200/80 shadow-xs flex flex-col gap-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-purple-200/80 shadow-xs flex flex-col gap-6 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-900 m-0">Frequently Asked Questions</h3>
-                <p className="text-xs text-gray-500 m-0 mt-0.5">Common repair intake workflows, diagnostic rules, and troubleshooting</p>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 m-0">Frequently Asked Questions</h3>
+                <p className="text-xs sm:text-sm text-gray-500 m-0 mt-0.5">Common repair intake workflows, diagnostic rules, and troubleshooting</p>
               </div>
               
-              <div className="flex items-center border border-gray-200 rounded-xl px-3 py-1.5 bg-gray-50 w-full sm:w-64">
+              <div className="flex items-center border border-gray-200 rounded-xl px-3.5 py-2 bg-gray-50 w-full sm:w-72">
                 <Search size={16} className="text-gray-400 shrink-0" />
                 <input
                   type="text"
@@ -578,13 +415,13 @@ export default function TechnicianSettings() {
                       <button
                         type="button"
                         onClick={() => setExpandedFaq(isExpanded ? null : (faq.id || idx.toString()))}
-                        className="w-full flex items-center justify-between p-4 text-left font-bold text-xs sm:text-sm text-gray-900 hover:text-[#8b00cc] transition-colors border-none bg-transparent cursor-pointer"
+                        className="w-full flex items-center justify-between p-4 sm:p-5 text-left font-bold text-xs sm:text-sm text-gray-900 hover:text-[#8b00cc] transition-colors border-none bg-transparent cursor-pointer"
                       >
                         <span>{faq.question}</span>
                         {isExpanded ? <ChevronUp size={16} className="text-[#8b00cc] shrink-0" /> : <ChevronDown size={16} className="text-gray-400 shrink-0" />}
                       </button>
                       {isExpanded && (
-                        <div className="p-4 pt-0 text-xs sm:text-sm text-gray-600 leading-relaxed font-medium border-t border-purple-100/50">
+                        <div className="p-4 sm:p-5 pt-0 text-xs sm:text-sm text-gray-600 leading-relaxed font-medium border-t border-purple-100/50">
                           {faq.answer}
                         </div>
                       )}

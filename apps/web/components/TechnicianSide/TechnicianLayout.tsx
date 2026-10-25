@@ -228,17 +228,6 @@ function TechnicianLayoutContent({ children }: { children: React.ReactNode }) {
             <User size={16} className="text-[#9b1fe8]" />
             My Profile
           </Link>
-          <Link
-            href="/technician/settings"
-            onClick={() => {
-              setIsProfileMenuOpen(false);
-              scrollToAbsoluteTop();
-            }}
-            className="flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:text-[#9b1fe8] hover:bg-purple-50 rounded-xl transition-colors"
-          >
-            <KeyRound size={16} className="text-[#9b1fe8]" />
-            Change Password
-          </Link>
         </div>
 
         <div className="pt-1 mt-1 border-t border-gray-100 p-1.5">
