@@ -54,6 +54,8 @@ export async function GET(req: Request) {
     // 2. Progress / Status condition
     if (type === 'downpayment') {
       andConditions.push({
+        status: { not: { equals: 'Completed', mode: 'insensitive' } },
+        progress: { notIn: ['Completed', '100%'] },
         OR: [
           { progress: { in: ['25%', '50%', '75%', 'Diagnostic', 'Repairing'] } },
           { downpayment: { not: null } }
@@ -196,9 +198,29 @@ export async function GET(req: Request) {
           downpaymentAmount = totalCost / 2;
         }
 
+        let matsPaid = 0;
+        let matsBalanceDue: number | null = null;
+        let isMatsFullyPaid = false;
+        if (repair.materials) {
+          try {
+            const mats = typeof repair.materials === 'string' ? JSON.parse(repair.materials) : repair.materials;
+            if (mats && typeof mats === 'object') {
+              if (mats.isFullyPaid === true) isMatsFullyPaid = true;
+              if (mats.balanceDue !== undefined && mats.balanceDue !== null) {
+                const b = parseFloat(String(mats.balanceDue).replace(/[^0-9.]/g, ''));
+                if (!isNaN(b)) matsBalanceDue = b;
+              }
+              matsPaid = parseFloat(String(mats.cashAmount || mats.totalPaid || mats.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+            }
+          } catch (e) {}
+        }
+
         const isDownpayment = type === 'downpayment';
-        const remainingBalance = isDownpayment ? Math.max(0, totalCost - downpaymentAmount) : 0;
-        const amount = isDownpayment ? (downpaymentAmount > 0 ? downpaymentAmount : totalCost) : totalCost;
+        const effectiveDownpayment = downpaymentAmount > 0 ? downpaymentAmount : matsPaid;
+        const remainingBalance = isDownpayment 
+          ? (isMatsFullyPaid ? 0 : (matsBalanceDue !== null ? matsBalanceDue : Math.max(0, totalCost - effectiveDownpayment))) 
+          : 0;
+        const amount = isDownpayment ? (effectiveDownpayment > 0 ? effectiveDownpayment : totalCost) : totalCost;
         const repairBranch = repair.branch || session.branch || 'Tagoloan';
 
         const customerName = repair.user?.name || parsedHistory?.customerName || (repair.ownerName && repair.ownerName.trim() ? repair.ownerName : 'Walk-In Customer');
@@ -250,6 +272,15 @@ export async function GET(req: Request) {
           },
         };
       });
+
+      if (type === 'downpayment') {
+        dbTransactions = dbTransactions.filter((tx) => {
+          if (tx.status?.toLowerCase() === 'completed') return false;
+          if (tx.remainingBalance <= 0) return false;
+          if (tx.isSettled) return false;
+          return true;
+        });
+      }
     } catch (dbErr) {
       console.error("Database query warning (falling back to store receipts if needed):", dbErr);
     }

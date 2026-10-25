@@ -645,15 +645,44 @@ export default function TechnicianMonitoring() {
       return prog === 'repairing';
     }
     if (statusFilter === 'DOWNPAYMENTS') {
-      const downVal = parseFloat(String(d.downpayment || '0').replace(/[^0-9.]/g, ''));
+      // 1. Exclude if device is completed or cancelled
+      if (stat === 'completed' || prog === 'completed' || prog === '100%' || stat === 'cancelled' || prog === 'cancelled') {
+        return false;
+      }
+
+      // 2. Parse materials safely to check payment status
+      let isFullyPaid = false;
+      let balanceDue: number | null = null;
       let matsPaid = 0;
+
       if (d.materials) {
         try {
           const parsed = typeof d.materials === 'string' ? JSON.parse(d.materials) : d.materials;
-          matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
-        } catch {}
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.isFullyPaid === true) isFullyPaid = true;
+            if (parsed.balanceDue !== undefined && parsed.balanceDue !== null) {
+              const b = parseFloat(String(parsed.balanceDue).replace(/[^0-9.]/g, ''));
+              if (!isNaN(b)) balanceDue = b;
+            }
+            matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+          }
+        } catch (e) {
+          console.error("Error parsing materials in downpayment filter:", e);
+        }
       }
-      return downVal > 0 || matsPaid > 0;
+
+      const downVal = parseFloat(String(d.downpayment || '0').replace(/[^0-9.]/g, '')) || 0;
+      const totalCost = parseFloat(String(d.repairCost || '0').replace(/[^0-9.]/g, '')) || 0;
+      const totalPaid = matsPaid > 0 ? matsPaid : downVal;
+
+      // 3. Exclude if marked fully paid or recorded balance is 0 or less
+      if (isFullyPaid) return false;
+      if (balanceDue !== null && balanceDue <= 0 && totalPaid > 0) return false;
+      if (totalCost > 0 && totalPaid >= totalCost) return false;
+
+      // 4. Must have an initial deposit paid and an outstanding balance due
+      const hasBalance = balanceDue !== null ? balanceDue > 0 : (totalCost > 0 ? totalPaid < totalCost : true);
+      return totalPaid > 0 && hasBalance;
     }
     if (statusFilter === 'COMPLETED') {
       return stat === 'completed' || prog === 'completed';
@@ -780,19 +809,48 @@ export default function TechnicianMonitoring() {
                               </span>
                             )}
                             {(() => {
-                              const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, ''));
+                              const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, '')) || 0;
                               let matsPaid = 0;
+                              let isFullyPaid = false;
+                              let balanceDue: number | null = null;
+
                               if (device.materials) {
                                 try {
                                   const parsed = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
-                                  matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                  if (parsed && typeof parsed === 'object') {
+                                    if (parsed.isFullyPaid === true) isFullyPaid = true;
+                                    if (parsed.balanceDue !== undefined && parsed.balanceDue !== null) {
+                                      const b = parseFloat(String(parsed.balanceDue).replace(/[^0-9.]/g, ''));
+                                      if (!isNaN(b)) balanceDue = b;
+                                    }
+                                    matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                  }
                                 } catch {}
                               }
                               const paid = downVal > 0 ? downVal : matsPaid;
+                              const cost = parseFloat(String(device.repairCost || '0').replace(/[^0-9.]/g, '')) || 0;
+                              const isCompleted = (device.status || '').toLowerCase() === 'completed' || (device.progress || '').toLowerCase() === 'completed' || device.progress === '100%';
+
+                              if (isCompleted || isFullyPaid || (cost > 0 && paid >= cost) || (balanceDue !== null && balanceDue <= 0 && paid > 0)) {
+                                if (paid > 0) {
+                                  return (
+                                    <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                                      <CheckCircle2 size={10} className="text-emerald-600" />
+                                      ₱{paid.toLocaleString()} Paid in Full
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              }
+
                               if (paid > 0) {
+                                const remaining = balanceDue !== null ? balanceDue : (cost > paid ? cost - paid : null);
                                 return (
-                                  <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                    ₱{paid.toLocaleString()} Paid
+                                  <span className="font-mono text-[10px] font-extrabold text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 flex items-center gap-1">
+                                    <span>💰 ₱{paid.toLocaleString()} Deposit</span>
+                                    {remaining !== null && remaining > 0 && (
+                                      <span className="text-amber-700">(₱{remaining.toLocaleString()} Due)</span>
+                                    )}
                                   </span>
                                 );
                               }
@@ -890,19 +948,48 @@ export default function TechnicianMonitoring() {
                             </span>
                           )}
                           {(() => {
-                            const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, ''));
+                            const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, '')) || 0;
                             let matsPaid = 0;
+                            let isFullyPaid = false;
+                            let balanceDue: number | null = null;
+
                             if (device.materials) {
                               try {
                                 const parsed = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
-                                matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                if (parsed && typeof parsed === 'object') {
+                                  if (parsed.isFullyPaid === true) isFullyPaid = true;
+                                  if (parsed.balanceDue !== undefined && parsed.balanceDue !== null) {
+                                    const b = parseFloat(String(parsed.balanceDue).replace(/[^0-9.]/g, ''));
+                                    if (!isNaN(b)) balanceDue = b;
+                                  }
+                                  matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                }
                               } catch {}
                             }
                             const paid = downVal > 0 ? downVal : matsPaid;
+                            const cost = parseFloat(String(device.repairCost || '0').replace(/[^0-9.]/g, '')) || 0;
+                            const isCompleted = (device.status || '').toLowerCase() === 'completed' || (device.progress || '').toLowerCase() === 'completed' || device.progress === '100%';
+
+                            if (isCompleted || isFullyPaid || (cost > 0 && paid >= cost) || (balanceDue !== null && balanceDue <= 0 && paid > 0)) {
+                              if (paid > 0) {
+                                return (
+                                  <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                                    <CheckCircle2 size={10} className="text-emerald-600" />
+                                    ₱{paid.toLocaleString()} Paid in Full
+                                  </span>
+                                );
+                              }
+                              return null;
+                            }
+
                             if (paid > 0) {
+                              const remaining = balanceDue !== null ? balanceDue : (cost > paid ? cost - paid : null);
                               return (
-                                <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                  ₱{paid.toLocaleString()} Paid
+                                <span className="font-mono text-[10px] font-extrabold text-purple-900 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 flex items-center gap-1">
+                                  <span>💰 ₱{paid.toLocaleString()} Deposit</span>
+                                  {remaining !== null && remaining > 0 && (
+                                    <span className="text-amber-700">(₱{remaining.toLocaleString()} Due)</span>
+                                  )}
                                 </span>
                               );
                             }

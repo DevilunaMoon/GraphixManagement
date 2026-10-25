@@ -252,6 +252,75 @@ export default function MaterialBreakdownEditor({
     if (onGcashAmountChange) onGcashAmountChange(val);
   };
 
+  // Dedicated Settlement / Pay in Full state and handlers
+  const [settlementCash, setSettlementCash] = useState<string>('');
+  const [settlementFeedback, setSettlementFeedback] = useState<{ type: 'success' | 'warning' | 'error'; message: string; change?: number } | null>(null);
+
+  const handlePayFullRemaining = () => {
+    if (totalRepairCost <= 0) {
+      setSettlementFeedback({ type: 'warning', message: 'No repair cost calculated yet. Please add parts or labor first.' });
+      return;
+    }
+    if (currentMethod === 'GCash') {
+      handleGcashChange(String(totalRepairCost));
+    } else {
+      handleCashChange(String(totalRepairCost));
+    }
+    setSettlementCash('');
+    setSettlementFeedback({ type: 'success', message: 'Balance settled in full! Device is now marked Paid in Full.' });
+  };
+
+  const handleSettlementInputChange = (val: string) => {
+    setSettlementCash(val);
+    setSettlementFeedback(null);
+
+    const clean = val.replace(/[^0-9.]/g, '');
+    if (clean === '') {
+      return;
+    }
+
+    const additionalNum = parseFloat(clean);
+    if (isNaN(additionalNum) || additionalNum < 0) {
+      setSettlementFeedback({ type: 'error', message: 'Please enter a valid positive cash amount.' });
+      return;
+    }
+
+    if (totalRepairCost <= 0) {
+      setSettlementFeedback({ type: 'warning', message: 'Total repair cost is ₱0.00. Add materials or labor first.' });
+      return;
+    }
+
+    const currentPaid = currentMethod === 'GCash' ? parsedGcash : parsedCash;
+    const currentRemaining = Math.max(0, totalRepairCost - currentPaid);
+
+    if (additionalNum >= currentRemaining) {
+      const calculatedChange = additionalNum - currentRemaining;
+      const targetTotal = totalRepairCost;
+      if (currentMethod === 'GCash') {
+        handleGcashChange(String(targetTotal));
+      } else {
+        handleCashChange(String(targetTotal));
+      }
+      setSettlementFeedback({
+        type: 'success',
+        message: 'Full payment received! Device marked Paid in Full.',
+        change: calculatedChange
+      });
+    } else {
+      const newTotal = currentPaid + additionalNum;
+      const newRemaining = Math.max(0, totalRepairCost - newTotal);
+      if (currentMethod === 'GCash') {
+        handleGcashChange(String(newTotal));
+      } else {
+        handleCashChange(String(newTotal));
+      }
+      setSettlementFeedback({
+        type: 'warning',
+        message: `Partial payment applied. Remaining balance: ₱${newRemaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      });
+    }
+  };
+
   const handleCopyGcash = () => {
     if (branchGcash?.gcashNumber) {
       navigator.clipboard.writeText(branchGcash.gcashNumber.replace(/\s+/g, ''));
@@ -970,6 +1039,101 @@ export default function MaterialBreakdownEditor({
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 6. Dedicated Pay in Full / Settle Remaining Balance Section */}
+        {!readOnly && balanceDue > 0 && totalRepairCost > 0 && (
+          <div className="p-4 bg-gradient-to-r from-purple-50 via-fuchsia-50/40 to-indigo-50 border-2 border-purple-200/90 rounded-2xl flex flex-col gap-3 shadow-2xs animate-in fade-in duration-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 pb-2.5 border-b border-purple-100">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-[#bd00ff] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                  ₱
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-1.5">
+                    <span>Pay Remaining Balance to Settle in Full</span>
+                  </h4>
+                  <p className="text-[11px] text-gray-600 mt-0.5">
+                    Deposit received: <strong className="text-purple-700 font-mono">₱{totalAmountPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> • Outstanding balance: <strong className="text-amber-700 font-mono">₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-100 text-[#bd00ff] px-2.5 py-1 rounded-full border border-purple-200 shrink-0">
+                Downpayment Mode
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <div className="flex-1 flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-gray-700 flex items-center justify-between">
+                  <span>Cash / Payment to Pay in Full (₱)</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Remaining needed: ₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400 text-xs">₱</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder={`Enter cash amount to settle ₱${balanceDue.toLocaleString()}...`}
+                    value={settlementCash}
+                    onChange={(e) => handleSettlementInputChange(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2.5 bg-white border border-purple-200 rounded-xl outline-none font-mono font-bold text-gray-900 focus:border-[#bd00ff] text-sm shadow-2xs transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-4">
+                <button
+                  type="button"
+                  onClick={handlePayFullRemaining}
+                  className="px-4 py-2.5 bg-[#bd00ff] hover:bg-[#9c00d6] active:scale-[0.98] text-white text-xs font-black rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-sm shadow-purple-200 transition-all border-none"
+                  title="Click to instantly mark the remaining balance as paid in full"
+                >
+                  <CheckCircle2 size={14} />
+                  <span>Pay Full Balance (₱{balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                </button>
+                {settlementCash && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettlementCash('');
+                      setSettlementFeedback(null);
+                    }}
+                    className="px-3 py-2.5 bg-white hover:bg-gray-100 text-gray-600 text-xs font-bold rounded-xl border border-gray-200 transition-colors cursor-pointer"
+                    title="Clear payment input"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Real-time Settlement & Error Feedback */}
+            {settlementFeedback && (
+              <div className={`text-xs font-semibold px-3 py-2 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-1 animate-in fade-in duration-150 ${
+                settlementFeedback.type === 'success' 
+                  ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
+                  : settlementFeedback.type === 'warning' 
+                    ? 'bg-amber-50 text-amber-900 border-amber-200' 
+                    : 'bg-red-50 text-red-900 border-red-200'
+              }`}>
+                <span className="flex items-center gap-1.5">
+                  {settlementFeedback.type === 'success' ? (
+                    <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertCircle size={14} className="text-amber-600 shrink-0" />
+                  )}
+                  {settlementFeedback.message}
+                </span>
+                {settlementFeedback.change !== undefined && settlementFeedback.change > 0 && (
+                  <span className="font-mono font-black text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-lg text-xs self-start sm:self-auto">
+                    Customer Change: ₱{settlementFeedback.change.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
