@@ -172,7 +172,7 @@ export default function TechnicianMonitoring() {
   const [devices, setDevices] = useState<DeviceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DIAGNOSTIC' | 'REPAIRING' | 'COMPLETED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DIAGNOSTIC' | 'REPAIRING' | 'DOWNPAYMENTS' | 'COMPLETED'>('ALL');
   const [technician, setTechnician] = useState<any>(null);
 
   // Pagination
@@ -644,6 +644,17 @@ export default function TechnicianMonitoring() {
     if (statusFilter === 'REPAIRING') {
       return prog === 'repairing';
     }
+    if (statusFilter === 'DOWNPAYMENTS') {
+      const downVal = parseFloat(String(d.downpayment || '0').replace(/[^0-9.]/g, ''));
+      let matsPaid = 0;
+      if (d.materials) {
+        try {
+          const parsed = typeof d.materials === 'string' ? JSON.parse(d.materials) : d.materials;
+          matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+        } catch {}
+      }
+      return downVal > 0 || matsPaid > 0;
+    }
     if (statusFilter === 'COMPLETED') {
       return stat === 'completed' || prog === 'completed';
     }
@@ -705,7 +716,7 @@ export default function TechnicianMonitoring() {
 
         {/* Filter Pills Bar */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'COMPLETED'] as const).map((tab) => (
+          {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'DOWNPAYMENTS', 'COMPLETED'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -719,7 +730,7 @@ export default function TechnicianMonitoring() {
                   : 'bg-[#FAF7FF] text-[#5b4a7a] border-[#E9D8FD] hover:bg-white hover:text-[#9333EA]'
               }`}
             >
-              {tab === 'ALL' ? 'All Assigned' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+              {tab === 'ALL' ? 'All Assigned' : tab === 'DOWNPAYMENTS' ? 'Downpayments' : tab.charAt(0) + tab.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
@@ -761,13 +772,32 @@ export default function TechnicianMonitoring() {
                           </div>
                         </td>
                         <td className="py-4 px-5 align-middle">
-                          <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug flex items-center gap-2">
+                          <div className="font-bold text-[0.98rem] text-[#1F1728] leading-snug flex items-center gap-2 flex-wrap">
                             <span>{device.deviceName}</span>
                             {device.trackingNumber && (
                               <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                                 {device.trackingNumber}
                               </span>
                             )}
+                            {(() => {
+                              const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, ''));
+                              let matsPaid = 0;
+                              if (device.materials) {
+                                try {
+                                  const parsed = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
+                                  matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                                } catch {}
+                              }
+                              const paid = downVal > 0 ? downVal : matsPaid;
+                              if (paid > 0) {
+                                return (
+                                  <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                    ₱{paid.toLocaleString()} Paid
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           {device.ownerName ? (
                             <button
@@ -853,11 +883,32 @@ export default function TechnicianMonitoring() {
                           </div>
                         </div>
 
-                        {device.trackingNumber && (
-                          <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 inline-block mt-1">
-                            {device.trackingNumber}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          {device.trackingNumber && (
+                            <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 inline-block">
+                              {device.trackingNumber}
+                            </span>
+                          )}
+                          {(() => {
+                            const downVal = parseFloat(String(device.downpayment || '0').replace(/[^0-9.]/g, ''));
+                            let matsPaid = 0;
+                            if (device.materials) {
+                              try {
+                                const parsed = typeof device.materials === 'string' ? JSON.parse(device.materials) : device.materials;
+                                matsPaid = parseFloat(String(parsed?.cashAmount || parsed?.totalPaid || parsed?.downpayment || 0).replace(/[^0-9.]/g, '')) || 0;
+                              } catch {}
+                            }
+                            const paid = downVal > 0 ? downVal : matsPaid;
+                            if (paid > 0) {
+                              return (
+                                <span className="font-mono text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                  ₱{paid.toLocaleString()} Paid
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
 
                         <div className="mt-1">
                           {device.ownerName ? (
