@@ -168,14 +168,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: Grid },
     { href: '/admin/notifications', label: 'Notifications', icon: Bell },
-    { 
-      label: 'Order History', 
-      icon: ReceiptText,
-      subItems: [
-        { href: '/admin/transactions', label: 'Completed Purchases' },
-        { href: '/admin/transactions/downpayments', label: 'Reservation Downpayments' }
-      ]
-    },
+    { href: '/admin/transactions', label: 'Order History', icon: ReceiptText },
     { href: '/admin/accounts', label: 'User Management', icon: User },
     { href: '/admin/inventory', label: 'Product Inventory', icon: Box },
     { 
@@ -196,6 +189,21 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
+
+  const getPageTitle = (path: string) => {
+    if (path.startsWith('/admin/transactions')) return 'Order History';
+    if (path.startsWith('/admin/monitoring')) return 'Devices Monitoring';
+    if (path.startsWith('/admin/repairs/transactions')) return 'Completed Repairs';
+    if (path.startsWith('/admin/accounts')) return 'User Management';
+    if (path.startsWith('/admin/inventory')) return 'Product Inventory';
+    if (path.startsWith('/admin/branches')) return 'Branch Management';
+    if (path.startsWith('/admin/banners')) return 'Banners';
+    if (path.startsWith('/admin/about-editor')) return 'About Page';
+    if (path.startsWith('/admin/analytics')) return 'Analytics';
+    if (path.startsWith('/admin/settings')) return 'Settings';
+    if (path.startsWith('/admin/notifications')) return 'Notifications';
+    return isSuperAdmin ? 'Super Admin Portal' : 'Dashboard Overview';
+  };
 
   const renderProfileDropdown = () => (
     <>
@@ -527,7 +535,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         <header className={`hidden md:flex bg-gradient-to-r ${styles.gradient} text-white p-5 md:px-10 justify-between items-center shadow-sm transition-all duration-300`}>
           <div>
             <h1 className="text-2xl font-bold">
-              {isSuperAdmin ? "Super Admin Portal" : "Dashboard Overview"}
+              {getPageTitle(pathname)}
             </h1>
           </div>
           <div className="flex items-center gap-3">
