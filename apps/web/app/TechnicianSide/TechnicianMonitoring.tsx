@@ -267,6 +267,9 @@ export default function TechnicianMonitoring() {
       if (profRes.ok) {
         profile = await profRes.json();
         setTechnician(profile);
+        if (profile?.branch) {
+          setEditBranch(profile.branch);
+        }
       }
 
       const res = await fetch('/api/monitoring?limit=100');
