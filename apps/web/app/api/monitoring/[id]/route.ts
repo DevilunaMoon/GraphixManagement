@@ -165,6 +165,33 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       updateData.progress = 'Completed';
     }
 
+    // Ensure repairCost is accurately populated if missing, 0, or NaN
+    if (updateData.materials) {
+      try {
+        const parsed = typeof updateData.materials === 'string' ? JSON.parse(updateData.materials) : updateData.materials;
+        const rawItems = Array.isArray(parsed?.items) ? parsed.items : (Array.isArray(parsed) ? parsed : []);
+        const sum = rawItems.reduce((acc: number, it: any) => {
+          const q = Math.max(1, parseInt(String(it.qty || 1), 10) || 1);
+          const p = parseFloat(String(it.unitPrice ?? it.price ?? it.cost ?? 0).replace(/[^0-9.]/g, '')) || 0;
+          const lineTotal = parseFloat(String(it.total).replace(/[^0-9.]/g, ''));
+          return acc + (!isNaN(lineTotal) && lineTotal > 0 ? lineTotal : (q * p));
+        }, 0);
+
+        const currentCostNum = parseFloat(String(updateData.repairCost || '').replace(/[^0-9.]/g, ''));
+        if (isNaN(currentCostNum) || currentCostNum === 0) {
+          if (sum > 0) {
+            updateData.repairCost = String(sum);
+          } else if (parsed?.totalPaid && parseFloat(String(parsed.totalPaid).replace(/[^0-9.]/g, '')) > 0) {
+            updateData.repairCost = String(parsed.totalPaid);
+          } else if (parsed?.cashAmount && parseFloat(String(parsed.cashAmount).replace(/[^0-9.]/g, '')) > 0) {
+            updateData.repairCost = String(parsed.cashAmount);
+          } else if (updateData.downpayment && parseFloat(String(updateData.downpayment).replace(/[^0-9.]/g, '')) > 0) {
+            updateData.repairCost = String(updateData.downpayment);
+          }
+        }
+      } catch {}
+    }
+
     const request = await prisma.repairRequest.update({
       where: { id },
       data: updateData,

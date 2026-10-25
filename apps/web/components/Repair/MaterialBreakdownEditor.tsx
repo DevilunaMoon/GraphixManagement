@@ -97,6 +97,7 @@ export default function MaterialBreakdownEditor({
   onGcashAmountChange,
   onPaymentDetailsChange,
   readOnly = false,
+  laborCost,
   onTotalChange,
   onTotalCostCalculated,
   deviceName = 'Device',
@@ -152,17 +153,14 @@ export default function MaterialBreakdownEditor({
       });
   }, [branch]);
 
-  // 1. Calculate Total Repair Cost strictly from Parts / Materials (Parts Subtotal = Total Repair Cost)
-  const totalRepairCost = activeMaterials.reduce((sum, item) => sum + (item.total || item.qty * item.unitPrice || 0), 0);
-
-  // 2. Payment Method state (Cash, GCash, Split)
+  // 1. Payment Method state (Cash, GCash, Split)
   const [internalMethod, setInternalMethod] = useState<'Cash' | 'GCash' | 'Split'>(() => {
     if (initialPaymentMethod === 'GCash' || initialPaymentMethod === 'Split') return initialPaymentMethod;
     return 'Cash';
   });
   const currentMethod = (initialPaymentMethod as 'Cash' | 'GCash' | 'Split') || internalMethod;
 
-  // 3. Cash and GCash amount states
+  // 2. Cash and GCash amount states
   const [internalCash, setInternalCash] = useState<string>(() => {
     if (initialCashAmount !== undefined && initialCashAmount !== null) return String(initialCashAmount);
     if (downpayment !== undefined && downpayment !== null && currentMethod === 'Cash') return String(downpayment);
@@ -180,6 +178,19 @@ export default function MaterialBreakdownEditor({
 
   const parsedCash = parseFloat(activeCashStr) || 0;
   const parsedGcash = parseFloat(activeGcashStr) || 0;
+
+  // 3. Calculate Total Repair Cost safely from Parts / Materials + Labor/Service fee
+  const materialsSubtotal = activeMaterials.reduce((sum, item) => {
+    const qty = Math.max(1, parseInt(String(item.qty || 1), 10) || 1);
+    const price = Math.max(0, parseFloat(String(item.unitPrice ?? (item as any).price ?? (item as any).cost ?? 0)) || 0);
+    const lineTotal = parseFloat(String(item.total).replace(/[^0-9.]/g, ''));
+    const resolvedTotal = !isNaN(lineTotal) && lineTotal > 0 ? lineTotal : (qty * price);
+    return sum + (isNaN(resolvedTotal) ? 0 : resolvedTotal);
+  }, 0);
+
+  const rawLabor = parseFloat(String(laborCost || 0).replace(/[^0-9.]/g, '')) || 0;
+  const baseCost = rawLabor > 0 ? rawLabor : (materialsSubtotal === 0 && (parsedCash > 0 || parsedGcash > 0) ? Math.max(parsedCash, parsedGcash) : 0);
+  const totalRepairCost = materialsSubtotal > 0 ? materialsSubtotal + rawLabor : baseCost;
 
   // 4. Financial Calculations based on selected method
   let totalAmountPaid = 0;

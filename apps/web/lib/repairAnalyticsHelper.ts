@@ -1,40 +1,85 @@
 export const STORE_PAPER_RECEIPTS: any[] = [];
 
 export function extractRepairCost(repair: {
-  repairCost?: string | null;
+  repairCost?: string | number | null;
   materials?: string | null;
-  downpayment?: string | null;
+  downpayment?: string | number | null;
+  price?: string | number | null;
+  cost?: string | number | null;
 }): { totalCost: number; downpaymentAmount: number } {
   let totalCost = 0;
-  if (repair.repairCost) {
-    totalCost = parseFloat(repair.repairCost.replace(/[^0-9.]/g, '')) || 0;
+
+  // 1. Direct repairCost
+  if (repair.repairCost !== null && repair.repairCost !== undefined) {
+    const cleaned = String(repair.repairCost).replace(/[^0-9.]/g, '');
+    const parsed = parseFloat(cleaned);
+    if (!isNaN(parsed) && parsed > 0) {
+      totalCost = parsed;
+    }
   }
 
-  if (totalCost === 0 && repair.materials) {
+  // 2. Direct price or cost fields
+  if (totalCost === 0 && (repair.price || repair.cost)) {
+    const raw = repair.price || repair.cost;
+    const cleaned = String(raw).replace(/[^0-9.]/g, '');
+    const parsed = parseFloat(cleaned);
+    if (!isNaN(parsed) && parsed > 0) {
+      totalCost = parsed;
+    }
+  }
+
+  // 3. Materials JSON parsing
+  if (repair.materials) {
     try {
-      const mats = JSON.parse(repair.materials);
+      const mats = typeof repair.materials === 'string' ? JSON.parse(repair.materials) : repair.materials;
       if (mats && typeof mats === 'object') {
-        const itemsSum = Array.isArray(mats.items)
-          ? mats.items.reduce(
-              (acc: number, item: any) =>
-                acc +
-                (parseFloat(
-                  item.total || (item.unitPrice || item.price || item.cost || 0) * (item.qty || item.quantity || 1)
-                ) || 0),
-              0
-            )
-          : 0;
-        if (itemsSum > 0) totalCost = itemsSum;
+        const rawItems = Array.isArray(mats.items) ? mats.items : (Array.isArray(mats) ? mats : []);
+        const itemsSum = rawItems.reduce((acc: number, item: any) => {
+          const qty = Math.max(1, parseInt(String(item.qty || item.quantity || 1), 10) || 1);
+          const unitPrice = Math.max(0, parseFloat(String(item.unitPrice ?? item.price ?? item.cost ?? 0).replace(/[^0-9.]/g, '')) || 0);
+          const itemTotal = parseFloat(String(item.total).replace(/[^0-9.]/g, ''));
+          const lineTotal = !isNaN(itemTotal) && itemTotal > 0 ? itemTotal : (qty * unitPrice);
+          return acc + (isNaN(lineTotal) ? 0 : lineTotal);
+        }, 0);
+
+        if (itemsSum > 0) {
+          if (totalCost === 0 || itemsSum > totalCost) {
+            totalCost = itemsSum;
+          }
+        }
+
+        // Check totalPaid / cashAmount / gcashAmount recorded in materials
+        const matTotalPaid = parseFloat(String(mats.totalPaid || mats.total || 0).replace(/[^0-9.]/g, '')) || 0;
+        const matCash = parseFloat(String(mats.cashAmount || 0).replace(/[^0-9.]/g, '')) || 0;
+        const matGcash = parseFloat(String(mats.gcashAmount || 0).replace(/[^0-9.]/g, '')) || 0;
+        const matCombined = matCash + matGcash;
+
+        if (totalCost === 0) {
+          if (matTotalPaid > 0) totalCost = matTotalPaid;
+          else if (matCombined > 0) totalCost = matCombined;
+        }
       }
     } catch {
       // Ignore JSON error
     }
   }
 
+  // 4. Downpayment calculation
   let downpaymentAmount = 0;
-  if (repair.downpayment) {
-    downpaymentAmount = parseFloat(repair.downpayment.replace(/[^0-9.]/g, '')) || 0;
-  } else if (totalCost > 0) {
+  if (repair.downpayment !== null && repair.downpayment !== undefined) {
+    const cleaned = String(repair.downpayment).replace(/[^0-9.]/g, '');
+    const parsed = parseFloat(cleaned);
+    if (!isNaN(parsed) && parsed > 0) {
+      downpaymentAmount = parsed;
+    }
+  }
+
+  // If totalCost is still 0, but downpayment/cash paid was recorded, totalCost must at least equal that
+  if (totalCost === 0 && downpaymentAmount > 0) {
+    totalCost = downpaymentAmount;
+  }
+
+  if (downpaymentAmount === 0 && totalCost > 0) {
     downpaymentAmount = totalCost / 2;
   }
 
