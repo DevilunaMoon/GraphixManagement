@@ -35,7 +35,9 @@ export default function TechnicianHistory() {
       (r.deviceName || '').toLowerCase().includes(q) ||
       (r.ownerName || '').toLowerCase().includes(q) ||
       (r.trackingNumber || '').toLowerCase().includes(q) ||
-      (r.technician || '').toLowerCase().includes(q)
+      (r.technician || '').toLowerCase().includes(q) ||
+      (r.repairHistory || '').toLowerCase().includes(q) ||
+      (r.cause || '').toLowerCase().includes(q)
     );
   });
 

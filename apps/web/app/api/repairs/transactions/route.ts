@@ -94,6 +94,7 @@ export async function GET(req: Request) {
           { branch: { contains: q, mode: 'insensitive' } },
           { technician: { contains: q, mode: 'insensitive' } },
           { cause: { contains: q, mode: 'insensitive' } },
+          { repairHistory: { contains: q, mode: 'insensitive' } },
           {
             user: {
               name: { contains: q, mode: 'insensitive' }
@@ -261,7 +262,9 @@ export async function GET(req: Request) {
           downpaymentAmount,
           remainingBalance,
           isSettled: !isDownpayment,
-          address: 'Walk-In / Online Request',
+          address: parsedHistory?.address || 'Walk-In / Online Request',
+          originalReceiptNo: parsedHistory?.originalReceiptNo || null,
+          warranty: parsedHistory?.warranty || null,
           branch: repairBranch,
           cause: repair.cause,
           technician: repair.technician || 'Lead Tech',

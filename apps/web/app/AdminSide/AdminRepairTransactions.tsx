@@ -24,6 +24,8 @@ interface Transaction {
   remainingBalance?: number;
   isSettled?: boolean;
   address?: string;
+  originalReceiptNo?: string | null;
+  warranty?: string | null;
   branch?: string;
   materials?: string;
   cause?: string;
@@ -611,6 +613,9 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
             customerName: selectedTransaction.user?.name || selectedTransaction.ownerName || 'Customer',
             customerEmail: selectedTransaction.user?.email || 'customer@graphix.com',
             customerPhone: selectedTransaction.user?.phone || '0917 123 4567',
+            address: selectedTransaction.address || undefined,
+            originalReceiptNo: selectedTransaction.originalReceiptNo || undefined,
+            warranty: selectedTransaction.warranty || undefined,
             user: selectedTransaction.user ? {
               name: selectedTransaction.user.name || undefined,
               email: selectedTransaction.user.email,

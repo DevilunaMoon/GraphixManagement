@@ -32,6 +32,9 @@ export interface RepairServiceReceiptData {
   customerEmail?: string;
   customerPhone?: string;
   paymentMethod?: string;
+  warranty?: string;
+  originalReceiptNo?: string;
+  address?: string;
   user?: {
     name?: string;
     email?: string;
@@ -351,10 +354,19 @@ export default function RepairServiceReceiptModal({
       lines.push("");
       lines.push(dashedDivider);
       lines.push(padRow("Customer:", customerName));
+      if (device.address && device.address !== 'Walk-In / Online Request') {
+        lines.push(padRow("Address:", device.address));
+      }
       lines.push(padRow("Email:", customerEmail));
       lines.push(padRow("Phone:", cleanPhone));
       lines.push(padRow("Technician:", technician));
+      if (device.warranty) {
+        lines.push(padRow("Warranty:", device.warranty));
+      }
       lines.push(padRow("Job Order No.", formattedReceiptNo));
+      if (device.originalReceiptNo) {
+        lines.push(padRow("Paper Receipt:", `#${device.originalReceiptNo}`));
+      }
       lines.push(dashedDivider);
       lines.push(centerText("Thank you for your business!"));
 
@@ -640,6 +652,24 @@ export default function RepairServiceReceiptModal({
                   <span className="shrink-0 font-medium">Job Order No.</span>
                   <span className="font-bold text-right whitespace-nowrap">{formattedReceiptNo}</span>
                 </div>
+                {device.address && device.address !== 'Walk-In / Online Request' && (
+                  <div className="flex justify-between items-baseline gap-2 text-[9px] text-gray-600">
+                    <span className="shrink-0 font-medium">Address:</span>
+                    <span className="font-medium text-right break-words">{device.address}</span>
+                  </div>
+                )}
+                {device.warranty && (
+                  <div className="flex justify-between items-baseline gap-2 text-[9px] text-purple-700 font-semibold">
+                    <span className="shrink-0">Warranty:</span>
+                    <span className="text-right whitespace-nowrap">{device.warranty}</span>
+                  </div>
+                )}
+                {device.originalReceiptNo && (
+                  <div className="flex justify-between items-baseline gap-2 text-[9px] text-gray-500">
+                    <span className="shrink-0 font-medium">Paper Receipt Ref:</span>
+                    <span className="font-mono text-right whitespace-nowrap">#{device.originalReceiptNo}</span>
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
