@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN' && session.role !== 'CASHIER')) {
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPER_ADMIN' && session.role !== 'CASHIER' && session.role !== 'TECHNICIAN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     const isSuperAdmin = session.role === 'SUPER_ADMIN';
     const isBranchAdmin = session.role === 'ADMIN';
     const isCashier = session.role === 'CASHIER';
+    const isTechnician = session.role === 'TECHNICIAN';
     const where: any = {};
 
     // Branch scoping & Role access
@@ -56,8 +57,8 @@ export async function GET(req: Request) {
           { role: 'CUSTOMER' }
         ];
       }
-    } else if (isCashier) {
-      if (roleFilter === 'STAFF' || roleFilter === 'ADMIN' || roleFilter === 'CASHIER') {
+    } else if (isCashier || isTechnician) {
+      if (roleFilter === 'STAFF' || roleFilter === 'ADMIN' || roleFilter === 'CASHIER' || roleFilter === 'TECHNICIAN') {
         where.id = session.userId;
       } else {
         where.OR = [
