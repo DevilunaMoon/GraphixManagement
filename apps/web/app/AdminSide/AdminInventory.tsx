@@ -12,6 +12,7 @@ import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
 import CountdownTimer from '../../components/Common/CountdownTimer';
 import { generateProductInventoryPDF } from '../../lib/inventory-pdf';
+import { generateUniqueDeviceId } from '../../lib/unique-id';
 
 type VariantData = {
   id?: string;
@@ -960,9 +961,9 @@ export default function AdminInventory() {
     let totalComputedStock = 0;
     if (addVariants.length > 0) {
       const dedicatedBranch = (userBranch || 'Tagoloan').trim();
-      const processedVariants = addVariants.map(v => {
+      const processedVariants = addVariants.map((v, idx) => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
-        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
+        const autoProdId = v.productId?.trim() || generateUniqueDeviceId(newDeviceName, targetBranch, idx + 1);
         const tagStock = isSuperAdmin ? parseInt(v.tagoloanStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0);
         const vilStock = isSuperAdmin ? parseInt(v.villanuevaStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0);
         const jasStock = isSuperAdmin ? parseInt(v.jasaanStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0);
@@ -1237,16 +1238,17 @@ export default function AdminInventory() {
       const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
 
       let csvContent = isSuperAdmin
-        ? `Product Model,Product ID,Internal Storage,Condition,Tagoloan Stock,Villanueva Stock,Jasaan Stock,Total Stock,Price,Cost\n`
-        : `Product Model,Product ID,Internal Storage,Condition,${userBranch} Stock,Price,Cost\n`;
+        ? `Product Model,Product ID,Unique ID,Internal Storage,Condition,Tagoloan Stock,Villanueva Stock,Jasaan Stock,Total Stock,Price,Cost\n`
+        : `Product Model,Product ID,Unique ID,Internal Storage,Condition,${userBranch} Stock,Price,Cost\n`;
 
       allDevices.forEach((d: any) => {
         const name = `"${(d.name || '').replace(/"/g, '""')}"`;
         const condition = d.isPreOwned ? 'Pre-Owned' : 'New';
 
         if (d.variations && d.variations.length > 0) {
-          d.variations.forEach((v: any) => {
+          d.variations.forEach((v: any, vIdx: number) => {
             const prodId = `"${(v.productId || generateAutoProductId(d.name, v.name)).replace(/"/g, '""')}"`;
+            const uniqueId = `"${(v.uniqueId || generateUniqueDeviceId(d.name, userBranch, vIdx + 1)).replace(/"/g, '""')}"`;
             const storage = `"${(v.name || 'Standard').replace(/"/g, '""')}"`;
             const tStock = v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0;
             const vStock = v.villanuevaStock ?? v.branchStocks?.Villanueva ?? 0;
@@ -1257,13 +1259,14 @@ export default function AdminInventory() {
             const vCost = v.cost || d.cost || 0;
 
             if (isSuperAdmin) {
-              csvContent += `${name},${prodId},${storage},${condition},${tStock},${vStock},${jStock},${tot},${vPrice},${vCost}\n`;
+              csvContent += `${name},${prodId},${uniqueId},${storage},${condition},${tStock},${vStock},${jStock},${tot},${vPrice},${vCost}\n`;
             } else {
-              csvContent += `${name},${prodId},${storage},${condition},${activeStock},${vPrice},${vCost}\n`;
+              csvContent += `${name},${prodId},${uniqueId},${storage},${condition},${activeStock},${vPrice},${vCost}\n`;
             }
           });
         } else {
           const prodId = `"${generateAutoProductId(d.name, 'STD').replace(/"/g, '""')}"`;
+          const uniqueId = `"${generateUniqueDeviceId(d.name, userBranch, 1).replace(/"/g, '""')}"`;
           const storage = `"Standard"`;
           const tStock = d.tagoloanStock ?? 0;
           const vStock = d.villanuevaStock ?? 0;
@@ -1274,9 +1277,9 @@ export default function AdminInventory() {
           const cost = d.cost || 0;
 
           if (isSuperAdmin) {
-            csvContent += `${name},${prodId},${storage},${condition},${tStock},${vStock},${jStock},${tot},${price},${cost}\n`;
+            csvContent += `${name},${prodId},${uniqueId},${storage},${condition},${tStock},${vStock},${jStock},${tot},${price},${cost}\n`;
           } else {
-            csvContent += `${name},${prodId},${storage},${condition},${activeStock},${price},${cost}\n`;
+            csvContent += `${name},${prodId},${uniqueId},${storage},${condition},${activeStock},${price},${cost}\n`;
           }
         }
       });
@@ -3228,10 +3231,10 @@ export default function AdminInventory() {
                         </div>
                       </div>
 
-                      {/* Row 2: Product ID & Color */}
+                      {/* Row 2: Unique ID & Color */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unique ID</label>
                           <input
                             type="text"
                             value={v.productId || ''}
@@ -3241,7 +3244,7 @@ export default function AdminInventory() {
                               setAddVariants(updated);
                             }}
                             className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
-                            placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                            placeholder={generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, idx + 1)}
                           />
                         </div>
                         <div>
@@ -3370,7 +3373,7 @@ export default function AdminInventory() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
-                        <th className="py-2.5 px-3">Product ID</th>
+                        <th className="py-2.5 px-3">Unique ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
                         {isSuperAdmin ? (
@@ -3412,7 +3415,7 @@ export default function AdminInventory() {
                                 setAddVariants(updated);
                               }}
                               className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
-                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                              placeholder={generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, idx + 1)}
                             />
                           </td>
                           <td className="py-2 px-3">

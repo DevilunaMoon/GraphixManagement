@@ -674,6 +674,19 @@ export async function POST(req: Request) {
             }
           });
 
+          if (v.uniqueId && String(v.uniqueId).trim()) {
+            await tx.deviceUnit.create({
+              data: {
+                deviceId: createdDevice.id,
+                variationId: createdVar.id,
+                productId: prodId,
+                branch: operatingBranch,
+                imei: String(v.uniqueId).trim().toUpperCase(),
+                status: 'Available'
+              }
+            }).catch(() => {});
+          }
+
           for (const b of branches) {
             await tx.branchStock.create({
               data: {

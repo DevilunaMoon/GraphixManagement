@@ -14,6 +14,7 @@ import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
 import CountdownTimer from '../../components/Common/CountdownTimer';
 import { generateProductInventoryPDF } from '../../lib/inventory-pdf';
+import { generateUniqueDeviceId } from '../../lib/unique-id';
 
 type VariantData = {
   id?: string;
@@ -840,9 +841,10 @@ export default function CashierDevices() {
 
     let totalComputedStock = 0;
     if (addVariants.length > 0) {
-      const processedVariants = addVariants.map(v => {
+      const processedVariants = addVariants.map((v, idx) => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
-        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
+        const autoUniqueId = v.productId?.trim() || generateUniqueDeviceId(newDeviceName, userBranch, idx + 1);
+        const autoProdId = generateAutoProductId(newDeviceName, resolvedName);
         const tagStock = userBranch === 'Tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0;
         const vilStock = userBranch === 'Villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0;
         const jasStock = userBranch === 'Jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0;
@@ -853,6 +855,7 @@ export default function CashierDevices() {
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
           productId: autoProdId,
+          uniqueId: autoUniqueId,
           price: v.price || newDevicePrice,
           cost: v.cost || newDeviceCost,
           stock: varTotal,
@@ -1105,7 +1108,7 @@ export default function CashierDevices() {
       const data = await res.json();
       const allDevices = Array.isArray(data.devices) ? data.devices : (Array.isArray(data) ? data : []);
 
-      let csvContent = `Product Model,Product ID,Color,Internal Storage,Condition,${userBranch} Stock,Price,Discount %,Cost\n`;
+      let csvContent = `Product Model,Product ID,Unique ID,Color,Internal Storage,Condition,${userBranch} Stock,Price,Discount %,Cost\n`;
 
       allDevices.forEach((d: any) => {
         const name = `"${(d.name || '').replace(/"/g, '""')}"`;
@@ -1113,24 +1116,26 @@ export default function CashierDevices() {
         const discount = d.discount || 0;
 
         if (d.variations && d.variations.length > 0) {
-          d.variations.forEach((v: any) => {
+          d.variations.forEach((v: any, vIdx: number) => {
             const prodId = `"${(v.productId || generateAutoProductId(d.name, v.name)).replace(/"/g, '""')}"`;
+            const uniqueId = `"${(v.uniqueId || generateUniqueDeviceId(d.name, userBranch, vIdx + 1)).replace(/"/g, '""')}"`;
             const { color, storage } = parseUnitDetails(d.name, v);
             const colorStr = `"${color.replace(/"/g, '""')}"`;
             const storageStr = `"${storage.replace(/"/g, '""')}"`;
             const vStock = v.stock ?? 0;
             const vPrice = v.price || d.price || 0;
             const vCost = v.cost || d.cost || 0;
-            csvContent += `${name},${prodId},${colorStr},${storageStr},${condition},${vStock},${vPrice},${discount},${vCost}\n`;
+            csvContent += `${name},${prodId},${uniqueId},${colorStr},${storageStr},${condition},${vStock},${vPrice},${discount},${vCost}\n`;
           });
         } else {
           const prodId = `"${generateAutoProductId(d.name, 'STD').replace(/"/g, '""')}"`;
+          const uniqueId = `"${generateUniqueDeviceId(d.name, userBranch, 1).replace(/"/g, '""')}"`;
           const colorStr = `"—"`;
           const storageStr = `"Standard"`;
           const stock = d.stock || 0;
           const price = d.price || 0;
           const cost = d.cost || 0;
-          csvContent += `${name},${prodId},${colorStr},${storageStr},${condition},${stock},${price},${discount},${cost}\n`;
+          csvContent += `${name},${prodId},${uniqueId},${colorStr},${storageStr},${condition},${stock},${price},${discount},${cost}\n`;
         }
       });
 
@@ -3096,7 +3101,7 @@ export default function CashierDevices() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
-                        <th className="py-2.5 px-3">Product ID</th>
+                        <th className="py-2.5 px-3">Unique ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
@@ -3130,7 +3135,7 @@ export default function CashierDevices() {
                                 setAddVariants(updated);
                               }}
                               className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                              placeholder={generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, idx + 1)}
                             />
                           </td>
                           <td className="py-2 px-3">

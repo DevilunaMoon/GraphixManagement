@@ -368,14 +368,8 @@ export default function CashierPayment() {
       // Clear session cart
       sessionStorage.removeItem('pos_cart');
 
-      // If iPhone(s) were purchased, prompt cashier for 15-digit IMEI
-      if (createdIphonePurchases.length > 0) {
-        setPendingImeiPurchases(createdIphonePurchases);
-        setCurrentImeiIndex(0);
-        setShowImeiModal(true);
-      } else {
-        router.push('/cashier/records');
-      }
+      // Cart successfully processed; route directly to records without requiring hardware scanning/manual input
+      router.push('/cashier/records');
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Failed to complete transaction.');

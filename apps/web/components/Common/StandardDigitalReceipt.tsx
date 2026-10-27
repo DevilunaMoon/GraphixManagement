@@ -14,6 +14,7 @@ export interface StandardReceiptItem {
   total: number;
   variations?: string | null;
   imei?: string | null;
+  uniqueId?: string | null;
   discount?: number | null;
 }
 
@@ -29,6 +30,7 @@ export interface StandardReceiptData {
   status?: string;
   branch?: string;
   imei?: string | null;
+  uniqueId?: string | null;
   discount?: number | null;
   downpaymentAmount?: number | null;
   remainingBalance?: number | null;
@@ -208,11 +210,18 @@ export default function StandardDigitalReceipt({
       const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
       text += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
 
-      const isIphone = (item.name || data.device?.name || '').toLowerCase().includes('iphone');
-      if (item.imei || data.imei) {
-        text += `IMEI: ${item.imei || data.imei}\n`;
-      } else if (isIphone) {
-        text += `IMEI: Pending Pickup (recorded during pickup)\n`;
+      let itemUniqueId = item.uniqueId || item.imei;
+      if (!itemUniqueId && item.variations) {
+        try {
+          const parsed = typeof item.variations === 'string' ? JSON.parse(item.variations) : item.variations;
+          if (Array.isArray(parsed) && parsed[0]?.productId) itemUniqueId = parsed[0].productId;
+          else if (parsed && typeof parsed === 'object' && (parsed as any).productId) itemUniqueId = (parsed as any).productId;
+        } catch (e) {}
+      }
+      if (!itemUniqueId && data.imei) itemUniqueId = data.imei;
+
+      if (itemUniqueId) {
+        text += `Unique ID: ${itemUniqueId}\n`;
       }
     });
 
@@ -472,15 +481,23 @@ export default function StandardDigitalReceipt({
                       {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  {(item.imei || data.imei) ? (
-                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-gray-800 text-left mt-0.5">
-                      IMEI: {item.imei || data.imei}
-                    </div>
-                  ) : isIphone ? (
-                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200 inline-block text-left mt-0.5">
-                      IMEI: Pending Pickup <span className="text-[8.5px] sm:text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
-                    </div>
-                  ) : null}
+                  {(() => {
+                    let itemUniqueId = item.uniqueId || item.imei;
+                    if (!itemUniqueId && item.variations) {
+                      try {
+                        const parsed = typeof item.variations === 'string' ? JSON.parse(item.variations) : item.variations;
+                        if (Array.isArray(parsed) && parsed[0]?.productId) itemUniqueId = parsed[0].productId;
+                        else if (parsed && typeof parsed === 'object' && (parsed as any).productId) itemUniqueId = (parsed as any).productId;
+                      } catch (e) {}
+                    }
+                    if (!itemUniqueId && data.imei) itemUniqueId = data.imei;
+
+                    return itemUniqueId ? (
+                      <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-gray-800 text-left mt-0.5">
+                        Unique ID: {itemUniqueId}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               );
             })}

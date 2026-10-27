@@ -361,6 +361,13 @@ export async function POST(req: Request) {
             : (isCashOrder ? 'Pending Pickup' : (requestedStatus || 'Active'));
           const resolvedSettled = isGcashOrder ? false : (!isCashOrder);
 
+          const rawUniqueId = vars[0]?.productId || null;
+          let safeUniqueId: string | null = null;
+          if (rawUniqueId) {
+            const existing = await tx.purchase.findFirst({ where: { imei: rawUniqueId } });
+            if (!existing) safeUniqueId = rawUniqueId;
+          }
+
           const p = await tx.purchase.create({
             data: {
               userId: session.userId,
@@ -368,6 +375,7 @@ export async function POST(req: Request) {
               amount: discountedPrice * item.quantity,
               quantity: item.quantity,
               variations: item.variations,
+              imei: safeUniqueId,
               paymentType: resolvedPaymentType,
               source: source || 'Online',
               branch: operatingBranch,
@@ -615,6 +623,13 @@ export async function POST(req: Request) {
         : (isCashOrder ? 'Pending Pickup' : (requestedStatus || 'Active'));
       const singleResolvedSettled = isGcashOrder ? false : (isDp ? settled : (isCashOrder ? false : true));
 
+      const rawUniqueId = targetProdId || null;
+      let safeUniqueId: string | null = null;
+      if (rawUniqueId) {
+        const existing = await tx.purchase.findFirst({ where: { imei: rawUniqueId } });
+        if (!existing) safeUniqueId = rawUniqueId;
+      }
+
       // Record the purchase
       return await tx.purchase.create({
         data: {
@@ -623,6 +638,7 @@ export async function POST(req: Request) {
           amount: dpAmt,
           quantity: reqQty,
           variations: variations ? (typeof variations === 'string' ? variations : JSON.stringify(variations)) : null,
+          imei: safeUniqueId,
           paymentType: singleResolvedPaymentType,
           source: source || 'Online',
           branch: operatingBranch,
