@@ -278,7 +278,7 @@ export default function TechnicianMonitoring() {
   const [addCustomerEmail, setAddCustomerEmail] = useState('');
   const [addUserId, setAddUserId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [addProgress, setAddProgress] = useState('Accepted');
+  const [addProgress, setAddProgress] = useState('Diagnostic');
   const [addCause, setAddCause] = useState('');
   const [addTechnician, setAddTechnician] = useState('');
   const [addRepairCost, setAddRepairCost] = useState('');
@@ -469,7 +469,7 @@ export default function TechnicianMonitoring() {
         setAddCustomerEmail('');
         setAddCustomerPhone('');
         setAddUserId(null);
-        setAddProgress('Accepted');
+        setAddProgress('Diagnostic');
         setAddCause('');
         setAddTechnician(technician?.name || '');
         setAddRepairCost('');
@@ -2418,7 +2418,6 @@ export default function TechnicianMonitoring() {
                         }}
                         className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
                       >
-                        <option value="Accepted" className="text-purple-600 font-semibold">Accepted</option>
                         <option value="Diagnostic" className="text-blue-500 font-semibold">Diagnostic</option>
                         <option 
                           value="Repairing" 
