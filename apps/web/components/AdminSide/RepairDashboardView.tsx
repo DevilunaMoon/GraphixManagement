@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   Wrench, 
@@ -16,9 +16,20 @@ import {
   Smartphone, 
   CheckCheck, 
   AlertCircle,
-  HelpCircle,
   Banknote,
-  Calendar
+  Calendar,
+  Users,
+  Search,
+  ShieldCheck,
+  Activity,
+  Layers,
+  ChevronRight,
+  UserCheck,
+  Eye,
+  Sparkles,
+  Filter,
+  ArrowUpRight,
+  AlertTriangle
 } from 'lucide-react';
 
 const formatCurrency = (val: number) => {
@@ -62,6 +73,12 @@ export default function RepairDashboardView({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+
+  // Super Admin Device Supervision Filters & Search
+  const [deviceSearchQuery, setDeviceSearchQuery] = useState('');
+  const [supervisionBranchFilter, setSupervisionBranchFilter] = useState<string>('all');
+  const [supervisionProgressFilter, setSupervisionProgressFilter] = useState<'all' | 'needsRepair' | 'Diagnostic' | 'Repairing' | 'Completed'>('needsRepair');
+  const [inspectingDevice, setInspectingDevice] = useState<any | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -120,6 +137,67 @@ export default function RepairDashboardView({
       conicGradient = `conic-gradient(${slices.join(', ')})`;
     }
   }
+
+  // Aggregate active devices across all branches for Super Admin Supervision table
+  const allSupervisionDevices = useMemo(() => {
+    const list: any[] = [];
+    if (data?.branchComparison && Array.isArray(data.branchComparison)) {
+      data.branchComparison.forEach((comp: any) => {
+        if (Array.isArray(comp.activeDevices)) {
+          comp.activeDevices.forEach((dev: any) => {
+            list.push({ ...dev, branch: comp.branch });
+          });
+        }
+      });
+    }
+    // Also include recentRepairs to cover completed records
+    if (data?.recentRepairs && Array.isArray(data.recentRepairs)) {
+      data.recentRepairs.forEach((r: any) => {
+        if (!list.some(x => x.id === r.id)) {
+          list.push(r);
+        }
+      });
+    }
+    return list;
+  }, [data]);
+
+  // Filtered devices based on user search, branch filter, and progress status filter
+  const filteredSupervisionDevices = useMemo(() => {
+    return allSupervisionDevices.filter((dev) => {
+      // 1. Branch filter
+      if (supervisionBranchFilter !== 'all') {
+        const b = (dev.branch || '').toLowerCase();
+        if (b !== supervisionBranchFilter.toLowerCase()) return false;
+      }
+
+      // 2. Progress / Status filter
+      const prog = (dev.progress || '').toLowerCase();
+      const stat = (dev.status || '').toLowerCase();
+      if (supervisionProgressFilter === 'needsRepair') {
+        if (stat === 'completed' || prog === 'completed' || stat === 'cancelled' || prog === 'cancelled') {
+          return false;
+        }
+      } else if (supervisionProgressFilter === 'Diagnostic') {
+        if (!prog.includes('diag') && prog !== 'accepted') return false;
+      } else if (supervisionProgressFilter === 'Repairing') {
+        if (!prog.includes('repair') && !prog.includes('progress')) return false;
+      } else if (supervisionProgressFilter === 'Completed') {
+        if (stat !== 'completed' && prog !== 'completed') return false;
+      }
+
+      // 3. Search query
+      if (deviceSearchQuery.trim()) {
+        const q = deviceSearchQuery.toLowerCase().trim();
+        const matchName = (dev.deviceName || '').toLowerCase().includes(q);
+        const matchOwner = (dev.ownerName || '').toLowerCase().includes(q);
+        const matchTech = (dev.technician || '').toLowerCase().includes(q);
+        const matchCause = (dev.cause || '').toLowerCase().includes(q);
+        if (!matchName && !matchOwner && !matchTech && !matchCause) return false;
+      }
+
+      return true;
+    });
+  }, [allSupervisionDevices, supervisionBranchFilter, supervisionProgressFilter, deviceSearchQuery]);
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-300">
@@ -266,7 +344,236 @@ export default function RepairDashboardView({
         />
       </div>
 
-      {/* Charts Section: Repair Activity Overview (Bar Chart) & Repair Status Overview (Donut/Pie) */}
+      {/* ========================================================================= */}
+      {/* SUPER ADMIN 3-BRANCH TECHNICIAN SUPERVISION COMMAND DECK */}
+      {/* ========================================================================= */}
+      {isSuperAdmin && data?.branchComparison && data.branchComparison.length > 0 && (
+        <div className="bg-gradient-to-br from-purple-900 via-indigo-950 to-black text-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-purple-500/30 flex flex-col gap-6 relative overflow-hidden">
+          {/* Subtle Ambient Glow Effect */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#bd00ff]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Header Row */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-5 z-10">
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-[#bd00ff] text-white shadow-md">
+                  <ShieldCheck size={14} />
+                  Super Admin Command Deck
+                </span>
+                <span className="text-xs text-purple-200 font-medium flex items-center gap-1">
+                  <Activity size={13} className="text-emerald-400 animate-pulse" /> Live Technician Branch Workload
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-2 flex items-center gap-2.5">
+                <span>3 Technician Branches Live Supervision</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-purple-200/80 mt-1 max-w-2xl">
+                Supervise how many devices each branch needs to repair, track revenue earned this month, and monitor live workbench progress across Tagoloan, Villanueva, and Jasaan.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setSelectedBranch('all')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                  selectedBranch === 'all'
+                    ? 'bg-white text-purple-950 border-white shadow-lg'
+                    : 'bg-white/10 text-purple-200 hover:bg-white/20 border-white/15'
+                }`}
+              >
+                <span>All 3 Branches</span>
+              </button>
+              <Link
+                href="/admin/monitoring"
+                className="px-4 py-2 rounded-xl text-xs font-extrabold bg-gradient-to-r from-[#bd00ff] to-purple-600 hover:brightness-110 text-white shadow-lg flex items-center gap-1.5 no-underline transition-transform hover:-translate-y-0.5"
+              >
+                <Wrench size={14} />
+                <span>Open Diagnostic Workbench →</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* The 3 Branch Supervision Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 z-10">
+            {data.branchComparison.map((comp: any) => {
+              const isSelected = selectedBranch.toLowerCase() === comp.branch.toLowerCase();
+              const hasActiveQueue = (comp.needsRepair || 0) > 0;
+              const formattedMonthly = formatCurrency(comp.monthlyRevenue || 0);
+              const formattedToday = formatCurrency(comp.todayRevenue || 0);
+
+              return (
+                <div
+                  key={comp.branch}
+                  className={`rounded-2xl p-5 sm:p-6 transition-all duration-300 flex flex-col justify-between gap-5 relative backdrop-blur-md ${
+                    isSelected
+                      ? 'bg-white/15 border-2 border-[#bd00ff] shadow-[0_0_30px_rgba(189,0,255,0.3)] ring-2 ring-[#bd00ff]/50'
+                      : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-400/40'
+                  }`}
+                >
+                  {/* Card Header */}
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300">
+                          <Building2 size={16} />
+                        </span>
+                        <div>
+                          <h3 className="text-lg font-black text-white m-0 tracking-tight">
+                            {comp.branch} Branch
+                          </h3>
+                          <span className="text-[10px] text-purple-300 uppercase tracking-wider font-semibold">
+                            Technician Workbench
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border flex items-center gap-1 ${
+                        hasActiveQueue
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-400/30 animate-pulse'
+                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                      }`}>
+                        {hasActiveQueue ? (
+                          <>
+                            <AlertTriangle size={11} />
+                            <span>{comp.needsRepair} Needs Repair</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 size={11} />
+                            <span>Workbench Clear</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Metric 1: Devices to Repair Counter */}
+                    <div className="bg-black/40 rounded-xl p-3.5 border border-white/5 mb-3 flex flex-col gap-2">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-xs text-purple-200/80 font-bold uppercase tracking-wider">
+                          Devices Needing Repair
+                        </span>
+                        <span className="text-2xl font-black text-white tracking-tight">
+                          {comp.needsRepair || 0} <span className="text-xs font-semibold text-purple-300">units</span>
+                        </span>
+                      </div>
+
+                      {/* Diagnostic vs Repairing Micro Breakdown Chips */}
+                      <div className="grid grid-cols-3 gap-1.5 text-[11px] pt-1 border-t border-white/10">
+                        <div className="bg-purple-950/60 rounded-lg p-1.5 text-center border border-purple-500/20">
+                          <span className="block text-[10px] text-purple-300 font-bold">Diagnostic</span>
+                          <span className="font-black text-purple-100">{comp.diagnostic || 0}</span>
+                        </div>
+                        <div className="bg-purple-950/60 rounded-lg p-1.5 text-center border border-purple-500/20">
+                          <span className="block text-[10px] text-yellow-300 font-bold">Repairing</span>
+                          <span className="font-black text-yellow-100">{comp.repairing || 0}</span>
+                        </div>
+                        <div className="bg-purple-950/60 rounded-lg p-1.5 text-center border border-purple-500/20">
+                          <span className="block text-[10px] text-blue-300 font-bold">Queue/Wait</span>
+                          <span className="font-black text-blue-100">{(comp.pending || 0) + (comp.accepted || 0)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metric 2: Monthly Revenue Made */}
+                    <div className="bg-black/40 rounded-xl p-3.5 border border-white/5 mb-3 flex justify-between items-center">
+                      <div>
+                        <span className="text-xs text-purple-200/80 font-bold uppercase tracking-wider block">
+                          This Month's Revenue
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black text-emerald-400 tracking-tight block mt-0.5">
+                          {formattedMonthly}
+                        </span>
+                        <span className="text-[10px] text-purple-300 block mt-0.5 font-medium">
+                          Today: {formattedToday} • {comp.completedThisMonth || 0} jobs finished
+                        </span>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-lg">
+                        ₱
+                      </div>
+                    </div>
+
+                    {/* Metric 3: Technicians Assigned Roster */}
+                    <div className="flex flex-col gap-1.5 mb-3">
+                      <span className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1">
+                        <Users size={12} className="text-[#bd00ff]" /> Assigned Technicians & Workload:
+                      </span>
+                      {(!comp.technicians || comp.technicians.length === 0) ? (
+                        <p className="text-xs text-purple-300/60 italic m-0">No active technician assigned</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {comp.technicians.map((t: any) => (
+                            <span 
+                              key={t.name}
+                              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 text-white px-2.5 py-1 rounded-lg text-xs font-semibold"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                              <span className="truncate max-w-[120px]">{t.name}</span>
+                              <span className="bg-purple-500/30 text-purple-200 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">
+                                {t.activeCount} active
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Completion Health Progress Bar */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex justify-between text-[11px] font-semibold text-purple-200">
+                        <span>Monthly Completion Rate</span>
+                        <span className="font-bold text-emerald-400">{comp.completionRate || 0}%</span>
+                      </div>
+                      <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-purple-400 via-[#bd00ff] to-emerald-400 h-full rounded-full transition-all duration-700"
+                          style={{ width: `${Math.max(comp.completionRate || 0, 4)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Action Footer */}
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBranch(comp.branch);
+                        setSupervisionBranchFilter(comp.branch);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-[#bd00ff] text-white border-transparent shadow-md'
+                          : 'bg-white/10 text-purple-200 hover:bg-white/20 border-white/10'
+                      }`}
+                    >
+                      {isSelected ? '✓ Filtered to This Branch' : 'Filter to This Branch'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSupervisionBranchFilter(comp.branch);
+                        const el = document.getElementById('live-supervision-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="text-xs font-bold text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer bg-transparent border-none p-1"
+                    >
+                      <span>Inspect Devices</span>
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* CHARTS SECTION: Repair Activity Overview & Status Distribution */}
+      {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Repair Activity Overview Bar Chart */}
         <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-2">
@@ -383,7 +690,229 @@ export default function RepairDashboardView({
         </div>
       </div>
 
-      {/* Lower Section Grid: Revenue Breakdown & Recent Repair Records */}
+      {/* ========================================================================= */}
+      {/* LIVE MULTI-BRANCH DEVICE PROGRESS SUPERVISOR (Interactive Workbench Table) */}
+      {/* ========================================================================= */}
+      <div id="live-supervision-section" className="bg-white/95 backdrop-blur-md rounded-3xl border border-purple-500/15 shadow-sm p-6 sm:p-8 flex flex-col gap-6">
+        {/* Header & Controls */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                <Layers size={12} className="text-[#bd00ff]" />
+                Live Supervision
+              </span>
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight m-0">
+                {isSuperAdmin ? 'Device Repair Progress Across Branches' : `Device Repair Progress (${selectedBranch} Branch)`}
+              </h3>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              {isSuperAdmin
+                ? 'Real-time tracking of diagnostic problem diagnosis, technician assignment, repair steps, and service fees across branches.'
+                : `Real-time tracking of diagnostic problem diagnosis, technician assignment, and repair steps for ${selectedBranch} branch.`}
+            </p>
+          </div>
+
+          {/* Search Box */}
+          <div className="w-full lg:w-72 relative">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search model, owner, tech..."
+              value={deviceSearchQuery}
+              onChange={(e) => setDeviceSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-3.5 rounded-xl border border-gray-200 bg-gray-50/70 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#bd00ff] focus:bg-white transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Filter Pills Bar */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          {/* Branch Filter Pills (Only visible to Super Admin) */}
+          {isSuperAdmin ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-1">Branch:</span>
+              {['all', 'Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setSupervisionBranchFilter(b)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
+                    supervisionBranchFilter.toLowerCase() === b.toLowerCase()
+                      ? 'bg-[#bd00ff] text-white border-transparent shadow-sm'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  {b === 'all' ? 'All 3 Branches' : `${b} Branch`}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Branch:</span>
+              <span className="px-3 py-1 rounded-xl text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-200 flex items-center gap-1">
+                <span>📍</span>
+                <span>{selectedBranch} Branch</span>
+              </span>
+            </div>
+          )}
+
+          {/* Progress Status Filter Pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mr-1">Progress:</span>
+            {[
+              { id: 'needsRepair', label: 'Needs Repair (Active)' },
+              { id: 'Diagnostic', label: 'Diagnostic' },
+              { id: 'Repairing', label: 'Repairing' },
+              { id: 'Completed', label: 'Completed' },
+              { id: 'all', label: 'All Records' },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setSupervisionProgressFilter(p.id as any)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer border ${
+                  supervisionProgressFilter === p.id
+                    ? 'bg-purple-950 text-white border-transparent shadow-sm'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Devices Supervision Table */}
+        <div className="w-full overflow-x-auto rounded-2xl border border-gray-100">
+          <table className="w-full border-collapse text-left min-w-[700px]">
+            <thead>
+              <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="py-3.5 px-4">Device Model & Issue</th>
+                <th className="py-3.5 px-3">Branch</th>
+                <th className="py-3.5 px-3">Technician</th>
+                <th className="py-3.5 px-3">Repair Progress</th>
+                <th className="py-3.5 px-3 text-right">Cost / Quote</th>
+                <th className="py-3.5 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
+              {filteredSupervisionDevices.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-gray-400 bg-white">
+                    <Wrench size={32} className="mx-auto text-purple-300 mb-2" />
+                    <p className="font-bold text-gray-600 m-0">No repair devices found matching filter</p>
+                    <p className="text-xs text-gray-400 m-0 mt-0.5">Try adjusting the search query or branch selector.</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredSupervisionDevices.map((dev: any) => {
+                  const prog = dev.progress || 'Diagnostic';
+                  const isDiag = prog.toLowerCase().includes('diag') || prog.toLowerCase() === 'accepted';
+                  const isRepair = prog.toLowerCase().includes('repair') || prog.toLowerCase().includes('progress');
+                  const isComp = dev.status === 'Completed' || prog.toLowerCase() === 'completed';
+
+                  // Branch color badge
+                  const branchBadge =
+                    dev.branch === 'Villanueva'
+                      ? 'bg-blue-50 text-blue-800 border-blue-200'
+                      : dev.branch === 'Jasaan'
+                      ? 'bg-amber-50 text-amber-900 border-amber-200'
+                      : 'bg-purple-50 text-purple-900 border-purple-200';
+
+                  return (
+                    <tr key={dev.id} className="hover:bg-purple-50/40 transition-colors bg-white">
+                      {/* Device & Issue */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-extrabold text-gray-900 max-w-[220px] truncate">
+                          {dev.deviceName}
+                        </div>
+                        <div className="text-xs text-gray-500 font-medium max-w-[220px] truncate mt-0.5" title={dev.cause}>
+                          {dev.cause || 'No problem description logged'}
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-medium block mt-0.5">
+                          Customer: <strong className="text-gray-600">{dev.ownerName || 'Walk-in'}</strong>
+                        </span>
+                      </td>
+
+                      {/* Branch Badge */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${branchBadge}`}>
+                          <span>📍</span>
+                          <span>{dev.branch || 'Tagoloan'}</span>
+                        </span>
+                      </td>
+
+                      {/* Assigned Technician */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-full bg-purple-100 text-[#bd00ff] flex items-center justify-center font-bold text-xs shrink-0">
+                            <UserCheck size={13} />
+                          </span>
+                          <div>
+                            <span className="font-bold text-gray-800 block text-xs">
+                              {dev.technician || 'Unassigned'}
+                            </span>
+                            <span className="text-[10px] text-gray-400">Assigned Tech</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Repair Progress Stage */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        {isComp ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 size={13} className="text-emerald-600" />
+                            <span>Completed</span>
+                          </span>
+                        ) : isRepair ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-900 border border-amber-200">
+                            <Wrench size={13} className="text-amber-700 animate-spin" />
+                            <span>Repairing Device</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-purple-100 text-purple-900 border border-purple-200">
+                            <Activity size={13} className="text-purple-600" />
+                            <span>Diagnostic Phase</span>
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Cost / Downpayment */}
+                      <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                        <span className="font-black text-gray-900 text-sm block">
+                          {formatCurrency(dev.repairCost || 0)}
+                        </span>
+                        {dev.downpayment && parseFloat(dev.downpayment) > 0 && (
+                          <span className="text-[10px] text-emerald-600 font-bold block">
+                            Downpayment: {formatCurrency(parseFloat(dev.downpayment))}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setInspectingDevice(dev)}
+                          className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-extrabold text-xs inline-flex items-center gap-1 cursor-pointer border border-purple-200 transition-colors"
+                        >
+                          <Eye size={13} />
+                          <span>Inspect</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* LOWER SECTION: Revenue Overview & Performance Rate */}
+      {/* ========================================================================= */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
         {/* Left Column: Stacked Metric Cards */}
         <div className="flex flex-col gap-6 lg:col-span-1">
@@ -447,153 +976,180 @@ export default function RepairDashboardView({
           </div>
         </div>
 
-        {/* Right Column: Recent Repair Activity Table */}
+        {/* Right Column: Quick Links & Summary */}
         <div className="lg:col-span-2">
-          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col h-full">
-            <div className="mb-5 pb-4 border-b border-black/5 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg text-[#111] font-bold">Recent Repair Workorders</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Latest service jobs recorded across branches</p>
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8 flex flex-col justify-between h-full">
+            <div>
+              <div className="mb-5 pb-4 border-b border-black/5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg text-[#111] font-bold">Recent Repair Workorders</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Latest service jobs recorded across branches</p>
+                </div>
+                <Link
+                  href="/admin/repairs/transactions"
+                  className="text-xs font-bold text-[#bd00ff] hover:underline flex items-center gap-1"
+                >
+                  <span>View All Records</span>
+                  <ExternalLink size={12} />
+                </Link>
               </div>
-              <Link
-                href="/admin/repairs/transactions"
-                className="text-xs font-bold text-[#bd00ff] hover:underline flex items-center gap-1"
-              >
-                <span>View All Records</span>
-                <ExternalLink size={12} />
-              </Link>
-            </div>
 
-            <div className="w-full overflow-x-auto">
-              <table className="w-full border-collapse text-left min-w-[520px]">
-                <thead>
-                  <tr className="border-b border-black/5 text-xs font-semibold text-[#666] uppercase tracking-wide">
-                    <th className="py-3 px-3">Device / Model</th>
-                    <th className="py-3 px-3">Customer</th>
-                    <th className="py-3 px-3 text-center">Status</th>
-                    <th className="py-3 px-3">Branch</th>
-                    <th className="py-3 px-3 text-right">Cost</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
-                  {(!data?.recentRepairs || data.recentRepairs.length === 0) ? (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-gray-400">
-                        No repair records found for {selectedBranch}.
-                      </td>
+              <div className="w-full overflow-x-auto">
+                <table className="w-full border-collapse text-left min-w-[520px]">
+                  <thead>
+                    <tr className="border-b border-black/5 text-xs font-semibold text-[#666] uppercase tracking-wide">
+                      <th className="py-3 px-3">Device / Model</th>
+                      <th className="py-3 px-3">Customer</th>
+                      <th className="py-3 px-3 text-center">Status</th>
+                      <th className="py-3 px-3">Branch</th>
+                      <th className="py-3 px-3 text-right">Cost</th>
                     </tr>
-                  ) : (
-                    data.recentRepairs.map((r: any) => {
-                      const stBadge =
-                        r.status === 'Completed'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                          : r.status === 'In Progress'
-                          ? 'bg-blue-100 text-blue-800 border-blue-200'
-                          : r.status === 'Accepted'
-                          ? 'bg-purple-100 text-purple-800 border-purple-200'
-                          : r.status === 'Cancelled'
-                          ? 'bg-rose-100 text-rose-800 border-rose-200'
-                          : 'bg-amber-100 text-amber-800 border-amber-200';
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-xs sm:text-sm">
+                    {(!data?.recentRepairs || data.recentRepairs.length === 0) ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-gray-400">
+                          No repair records found for {selectedBranch}.
+                        </td>
+                      </tr>
+                    ) : (
+                      data.recentRepairs.map((r: any) => {
+                        const stBadge =
+                          r.status === 'Completed'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                            : r.status === 'In Progress'
+                            ? 'bg-blue-100 text-blue-800 border-blue-200'
+                            : r.status === 'Accepted'
+                            ? 'bg-purple-100 text-purple-800 border-purple-200'
+                            : r.status === 'Cancelled'
+                            ? 'bg-rose-100 text-rose-800 border-rose-200'
+                            : 'bg-amber-100 text-amber-800 border-amber-200';
 
-                      return (
-                        <tr key={r.id} className="hover:bg-purple-50/30 transition-colors">
-                          <td className="py-3 px-3">
-                            <div className="font-bold text-gray-900 truncate max-w-[180px]">{r.deviceName}</div>
-                            <span className="text-[10px] text-gray-400 block truncate">Tech: {r.technician}</span>
-                          </td>
-                          <td className="py-3 px-3 font-medium text-gray-700 truncate max-w-[140px]">{r.ownerName}</td>
-                          <td className="py-3 px-3 text-center whitespace-nowrap">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${stBadge}`}>
-                              {r.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-xs text-gray-600 font-semibold whitespace-nowrap">{r.branch}</td>
-                          <td className="py-3 px-3 text-right font-black text-gray-900 whitespace-nowrap">
-                            {formatCurrency(r.repairCost || 0)}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                        return (
+                          <tr key={r.id} className="hover:bg-purple-50/30 transition-colors">
+                            <td className="py-3 px-3">
+                              <div className="font-bold text-gray-900 truncate max-w-[180px]">{r.deviceName}</div>
+                              <span className="text-[10px] text-gray-400 block truncate">Tech: {r.technician}</span>
+                            </td>
+                            <td className="py-3 px-3 font-medium text-gray-700 truncate max-w-[140px]">{r.ownerName}</td>
+                            <td className="py-3 px-3 text-center whitespace-nowrap">
+                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${stBadge}`}>
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-xs text-gray-600 font-semibold whitespace-nowrap">{r.branch}</td>
+                            <td className="py-3 px-3 text-right font-black text-gray-900 whitespace-nowrap">
+                              {formatCurrency(r.repairCost || 0)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Multi-Branch Repair Performance Comparison (Super Admin System-Wide View) */}
-      {isSuperAdmin && (!selectedBranch || selectedBranch === 'all') && data?.branchComparison && data.branchComparison.length > 0 && (
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-6 md:p-8">
-          <div className="mb-6 pb-4 border-b border-black/5 flex justify-between items-center">
-            <div>
-              <h3 className="text-xl font-bold text-[#111] flex items-center gap-2">
-                <Building2 className="text-[#bd00ff]" size={22} /> Multi-Branch Repair Performance Comparison
-              </h3>
-              <p className="text-sm text-[#666] mt-0.5">Live repair volume, completed services, and revenue across branches</p>
-            </div>
-            <Link
-              href="/admin/repairs/transactions"
-              className="text-xs font-bold text-[#bd00ff] hover:underline hidden sm:inline"
-            >
-              All Repair Transactions →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {data.branchComparison.map((comp: any) => {
-              const maxRev = Math.max(...data.branchComparison.map((c: any) => c.revenue), 1);
-              const percent = Math.round((comp.revenue / maxRev) * 100);
-              const compRevFormatted = formatCurrency(comp.revenue);
-
-              return (
-                <div
-                  key={comp.branch}
-                  className="bg-gray-50/70 border border-gray-100 rounded-2xl p-5 flex flex-col justify-between gap-4 hover:border-purple-200 transition-all"
-                >
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-bold text-base text-gray-900 flex items-center gap-1.5">
-                        📍 {comp.branch}
-                      </span>
-                      <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                        {comp.completed} Completed
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1 mb-3">
-                      <span className="text-xs font-semibold text-gray-500">Repair Revenue</span>
-                      <span
-                        className={`font-black text-gray-900 tracking-tight truncate ${getResponsiveNumberClass(
-                          compRevFormatted,
-                          'standard'
-                        )}`}
-                        title={compRevFormatted}
-                      >
-                        {compRevFormatted}
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-3">
-                      <div
-                        className="bg-gradient-to-r from-purple-500 to-[#bd00ff] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.max(percent, 4)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-gray-200/60 flex justify-between items-center text-xs font-semibold text-gray-600">
-                    <span>Total Requests: <strong className="text-gray-900">{comp.requests}</strong></span>
-                    <button
-                      onClick={() => setSelectedBranch(comp.branch)}
-                      className="text-[#bd00ff] hover:underline text-xs font-bold cursor-pointer"
-                    >
-                      Filter Branch →
-                    </button>
-                  </div>
+      {/* ========================================================================= */}
+      {/* DEVICE SUPERVISION INSPECTION MODAL */}
+      {/* ========================================================================= */}
+      {inspectingDevice && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity"
+          onClick={() => setInspectingDevice(null)}
+        >
+          <div
+            className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-purple-100 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#bd00ff]/10 text-[#bd00ff] flex items-center justify-center font-bold">
+                  <Smartphone size={20} />
                 </div>
-              );
-            })}
+                <div>
+                  <h3 className="font-black text-gray-900 text-lg m-0">{inspectingDevice.deviceName}</h3>
+                  <span className="text-xs text-purple-700 font-bold">
+                    📍 {inspectingDevice.branch || 'Tagoloan'} Branch
+                  </span>
+                </div>
+              </div>
+              <button
+                className="text-gray-400 hover:text-black transition-colors font-bold text-lg cursor-pointer bg-transparent border-none p-1"
+                onClick={() => setInspectingDevice(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+              {/* Status Banner */}
+              <div className="p-3 rounded-2xl bg-purple-50/80 border border-purple-200 flex items-center justify-between">
+                <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">Current Stage</span>
+                <span className="text-xs font-extrabold bg-[#bd00ff] text-white px-3 py-1 rounded-full shadow-xs">
+                  {inspectingDevice.progress || inspectingDevice.status || 'Diagnostic'}
+                </span>
+              </div>
+
+              {/* Problem / Diagnosis */}
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/70">
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                  Reported Problem & Diagnosis
+                </span>
+                <p className="text-sm font-semibold text-gray-800 m-0">
+                  {inspectingDevice.cause || 'No diagnosis logged yet.'}
+                </p>
+              </div>
+
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200/70">
+                  <span className="text-gray-500 block">Customer</span>
+                  <strong className="text-gray-900 text-sm block mt-0.5">{inspectingDevice.ownerName || 'Walk-in'}</strong>
+                </div>
+
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200/70">
+                  <span className="text-gray-500 block">Assigned Technician</span>
+                  <strong className="text-gray-900 text-sm block mt-0.5">{inspectingDevice.technician || 'Unassigned'}</strong>
+                </div>
+
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200/70">
+                  <span className="text-gray-500 block">Quoted Repair Cost</span>
+                  <strong className="text-emerald-700 text-sm block mt-0.5">{formatCurrency(inspectingDevice.repairCost || 0)}</strong>
+                </div>
+
+                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200/70">
+                  <span className="text-gray-500 block">Downpayment Recorded</span>
+                  <strong className="text-gray-900 text-sm block mt-0.5">
+                    {inspectingDevice.downpayment ? formatCurrency(parseFloat(inspectingDevice.downpayment)) : 'None'}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="p-4 bg-gray-50/80 border-t border-gray-100 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                className="px-5 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-xs transition-colors cursor-pointer border-none"
+                onClick={() => setInspectingDevice(null)}
+              >
+                Close
+              </button>
+
+              <Link
+                href="/admin/monitoring"
+                className="px-5 py-2.5 rounded-xl bg-[#bd00ff] hover:bg-purple-700 text-white font-extrabold text-xs transition-colors flex items-center gap-1.5 no-underline shadow-md"
+              >
+                <Wrench size={14} />
+                <span>Open Diagnostic Workbench</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}
