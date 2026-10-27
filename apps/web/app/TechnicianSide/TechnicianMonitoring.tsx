@@ -242,7 +242,8 @@ export default function TechnicianMonitoring() {
   // Diagnostic Step Progression Gate (Step A: Problem, Step B: Plan, Step C: Parts & Labor Quote)
   const isStepAComplete = Boolean(
     editProblem && 
-    (editProblem !== 'Other' || editCustomProblem.trim().length > 0)
+    (editProblem !== 'Other' || editCustomProblem.trim().length > 0) &&
+    editProblemDescription && editProblemDescription.trim().length > 0
   );
   const isStepBComplete = Boolean(
     (editSuggestedRepair && editSuggestedRepair.trim().length > 0) ||
@@ -297,7 +298,7 @@ export default function TechnicianMonitoring() {
   const isAddStep1Complete = Boolean(
     addProblem && 
     (addProblem !== 'Other' || addCustomProblem.trim().length > 0) &&
-    (addProblemDescription.trim().length > 0 || addCause.trim().length > 0 || addProblem !== '')
+    (addProblemDescription.trim().length > 0 || addCause.trim().length > 0)
   );
   const isAddStep2Complete = Boolean(
     (addSuggestedRepair && addSuggestedRepair.trim().length > 0) ||
