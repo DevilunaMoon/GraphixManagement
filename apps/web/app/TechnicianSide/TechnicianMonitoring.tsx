@@ -1941,9 +1941,9 @@ export default function TechnicianMonitoring() {
                   <textarea 
                     rows={3}
                     value={editProblemDescription}
-                    readOnly
+                    onChange={(e) => setEditProblemDescription(e.target.value)}
                     placeholder="Provide details of the problem..."
-                    className="border-2 border-gray-200 bg-gray-100 rounded-xl p-3 text-gray-700 text-sm outline-none resize-none cursor-not-allowed select-none font-medium"
+                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none font-medium"
                   />
                 </div>
 
