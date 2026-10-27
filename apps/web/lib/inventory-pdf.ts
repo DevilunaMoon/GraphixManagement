@@ -1,6 +1,5 @@
 import { jsPDF } from 'jspdf';
 import { GRAPHIX_LOGO_BASE64 } from './graphix-logo-base64';
-import { generateUniqueDeviceId } from './unique-id';
 
 export interface InventoryDeviceItem {
   id?: string;
@@ -74,8 +73,20 @@ function formatStorageString(name?: string, type?: string, specs?: string): stri
   return 'Standard';
 }
 
-function formatProductIdFallback(modelName: string, variantName?: string, index: number = 1): string {
-  return generateUniqueDeviceId(modelName, 'TAG', index);
+function formatProductIdFallback(modelName: string, variantName?: string): string {
+  const cleanModel = (modelName || 'DEVICE')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  
+  const cleanVariant = (variantName || 'STD')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return `${cleanModel}-${cleanVariant}`;
 }
 
 function formatPeso(amount: number): string {
@@ -384,7 +395,7 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
     const textY = y + 5.2;
 
     doc.text('Product Model', colPositions.model + 3, textY);
-    doc.text('Unique ID', colPositions.productId + 2, textY);
+    doc.text('Product ID', colPositions.productId + 2, textY);
     doc.text('Brand', colPositions.brand + 2, textY);
     doc.text('Storage', colPositions.storage + (colWidths.storage / 2), textY, { align: 'center' });
     doc.text('Condition', colPositions.condition + (colWidths.condition / 2), textY, { align: 'center' });
