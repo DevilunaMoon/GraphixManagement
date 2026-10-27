@@ -1165,14 +1165,40 @@ export default function CashierDevices() {
   };
 
   // PDF Export
-  const downloadPDF = async () => {
+  const [isPdfMenuOpen, setIsPdfMenuOpen] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const pdfMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (pdfMenuRef.current && !pdfMenuRef.current.contains(event.target as Node)) {
+        setIsPdfMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const downloadPDF = async (brandParam?: { id?: string; name: string } | null) => {
+    setIsPdfMenuOpen(false);
+    setIsExportingPdf(true);
     try {
       let url = `/api/devices?branch=${encodeURIComponent(userBranch)}&limit=1000`;
       if (selectedCondition !== 'all') {
         url += `&condition=${encodeURIComponent(selectedCondition)}`;
       }
-      if (selectedCategory !== 'All' && selectedCategory !== 'All Categories') {
-        url += `&categoryId=${encodeURIComponent(selectedCategory)}`;
+
+      // If specific brand requested or active
+      let targetBrandId = brandParam?.id;
+      let targetBrandName = brandParam?.name;
+
+      if (!brandParam && selectedCategory !== 'All' && selectedCategory !== 'All Categories') {
+        targetBrandId = selectedCategory;
+        targetBrandName = categories.find(c => c.id === selectedCategory)?.name;
+      }
+
+      if (targetBrandId) {
+        url += `&categoryId=${encodeURIComponent(targetBrandId)}`;
       }
       if (searchQuery.trim()) {
         url += `&search=${encodeURIComponent(searchQuery.trim())}`;
@@ -1188,11 +1214,14 @@ export default function CashierDevices() {
         userRole: userRole || 'Cashier',
         conditionFilter: selectedCondition,
         searchQuery: searchQuery,
-        categoryFilter: selectedCategory
+        categoryFilter: targetBrandName || targetBrandId,
+        brandName: targetBrandName
       });
     } catch (e) {
       console.error("Failed to export Product Inventory PDF", e);
       alert("Failed to export Product Inventory PDF");
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -1401,9 +1430,73 @@ export default function CashierDevices() {
 
             {/* Export Buttons */}
             <div className="flex items-center gap-1.5">
-              <button onClick={downloadPDF} className="flex items-center gap-1 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-full font-bold text-xs border border-rose-200 transition-colors shadow-sm cursor-pointer">
-                <FileText size={13} /> PDF
-              </button>
+              {/* PDF Export Dropdown Button */}
+              <div className="relative" ref={pdfMenuRef}>
+                <button 
+                  type="button"
+                  onClick={() => setIsPdfMenuOpen(!isPdfMenuOpen)} 
+                  disabled={isExportingPdf}
+                  className={`flex items-center gap-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-full font-bold text-xs border border-rose-200 transition-all shadow-sm cursor-pointer disabled:opacity-50 ${isPdfMenuOpen ? 'ring-2 ring-rose-400 bg-rose-100' : ''}`}
+                  title="Export Product Inventory to PDF by Brand or All Brands"
+                >
+                  <FileText size={13} className="text-rose-600" />
+                  <span>
+                    {isExportingPdf ? 'Exporting...' : (selectedCategory !== 'All' ? `PDF (${categories.find(c => c.id === selectedCategory)?.name || 'Brand'})` : 'PDF')}
+                  </span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${isPdfMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isPdfMenuOpen && (
+                  <div className="absolute top-[115%] left-0 w-60 sm:w-64 bg-white rounded-2xl shadow-2xl border border-rose-100 overflow-hidden z-[110] py-1.5 animate-in fade-in zoom-in-95">
+                    <div className="px-3.5 py-2 border-b border-gray-100 flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-gray-500">
+                        Export PDF by Brand
+                      </span>
+                      <span className="text-[10px] bg-rose-50 text-rose-700 font-bold px-1.5 py-0.5 rounded border border-rose-200">
+                        A4 PDF
+                      </span>
+                    </div>
+
+                    {/* All Brands Option */}
+                    <button
+                      type="button"
+                      onClick={() => downloadPDF(null)}
+                      className="w-full px-3.5 py-2.5 text-left text-xs font-bold hover:bg-rose-50 flex items-center justify-between transition-colors text-gray-800 hover:text-rose-700 cursor-pointer border-none bg-transparent"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Package size={14} className="text-gray-400" />
+                        <span>All Brands (Full Inventory)</span>
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-normal">All</span>
+                    </button>
+
+                    <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-y border-gray-100">
+                      Select Specific Brand
+                    </div>
+
+                    <div className="max-h-56 overflow-y-auto py-1">
+                      {categories.length === 0 ? (
+                        <div className="px-3.5 py-2 text-xs text-gray-400 italic">No brands registered</div>
+                      ) : (
+                        categories.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => downloadPDF({ id: cat.id, name: cat.name })}
+                            className="w-full px-3.5 py-2 text-left text-xs font-semibold hover:bg-purple-50 flex items-center justify-between transition-colors text-gray-700 hover:text-[#5c0099] cursor-pointer border-none bg-transparent"
+                          >
+                            <span className="truncate pr-2 font-bold">{cat.name}</span>
+                            <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100 shrink-0">
+                              Export
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button onClick={downloadExcel} className="flex items-center gap-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-full font-bold text-xs border border-emerald-200 transition-colors shadow-sm cursor-pointer">
                 <FileText size={13} /> Excel
               </button>
