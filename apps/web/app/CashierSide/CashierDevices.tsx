@@ -240,16 +240,17 @@ export default function CashierDevices() {
     color: string;
     storage: string;
     productId: string;
+    uniqueId: string;
     price: string;
     cost: string;
     tagoloanStock: string;
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
   // Edit Product State
@@ -843,8 +844,8 @@ export default function CashierDevices() {
     if (addVariants.length > 0) {
       const processedVariants = addVariants.map((v, idx) => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
-        const autoUniqueId = v.productId?.trim() || generateUniqueDeviceId(newDeviceName, userBranch, idx + 1);
-        const autoProdId = generateAutoProductId(newDeviceName, resolvedName);
+        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
+        const autoUniqueId = v.uniqueId?.trim() || generateUniqueDeviceId(newDeviceName, userBranch, idx + 1);
         const tagStock = userBranch === 'Tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0;
         const vilStock = userBranch === 'Villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0;
         const jasStock = userBranch === 'Jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0;
@@ -888,10 +889,10 @@ export default function CashierDevices() {
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
         setAddVariants([
-          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
         ]);
         setSuccessModalContent({ title: 'Success!', message: `The product has been successfully added to ${userBranch} inventory.` });
         setSuccessModalOpen(true);
@@ -3087,7 +3088,7 @@ export default function CashierDevices() {
                     onClick={() => {
                       setAddVariants(prev => [
                         ...prev,
-                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
                       ]);
                     }}
                     className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
@@ -3101,6 +3102,7 @@ export default function CashierDevices() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Product ID</th>
                         <th className="py-2.5 px-3">Unique ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
@@ -3132,6 +3134,19 @@ export default function CashierDevices() {
                               onChange={(e) => {
                                 const updated = [...addVariants];
                                 updated[idx]!.productId = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.uniqueId || ''}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.uniqueId = e.target.value;
                                 setAddVariants(updated);
                               }}
                               className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"

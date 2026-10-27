@@ -314,16 +314,17 @@ export default function AdminInventory() {
     color: string;
     storage: string;
     productId: string;
+    uniqueId: string;
     price: string;
     cost: string;
     tagoloanStock: string;
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
   // Edit Product State
@@ -963,7 +964,8 @@ export default function AdminInventory() {
       const dedicatedBranch = (userBranch || 'Tagoloan').trim();
       const processedVariants = addVariants.map((v, idx) => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
-        const autoProdId = v.productId?.trim() || generateUniqueDeviceId(newDeviceName, targetBranch, idx + 1);
+        const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
+        const autoUniqueId = v.uniqueId?.trim() || generateUniqueDeviceId(newDeviceName, targetBranch, idx + 1);
         const tagStock = isSuperAdmin ? parseInt(v.tagoloanStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0);
         const vilStock = isSuperAdmin ? parseInt(v.villanuevaStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0);
         const jasStock = isSuperAdmin ? parseInt(v.jasaanStock || '0', 10) : (dedicatedBranch.toLowerCase() === 'jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0);
@@ -974,6 +976,7 @@ export default function AdminInventory() {
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
           productId: autoProdId,
+          uniqueId: autoUniqueId,
           price: v.price || newDevicePrice || '0',
           cost: v.cost || newDeviceCost || '0',
           stock: varTotal,
@@ -1006,10 +1009,10 @@ export default function AdminInventory() {
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
         setAddVariants([
-          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
         ]);
         setSuccessModalContent({ title: 'Success!', message: `The product and its variants have been successfully added under ${targetBranch} branch.` });
         setSuccessModalOpen(true);
@@ -3161,7 +3164,7 @@ export default function AdminInventory() {
                     onClick={() => {
                       setAddVariants(prev => [
                         ...prev,
-                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
                       ]);
                     }}
                     className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
@@ -3231,10 +3234,10 @@ export default function AdminInventory() {
                         </div>
                       </div>
 
-                      {/* Row 2: Unique ID & Color */}
+                      {/* Row 2: Product ID & Unique ID */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unique ID</label>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
                           <input
                             type="text"
                             value={v.productId || ''}
@@ -3244,23 +3247,39 @@ export default function AdminInventory() {
                               setAddVariants(updated);
                             }}
                             className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
-                            placeholder={generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, idx + 1)}
+                            placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Color</label>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unique ID</label>
                           <input
                             type="text"
-                            value={v.color || ''}
+                            value={v.uniqueId || ''}
                             onChange={(e) => {
                               const updated = [...addVariants];
-                              updated[idx]!.color = e.target.value;
+                              updated[idx]!.uniqueId = e.target.value;
                               setAddVariants(updated);
                             }}
-                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="Red"
+                            className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
+                            placeholder={generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, idx + 1)}
                           />
                         </div>
+                      </div>
+
+                      {/* Row 3: Color */}
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Color</label>
+                        <input
+                          type="text"
+                          value={v.color || ''}
+                          onChange={(e) => {
+                            const updated = [...addVariants];
+                            updated[idx]!.color = e.target.value;
+                            setAddVariants(updated);
+                          }}
+                          className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="Red"
+                        />
                       </div>
 
                       {/* Row 3: Price */}
@@ -3373,6 +3392,7 @@ export default function AdminInventory() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
+                        <th className="py-2.5 px-3">Product ID</th>
                         <th className="py-2.5 px-3">Unique ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
@@ -3412,6 +3432,19 @@ export default function AdminInventory() {
                               onChange={(e) => {
                                 const updated = [...addVariants];
                                 updated[idx]!.productId = e.target.value;
+                                setAddVariants(updated);
+                              }}
+                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
+                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <input
+                              type="text"
+                              value={v.uniqueId || ''}
+                              onChange={(e) => {
+                                const updated = [...addVariants];
+                                updated[idx]!.uniqueId = e.target.value;
                                 setAddVariants(updated);
                               }}
                               className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
