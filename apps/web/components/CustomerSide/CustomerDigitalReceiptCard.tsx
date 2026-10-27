@@ -207,10 +207,14 @@ export default function CustomerDigitalReceiptCard({
     const line2Right = `${item.quantity} @ ${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     receiptText += `${padRow(line2Left, line2Right)}\n`;
 
-    if (item.imei || data?.imei) {
-      receiptText += `IMEI: ${item.imei || data?.imei}\n`;
+    const rawUid = item.imei || data?.imei;
+    if (rawUid) {
+      const uids = String(rawUid).split(',').map(s => s.trim()).filter(Boolean);
+      uids.forEach(u => {
+        receiptText += `Unique ID: ${u}\n`;
+      });
     } else if (isIPhoneProduct(item.name || data?.deviceName)) {
-      receiptText += `IMEI: Pending Pickup (recorded during in-store pickup)\n`;
+      receiptText += `Unique ID: Pending Pickup (allocated during in-store pickup)\n`;
     }
   });
 
@@ -485,14 +489,16 @@ export default function CustomerDigitalReceiptCard({
           }
           y += 3.5;
 
-          if (item.imei || data?.imei) {
-            if (doc) {
-              doc.setFont('helvetica', 'bold');
-              doc.setFontSize(6.5);
-              doc.setTextColor(31, 41, 55);
-              doc.text(`IMEI: ${item.imei || data?.imei}`, leftPad, y);
-            }
-            y += 3.2;
+          const rawUid = item.imei || data?.imei;
+          if (rawUid && doc) {
+            const uids = String(rawUid).split(',').map(s => s.trim()).filter(Boolean);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6.5);
+            doc.setTextColor(31, 41, 55);
+            uids.forEach(u => {
+              doc.text(`Unique ID: ${u}`, leftPad, y);
+              y += 3.2;
+            });
           }
         });
 
@@ -832,15 +838,32 @@ export default function CustomerDigitalReceiptCard({
                     {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                {(item.imei || data?.imei) ? (
-                  <div className="font-mono font-bold text-[10px] text-gray-800 text-left">
-                    IMEI: {item.imei || data?.imei}
-                  </div>
-                ) : isIPhoneProduct(item.name || data?.deviceName) ? (
-                  <div className="font-sans font-semibold text-[10px] text-amber-700 text-left">
-                    IMEI: Pending Pickup <span className="text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
-                  </div>
-                ) : null}
+                {(() => {
+                  const rawUid = item.imei || data?.imei;
+                  if (rawUid) {
+                    const uids = String(rawUid).split(',').map(s => s.trim()).filter(Boolean);
+                    return (
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                        {uids.map((u, uIdx) => (
+                          <div key={uIdx} className="font-mono font-bold text-[10px] text-gray-800 text-left flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[#5c0099]">● Unique ID:</span>
+                            <span className="bg-purple-50 text-purple-900 border border-purple-200/80 px-1 py-0.2 rounded text-[9.5px]">
+                              {u}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  if (isIPhoneProduct(item.name || data?.deviceName)) {
+                    return (
+                      <div className="font-sans font-semibold text-[10px] text-amber-700 text-left mt-0.5">
+                        Unique ID: Pending Pickup <span className="text-[9px] text-gray-400 font-normal block">Unique ID will be verified during pickup</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             ))}
           </div>

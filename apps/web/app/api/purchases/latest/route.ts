@@ -86,6 +86,7 @@ export async function GET(req: Request) {
 
     const formattedPurchase = {
       ...purchase,
+      uniqueId: purchase.imei,
       referenceId: resolvedRefId ? (resolvedRefId.startsWith('#') ? resolvedRefId : `#${resolvedRefId}`) : `#GRPX-${bCode}-A1`
     };
 

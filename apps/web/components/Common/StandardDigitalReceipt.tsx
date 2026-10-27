@@ -210,18 +210,12 @@ export default function StandardDigitalReceipt({
       const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
       text += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
 
-      let itemUniqueId = item.uniqueId || item.imei;
-      if (!itemUniqueId && item.variations) {
-        try {
-          const parsed = typeof item.variations === 'string' ? JSON.parse(item.variations) : item.variations;
-          if (Array.isArray(parsed) && parsed[0]?.productId) itemUniqueId = parsed[0].productId;
-          else if (parsed && typeof parsed === 'object' && (parsed as any).productId) itemUniqueId = (parsed as any).productId;
-        } catch (e) {}
-      }
-      if (!itemUniqueId && data.imei) itemUniqueId = data.imei;
-
-      if (itemUniqueId) {
-        text += `Unique ID: ${itemUniqueId}\n`;
+      const rawUniqueId = item.uniqueId || item.imei || data.uniqueId || data.imei;
+      if (rawUniqueId) {
+        const uids = String(rawUniqueId).split(',').map(s => s.trim()).filter(Boolean);
+        uids.forEach((uid) => {
+          text += `Unique ID: ${uid}\n`;
+        });
       }
     });
 
@@ -482,21 +476,31 @@ export default function StandardDigitalReceipt({
                     </span>
                   </div>
                   {(() => {
-                    let itemUniqueId = item.uniqueId || item.imei;
-                    if (!itemUniqueId && item.variations) {
-                      try {
-                        const parsed = typeof item.variations === 'string' ? JSON.parse(item.variations) : item.variations;
-                        if (Array.isArray(parsed) && parsed[0]?.productId) itemUniqueId = parsed[0].productId;
-                        else if (parsed && typeof parsed === 'object' && (parsed as any).productId) itemUniqueId = (parsed as any).productId;
-                      } catch (e) {}
-                    }
-                    if (!itemUniqueId && data.imei) itemUniqueId = data.imei;
+                    const rawUniqueId = item.uniqueId || item.imei || data.uniqueId || data.imei;
+                    if (!rawUniqueId) return null;
 
-                    return itemUniqueId ? (
-                      <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-gray-800 text-left mt-0.5">
-                        Unique ID: {itemUniqueId}
+                    const uniqueIds = String(rawUniqueId)
+                      .split(',')
+                      .map(s => s.trim())
+                      .filter(Boolean);
+
+                    if (uniqueIds.length === 0) return null;
+
+                    return (
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {uniqueIds.map((uid, uIdx) => (
+                          <div 
+                            key={uIdx} 
+                            className="font-mono text-[9.5px] sm:text-[10px] text-gray-800 text-left flex items-center gap-1.5 flex-wrap"
+                          >
+                            <span className="text-[#5c0099] font-bold">● Unique ID:</span>
+                            <span className="font-bold tracking-tight bg-purple-50 text-purple-900 border border-purple-200/80 px-1.5 py-0.2 rounded">
+                              {uid}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ) : null;
+                    );
                   })()}
                 </div>
               );

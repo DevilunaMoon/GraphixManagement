@@ -7,21 +7,33 @@
  * Standard IMEI consists of exactly 15 numerical digits.
  */
 export function validateImeiFormat(imei: string): { valid: boolean; error?: string; cleanImei: string } {
-  if (!imei) {
-    return { valid: false, error: 'IMEI number is required.', cleanImei: '' };
+  if (!imei || !String(imei).trim()) {
+    return { valid: false, error: 'Device Unique ID / IMEI is required.', cleanImei: '' };
   }
 
-  const cleanImei = String(imei).trim().replace(/[-\s]/g, '');
+  const raw = String(imei).trim();
 
-  if (!/^\d+$/.test(cleanImei)) {
-    return { valid: false, error: 'IMEI must contain numbers only.', cleanImei };
+  // 1. Check if it matches Unique Device ID format (e.g., IP11PM-TAG-A01, SAM-S24-A01)
+  if (/^[A-Za-z0-9]+(-[A-Za-z0-9]+)+$/.test(raw)) {
+    return { valid: true, cleanImei: raw.toUpperCase() };
   }
 
-  if (cleanImei.length !== 15) {
-    return { valid: false, error: `IMEI must be exactly 15 digits (currently ${cleanImei.length}).`, cleanImei };
+  // 2. Check if it's a numeric 15-digit IMEI (standard cellular IMEI)
+  const numericOnly = raw.replace(/[-\s]/g, '');
+  if (/^\d{14,16}$/.test(numericOnly)) {
+    return { valid: true, cleanImei: numericOnly };
   }
 
-  return { valid: true, cleanImei };
+  // 3. General serial / alphanumeric unique identifier (at least 6 characters)
+  if (/^[A-Za-z0-9-_]{6,32}$/.test(raw)) {
+    return { valid: true, cleanImei: raw.toUpperCase() };
+  }
+
+  return { 
+    valid: false, 
+    error: 'Device ID must be a valid Unique ID (e.g. IP11PM-TAG-A01) or a 15-digit IMEI number.', 
+    cleanImei: raw 
+  };
 }
 
 /**

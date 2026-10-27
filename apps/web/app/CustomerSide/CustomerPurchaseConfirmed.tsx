@@ -115,7 +115,8 @@ function CustomerPurchaseConfirmedContent() {
             quantity: apiPurchase.quantity || resolvedQty,
             unitPrice: resolvedAmount / (apiPurchase.quantity || 1),
             total: resolvedAmount,
-            variations: varStr || 'Standard'
+            variations: varStr || 'Standard',
+            imei: apiPurchase.uniqueId || apiPurchase.imei || storedReceipt?.imei || null
           }
         ];
       } else {
@@ -125,7 +126,8 @@ function CustomerPurchaseConfirmedContent() {
             quantity: resolvedQty,
             unitPrice: resolvedAmount,
             total: resolvedAmount,
-            variations: 'Black, 128GB'
+            variations: 'Black, 128GB',
+            imei: storedReceipt?.imei || null
           }
         ];
       }
