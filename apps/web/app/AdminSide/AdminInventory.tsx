@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { 
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
-  X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
+  X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
   Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode
 } from 'lucide-react';
@@ -437,6 +437,90 @@ export default function AdminInventory() {
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([]);
+
+  // Discard / Form Termination Modal State
+  const [discardModalState, setDiscardModalState] = useState<{
+    isOpen: boolean;
+    target: 'add_product' | 'edit_product' | 'discount' | null;
+  }>({ isOpen: false, target: null });
+
+  const resetAddProductForm = () => {
+    setIsAddModalOpen(false);
+    setNewDeviceName('');
+    setNewDeviceCost('');
+    setNewDevicePrice('');
+    setNewDeviceDiscount('');
+    setNewDeviceDiscountStartDate(getTodayDateString());
+    setNewDeviceDiscountEndDate('');
+    setNewDeviceCategory('');
+    setNewDeviceType('Smartphone');
+    setNewDeviceSpecs('');
+    setNewDeviceIsPreOwned(false);
+    setNewDeviceAsLowAs('');
+    setNewDeviceWarranty('');
+    setNewDeviceDownpayment('');
+    setNewDeviceImages([]);
+    setNewDeviceImagePreviews([]);
+    setNewDeviceDownpaymentImage(null);
+    setNewDeviceDownpaymentImagePreview(null);
+    setAddVariants([
+      { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+      { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+      { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+      { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    ]);
+  };
+
+  const resetEditProductForm = () => {
+    setIsEditModalOpen(false);
+    setProductToEdit(null);
+    setEditDeviceName('');
+    setEditDeviceCost('');
+    setEditDevicePrice('');
+    setEditDeviceDiscount('0');
+    setEditDeviceDiscountStartDate(getTodayDateString());
+    setEditDeviceDiscountEndDate('');
+    setEditDeviceCategory('');
+    setEditDeviceType('Smartphone');
+    setEditDeviceSpecs('');
+    setEditDeviceIsPreOwned(false);
+    setEditDeviceAsLowAs('');
+    setEditDeviceWarranty('');
+    setEditDeviceDownpayment('');
+    setEditImages([]);
+    setEditDeviceDownpaymentImage(null);
+    setEditDeviceDownpaymentImagePreview(null);
+    setEditVariants([]);
+  };
+
+  const resetDiscountForm = () => {
+    setDiscountModalOpen(false);
+    setDiscountDeviceId('');
+    setDiscountVariantId('');
+    setDiscountBrandFilter('ALL');
+    setDiscountType('PERCENTAGE');
+    setDiscountValue('');
+    setDiscountStartDate(getTodayDateString());
+    setDiscountStartTime('00:00');
+    setDiscountEndDate('');
+    setDiscountEndTime('23:59');
+    setDiscountError(null);
+  };
+
+  const requestCloseModal = (target: 'add_product' | 'edit_product' | 'discount') => {
+    setDiscardModalState({ isOpen: true, target });
+  };
+
+  const handleConfirmDiscard = () => {
+    if (discardModalState.target === 'add_product') {
+      resetAddProductForm();
+    } else if (discardModalState.target === 'edit_product') {
+      resetEditProductForm();
+    } else if (discardModalState.target === 'discount') {
+      resetDiscountForm();
+    }
+    setDiscardModalState({ isOpen: false, target: null });
+  };
 
   function getTodayDateString() {
     const d = new Date();
@@ -3097,7 +3181,7 @@ export default function AdminInventory() {
                 <Plus size={22} />
                 <h3 className="font-bold text-lg">Add New Product & Storage Variants</h3>
               </div>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-white/80 hover:text-white">
+              <button type="button" onClick={() => requestCloseModal('add_product')} className="text-white/80 hover:text-white cursor-pointer">
                 <X size={22} />
               </button>
             </div>
@@ -3800,7 +3884,7 @@ export default function AdminInventory() {
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => requestCloseModal('add_product')}
                   className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
                   Cancel
@@ -3829,7 +3913,7 @@ export default function AdminInventory() {
                 <Pencil size={20} />
                 <h3 className="font-bold text-lg">Edit Product & Variants: {productToEdit.name}</h3>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white">
+              <button type="button" onClick={() => requestCloseModal('edit_product')} className="text-white/80 hover:text-white cursor-pointer">
                 <X size={22} />
               </button>
             </div>
@@ -4499,7 +4583,7 @@ export default function AdminInventory() {
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsEditModalOpen(false)}
+                  onClick={() => requestCloseModal('edit_product')}
                   className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 cursor-pointer"
                 >
                   Cancel
@@ -4816,7 +4900,8 @@ export default function AdminInventory() {
                   </div>
                 </div>
                 <button 
-                  onClick={() => setDiscountModalOpen(false)} 
+                  type="button"
+                  onClick={() => requestCloseModal('discount')} 
                   className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 sm:p-2 rounded-xl transition-all border-none cursor-pointer shrink-0"
                   aria-label="Close modal"
                 >
@@ -5117,7 +5202,7 @@ export default function AdminInventory() {
                 <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-gray-100">
                   <button
                     type="button"
-                    onClick={() => setDiscountModalOpen(false)}
+                    onClick={() => requestCloseModal('discount')}
                     className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer transition-colors border border-gray-200 text-center"
                   >
                     Cancel
@@ -5355,6 +5440,48 @@ export default function AdminInventory() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+      {/* ========================================================== */}
+      {/* 9. TERMINATION & UNSAVED CHANGES WARNING MODAL             */}
+      {/* ========================================================== */}
+      {discardModalState.isOpen && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setDiscardModalState({ isOpen: false, target: null })}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-7 flex flex-col items-center text-center gap-5 border border-rose-100 animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-inner">
+              <AlertTriangle size={34} className="text-rose-500 animate-pulse" />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Discard Unsaved Changes?</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed m-0">
+                Are you sure you want to cancel? If you confirm, all the input fields and details you filled up in this form will be completely cleared and discarded.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full pt-1">
+              <button
+                type="button"
+                onClick={() => setDiscardModalState({ isOpen: false, target: null })}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-xl transition-all border border-gray-200 cursor-pointer text-xs sm:text-sm"
+              >
+                No, Keep Editing
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDiscard}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl transition-all shadow-md border-none cursor-pointer text-xs sm:text-sm"
+              >
+                Yes, Discard All
+              </button>
+            </div>
           </div>
         </div>
       )}

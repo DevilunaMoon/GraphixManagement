@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { 
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
-  X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
+  X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   History, Smartphone, Building2, Package, Layers, MoreVertical,
   RefreshCw, ArrowRight,
   Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, ShoppingCart, ReceiptText
@@ -293,6 +293,74 @@ export default function CashierDevices() {
   const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
   const [editDeviceDownpaymentImagePreview, setEditDeviceDownpaymentImagePreview] = useState<string | null>(null);
   const [editVariants, setEditVariants] = useState<any[]>([]);
+
+  // Discard / Form Termination Modal State
+  const [discardModalState, setDiscardModalState] = useState<{
+    isOpen: boolean;
+    target: 'add_product' | 'edit_product' | null;
+  }>({ isOpen: false, target: null });
+
+  const resetAddProductForm = () => {
+    setIsAddModalOpen(false);
+    setNewDeviceName('');
+    setNewDeviceCost('');
+    setNewDevicePrice('');
+    setNewDeviceDiscount('');
+    setNewDeviceDiscountStartDate(getTodayDateString());
+    setNewDeviceDiscountEndDate('');
+    setNewDeviceCategory('');
+    setNewDeviceType('Smartphone');
+    setNewDeviceSpecs('');
+    setNewDeviceIsPreOwned(false);
+    setNewDeviceAsLowAs('');
+    setNewDeviceWarranty('');
+    setNewDeviceDownpayment('');
+    setNewDeviceImages([]);
+    setNewDeviceImagePreviews([]);
+    setNewDeviceDownpaymentImage(null);
+    setNewDeviceDownpaymentImagePreview(null);
+    setAddVariants([
+      { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+      { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+      { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+      { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    ]);
+  };
+
+  const resetEditProductForm = () => {
+    setIsEditModalOpen(false);
+    setProductToEdit(null);
+    setEditDeviceName('');
+    setEditDeviceCost('');
+    setEditDevicePrice('');
+    setEditDeviceDiscount('0');
+    setEditDeviceDiscountStartDate(getTodayDateString());
+    setEditDeviceDiscountEndDate('');
+    setEditDeviceCategory('');
+    setEditDeviceType('Smartphone');
+    setEditDeviceSpecs('');
+    setEditDeviceIsPreOwned(false);
+    setEditDeviceAsLowAs('');
+    setEditDeviceWarranty('');
+    setEditDeviceDownpayment('');
+    setEditImages([]);
+    setEditDeviceDownpaymentImage(null);
+    setEditDeviceDownpaymentImagePreview(null);
+    setEditVariants([]);
+  };
+
+  const requestCloseModal = (target: 'add_product' | 'edit_product') => {
+    setDiscardModalState({ isOpen: true, target });
+  };
+
+  const handleConfirmDiscard = () => {
+    if (discardModalState.target === 'add_product') {
+      resetAddProductForm();
+    } else if (discardModalState.target === 'edit_product') {
+      resetEditProductForm();
+    }
+    setDiscardModalState({ isOpen: false, target: null });
+  };
 
   function getTodayDateString() {
     const d = new Date();
@@ -2997,7 +3065,7 @@ export default function CashierDevices() {
                 <Plus size={22} />
                 <h3 className="font-bold text-lg">Add New Product & Storage Variants</h3>
               </div>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+              <button type="button" onClick={() => requestCloseModal('add_product')} className="text-white/80 hover:text-white cursor-pointer">
                 <X size={22} />
               </button>
             </div>
@@ -3344,7 +3412,7 @@ export default function CashierDevices() {
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => requestCloseModal('add_product')}
                   className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   Cancel
@@ -3373,7 +3441,7 @@ export default function CashierDevices() {
                 <Pencil size={22} />
                 <h3 className="font-bold text-lg">Edit Product: {productToEdit.name}</h3>
               </div>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-white/80 hover:text-white cursor-pointer">
+              <button type="button" onClick={() => requestCloseModal('edit_product')} className="text-white/80 hover:text-white cursor-pointer">
                 <X size={22} />
               </button>
             </div>
@@ -3662,7 +3730,7 @@ export default function CashierDevices() {
               <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsEditModalOpen(false)}
+                  onClick={() => requestCloseModal('edit_product')}
                   className="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer"
                 >
                   Cancel
@@ -3832,6 +3900,48 @@ export default function CashierDevices() {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+      {/* ========================================================== */}
+      {/* TERMINATION & UNSAVED CHANGES WARNING MODAL                */}
+      {/* ========================================================== */}
+      {discardModalState.isOpen && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setDiscardModalState({ isOpen: false, target: null })}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-7 flex flex-col items-center text-center gap-5 border border-rose-100 animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-inner">
+              <AlertTriangle size={34} className="text-rose-500 animate-pulse" />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Discard Unsaved Changes?</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed m-0">
+                Are you sure you want to cancel? If you confirm, all the input fields and details you filled up in this form will be completely cleared and discarded.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full pt-1">
+              <button
+                type="button"
+                onClick={() => setDiscardModalState({ isOpen: false, target: null })}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-xl transition-all border border-gray-200 cursor-pointer text-xs sm:text-sm"
+              >
+                No, Keep Editing
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDiscard}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl transition-all shadow-md border-none cursor-pointer text-xs sm:text-sm"
+              >
+                Yes, Discard All
+              </button>
+            </div>
           </div>
         </div>
       )}
