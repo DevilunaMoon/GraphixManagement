@@ -5,7 +5,7 @@ import {
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
-  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
@@ -342,7 +342,7 @@ export default function AdminInventory() {
     return Math.max(0, parseInt(v.tagoloanStock || '0', 10) || 0);
   }
 
-  function getVariantStartUnitIndex(variants: typeof addVariants, vIndex: number): number {
+  function getVariantStartUnitIndex(variants: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }[], vIndex: number): number {
     let count = 1;
     for (let i = 0; i < vIndex; i++) {
       const v = variants[i];
@@ -422,7 +422,21 @@ export default function AdminInventory() {
 
   const [editDeviceDownpaymentImage, setEditDeviceDownpaymentImage] = useState<File | null>(null);
   const [editDeviceDownpaymentImagePreview, setEditDeviceDownpaymentImagePreview] = useState<string | null>(null);
-  const [editVariants, setEditVariants] = useState<any[]>([]);
+  const [editVariants, setEditVariants] = useState<{
+    id?: string;
+    type: string;
+    name: string;
+    color: string;
+    storage: string;
+    productId: string;
+    uniqueId?: string;
+    uniqueIds?: string[];
+    price: string;
+    cost: string;
+    tagoloanStock: string;
+    villanuevaStock: string;
+    jasaanStock: string;
+  }[]>([]);
 
   function getTodayDateString() {
     const d = new Date();
@@ -1102,6 +1116,7 @@ export default function AdminInventory() {
           color: color !== '—' ? color : '',
           storage: storage !== '—' ? storage : '',
           productId: v.productId || generateAutoProductId(prod.name, v.name),
+          uniqueIds: Array.isArray(v.uniqueIds) ? v.uniqueIds : [],
           price: v.price?.toString() || prod.price?.toString() || '',
           cost: v.cost?.toString() || prod.cost?.toString() || '',
           tagoloanStock: (v.tagoloanStock ?? v.branchStocks?.Tagoloan ?? 0).toString(),
@@ -1152,20 +1167,33 @@ export default function AdminInventory() {
 
     let totalStock = 0;
     if (editVariants.length > 0) {
-      const processed = editVariants.map(v => {
+      const targetBranch = isSuperAdmin
+        ? (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan')
+        : (userBranch || 'Tagoloan');
+
+      const processed = editVariants.map((v, idx) => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
         const autoProdId = v.productId?.trim() || generateAutoProductId(editDeviceName, resolvedName);
-        const tagStock = parseInt(v.tagoloanStock || '0', 10);
-        const vilStock = parseInt(v.villanuevaStock || '0', 10);
-        const jasStock = parseInt(v.jasaanStock || '0', 10);
+        const tagStock = parseInt(v.tagoloanStock || '0', 10) || 0;
+        const vilStock = parseInt(v.villanuevaStock || '0', 10) || 0;
+        const jasStock = parseInt(v.jasaanStock || '0', 10) || 0;
         const varTotal = tagStock + vilStock + jasStock;
         totalStock += varTotal;
+
+        const startIdx = getVariantStartUnitIndex(editVariants, idx);
+        const resolvedUniqueIds: string[] = [];
+        for (let u = 0; u < varTotal; u++) {
+          const defaultId = generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, startIdx + u);
+          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim()) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+        }
 
         return {
           id: v.id,
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
           productId: autoProdId,
+          uniqueIds: resolvedUniqueIds,
+          uniqueId: resolvedUniqueIds[0] || generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, startIdx),
           price: v.price || editDevicePrice,
           cost: v.cost || editDeviceCost,
           stock: varTotal,
@@ -3989,28 +4017,119 @@ export default function AdminInventory() {
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Branch Stocks</label>
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {isSuperAdmin ? (
-                                  <>
-                                    <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-1.5 py-1 rounded" title="Tagoloan">
-                                      Tag: {v.tagoloanStock || 0}
-                                    </span>
-                                    <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-1.5 py-1 rounded" title="Villanueva">
-                                      Vil: {v.villanuevaStock || 0}
-                                    </span>
-                                    <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-1.5 py-1 rounded" title="Jasaan">
-                                      Jas: {v.jasaanStock || 0}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-[10px] bg-gray-100 text-gray-800 font-bold px-2 py-1 rounded">
-                                    {userBranch}: {userBranch === 'Villanueva' ? (v.villanuevaStock || 0) : userBranch === 'Jasaan' ? (v.jasaanStock || 0) : (v.tagoloanStock || 0)}
-                                  </span>
-                                )}
-                              </div>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">
+                                {isSuperAdmin ? 'Branch Stocks' : `${userBranch} Stock`}
+                              </label>
+                              {isSuperAdmin ? (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <div>
+                                    <span className="text-[9px] text-gray-400 block">Tag</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={v.tagoloanStock || ''}
+                                      onChange={(e) => {
+                                        const updated = [...editVariants];
+                                        updated[idx]!.tagoloanStock = e.target.value;
+                                        setEditVariants(updated);
+                                      }}
+                                      className="w-full bg-white text-gray-900 border border-purple-200 rounded p-1 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] text-gray-400 block">Vil</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={v.villanuevaStock || ''}
+                                      onChange={(e) => {
+                                        const updated = [...editVariants];
+                                        updated[idx]!.villanuevaStock = e.target.value;
+                                        setEditVariants(updated);
+                                      }}
+                                      className="w-full bg-white text-gray-900 border border-purple-200 rounded p-1 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] text-gray-400 block">Jas</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={v.jasaanStock || ''}
+                                      onChange={(e) => {
+                                        const updated = [...editVariants];
+                                        updated[idx]!.jasaanStock = e.target.value;
+                                        setEditVariants(updated);
+                                      }}
+                                      className="w-full bg-white text-gray-900 border border-purple-200 rounded p-1 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                      placeholder="0"
+                                    />
+                                  </div>
+                                </div>
+                              ) : (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={
+                                    userBranch === 'Villanueva'
+                                      ? (v.villanuevaStock || '')
+                                      : userBranch === 'Jasaan'
+                                        ? (v.jasaanStock || '')
+                                        : (v.tagoloanStock || '')
+                                  }
+                                  onChange={(e) => {
+                                    const updated = [...editVariants];
+                                    if (userBranch === 'Villanueva') updated[idx]!.villanuevaStock = e.target.value;
+                                    else if (userBranch === 'Jasaan') updated[idx]!.jasaanStock = e.target.value;
+                                    else updated[idx]!.tagoloanStock = e.target.value;
+                                    setEditVariants(updated);
+                                  }}
+                                  className="w-full bg-white text-gray-900 border border-purple-200 rounded-lg p-2 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                  placeholder="0"
+                                />
+                              )}
                             </div>
                           </div>
+
+                          {/* Individual Device Unique IDs sub-section for Mobile Edit */}
+                          {getVariantStockCount(v) > 0 && (
+                            <div className="bg-purple-100/50 rounded-lg p-2.5 border border-purple-200/80 mt-1">
+                              <div className="text-[11px] font-bold text-purple-900 mb-1.5 flex items-center gap-1.5">
+                                <QrCode size={13} className="text-[#5c0099]" />
+                                <span>Individual Device Unique IDs ({getVariantStockCount(v)} units)</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {Array.from({ length: getVariantStockCount(v) }).map((_, uIdx) => {
+                                  const startIdx = getVariantStartUnitIndex(editVariants, idx);
+                                  const unitNum = startIdx + uIdx;
+                                  const targetBranch = isSuperAdmin ? (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan') : (userBranch || 'Tagoloan');
+                                  const autoId = generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, unitNum);
+                                  const currentVal = v.uniqueIds?.[uIdx] ?? autoId;
+
+                                  return (
+                                    <div key={uIdx} className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-purple-200 shadow-2xs">
+                                      <span className="text-[10px] font-black text-purple-700">#{uIdx + 1}</span>
+                                      <input
+                                        type="text"
+                                        value={currentVal}
+                                        onChange={(e) => {
+                                          const updated = [...editVariants];
+                                          const ids = [...(updated[idx]!.uniqueIds || [])];
+                                          ids[uIdx] = e.target.value.toUpperCase();
+                                          updated[idx]!.uniqueIds = ids;
+                                          setEditVariants(updated);
+                                        }}
+                                        className="font-mono text-[11px] font-bold text-gray-800 outline-none uppercase w-28 bg-transparent"
+                                        placeholder={autoId}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -4039,109 +4158,202 @@ export default function AdminInventory() {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {editVariants.map((v, idx) => (
-                            <tr key={v.id || idx}>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.name}
-                                  onChange={(e) => {
-                                    const updated = [...editVariants];
-                                    updated[idx]!.name = e.target.value;
-                                    setEditVariants(updated);
-                                  }}
-                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
-                                  placeholder="e.g. 32 GB"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.productId || ''}
-                                  onChange={(e) => {
-                                    const updated = [...editVariants];
-                                    updated[idx]!.productId = e.target.value;
-                                    setEditVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
-                                  placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.color || ''}
-                                  onChange={(e) => {
-                                    const updated = [...editVariants];
-                                    updated[idx]!.color = e.target.value;
-                                    setEditVariants(updated);
-                                  }}
-                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
-                                  placeholder="Red"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.storage || ''}
-                                  onChange={(e) => {
-                                    const updated = [...editVariants];
-                                    updated[idx]!.storage = e.target.value;
-                                    setEditVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-2 focus:ring-purple-500"
-                                  placeholder="32 GB"
-                                />
-                              </td>
-                              {isSuperAdmin ? (
-                                <>
-                                  <td className="py-2 px-3 text-center">
-                                    <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                      {v.tagoloanStock || 0}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 px-3 text-center">
-                                    <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                      {v.villanuevaStock || 0}
-                                    </span>
-                                  </td>
-                                  <td className="py-2 px-3 text-center">
-                                    <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                      {v.jasaanStock || 0}
-                                    </span>
-                                  </td>
-                                </>
-                              ) : (
-                                <td className="py-2 px-3 text-center">
-                                  <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-bold text-xs">
-                                    {userBranch === 'Villanueva' ? (v.villanuevaStock || 0) : userBranch === 'Jasaan' ? (v.jasaanStock || 0) : (v.tagoloanStock || 0)}
-                                  </span>
+                            <React.Fragment key={v.id || idx}>
+                              <tr>
+                                <td className="py-2 px-3">
+                                  <input
+                                    type="text"
+                                    value={v.name}
+                                    onChange={(e) => {
+                                      const updated = [...editVariants];
+                                      updated[idx]!.name = e.target.value;
+                                      setEditVariants(updated);
+                                    }}
+                                    className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="e.g. 32 GB"
+                                  />
                                 </td>
+                                <td className="py-2 px-3">
+                                  <input
+                                    type="text"
+                                    value={v.productId || ''}
+                                    onChange={(e) => {
+                                      const updated = [...editVariants];
+                                      updated[idx]!.productId = e.target.value;
+                                      setEditVariants(updated);
+                                    }}
+                                    className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
+                                    placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                  />
+                                </td>
+                                <td className="py-2 px-3">
+                                  <input
+                                    type="text"
+                                    value={v.color || ''}
+                                    onChange={(e) => {
+                                      const updated = [...editVariants];
+                                      updated[idx]!.color = e.target.value;
+                                      setEditVariants(updated);
+                                    }}
+                                    className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="Red"
+                                  />
+                                </td>
+                                <td className="py-2 px-3">
+                                  <input
+                                    type="text"
+                                    value={v.storage || ''}
+                                    onChange={(e) => {
+                                      const updated = [...editVariants];
+                                      updated[idx]!.storage = e.target.value;
+                                      setEditVariants(updated);
+                                    }}
+                                    className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="32 GB"
+                                  />
+                                </td>
+                                {isSuperAdmin ? (
+                                  <>
+                                    <td className="py-2 px-3 text-center">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={v.tagoloanStock ?? '0'}
+                                        onChange={(e) => {
+                                          const updated = [...editVariants];
+                                          updated[idx]!.tagoloanStock = e.target.value;
+                                          setEditVariants(updated);
+                                        }}
+                                        className="w-16 bg-white text-gray-900 border border-purple-200 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                        placeholder="0"
+                                      />
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={v.villanuevaStock ?? '0'}
+                                        onChange={(e) => {
+                                          const updated = [...editVariants];
+                                          updated[idx]!.villanuevaStock = e.target.value;
+                                          setEditVariants(updated);
+                                        }}
+                                        className="w-16 bg-white text-gray-900 border border-purple-200 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                        placeholder="0"
+                                      />
+                                    </td>
+                                    <td className="py-2 px-3 text-center">
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={v.jasaanStock ?? '0'}
+                                        onChange={(e) => {
+                                          const updated = [...editVariants];
+                                          updated[idx]!.jasaanStock = e.target.value;
+                                          setEditVariants(updated);
+                                        }}
+                                        className="w-16 bg-white text-gray-900 border border-purple-200 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                        placeholder="0"
+                                      />
+                                    </td>
+                                  </>
+                                ) : (
+                                  <td className="py-2 px-3 text-center">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={
+                                        userBranch === 'Villanueva'
+                                          ? (v.villanuevaStock ?? '0')
+                                          : userBranch === 'Jasaan'
+                                            ? (v.jasaanStock ?? '0')
+                                            : (v.tagoloanStock ?? '0')
+                                      }
+                                      onChange={(e) => {
+                                        const updated = [...editVariants];
+                                        if (userBranch === 'Villanueva') updated[idx]!.villanuevaStock = e.target.value;
+                                        else if (userBranch === 'Jasaan') updated[idx]!.jasaanStock = e.target.value;
+                                        else updated[idx]!.tagoloanStock = e.target.value;
+                                        setEditVariants(updated);
+                                      }}
+                                      className="w-20 bg-white text-gray-900 border border-purple-200 rounded-lg p-1.5 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                      placeholder="0"
+                                    />
+                                  </td>
+                                )}
+                                <td className="py-2 px-3 text-right">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    placeholder={editDevicePrice || "5999"}
+                                    value={v.price}
+                                    onChange={(e) => {
+                                      const updated = [...editVariants];
+                                      updated[idx]!.price = e.target.value;
+                                      setEditVariants(updated);
+                                    }}
+                                    className="bg-white border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none focus:ring-2 focus:ring-purple-500"
+                                  />
+                                </td>
+                                <td className="py-2 px-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
+                                    className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                                    title="Remove Unit"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {/* Individual Device Unique IDs sub-section for Desktop Edit */}
+                              {getVariantStockCount(v) > 0 && (
+                                <tr className="bg-purple-50/40">
+                                  <td colSpan={isSuperAdmin ? 8 : 6} className="px-3 py-2 border-b border-purple-100">
+                                    <div className="bg-purple-100/60 rounded-xl p-2.5 border border-purple-200/90 text-left">
+                                      <div className="flex items-center justify-between mb-1.5">
+                                        <div className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                                          <QrCode size={13} className="text-[#5c0099]" />
+                                          <span>Individual Device Unique IDs ({getVariantStockCount(v)} units)</span>
+                                        </div>
+                                        <span className="text-[10px] text-purple-700 italic font-medium">
+                                          Auto-sequenced tags for physical device tracking
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        {Array.from({ length: getVariantStockCount(v) }).map((_, uIdx) => {
+                                          const startIdx = getVariantStartUnitIndex(editVariants, idx);
+                                          const unitNum = startIdx + uIdx;
+                                          const targetBranch = isSuperAdmin ? (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan') : (userBranch || 'Tagoloan');
+                                          const autoId = generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, unitNum);
+                                          const currentVal = v.uniqueIds?.[uIdx] ?? autoId;
+
+                                          return (
+                                            <div key={uIdx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-purple-200 shadow-2xs">
+                                              <span className="text-[10px] font-black text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">#{uIdx + 1}</span>
+                                              <input
+                                                type="text"
+                                                value={currentVal}
+                                                onChange={(e) => {
+                                                  const updated = [...editVariants];
+                                                  const ids = [...(updated[idx]!.uniqueIds || [])];
+                                                  ids[uIdx] = e.target.value.toUpperCase();
+                                                  updated[idx]!.uniqueIds = ids;
+                                                  setEditVariants(updated);
+                                                }}
+                                                className="font-mono text-xs font-bold text-purple-900 outline-none uppercase w-32 bg-transparent"
+                                                placeholder={autoId}
+                                              />
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
                               )}
-                              <td className="py-2 px-3 text-right">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  placeholder={editDevicePrice || "5999"}
-                                  value={v.price}
-                                  onChange={(e) => {
-                                    const updated = [...editVariants];
-                                    updated[idx]!.price = e.target.value;
-                                    setEditVariants(updated);
-                                  }}
-                                  className="bg-white border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none focus:ring-2 focus:ring-purple-500"
-                                />
-                              </td>
-                              <td className="py-2 px-2 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => setEditVariants(prev => prev.filter((_, i) => i !== idx))}
-                                  className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
-                                  title="Remove Unit"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </td>
-                            </tr>
+                            </React.Fragment>
                           ))}
                         </tbody>
                       </table>
