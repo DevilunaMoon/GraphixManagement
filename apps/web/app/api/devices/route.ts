@@ -4,6 +4,7 @@ import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { getSession } from '../../../lib/session';
 import { triggerStockAlert } from '../../../lib/stock-alerts';
 import { logActivity } from '../../../lib/logger';
+import { generateUniqueDeviceId } from '../../../lib/unique-id';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -524,6 +525,26 @@ export async function POST(req: Request) {
                   }
                 });
               }
+
+              const unitIds: string[] = Array.isArray(v.uniqueIds) && v.uniqueIds.length > 0
+                ? v.uniqueIds
+                : (v.uniqueId && String(v.uniqueId).trim() ? [String(v.uniqueId).trim()] : []);
+
+              for (let u = 0; u < allocatedStock; u++) {
+                const unitImei = unitIds[u] || generateUniqueDeviceId(name, operatingBranch, u + 1);
+                if (unitImei && String(unitImei).trim()) {
+                  await tx.deviceUnit.create({
+                    data: {
+                      deviceId: existingDevice.id,
+                      variationId: createdVar.id,
+                      productId: prodId,
+                      branch: operatingBranch,
+                      imei: String(unitImei).trim().toUpperCase(),
+                      status: 'Available'
+                    }
+                  }).catch(() => {});
+                }
+              }
             }
           }
         } else {
@@ -674,17 +695,24 @@ export async function POST(req: Request) {
             }
           });
 
-          if (v.uniqueId && String(v.uniqueId).trim()) {
-            await tx.deviceUnit.create({
-              data: {
-                deviceId: createdDevice.id,
-                variationId: createdVar.id,
-                productId: prodId,
-                branch: operatingBranch,
-                imei: String(v.uniqueId).trim().toUpperCase(),
-                status: 'Available'
-              }
-            }).catch(() => {});
+          const unitIds: string[] = Array.isArray(v.uniqueIds) && v.uniqueIds.length > 0
+            ? v.uniqueIds
+            : (v.uniqueId && String(v.uniqueId).trim() ? [String(v.uniqueId).trim()] : []);
+
+          for (let u = 0; u < allocatedStock; u++) {
+            const unitImei = unitIds[u] || generateUniqueDeviceId(name, operatingBranch, u + 1);
+            if (unitImei && String(unitImei).trim()) {
+              await tx.deviceUnit.create({
+                data: {
+                  deviceId: createdDevice.id,
+                  variationId: createdVar.id,
+                  productId: prodId,
+                  branch: operatingBranch,
+                  imei: String(unitImei).trim().toUpperCase(),
+                  status: 'Available'
+                }
+              }).catch(() => {});
+            }
           }
 
           for (const b of branches) {

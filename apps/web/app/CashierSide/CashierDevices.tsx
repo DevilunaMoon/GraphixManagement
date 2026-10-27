@@ -240,18 +240,37 @@ export default function CashierDevices() {
     color: string;
     storage: string;
     productId: string;
-    uniqueId: string;
+    uniqueId?: string;
+    uniqueIds?: string[];
     price: string;
     cost: string;
     tagoloanStock: string;
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
+
+  function getVariantStockCount(v: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }): number {
+    if (!v) return 0;
+    const b = (userBranch || 'Tagoloan').toLowerCase();
+    if (b === 'villanueva') return Math.max(0, parseInt(v.villanuevaStock || '0', 10) || 0);
+    if (b === 'jasaan') return Math.max(0, parseInt(v.jasaanStock || '0', 10) || 0);
+    return Math.max(0, parseInt(v.tagoloanStock || '0', 10) || 0);
+  }
+
+  function getVariantStartUnitIndex(variants: typeof addVariants, vIndex: number): number {
+    let count = 1;
+    for (let i = 0; i < vIndex; i++) {
+      const v = variants[i];
+      if (!v) continue;
+      count += getVariantStockCount(v);
+    }
+    return count;
+  }
 
   // Edit Product State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -845,18 +864,25 @@ export default function CashierDevices() {
       const processedVariants = addVariants.map((v, idx) => {
         const resolvedName = v.name?.trim() || (v.color && v.storage ? `${v.color} - ${v.storage}` : (v.storage || v.color || 'Standard'));
         const autoProdId = v.productId?.trim() || generateAutoProductId(newDeviceName, resolvedName);
-        const autoUniqueId = v.uniqueId?.trim() || generateUniqueDeviceId(newDeviceName, userBranch, idx + 1);
         const tagStock = userBranch === 'Tagoloan' ? parseInt(v.tagoloanStock || '0', 10) : 0;
         const vilStock = userBranch === 'Villanueva' ? parseInt(v.villanuevaStock || '0', 10) : 0;
         const jasStock = userBranch === 'Jasaan' ? parseInt(v.jasaanStock || '0', 10) : 0;
         const varTotal = parseInt(v.tagoloanStock || '0', 10) + parseInt(v.villanuevaStock || '0', 10) + parseInt(v.jasaanStock || '0', 10);
         totalComputedStock += varTotal;
 
+        const startIdx = getVariantStartUnitIndex(addVariants, idx);
+        const resolvedUniqueIds: string[] = [];
+        for (let u = 0; u < varTotal; u++) {
+          const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + u);
+          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim()) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+        }
+
         return {
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
           productId: autoProdId,
-          uniqueId: autoUniqueId,
+          uniqueIds: resolvedUniqueIds,
+          uniqueId: resolvedUniqueIds[0] || generateUniqueDeviceId(newDeviceName, userBranch, startIdx),
           price: v.price || newDevicePrice,
           cost: v.cost || newDeviceCost,
           stock: varTotal,
@@ -889,10 +915,10 @@ export default function CashierDevices() {
         setNewDeviceImages([]); setNewDeviceImagePreviews([]);
         setNewDeviceDownpaymentImage(null); setNewDeviceDownpaymentImagePreview(null);
         setAddVariants([
-          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+          { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+          { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
         ]);
         setSuccessModalContent({ title: 'Success!', message: `The product has been successfully added to ${userBranch} inventory.` });
         setSuccessModalOpen(true);
@@ -3088,7 +3114,7 @@ export default function CashierDevices() {
                     onClick={() => {
                       setAddVariants(prev => [
                         ...prev,
-                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', uniqueId: '', price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+                        { type: 'Storage', name: '512 GB', color: '', storage: '512 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
                       ]);
                     }}
                     className="text-xs font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
@@ -3103,7 +3129,6 @@ export default function CashierDevices() {
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
                         <th className="py-2.5 px-3">Product ID</th>
-                        <th className="py-2.5 px-3">Unique ID</th>
                         <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
@@ -3112,113 +3137,155 @@ export default function CashierDevices() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {addVariants.map((v, idx) => (
-                        <tr key={idx}>
-                          <td className="py-2 px-3">
-                            <input
-                              type="text"
-                              value={v.name}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.name = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                              placeholder="32 GB"
-                            />
-                          </td>
-                          <td className="py-2 px-3">
-                            <input
-                              type="text"
-                              value={v.productId || ''}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.productId = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                              placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                            />
-                          </td>
-                          <td className="py-2 px-3">
-                            <input
-                              type="text"
-                              value={v.uniqueId || ''}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.uniqueId = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                              placeholder={generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, idx + 1)}
-                            />
-                          </td>
-                          <td className="py-2 px-3">
-                            <input
-                              type="text"
-                              value={v.color || ''}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.color = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                              placeholder="Red"
-                            />
-                          </td>
-                          <td className="py-2 px-3">
-                            <input
-                              type="text"
-                              value={v.storage || ''}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.storage = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                              placeholder="32 GB"
-                            />
-                          </td>
-                          <td className="py-2 px-3 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              value={userBranch === 'Tagoloan' ? v.tagoloanStock : (userBranch === 'Villanueva' ? v.villanuevaStock : v.jasaanStock)}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                if (userBranch === 'Tagoloan') updated[idx]!.tagoloanStock = e.target.value;
-                                else if (userBranch === 'Villanueva') updated[idx]!.villanuevaStock = e.target.value;
-                                else updated[idx]!.jasaanStock = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 bg-white text-gray-900 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                            />
-                          </td>
-                          <td className="py-2 px-3 text-right">
-                            <input
-                              type="number"
-                              min="0"
-                              placeholder={newDevicePrice || "5999"}
-                              value={v.price}
-                              onChange={(e) => {
-                                const updated = [...addVariants];
-                                updated[idx]!.price = e.target.value;
-                                setAddVariants(updated);
-                              }}
-                              className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                            />
-                          </td>
-                          <td className="py-2 px-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => setAddVariants(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
-                            >
-                              <X size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {addVariants.map((v, idx) => {
+                        const unitsCount = getVariantStockCount(v);
+                        const startIdx = getVariantStartUnitIndex(addVariants, idx);
+
+                        return (
+                          <Fragment key={idx}>
+                            <tr>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.name}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.name = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  placeholder="32 GB"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.productId || ''}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.productId = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.color || ''}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.color = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  placeholder="Red"
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.storage || ''}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.storage = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  placeholder="32 GB"
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={userBranch === 'Tagoloan' ? v.tagoloanStock : (userBranch === 'Villanueva' ? v.villanuevaStock : v.jasaanStock)}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    if (userBranch === 'Tagoloan') updated[idx]!.tagoloanStock = e.target.value;
+                                    else if (userBranch === 'Villanueva') updated[idx]!.villanuevaStock = e.target.value;
+                                    else updated[idx]!.jasaanStock = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 bg-white text-gray-900 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  placeholder={newDevicePrice || "5999"}
+                                  value={v.price}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.price = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                />
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => setAddVariants(prev => prev.filter((_, i) => i !== idx))}
+                                  className="text-rose-500 hover:text-rose-700 p-1 cursor-pointer"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </td>
+                            </tr>
+
+                            {/* Individual Device Unique IDs expansion row */}
+                            {unitsCount > 0 && (
+                              <tr key={`${idx}-units`} className="bg-purple-50/40 border-b border-purple-200/80">
+                                <td colSpan={7} className="py-2.5 px-4">
+                                  <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                                          <Smartphone className="w-3.5 h-3.5 text-purple-600" />
+                                          Individual Device Unique IDs ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
+                                          Sequential Unique ID for each physical phone:
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] font-mono text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full font-bold">
+                                        {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx)} → {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + unitsCount - 1)}
+                                      </span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                      {Array.from({ length: unitsCount }).map((_, uIdx) => {
+                                        const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
+                                        const currentId = v.uniqueIds?.[uIdx] ?? defaultId;
+                                        return (
+                                          <div key={uIdx} className="flex items-center gap-1.5 bg-white border border-purple-200 rounded-lg px-2.5 py-1 shadow-2xs">
+                                            <span className="text-[10px] font-bold text-gray-400">#{uIdx + 1}</span>
+                                            <input
+                                              type="text"
+                                              value={currentId}
+                                              onChange={(e) => {
+                                                const updated = [...addVariants];
+                                                const uIds = [...(updated[idx]!.uniqueIds || [])];
+                                                uIds[uIdx] = e.target.value.toUpperCase();
+                                                updated[idx]!.uniqueIds = uIds;
+                                                setAddVariants(updated);
+                                              }}
+                                              className="text-xs font-mono font-bold text-purple-900 outline-none w-36 uppercase bg-transparent"
+                                              placeholder={defaultId}
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
