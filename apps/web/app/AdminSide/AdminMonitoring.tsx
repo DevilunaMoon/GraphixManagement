@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { 
   Pencil, FileText, Search, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, 
   ChevronDown, Upload, Wrench, Receipt, Building2, Eye, Smartphone, HelpCircle, 
-  X, Plus, Trash2, Camera, User, Phone, Mail, Check, ShieldAlert, Cpu
+  X, Plus, Trash2, Camera, User, Phone, Mail, Check, ShieldAlert, Cpu,
+  Circle, Lock, Activity
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
@@ -666,10 +667,21 @@ export default function AdminMonitoring() {
     setEditNewPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Diagnostic prerequisite step checks for Add Request Form
+  const isAddStep1Complete = !!addProblemDescription && addProblemDescription.trim().length > 0;
+  const isAddStep2Complete = !!addSuggestedRepair && addSuggestedRepair.trim().length > 0;
+  const isAddStep3Complete = (addMaterials && addMaterials.length > 0) || (parseFloat(addRepairCost || '0') > 0);
+  const isAddDiagnosticReadyForRepair = isAddStep1Complete && isAddStep2Complete && isAddStep3Complete;
+
   const handleAddSave = async () => {
     const finalDeviceName = addDeviceName.trim();
     if (!finalDeviceName || !addProgress) {
       alert("Device Name/Model and Progress are required.");
+      return;
+    }
+
+    if ((addProgress === 'Repairing' || addProgress === 'Completed') && !isAddDiagnosticReadyForRepair) {
+      alert("⚠️ Diagnostic Gate Locked:\n\nTo intake a device directly in \"Repairing\" or \"Completed\", you must complete all 3 diagnostic steps:\n• Step 1: Describe the Problem\n• Step 2: Suggested Repair\n• Step 3: Itemized Replacement Parts & Materials\n\nPlease complete these steps or select \"Accepted\" or \"Diagnostic\".");
       return;
     }
 
@@ -1985,17 +1997,104 @@ export default function AdminMonitoring() {
                     <div className="relative">
                       <select 
                         value={addProgress}
-                        onChange={(e) => setAddProgress(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if ((val === 'Repairing' || val === 'Completed') && !isAddDiagnosticReadyForRepair) {
+                            alert("⚠️ Diagnostic Prerequisite Required:\n\nPlease complete:\n• Step 1: Describe the Problem\n• Step 2: Suggested Repair\n• Step 3: Itemized Replacement Parts & Materials\n\nbefore setting status to Repairing or Completed.");
+                            return;
+                          }
+                          setAddProgress(val);
+                        }}
                         className={`w-full h-10 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors font-bold text-sm appearance-none bg-white cursor-pointer ${getProgressColor(addProgress)}`}
                       >
                         <option value="Accepted" className="text-purple-600 font-semibold">Accepted</option>
                         <option value="Diagnostic" className="text-blue-500 font-semibold">Diagnostic</option>
-                        <option value="Repairing" className="text-yellow-500 font-semibold">Repairing</option>
-                        <option value="Completed" className="text-green-600 font-semibold">Completed</option>
+                        <option 
+                          value="Repairing" 
+                          disabled={!isAddDiagnosticReadyForRepair}
+                          className="text-yellow-600 font-semibold"
+                        >
+                          Repairing {!isAddDiagnosticReadyForRepair ? '🔒 (Complete Steps 1, 2, 3 first)' : ''}
+                        </option>
+                        <option 
+                          value="Completed" 
+                          disabled={!isAddDiagnosticReadyForRepair}
+                          className="text-green-600 font-semibold"
+                        >
+                          Completed {!isAddDiagnosticReadyForRepair ? '🔒 (Locked)' : ''}
+                        </option>
                       </select>
                       <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                         <ChevronDown size={18} className="text-gray-500" />
                       </div>
+                    </div>
+
+                    {/* Diagnostic Prerequisite Checklist Badge Card */}
+                    <div className="mt-2 p-3 rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/50 via-gray-50 to-white flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-950 flex items-center gap-1.5">
+                          <Activity size={13} className="text-[#bd00ff]" />
+                          Diagnostic Checklist (Step 1 → Step 2 → Step 3)
+                        </span>
+                        <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                          isAddDiagnosticReadyForRepair 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : 'bg-amber-100 text-amber-900 border border-amber-200'
+                        }`}>
+                          {isAddDiagnosticReadyForRepair ? (
+                            <>
+                              <CheckCircle2 size={11} className="text-emerald-600" />
+                              <span>Unlocked for Repair</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock size={11} className="text-amber-700" />
+                              <span>Repairing Locked</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-xs">
+                        <div className={`p-2 rounded-xl border flex items-center gap-2 ${
+                          isAddStep1Complete 
+                            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 font-semibold' 
+                            : 'bg-white border-gray-200 text-gray-500'
+                        }`}>
+                          {isAddStep1Complete ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> : <Circle size={14} className="text-gray-400 shrink-0" />}
+                          <span className="text-[11px] truncate">Step 1: Describe the Problem</span>
+                        </div>
+
+                        <div className={`p-2 rounded-xl border flex items-center gap-2 ${
+                          isAddStep2Complete 
+                            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 font-semibold' 
+                            : 'bg-white border-gray-200 text-gray-500'
+                        }`}>
+                          {isAddStep2Complete ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> : <Circle size={14} className="text-gray-400 shrink-0" />}
+                          <span className="text-[11px] truncate">Step 2: Suggested Repair</span>
+                        </div>
+
+                        <div className={`p-2 rounded-xl border flex items-center gap-2 ${
+                          isAddStep3Complete 
+                            ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 font-semibold' 
+                            : 'bg-white border-gray-200 text-gray-500'
+                        }`}>
+                          {isAddStep3Complete ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> : <Circle size={14} className="text-gray-400 shrink-0" />}
+                          <span className="text-[11px] truncate">Step 3: Itemized Parts {isAddStep3Complete && parseFloat(addRepairCost || '0') > 0 ? `(₱${parseFloat(addRepairCost).toLocaleString()})` : ''}</span>
+                        </div>
+                      </div>
+
+                      {!isAddDiagnosticReadyForRepair ? (
+                        <p className="text-[11px] text-amber-800 font-medium m-0 flex items-center gap-1.5 pt-0.5">
+                          <AlertCircle size={13} className="shrink-0 text-amber-600" />
+                          <span>Fill in Step 1 (Describe Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Parts) if starting directly in &quot;Repairing&quot;.</span>
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-emerald-700 font-medium m-0 flex items-center gap-1.5 pt-0.5">
+                          <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
+                          <span>All 3 diagnostic steps completed! &quot;Repairing&quot; is unlocked.</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2044,7 +2143,10 @@ export default function AdminMonitoring() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-xs text-gray-700">Describe the Problem</label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-xs text-gray-700">Describe the Problem</label>
+                    <span className="bg-purple-100 text-[#bd00ff] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Step 1</span>
+                  </div>
                   <textarea 
                     rows={3}
                     value={addProblemDescription} 
@@ -2055,7 +2157,10 @@ export default function AdminMonitoring() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-xs text-gray-700">Suggested Repair</label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-xs text-gray-700">Suggested Repair</label>
+                    <span className="bg-purple-100 text-[#bd00ff] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Step 2</span>
+                  </div>
                   <textarea 
                     rows={3}
                     value={addSuggestedRepair} 
