@@ -603,8 +603,11 @@ export default function MaterialBreakdownEditor({
         <div className="flex items-center gap-2">
           <Wrench size={16} className="text-[#bd00ff] shrink-0" />
           <div className="flex flex-col">
-            <label className="font-bold text-sm text-black">Itemized Replacement Parts & Materials</label>
-            <span className="text-[11px] text-gray-500">Step C: Type or select spare parts from inventory to auto-fill price</span>
+            <div className="flex items-center gap-2">
+              <label className="font-bold text-sm text-black">Itemized Replacement Parts & Materials</label>
+              <span className="bg-purple-100 text-[#bd00ff] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Step 3</span>
+            </div>
+            <span className="text-[11px] text-gray-500">Type or select spare parts from inventory to auto-fill price</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

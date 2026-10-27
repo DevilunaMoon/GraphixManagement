@@ -769,7 +769,7 @@ export default function TechnicianMonitoring() {
 
     // Diagnostic Completion Gate Enforcement
     if ((editProgress === 'Repairing' || editProgress === 'Completed') && initialProgressIndex <= 1 && !isDiagnosticReadyForRepair) {
-      setModalError('Cannot advance progress: Please complete Step A (Problem Findings), Step B (Suggested Repair Plan), and Step C (Itemized Parts & Labor Quote) first.');
+      setModalError('Cannot advance progress: Please complete Step 1 (Describe the Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Replacement Parts & Materials) first.');
       setIsSubmitting(false);
       return;
     }
@@ -1760,7 +1760,7 @@ export default function TechnicianMonitoring() {
                       {!isDiagnosticReadyForRepair && initialProgressIndex <= 1 && (
                         <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
                           <Lock size={10} />
-                          Steps A, B, C Required for Repair
+                          Steps 1, 2, 3 Required for Repair
                         </span>
                       )}
                     </label>
@@ -1770,7 +1770,7 @@ export default function TechnicianMonitoring() {
                         onChange={(e) => {
                           const val = e.target.value;
                           if ((val === 'Repairing' || val === 'Completed') && initialProgressIndex <= 1 && !isDiagnosticReadyForRepair) {
-                            alert('Cannot advance to Repairing: Please complete Step A (Problem Details), Step B (Suggested Repair), and Step C (Itemized Parts & Labor Quote) first.');
+                            alert('Cannot advance to Repairing: Please complete Step 1 (Describe the Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Replacement Parts & Materials) first.');
                             return;
                           }
                           setEditProgress(val);
@@ -1783,7 +1783,7 @@ export default function TechnicianMonitoring() {
                           disabled={(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) || progressLevels.indexOf('Repairing') < initialProgressIndex} 
                           className="text-yellow-600 font-semibold"
                         >
-                          Repairing {(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) ? '🔒 (Complete Steps A, B, C first)' : ''}
+                          Repairing {(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) ? '🔒 (Complete Steps 1, 2, 3 first)' : ''}
                         </option>
                         <option 
                           value="Completed" 
@@ -1804,7 +1804,7 @@ export default function TechnicianMonitoring() {
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-950 flex items-center gap-1.5">
                           <Activity size={13} className="text-[#bd00ff]" />
-                          Diagnostic Completion Gate (Step A → Step B → Step C)
+                          Diagnostic Checklist (Step 1 → Step 2 → Step 3)
                         </span>
                         <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
                           isDiagnosticReadyForRepair 
@@ -1832,7 +1832,7 @@ export default function TechnicianMonitoring() {
                             : 'bg-white border-gray-200 text-gray-500'
                         }`}>
                           {isStepAComplete ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> : <Circle size={14} className="text-gray-400 shrink-0" />}
-                          <span className="text-[11px] truncate">Step A: Problem Defined</span>
+                          <span className="text-[11px] truncate">Step 1: Describe the Problem</span>
                         </div>
 
                         <div className={`p-2 rounded-xl border flex items-center gap-2 ${
@@ -1841,7 +1841,7 @@ export default function TechnicianMonitoring() {
                             : 'bg-white border-gray-200 text-gray-500'
                         }`}>
                           {isStepBComplete ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> : <Circle size={14} className="text-gray-400 shrink-0" />}
-                          <span className="text-[11px] truncate">Step B: Suggested Repair</span>
+                          <span className="text-[11px] truncate">Step 2: Suggested Repair</span>
                         </div>
 
                         <div className={`p-2 rounded-xl border flex items-center gap-2 ${
@@ -1850,19 +1850,19 @@ export default function TechnicianMonitoring() {
                             : 'bg-white border-gray-200 text-gray-500'
                         }`}>
                           {isStepCComplete ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" /> : <Circle size={14} className="text-gray-400 shrink-0" />}
-                          <span className="text-[11px] truncate">Step C: Parts Quoted {isStepCComplete && parseFloat(editRepairCost || '0') > 0 ? `(₱${parseFloat(editRepairCost).toLocaleString()})` : ''}</span>
+                          <span className="text-[11px] truncate">Step 3: Itemized Parts {isStepCComplete && parseFloat(editRepairCost || '0') > 0 ? `(₱${parseFloat(editRepairCost).toLocaleString()})` : ''}</span>
                         </div>
                       </div>
 
                       {!isDiagnosticReadyForRepair ? (
                         <p className="text-[11px] text-amber-800 font-medium m-0 flex items-center gap-1.5 pt-0.5">
                           <AlertCircle size={13} className="shrink-0 text-amber-600" />
-                          <span>Complete all 3 diagnostic steps above before moving to &quot;Repairing&quot;.</span>
+                          <span>Fill in Step 1 (Describe Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Parts) to unlock &quot;Repairing&quot;.</span>
                         </p>
                       ) : (
                         <p className="text-[11px] text-emerald-700 font-medium m-0 flex items-center gap-1.5 pt-0.5">
                           <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
-                          <span>All diagnostic prerequisites complete! &quot;Repairing&quot; is now unlocked.</span>
+                          <span>All 3 diagnostic steps completed! &quot;Repairing&quot; is now unlocked.</span>
                         </p>
                       )}
                     </div>
@@ -1913,7 +1913,10 @@ export default function TechnicianMonitoring() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-xs text-gray-700">Describe the Problem</label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-xs text-gray-700">Describe the Problem</label>
+                    <span className="bg-purple-100 text-[#bd00ff] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Step 1</span>
+                  </div>
                   <textarea 
                     rows={3}
                     value={editProblemDescription}
@@ -1924,7 +1927,10 @@ export default function TechnicianMonitoring() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-xs text-gray-700">Suggested Repair</label>
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-xs text-gray-700">Suggested Repair</label>
+                    <span className="bg-purple-100 text-[#bd00ff] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Step 2</span>
+                  </div>
                   <textarea 
                     rows={3}
                     value={editSuggestedRepair}
