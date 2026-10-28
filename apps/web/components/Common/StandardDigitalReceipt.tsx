@@ -5,6 +5,7 @@ import { ChevronLeft, Printer, Download, Copy, Check, ShieldCheck } from 'lucide
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { formatDisplayInvoiceId } from '../../lib/invoice';
+import { resolveDisplayUniqueId } from '../../lib/unique-id';
 
 export interface StandardReceiptItem {
   id?: string;
@@ -211,12 +212,12 @@ export default function StandardDigitalReceipt({
       text += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
 
       const rawUniqueId = item.uniqueId || item.imei || data.uniqueId || data.imei;
-      if (rawUniqueId) {
-        const uids = String(rawUniqueId).split(',').map(s => s.trim()).filter(Boolean);
-        uids.forEach((uid) => {
-          text += `Unique ID: ${uid}\n`;
-        });
-      }
+      const resolvedUids = rawUniqueId
+        ? String(rawUniqueId).split(',').map(s => s.trim()).filter(Boolean).map((uid, uIdx) => resolveDisplayUniqueId(uid, item.name || data.device?.name, branchLocation, uIdx + 1, shortTransId))
+        : [resolveDisplayUniqueId(null, item.name || data.device?.name, branchLocation, 1, shortTransId)];
+      resolvedUids.forEach((uid) => {
+        text += `Unique ID: ${uid}\n`;
+      });
     });
 
     text += `${separator}\n`;
@@ -477,18 +478,19 @@ export default function StandardDigitalReceipt({
                   </div>
                   {(() => {
                     const rawUniqueId = item.uniqueId || item.imei || data.uniqueId || data.imei;
-                    if (!rawUniqueId) return null;
+                    const resolvedUids = rawUniqueId
+                      ? String(rawUniqueId)
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(Boolean)
+                          .map((uid, uIdx) => resolveDisplayUniqueId(uid, item.name || data.device?.name, branchLocation, uIdx + 1, shortTransId))
+                      : [resolveDisplayUniqueId(null, item.name || data.device?.name, branchLocation, 1, shortTransId)];
 
-                    const uniqueIds = String(rawUniqueId)
-                      .split(',')
-                      .map(s => s.trim())
-                      .filter(Boolean);
-
-                    if (uniqueIds.length === 0) return null;
+                    if (resolvedUids.length === 0) return null;
 
                     return (
                       <div className="flex flex-col gap-0.5 mt-1">
-                        {uniqueIds.map((uid, uIdx) => (
+                        {resolvedUids.map((uid, uIdx) => (
                           <div 
                             key={uIdx} 
                             className="font-mono text-[9.5px] sm:text-[10px] text-gray-800 text-left flex items-center gap-1.5 flex-wrap"

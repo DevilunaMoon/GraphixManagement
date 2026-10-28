@@ -92,3 +92,43 @@ export function generateUniqueDeviceId(
   const suffix = getSequenceSuffix(unitIndex);
   return `${acronym}-${branchCode}-${suffix}`;
 }
+
+/**
+ * Resolves a standardized, alphanumeric Unique ID (e.g. IP11PM-TAG-A11 or SAM-S24U-TAG-A01)
+ * for display on digital receipts, invoices, and transaction records.
+ *
+ * It guarantees that:
+ * 1. If an ID is already an alphanumeric Unique ID (e.g. IP11PM-TAG-A01), it is formatted cleanly.
+ * 2. If an ID is a numeric IMEI (e.g. 345678922367227) or empty:
+ *    It converts it into the official store Unique ID format ([MODEL]-[BRANCH]-[A...]),
+ *    using the invoice sequence (e.g. #GRPX-T-A11 -> A11) or unit index.
+ * 3. Applies consistently to ALL devices (both iPhone and Android).
+ */
+export function resolveDisplayUniqueId(
+  rawId?: string | null,
+  modelName?: string | null,
+  branchName?: string | null,
+  unitIndex: number = 1,
+  transactionId?: string | null
+): string {
+  const cleanId = String(rawId || '').trim();
+
+  // If already a valid alphanumeric Unique ID (contains hyphen with letters/digits, e.g. IP11PM-TAG-A01)
+  if (cleanId && /^[A-Za-z0-9]+(-[A-Za-z0-9]+)+$/.test(cleanId) && /[A-Za-z]/.test(cleanId)) {
+    return cleanId.toUpperCase();
+  }
+
+  // Derive sequence index (e.g. from transaction #GRPX-T-A11 -> index 11)
+  let seqIdx = unitIndex;
+  if (transactionId) {
+    const txMatch = String(transactionId).match(/-A(\d+)/i) || String(transactionId).match(/(\d+)$/);
+    if (txMatch && txMatch[1]) {
+      const parsed = parseInt(txMatch[1], 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        seqIdx = parsed;
+      }
+    }
+  }
+
+  return generateUniqueDeviceId(modelName || 'DEVICE', branchName, seqIdx);
+}

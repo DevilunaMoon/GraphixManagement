@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Pencil, Receipt, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, User, Sparkles, FileText, Calendar, Building2, ShoppingBag, ArrowUpDown, QrCode } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { resolveDisplayUniqueId } from '../../lib/unique-id';
 
 interface ReceiptItem {
   id: string;
@@ -257,12 +258,10 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
                           {item.branch}
                         </span>
                       )}
-                      {item.uniqueId && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md">
-                          <QrCode size={11} className="text-[#8b00cc]" />
-                          Unique ID: {item.uniqueId}
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200/80 px-2 py-0.5 rounded-md">
+                        <QrCode size={11} className="text-[#8b00cc]" />
+                        Unique ID: {resolveDisplayUniqueId(item.uniqueId, item.deviceName, item.branch, 1, item.orderNum)}
+                      </span>
                     </div>
 
                     <h4 className="text-gray-900 font-bold text-sm sm:text-base truncate m-0 group-hover:text-[#8b00cc] transition-colors">
