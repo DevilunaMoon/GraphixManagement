@@ -22,14 +22,11 @@ export async function GET(req: Request) {
     const branchCode = getBranchCode(branch);
     const prefix = `${acronym}-${branchCode}-`;
 
-    // Query all existing units matching prefix or deviceId in this branch
+    // Store-wide (branch-wide) continuous progression:
+    // 1. Query all existing units registered in this branch across all brands & models
     const existingUnits = await prisma.deviceUnit.findMany({
       where: {
-        branch: { equals: branch, mode: 'insensitive' },
-        OR: [
-          { imei: { startsWith: prefix, mode: 'insensitive' } },
-          ...(deviceId ? [{ deviceId }] : [])
-        ]
+        branch: { equals: branch, mode: 'insensitive' }
       },
       select: { imei: true }
     });
@@ -42,42 +39,20 @@ export async function GET(req: Request) {
       }
     }
 
-    // Also check existing Device & Variation stock count in this branch for this model
-    let existingDeviceStock = 0;
-    if (modelName && modelName.trim() && modelName.trim().toUpperCase() !== 'MODEL') {
-      const matchingDevices = await prisma.device.findMany({
-        where: {
-          name: { equals: modelName.trim(), mode: 'insensitive' }
-        },
-        include: {
-          variations: {
-            include: {
-              branchStocks: {
-                where: { branch: { equals: branch, mode: 'insensitive' } }
-              }
-            }
-          },
-          branchStocks: {
-            where: { branch: { equals: branch, mode: 'insensitive' } }
-          }
-        }
-      });
-
-      for (const d of matchingDevices) {
-        if (d.variations && d.variations.length > 0) {
-          for (const v of d.variations) {
-            const bStock = v.branchStocks?.[0]?.stock || 0;
-            existingDeviceStock += bStock;
-          }
-        } else {
-          const bStock = d.branchStocks?.[0]?.stock || d.stock || 0;
-          existingDeviceStock += bStock;
-        }
+    // 2. Also check total physical branch stock & sold counts across all products in this branch
+    const branchStockAgg = await prisma.branchStock.aggregate({
+      where: {
+        branch: { equals: branch, mode: 'insensitive' }
+      },
+      _sum: {
+        stock: true,
+        sold: true
       }
-    }
+    });
+    const totalBranchStock = (branchStockAgg._sum.stock || 0) + (branchStockAgg._sum.sold || 0);
 
-    // Baseline index is the highest sequence number found (or unit count, or total stock)
-    const baseline = Math.max(maxIndex, existingUnits.length, existingDeviceStock);
+    // Baseline index is the highest sequence number found in this branch (or total units / branch stock)
+    const baseline = Math.max(maxIndex, existingUnits.length, totalBranchStock);
     const nextIndex = baseline + 1;
     const nextSuffix = getSequenceSuffix(nextIndex);
     const nextId = `${acronym}-${branchCode}-${nextSuffix}`;
