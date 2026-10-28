@@ -444,6 +444,7 @@ function CustomerPaymentContent() {
     let createdId = '';
     let formattedTxId = plannedTxId;
     let uploadedReceiptUrl: string | null = null;
+    let purchaseResultData: any = null;
 
     try {
       // 1. If paying with GCash, upload receipt image proof first
@@ -495,8 +496,9 @@ function CustomerPaymentContent() {
 
       if (res.ok) {
         const data = await res.json();
+        purchaseResultData = data;
         if (data) {
-          createdId = data.id || '';
+          createdId = data.id || data.createdPurchases?.[0]?.id || '';
           if (data.referenceId) {
             formattedTxId = data.referenceId;
           } else if (data.id) {
@@ -526,7 +528,8 @@ function CustomerPaymentContent() {
       subtotal: subtotal || 28998,
       deviceName: items.length > 1 ? `${primaryItem.name} (+${items.length - 1} more)` : primaryItem.name,
       quantity: totalQty,
-      items: items.map(i => {
+      imei: purchaseResultData?.uniqueId || purchaseResultData?.imei || purchaseResultData?.createdPurchases?.[0]?.imei || null,
+      items: items.map((i, idx) => {
         let variationLabel = '';
         if (i.variations && Array.isArray(i.variations) && i.variations.length > 0) {
           variationLabel = i.variations.map((v: any) => v.name || v.value || v).join(', ');
@@ -537,7 +540,8 @@ function CustomerPaymentContent() {
           quantity: i.quantity,
           unitPrice: i.price,
           total: i.price * i.quantity,
-          variations: variationLabel || 'Standard'
+          variations: variationLabel || 'Standard',
+          imei: (purchaseResultData?.createdPurchases && purchaseResultData.createdPurchases[idx]?.imei) || purchaseResultData?.imei || null
         };
       }),
       branch: selectedBranch,

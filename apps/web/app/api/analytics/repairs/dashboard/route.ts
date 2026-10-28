@@ -49,9 +49,9 @@ export async function GET(req: Request) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    // 1. Fetch all repairs matching branch scope
+    // 1. Fetch repairs: Super Admin gets system-wide data for branch supervision; scopedRepairs handles current branch filter
     const allRepairs = await prisma.repairRequest.findMany({
-      where: branchWhere,
+      where: isSuperAdmin ? {} : branchWhere,
       include: {
         user: {
           select: { name: true, email: true, phone: true },
@@ -60,7 +60,11 @@ export async function GET(req: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // 2. Compute status counts & time metrics
+    const scopedRepairs = isSuperAdmin && targetBranch
+      ? allRepairs.filter((r) => (r.branch || 'Tagoloan').trim().toLowerCase() === targetBranch.toLowerCase())
+      : allRepairs;
+
+    // 2. Compute status counts & time metrics on scopedRepairs
     let allPendingCount = 0;
     let allAcceptedCount = 0;
     let allInProgressCount = 0;
@@ -81,7 +85,7 @@ export async function GET(req: Request) {
     const monthlyActivity = Array(12).fill(0);
     const monthlyRevenueArray = Array(12).fill(0);
 
-    allRepairs.forEach((repair: any) => {
+    scopedRepairs.forEach((repair: any) => {
       const normStatus = normalizeRepairStatus(repair.status, repair.progress);
       const createdAt = new Date(repair.createdAt);
       const updatedAt = repair.updatedAt ? new Date(repair.updatedAt) : createdAt;
@@ -142,14 +146,14 @@ export async function GET(req: Request) {
     });
 
     const isMonthView = timeframe === 'month';
-    const activeRequestsTotal = isMonthView ? monthNewRequestsCount : allRepairs.length;
+    const activeRequestsTotal = isMonthView ? monthNewRequestsCount : scopedRepairs.length;
     const activeCompletedCount = isMonthView ? monthCompletedCount : allCompletedCount;
     const activeCancelledCount = isMonthView ? monthCancelledCount : allCancelledCount;
     const activeRevenue = isMonthView ? monthlyRevenue : totalRepairRevenue;
 
     const chartTotal = isMonthView
       ? (allPendingCount + allAcceptedCount + allInProgressCount + monthCompletedCount + monthCancelledCount)
-      : allRepairs.length;
+      : scopedRepairs.length;
 
     // 3. Status Distribution with percentages
     const statusDistribution = [
@@ -196,8 +200,8 @@ export async function GET(req: Request) {
     ];
 
     // 4. Recent Repairs for quick preview list
-    const recentRepairs = allRepairs.slice(0, 8).map((r) => {
-      const { totalCost } = extractRepairCost(r);
+    const recentRepairs = scopedRepairs.slice(0, 8).map((r) => {
+      const { totalCost, downpaymentAmount } = extractRepairCost(r);
       const normStatus = normalizeRepairStatus(r.status, r.progress);
       return {
         id: r.id,
@@ -208,47 +212,191 @@ export async function GET(req: Request) {
         progress: r.progress || 'Pending',
         status: normStatus,
         repairCost: totalCost,
+        downpayment: downpaymentAmount,
+        cause: r.cause,
         createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
       };
     });
 
-    // 5. Multi-Branch Performance Comparison (for Super Admin system-wide view)
+    // 5. Multi-Branch Supervision (Super Admin full control over Tagoloan, Villanueva, Jasaan)
     let branchComparison: any[] = [];
-    if (isSuperAdmin && (!targetBranch || targetBranch === 'all')) {
+    if (isSuperAdmin) {
       const systemBranches = ['Tagoloan', 'Villanueva', 'Jasaan'];
-      const stats: Record<string, { branch: string; requests: number; completed: number; inProgress: number; revenue: number }> = {};
+      const stats: Record<string, {
+        branch: string;
+        requests: number;
+        completed: number;
+        completedThisMonth: number;
+        inProgress: number;
+        diagnostic: number;
+        repairing: number;
+        pending: number;
+        accepted: number;
+        needsRepair: number;
+        revenue: number;
+        monthlyRevenue: number;
+        todayRevenue: number;
+        allTimeRevenue: number;
+        techMap: Record<string, { name: string; activeCount: number; completedCount: number }>;
+        activeDevices: any[];
+      }> = {};
 
       systemBranches.forEach((b) => {
-        stats[b] = { branch: b, requests: 0, completed: 0, inProgress: 0, revenue: 0 };
+        stats[b] = {
+          branch: b,
+          requests: 0,
+          completed: 0,
+          completedThisMonth: 0,
+          inProgress: 0,
+          diagnostic: 0,
+          repairing: 0,
+          pending: 0,
+          accepted: 0,
+          needsRepair: 0,
+          revenue: 0,
+          monthlyRevenue: 0,
+          todayRevenue: 0,
+          allTimeRevenue: 0,
+          techMap: {},
+          activeDevices: [],
+        };
       });
 
       allRepairs.forEach((r) => {
-        const bName = r.branch || 'Tagoloan';
-        const matchKey = systemBranches.find((s) => s.toLowerCase() === bName.toLowerCase()) || bName;
+        const bName = (r.branch || 'Tagoloan').trim();
+        const matchKey = systemBranches.find((s) => s.toLowerCase() === bName.toLowerCase()) || 'Tagoloan';
         if (!stats[matchKey]) {
-          stats[matchKey] = { branch: matchKey, requests: 0, completed: 0, inProgress: 0, revenue: 0 };
+          stats[matchKey] = {
+            branch: matchKey,
+            requests: 0,
+            completed: 0,
+            completedThisMonth: 0,
+            inProgress: 0,
+            diagnostic: 0,
+            repairing: 0,
+            pending: 0,
+            accepted: 0,
+            needsRepair: 0,
+            revenue: 0,
+            monthlyRevenue: 0,
+            todayRevenue: 0,
+            allTimeRevenue: 0,
+            techMap: {},
+            activeDevices: [],
+          };
         }
 
         const normStatus = normalizeRepairStatus(r.status, r.progress);
         const createdAt = new Date(r.createdAt);
-        const isThisMonth = createdAt >= startOfMonth && createdAt <= endOfMonth;
+        const updatedAt = r.updatedAt ? new Date(r.updatedAt) : createdAt;
+        const isCreatedThisMonth = createdAt >= startOfMonth && createdAt <= endOfMonth;
+        const isCompletedThisMonth = updatedAt >= startOfMonth && updatedAt <= endOfMonth;
+        const { totalCost, downpaymentAmount } = extractRepairCost(r);
 
-        if (!isMonthView || isThisMonth) {
+        const techName = (r.technician || '').trim() || 'Unassigned Technician';
+        if (!stats[matchKey].techMap[techName]) {
+          stats[matchKey].techMap[techName] = { name: techName, activeCount: 0, completedCount: 0 };
+        }
+
+        if (!isMonthView || isCreatedThisMonth) {
           stats[matchKey].requests += 1;
         }
 
+        const progLower = (r.progress || '').toLowerCase();
+        const isDiag = progLower.includes('diag') || progLower === 'accepted';
+        const isRep = progLower.includes('repair') || progLower.includes('progress') || progLower.includes('process');
+
         if (normStatus === 'Completed') {
-          if (!isMonthView || isThisMonth) {
-            stats[matchKey].completed += 1;
-            const { totalCost } = extractRepairCost(r);
-            stats[matchKey].revenue += totalCost;
+          stats[matchKey].completed += 1;
+          stats[matchKey].allTimeRevenue += totalCost;
+          stats[matchKey].techMap[techName].completedCount += 1;
+
+          if (isCompletedThisMonth || isCreatedThisMonth) {
+            stats[matchKey].completedThisMonth += 1;
+            stats[matchKey].monthlyRevenue += totalCost;
           }
-        } else if (normStatus === 'In Progress') {
-          stats[matchKey].inProgress += 1;
+          if (updatedAt >= startOfToday || createdAt >= startOfToday) {
+            stats[matchKey].todayRevenue += totalCost;
+          }
+        } else if (normStatus !== 'Cancelled') {
+          // Needs repair (Active workload)
+          stats[matchKey].needsRepair += 1;
+          stats[matchKey].techMap[techName].activeCount += 1;
+
+          if (isDiag) {
+            stats[matchKey].diagnostic += 1;
+          } else if (isRep) {
+            stats[matchKey].repairing += 1;
+          }
+
+          if (normStatus === 'Pending') stats[matchKey].pending += 1;
+          else if (normStatus === 'Accepted') stats[matchKey].accepted += 1;
+          else if (normStatus === 'In Progress') stats[matchKey].inProgress += 1;
+
+          if (stats[matchKey].activeDevices.length < 20) {
+            stats[matchKey].activeDevices.push({
+              id: r.id,
+              deviceName: r.deviceName,
+              ownerName: r.ownerName || r.user?.name || 'Walk-In Customer',
+              branch: matchKey,
+              technician: techName,
+              progress: r.progress || 'Diagnostic',
+              status: normStatus,
+              cause: r.cause || 'No issue description provided',
+              repairCost: totalCost,
+              downpayment: downpaymentAmount,
+              createdAt: r.createdAt,
+              updatedAt: r.updatedAt,
+            });
+          }
         }
       });
 
-      branchComparison = systemBranches.map((b) => stats[b] || { branch: b, requests: 0, completed: 0, inProgress: 0, revenue: 0 });
+      branchComparison = systemBranches.map((b) => {
+        const item = stats[b] || {
+          branch: b,
+          requests: 0,
+          completed: 0,
+          completedThisMonth: 0,
+          inProgress: 0,
+          diagnostic: 0,
+          repairing: 0,
+          pending: 0,
+          accepted: 0,
+          needsRepair: 0,
+          revenue: 0,
+          monthlyRevenue: 0,
+          todayRevenue: 0,
+          allTimeRevenue: 0,
+          techMap: {},
+          activeDevices: [],
+        };
+
+        const activeRevenueValue = isMonthView ? item.monthlyRevenue : item.allTimeRevenue;
+        const totalWork = item.completed + item.needsRepair;
+        const completionRate = totalWork > 0 ? Math.round((item.completed / totalWork) * 100) : 0;
+        const sortedTechs = Object.values(item.techMap).sort((x, y) => (y.activeCount + y.completedCount) - (x.activeCount + x.completedCount));
+
+        return {
+          branch: b,
+          requests: item.requests,
+          needsRepair: item.needsRepair,
+          diagnostic: item.diagnostic,
+          repairing: item.repairing,
+          pending: item.pending,
+          accepted: item.accepted,
+          completed: item.completed,
+          completedThisMonth: item.completedThisMonth,
+          revenue: activeRevenueValue,
+          monthlyRevenue: item.monthlyRevenue,
+          todayRevenue: item.todayRevenue,
+          allTimeRevenue: item.allTimeRevenue,
+          completionRate,
+          technicians: sortedTechs,
+          activeDevices: item.activeDevices,
+        };
+      });
     }
 
     return NextResponse.json({

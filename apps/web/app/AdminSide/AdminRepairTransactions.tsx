@@ -57,7 +57,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
   const [filterDate, setFilterDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const itemsPerPage = 8;
+  const itemsPerPage = 7;
 
   const [settlingTxId, setSettlingTxId] = useState<string | null>(null);
 

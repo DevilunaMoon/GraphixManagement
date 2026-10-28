@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { GRAPHIX_LOGO_BASE64 } from './graphix-logo-base64';
+import { generateUniqueDeviceId } from './unique-id';
 
 export interface InventoryDeviceItem {
   id?: string;
@@ -18,11 +19,15 @@ export interface InventoryDeviceItem {
   jasaanStock?: number;
   specs?: string;
   productId?: string;
+  uniqueId?: string;
+  uniqueIds?: string[];
   variations?: Array<{
     id?: string;
     name?: string;
     type?: string;
     productId?: string;
+    uniqueId?: string;
+    uniqueIds?: string[];
     price?: number;
     stock?: number;
     totalStock?: number;
@@ -40,6 +45,7 @@ export interface InventoryReportOptions {
   conditionFilter?: string; // 'all' | 'new' | 'pre-owned'
   searchQuery?: string;
   categoryFilter?: string;
+  brandName?: string;
 }
 
 function parseBrandFromName(name: string): string {
@@ -89,6 +95,30 @@ function formatProductIdFallback(modelName: string, variantName?: string): strin
   return `${cleanModel}-${cleanVariant}`;
 }
 
+function resolveIndividualUniqueIds(
+  modelName: string,
+  branchName: string,
+  startUnitIndex: number,
+  stockCount: number,
+  rawUniqueId?: string,
+  rawUniqueIds?: string[]
+): string[] {
+  if (stockCount <= 0) return [];
+  const result: string[] = [];
+
+  for (let i = 0; i < stockCount; i++) {
+    if (Array.isArray(rawUniqueIds) && rawUniqueIds[i] && rawUniqueIds[i]?.trim()) {
+      result.push(rawUniqueIds[i]!.trim().toUpperCase());
+    } else if (i === 0 && rawUniqueId && rawUniqueId.trim()) {
+      result.push(rawUniqueId.trim().toUpperCase());
+    } else {
+      result.push(generateUniqueDeviceId(modelName, branchName, startUnitIndex + i));
+    }
+  }
+
+  return result;
+}
+
 function formatPeso(amount: number): string {
   return Number(amount || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -119,7 +149,14 @@ function drawPriceWithPeso(doc: jsPDF, price: number, rightX: number, y: number,
 }
 
 export async function generateProductInventoryPDF(options: InventoryReportOptions) {
-  const { devices, branch, userRole = 'Cashier', conditionFilter, searchQuery, categoryFilter } = options;
+  const { devices, branch, userRole = 'Cashier', conditionFilter, searchQuery, categoryFilter, brandName } = options;
+
+  // Resolve target brand
+  const effectiveBrandName = brandName || (
+    categoryFilter && categoryFilter !== 'All' && categoryFilter !== 'All Categories' && !/^[a-z0-9]{20,}$/i.test(categoryFilter)
+      ? categoryFilter
+      : undefined
+  );
 
   // 1. Resolve Branch Display
   let branchDisplay = 'All Branches';
@@ -140,10 +177,19 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
     const isPre = conditionFilter.toLowerCase() === 'pre-owned';
     filteredDevices = filteredDevices.filter(d => Boolean(d.isPreOwned) === isPre);
   }
-  if (categoryFilter && categoryFilter !== 'All' && categoryFilter !== 'All Categories') {
+  if (effectiveBrandName) {
+    const bLower = effectiveBrandName.toLowerCase();
     filteredDevices = filteredDevices.filter(d => 
-      d.category?.name?.toLowerCase() === categoryFilter.toLowerCase() ||
-      d.brand?.toLowerCase() === categoryFilter.toLowerCase()
+      d.category?.name?.toLowerCase() === bLower ||
+      d.brand?.toLowerCase() === bLower ||
+      parseBrandFromName(d.name).toLowerCase() === bLower
+    );
+  } else if (categoryFilter && categoryFilter !== 'All' && categoryFilter !== 'All Categories') {
+    const cLower = categoryFilter.toLowerCase();
+    filteredDevices = filteredDevices.filter(d => 
+      d.category?.id === categoryFilter ||
+      d.category?.name?.toLowerCase() === cLower ||
+      d.brand?.toLowerCase() === cLower
     );
   }
   if (searchQuery && searchQuery.trim()) {
@@ -159,6 +205,7 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
   interface InventoryRow {
     modelName: string;
     productId: string;
+    uniqueIds: string[];
     brand: string;
     storage: string;
     condition: 'New' | 'Pre-Owned';
@@ -178,6 +225,7 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
     modelSet.add(modelName);
 
     const hasVariations = device.variations && Array.isArray(device.variations) && device.variations.length > 0;
+    let modelUnitRunningIndex = 1;
 
     if (hasVariations && device.variations) {
       device.variations.forEach((v, vIdx) => {
@@ -203,10 +251,20 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
         }
 
         const price = Number(v.price || device.price || 0);
+        const uniqueIds = resolveIndividualUniqueIds(
+          modelName,
+          cleanBranch,
+          modelUnitRunningIndex,
+          stock,
+          v.uniqueId,
+          v.uniqueIds
+        );
+        modelUnitRunningIndex += Math.max(1, stock);
 
         rows.push({
           modelName,
           productId: prodId,
+          uniqueIds,
           brand,
           storage,
           condition,
@@ -238,10 +296,19 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
       }
 
       const price = Number(device.price || 0);
+      const uniqueIds = resolveIndividualUniqueIds(
+        modelName,
+        cleanBranch,
+        1,
+        stock,
+        device.uniqueId,
+        device.uniqueIds
+      );
 
       rows.push({
         modelName,
         productId: prodId,
+        uniqueIds,
         brand,
         storage,
         condition,
@@ -275,23 +342,25 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
 
   // Column Widths (Total = 269mm)
   const colWidths = {
-    model: 62,
-    productId: 48,
-    brand: 32,
-    storage: 32,
-    condition: 30,
-    stock: 30,
-    price: 35
+    model: 46,
+    productId: 42,
+    uniqueIds: 50,
+    brand: 26,
+    storage: 25,
+    condition: 24,
+    stock: 24,
+    price: 32
   };
 
   const colPositions = {
     model: margin,
     productId: margin + colWidths.model,
-    brand: margin + colWidths.model + colWidths.productId,
-    storage: margin + colWidths.model + colWidths.productId + colWidths.brand,
-    condition: margin + colWidths.model + colWidths.productId + colWidths.brand + colWidths.storage,
-    stock: margin + colWidths.model + colWidths.productId + colWidths.brand + colWidths.storage + colWidths.condition,
-    price: margin + colWidths.model + colWidths.productId + colWidths.brand + colWidths.storage + colWidths.condition + colWidths.stock
+    uniqueIds: margin + colWidths.model + colWidths.productId,
+    brand: margin + colWidths.model + colWidths.productId + colWidths.uniqueIds,
+    storage: margin + colWidths.model + colWidths.productId + colWidths.uniqueIds + colWidths.brand,
+    condition: margin + colWidths.model + colWidths.productId + colWidths.uniqueIds + colWidths.brand + colWidths.storage,
+    stock: margin + colWidths.model + colWidths.productId + colWidths.uniqueIds + colWidths.brand + colWidths.storage + colWidths.condition,
+    price: margin + colWidths.model + colWidths.productId + colWidths.uniqueIds + colWidths.brand + colWidths.storage + colWidths.condition + colWidths.stock
   };
 
   const now = new Date();
@@ -324,12 +393,20 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
 
     doc.setFontSize(11);
     doc.setTextColor(15, 23, 42); // Slate 900
-    doc.text('PRODUCT INVENTORY', titleX, 23);
+    if (effectiveBrandName) {
+      doc.text(`PRODUCT INVENTORY — ${effectiveBrandName.toUpperCase()}`, titleX, 23);
+    } else {
+      doc.text('PRODUCT INVENTORY', titleX, 23);
+    }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.setTextColor(92, 0, 153);
-    doc.text(branchDisplay, titleX, 28);
+    if (effectiveBrandName) {
+      doc.text(`${branchDisplay}  |  Brand: ${effectiveBrandName}`, titleX, 28);
+    } else {
+      doc.text(branchDisplay, titleX, 28);
+    }
 
     // Meta (Right aligned)
     doc.setFont('helvetica', 'normal');
@@ -389,13 +466,14 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
 
     // Header Text
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
 
     const textY = y + 5.2;
 
     doc.text('Product Model', colPositions.model + 3, textY);
     doc.text('Product ID', colPositions.productId + 2, textY);
+    doc.text('Individual Unique IDs', colPositions.uniqueIds + 2, textY);
     doc.text('Brand', colPositions.brand + 2, textY);
     doc.text('Storage', colPositions.storage + (colWidths.storage / 2), textY, { align: 'center' });
     doc.text('Condition', colPositions.condition + (colWidths.condition / 2), textY, { align: 'center' });
@@ -431,9 +509,15 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
   let currentY = drawFirstPageHeader();
   currentY = drawTableHeader(currentY);
 
-  const rowHeight = 7.2;
+  const uidLineHeight = 3.8;
 
   rows.forEach((row, index) => {
+    const hasUnits = row.uniqueIds && row.uniqueIds.length > 0;
+    const computedHeight = hasUnits 
+      ? Math.max(7.5, (row.uniqueIds.length * uidLineHeight) + 3)
+      : 7.5;
+    const rowHeight = computedHeight;
+
     // Check if new page is needed
     if (currentY + rowHeight > maxY) {
       doc.addPage();
@@ -451,57 +535,81 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
     doc.setLineWidth(0.2);
     doc.line(margin, currentY + rowHeight, margin + printableWidth, currentY + rowHeight);
 
-    const textY = currentY + 4.8;
+    const topTextY = currentY + 4.8;
 
     // 1. Product Model
     doc.setFont('helvetica', row.isFirstOfModel ? 'bold' : 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(row.isFirstOfModel ? 15 : 71, row.isFirstOfModel ? 23 : 85, row.isFirstOfModel ? 42 : 105);
     const safeModel = doc.splitTextToSize(row.modelName, colWidths.model - 5);
-    doc.text(safeModel[0] || row.modelName, colPositions.model + 3, textY);
+    doc.text(safeModel[0] || row.modelName, colPositions.model + 3, topTextY);
 
-    // 2. Product ID (Graphix Purple / Mono-like)
+    // 2. Product ID (Graphix Purple / bold)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(126, 34, 206); // Purple 700
     const safeProdId = doc.splitTextToSize(row.productId, colWidths.productId - 4);
-    doc.text(safeProdId[0] || row.productId, colPositions.productId + 2, textY);
+    doc.text(safeProdId[0] || row.productId, colPositions.productId + 2, topTextY);
 
-    // 3. Brand
+    // 3. Individual Unique IDs (Stacked vertically in column)
+    if (!hasUnits) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.text('—', colPositions.uniqueIds + 2, topTextY);
+    } else {
+      row.uniqueIds.forEach((uid, uIdx) => {
+        const lineY = currentY + 4.5 + (uIdx * uidLineHeight);
+
+        // Unit number (e.g. #01)
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.5);
+        doc.setTextColor(126, 34, 206); // Purple 700
+        doc.text(`#${String(uIdx + 1).padStart(2, '0')}`, colPositions.uniqueIds + 2, lineY);
+
+        // Hardware Tag (e.g. IP11PM-TAG-A01)
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
+        doc.setTextColor(30, 41, 59); // Slate 800
+        doc.text(uid, colPositions.uniqueIds + 8.5, lineY);
+      });
+    }
+
+    // 4. Brand
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(30, 41, 59);
-    doc.text(row.brand.slice(0, 18), colPositions.brand + 2, textY);
+    doc.text(row.brand.slice(0, 14), colPositions.brand + 2, topTextY);
 
-    // 4. Storage (Center)
-    doc.text(row.storage, colPositions.storage + (colWidths.storage / 2), textY, { align: 'center' });
+    // 5. Storage (Center)
+    doc.text(row.storage, colPositions.storage + (colWidths.storage / 2), topTextY, { align: 'center' });
 
-    // 5. Condition (Center)
+    // 6. Condition (Center)
     if (row.condition === 'New') {
       doc.setTextColor(16, 185, 129); // Emerald
       doc.setFont('helvetica', 'bold');
-      doc.text('New', colPositions.condition + (colWidths.condition / 2), textY, { align: 'center' });
+      doc.text('New', colPositions.condition + (colWidths.condition / 2), topTextY, { align: 'center' });
     } else {
       doc.setTextColor(217, 119, 6); // Amber 600
       doc.setFont('helvetica', 'bold');
-      doc.text('Pre-Owned', colPositions.condition + (colWidths.condition / 2), textY, { align: 'center' });
+      doc.text('Pre-Owned', colPositions.condition + (colWidths.condition / 2), topTextY, { align: 'center' });
     }
 
-    // 6. Stock (Right)
+    // 7. Stock (Right)
     doc.setFont('helvetica', 'normal');
     if (row.stock === 0) {
       doc.setTextColor(225, 29, 72); // Rose 600
       doc.setFont('helvetica', 'bold');
-      doc.text('0 pcs (Out)', colPositions.stock + colWidths.stock - 3, textY, { align: 'right' });
+      doc.text('0 pcs (Out)', colPositions.stock + colWidths.stock - 3, topTextY, { align: 'right' });
     } else {
       doc.setTextColor(15, 23, 42);
-      doc.text(`${row.stock} pcs`, colPositions.stock + colWidths.stock - 3, textY, { align: 'right' });
+      doc.text(`${row.stock} pcs`, colPositions.stock + colWidths.stock - 3, topTextY, { align: 'right' });
     }
 
-    // 7. Price (Right)
+    // 8. Price (Right)
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
-    drawPriceWithPeso(doc, row.price, colPositions.price + colWidths.price - 3, textY, 8);
+    drawPriceWithPeso(doc, row.price, colPositions.price + colWidths.price - 3, topTextY, 7.5);
 
     currentY += rowHeight;
   });
@@ -530,11 +638,12 @@ export async function generateProductInventoryPDF(options: InventoryReportOption
     doc.setTextColor(100, 116, 139);
 
     doc.text('Graphix Management System', margin, pageHeight - 7);
-    doc.text(`Product Inventory — ${branchDisplay}`, pageWidth / 2, pageHeight - 7, { align: 'center' });
+    doc.text(`Product Inventory — ${branchDisplay}${effectiveBrandName ? ` (${effectiveBrandName})` : ''}`, pageWidth / 2, pageHeight - 7, { align: 'center' });
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 7, { align: 'right' });
   }
 
-  // 7. Save PDF with dynamic branch filename
+  // 7. Save PDF with dynamic branch & brand filename
   const branchFileName = branchDisplay.replace(/\s+/g, '_');
-  doc.save(`Graphix_Product_Inventory_${branchFileName}.pdf`);
+  const brandFileSuffix = effectiveBrandName ? `_${effectiveBrandName.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+  doc.save(`Graphix_Product_Inventory_${branchFileName}${brandFileSuffix}.pdf`);
 }

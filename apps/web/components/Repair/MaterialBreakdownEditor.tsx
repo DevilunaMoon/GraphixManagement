@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Trash2, Calculator, Wrench, CheckCircle2, DollarSign, CreditCard, 
-  Layers, Banknote, QrCode, Copy, Check, X, Smartphone, ExternalLink, AlertCircle
+  Layers, Banknote, QrCode, Copy, Check, X, Smartphone, ExternalLink, AlertCircle,
+  Package, Search, ChevronDown, Sparkles, Box
 } from 'lucide-react';
 
 export interface MaterialItem {
@@ -12,6 +13,20 @@ export interface MaterialItem {
   description: string;
   unitPrice: number;
   total: number;
+  sparePartId?: string;
+}
+
+export interface SparePartItem {
+  id: string;
+  name: string;
+  compatibleDevice?: string;
+  category?: string;
+  branch: string;
+  stock: number;
+  cost?: number;
+  price: number;
+  sku?: string;
+  status: string;
 }
 
 export interface PaymentDetails {
@@ -152,6 +167,54 @@ export default function MaterialBreakdownEditor({
         setBranchGcash(defaultInfo);
       });
   }, [branch]);
+
+  // Spare Parts Inventory State & Autocomplete
+  const [spareParts, setSpareParts] = useState<SparePartItem[]>([]);
+  const [isLoadingParts, setIsLoadingParts] = useState<boolean>(false);
+  const [showInventoryPicker, setShowInventoryPicker] = useState<boolean>(false);
+  const [inventorySearch, setInventorySearch] = useState<string>('');
+  const [inventoryCategory, setInventoryCategory] = useState<string>('All');
+  const [activeDropdownRowId, setActiveDropdownRowId] = useState<string | null>(null);
+
+  // Fetch spare parts for the active branch
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingParts(true);
+    const targetBranch = branch || 'Tagoloan';
+    fetch(`/api/technician/spare-parts?branch=${encodeURIComponent(targetBranch)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted) {
+          if (Array.isArray(data)) {
+            setSpareParts(data);
+          } else {
+            setSpareParts([]);
+          }
+        }
+      })
+      .catch(err => {
+        console.warn('Could not load branch spare parts:', err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingParts(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [branch]);
+
+  // Click outside to close row autocomplete dropdown
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.parts-autocomplete-anchor')) {
+        setActiveDropdownRowId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleGlobalClick);
+    return () => document.removeEventListener('mousedown', handleGlobalClick);
+  }, []);
 
   // 1. Payment Method state (Cash, GCash, Split)
   const [internalMethod, setInternalMethod] = useState<'Cash' | 'GCash' | 'Split'>(() => {
@@ -375,6 +438,65 @@ export default function MaterialBreakdownEditor({
     handleMaterialsChange(activeMaterials.filter(item => item.id !== id));
   };
 
+  const handleSelectSparePart = (rowId: string, part: SparePartItem) => {
+    if (readOnly || !handleMaterialsChange) return;
+    const unitPrice = Math.max(0, parseFloat(String(part.price)) || 0);
+    const updated = activeMaterials.map(item => {
+      if (item.id === rowId) {
+        return {
+          ...item,
+          description: part.name,
+          unitPrice,
+          total: item.qty * unitPrice,
+          sparePartId: part.id
+        };
+      }
+      return item;
+    });
+    handleMaterialsChange(updated);
+    setActiveDropdownRowId(null);
+  };
+
+  const handleAddFromInventoryPicker = (part: SparePartItem) => {
+    if (readOnly || !handleMaterialsChange) return;
+    const unitPrice = Math.max(0, parseFloat(String(part.price)) || 0);
+    const newItem: MaterialItem = {
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now() + Math.random()),
+      qty: 1,
+      description: part.name,
+      unitPrice,
+      total: unitPrice,
+      sparePartId: part.id
+    };
+    handleMaterialsChange([...activeMaterials, newItem]);
+  };
+
+  const getFilteredParts = (textQuery: string) => {
+    const q = (textQuery || '').toLowerCase().trim();
+    const list = spareParts.filter(p => {
+      if (!q) return true;
+      return (
+        (p.name || '').toLowerCase().includes(q) ||
+        (p.compatibleDevice || '').toLowerCase().includes(q) ||
+        (p.sku || '').toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q)
+      );
+    });
+
+    return list.sort((a, b) => {
+      if (deviceName) {
+        const d = deviceName.toLowerCase();
+        const aCompat = (a.compatibleDevice || '').toLowerCase().includes(d) || (a.name || '').toLowerCase().includes(d);
+        const bCompat = (b.compatibleDevice || '').toLowerCase().includes(d) || (b.name || '').toLowerCase().includes(d);
+        if (aCompat && !bCompat) return -1;
+        if (!aCompat && bCompat) return 1;
+      }
+      if (a.stock > 0 && b.stock <= 0) return -1;
+      if (a.stock <= 0 && b.stock > 0) return 1;
+      return 0;
+    });
+  };
+
   // Helper for quick downpayment buttons
   const halfCost = Math.round((totalRepairCost / 2) * 100) / 100;
 
@@ -480,26 +602,44 @@ export default function MaterialBreakdownEditor({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
           <Wrench size={16} className="text-[#bd00ff] shrink-0" />
-          <label className="font-bold text-sm text-black">Itemized Replacement Parts / Materials</label>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <label className="font-bold text-sm text-black">Itemized Replacement Parts & Materials</label>
+              <span className="bg-purple-100 text-[#bd00ff] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">Step 3</span>
+            </div>
+            <span className="text-[11px] text-gray-500">Type or select spare parts from inventory to auto-fill price</span>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={handleAddRow}
-          className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white border border-[#bd00ff]/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 shrink-0 self-start sm:self-auto"
-        >
-          <Plus size={14} />
-          <span>Add Part / Material</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowInventoryPicker(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+            title="Browse all parts in branch inventory"
+          >
+            <Package size={14} />
+            <span>Pick from Inventory ({spareParts.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleAddRow}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-50 text-[#bd00ff] hover:bg-[#bd00ff] hover:text-white border border-[#bd00ff]/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
+            title="Add custom line item (labor or unlisted part)"
+          >
+            <Plus size={14} />
+            <span>Add Custom Item</span>
+          </button>
+        </div>
       </div>
 
       {/* --- DESKTOP VIEW: Materials Table (Hidden on Mobile) --- */}
-      <div className="hidden md:block overflow-x-auto border-2 border-gray-200 rounded-2xl bg-white shadow-xs">
+      <div className="hidden md:block border-2 border-gray-200 rounded-2xl bg-white shadow-xs relative">
         <table className="w-full text-left text-xs border-collapse min-w-[500px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase tracking-wider">
               <th className="py-2.5 px-3 text-center w-16">Qty</th>
-              <th className="py-2.5 px-3">Material / Part Description</th>
-              <th className="py-2.5 px-3 w-32">Unit Price (₱)</th>
+              <th className="py-2.5 px-3">Material / Part Description (Type or select from inventory)</th>
+              <th className="py-2.5 px-3 w-36">Unit Price (₱)</th>
               <th className="py-2.5 px-3 w-32 text-right">Total (₱)</th>
               <th className="py-2.5 px-2 text-center w-10"></th>
             </tr>
@@ -507,15 +647,20 @@ export default function MaterialBreakdownEditor({
           <tbody className="divide-y divide-gray-100">
             {activeMaterials.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-5 text-center text-gray-400 font-medium">
-                  No parts added yet. Click <span className="text-[#bd00ff] font-bold">&quot;+ Add Part / Material&quot;</span> to itemize replacement parts (e.g. LCD, Battery, Flex cable).
+                <td colSpan={5} className="py-6 text-center text-gray-400 font-medium">
+                  <div className="flex flex-col items-center gap-2">
+                    <Package size={24} className="text-purple-300" />
+                    <p className="m-0 text-xs">
+                      No parts added yet. Click <button type="button" onClick={() => setShowInventoryPicker(true)} className="text-[#bd00ff] font-bold underline cursor-pointer bg-transparent border-none p-0 inline">&quot;Pick from Inventory&quot;</button> or <button type="button" onClick={handleAddRow} className="text-[#bd00ff] font-bold underline cursor-pointer bg-transparent border-none p-0 inline">&quot;Add Custom Item&quot;</button> to begin quoting.
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (
               activeMaterials.map((item) => (
-                <tr key={item.id} className="hover:bg-purple-50/30 transition-colors">
+                <tr key={item.id} className="hover:bg-purple-50/20 transition-colors">
                   {/* Qty */}
-                  <td className="py-2 px-2 text-center">
+                  <td className="py-2.5 px-2 text-center align-top">
                     <input
                       type="number"
                       min="1"
@@ -525,19 +670,104 @@ export default function MaterialBreakdownEditor({
                     />
                   </td>
 
-                  {/* Description */}
-                  <td className="py-2 px-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. LCD Screen / Battery Replacement"
-                      value={item.description}
-                      onChange={(e) => handleUpdateRow(item.id, 'description', e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg outline-none text-xs font-medium text-gray-800 focus:border-[#bd00ff] focus:bg-white"
-                    />
+                  {/* Description with Autocomplete */}
+                  <td className="py-2.5 px-2 relative parts-autocomplete-anchor align-top">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Type to search inventory (e.g. LCD Screen) or custom labor..."
+                        value={item.description}
+                        onFocus={() => setActiveDropdownRowId(item.id)}
+                        onChange={(e) => {
+                          handleUpdateRow(item.id, 'description', e.target.value);
+                          setActiveDropdownRowId(item.id);
+                        }}
+                        className="w-full pl-3 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded-lg outline-none text-xs font-medium text-gray-900 focus:border-[#bd00ff] focus:bg-white transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setActiveDropdownRowId(activeDropdownRowId === item.id ? null : item.id)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#bd00ff] p-0.5 cursor-pointer border-none bg-transparent"
+                        title="Toggle inventory suggestions"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {/* Autocomplete Dropdown */}
+                    {activeDropdownRowId === item.id && (
+                      <div className="absolute left-2 right-2 top-full mt-1.5 bg-white border-2 border-purple-200 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-64 flex flex-col animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="px-3 py-2 bg-gradient-to-r from-purple-50 to-indigo-50/60 border-b border-purple-100 flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <Package size={13} className="text-[#bd00ff]" />
+                            {branch || 'Tagoloan'} Branch Inventory
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setActiveDropdownRowId(null)}
+                            className="text-gray-400 hover:text-gray-600 p-0.5 border-none bg-transparent cursor-pointer"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+
+                        <div className="overflow-y-auto divide-y divide-gray-100 max-h-48">
+                          {(() => {
+                            const matched = getFilteredParts(item.description);
+                            if (matched.length === 0) {
+                              return (
+                                <div className="p-3 text-center text-xs text-gray-400">
+                                  No exact inventory match. You can keep typing custom labor or material.
+                                </div>
+                              );
+                            }
+                            return matched.slice(0, 8).map(part => (
+                              <div
+                                key={part.id}
+                                onClick={() => handleSelectSparePart(item.id, part)}
+                                className="p-2.5 hover:bg-purple-50/70 cursor-pointer transition-colors flex items-center justify-between gap-2 group"
+                              >
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-bold text-xs text-gray-900 group-hover:text-[#bd00ff] truncate">
+                                    {part.name}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-gray-500">
+                                    {part.compatibleDevice && (
+                                      <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium truncate max-w-[140px]">
+                                        {part.compatibleDevice}
+                                      </span>
+                                    )}
+                                    {part.sku && <span className="font-mono text-gray-400">{part.sku}</span>}
+                                    <span className={`px-1.5 py-0.5 rounded font-bold ${
+                                      part.stock > 0 
+                                        ? (part.stock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')
+                                        : 'bg-rose-100 text-rose-800'
+                                    }`}>
+                                      {part.stock > 0 ? `Stock: ${part.stock}` : 'Out of Stock'}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-mono font-bold text-xs text-[#bd00ff] block">
+                                    ₱{Number(part.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                  <span className="text-[9px] text-emerald-600 font-bold uppercase">Click to fill</span>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+
+                        <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-100 text-[10px] text-gray-500 flex items-center justify-between">
+                          <span>Selecting auto-fills description & unit price</span>
+                          <span className="text-[#bd00ff] font-semibold">Custom text allowed</span>
+                        </div>
+                      </div>
+                    )}
                   </td>
 
                   {/* Unit Price */}
-                  <td className="py-2 px-2">
+                  <td className="py-2.5 px-2 align-top">
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-[11px]">₱</span>
                       <input
@@ -553,12 +783,12 @@ export default function MaterialBreakdownEditor({
                   </td>
 
                   {/* Total */}
-                  <td className="py-2 px-3 text-right font-mono font-black text-gray-900">
+                  <td className="py-2.5 px-3 text-right font-mono font-black text-gray-900 align-top pt-3">
                     ₱{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* Delete Row */}
-                  <td className="py-2 px-2 text-center">
+                  <td className="py-2.5 px-2 text-center align-top pt-2.5">
                     <button
                       type="button"
                       onClick={() => handleRemoveRow(item.id)}
@@ -578,28 +808,87 @@ export default function MaterialBreakdownEditor({
       {/* --- MOBILE VIEW: Material Item Cards (Hidden on Desktop, Zero Side-Scrolling) --- */}
       <div className="block md:hidden">
         {activeMaterials.length === 0 ? (
-          <div className="p-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/60 text-center">
+          <div className="p-5 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/60 text-center flex flex-col items-center gap-2">
+            <Package size={24} className="text-purple-300" />
             <p className="text-xs text-gray-500 font-medium leading-relaxed m-0">
-              No parts added yet. Click <span className="text-[#bd00ff] font-bold">&quot;+ Add Part / Material&quot;</span> to itemize replacement parts (e.g. LCD, Battery, Flex cable).
+              No parts added yet. Use <button type="button" onClick={() => setShowInventoryPicker(true)} className="text-[#bd00ff] font-bold underline cursor-pointer bg-transparent border-none p-0 inline">&quot;Pick from Inventory&quot;</button> or <button type="button" onClick={handleAddRow} className="text-[#bd00ff] font-bold underline cursor-pointer bg-transparent border-none p-0 inline">&quot;Add Custom Item&quot;</button> to quote parts.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
             {activeMaterials.map((item, idx) => (
-              <div key={item.id} className="p-3.5 bg-white rounded-2xl border-2 border-gray-200 shadow-2xs flex flex-col gap-3">
+              <div key={item.id} className="p-3.5 bg-white rounded-2xl border-2 border-gray-200 shadow-2xs flex flex-col gap-3 relative">
                 {/* Item Top: Counter Badge + Description Input + Delete */}
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-purple-100 text-[#bd00ff] text-xs font-bold flex items-center justify-center shrink-0">
                     {idx + 1}
                   </span>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 relative parts-autocomplete-anchor">
                     <input
                       type="text"
-                      placeholder="e.g. LCD Screen / Battery Replacement"
+                      placeholder="Type inventory part or labor..."
                       value={item.description}
-                      onChange={(e) => handleUpdateRow(item.id, 'description', e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs font-medium text-gray-900 focus:border-[#bd00ff] focus:bg-white transition-colors"
+                      onFocus={() => setActiveDropdownRowId(item.id)}
+                      onChange={(e) => {
+                        handleUpdateRow(item.id, 'description', e.target.value);
+                        setActiveDropdownRowId(item.id);
+                      }}
+                      className="w-full pl-3 pr-7 py-2 bg-gray-50 border border-gray-200 rounded-xl outline-none text-xs font-medium text-gray-900 focus:border-[#bd00ff] focus:bg-white transition-colors"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setActiveDropdownRowId(activeDropdownRowId === item.id ? null : item.id)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#bd00ff] p-0.5 cursor-pointer border-none bg-transparent"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+
+                    {/* Mobile Autocomplete Dropdown */}
+                    {activeDropdownRowId === item.id && (
+                      <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border-2 border-purple-200 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-56 flex flex-col">
+                        <div className="px-2.5 py-1.5 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-purple-900 uppercase">
+                            Inventory ({branch || 'Tagoloan'})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setActiveDropdownRowId(null)}
+                            className="text-gray-400 hover:text-gray-600 p-0.5 border-none bg-transparent cursor-pointer"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <div className="overflow-y-auto divide-y divide-gray-100 max-h-40">
+                          {(() => {
+                            const matched = getFilteredParts(item.description);
+                            if (matched.length === 0) {
+                              return (
+                                <div className="p-2.5 text-center text-xs text-gray-400">
+                                  No exact match. Keep typing custom text.
+                                </div>
+                              );
+                            }
+                            return matched.slice(0, 6).map(part => (
+                              <div
+                                key={part.id}
+                                onClick={() => handleSelectSparePart(item.id, part)}
+                                className="p-2 hover:bg-purple-50 cursor-pointer flex items-center justify-between gap-1.5"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-xs text-gray-900 truncate m-0">{part.name}</p>
+                                  <p className="text-[10px] text-gray-500 m-0 truncate">
+                                    {part.compatibleDevice || 'Universal'} • Stock: {part.stock}
+                                  </p>
+                                </div>
+                                <span className="font-mono font-bold text-xs text-[#bd00ff] shrink-0">
+                                  ₱{Number(part.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -1194,6 +1483,190 @@ export default function MaterialBreakdownEditor({
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Inventory Parts Picker Modal */}
+      {showInventoryPicker && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setShowInventoryPicker(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-purple-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-gray-100 bg-gradient-to-r from-purple-50/70 via-indigo-50/40 to-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#bd00ff] text-white flex items-center justify-center shadow-sm">
+                  <Package size={20} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-gray-900 m-0">
+                    Spare Parts & Materials Inventory
+                  </h3>
+                  <p className="text-xs text-gray-500 m-0 mt-0.5">
+                    {branch || 'Tagoloan'} Branch • Click &quot;+ Add to Quote&quot; to auto-fill description and price
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInventoryPicker(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 border-none cursor-pointer transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Search & Category Filter */}
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col gap-3">
+              <div className="relative">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder={`Search parts for ${deviceName || 'device'} (e.g. LCD, Battery, Screen, Charging Port)...`}
+                  value={inventorySearch}
+                  onChange={(e) => setInventorySearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl outline-none text-xs font-medium text-gray-900 focus:border-[#bd00ff] shadow-2xs"
+                />
+                {inventorySearch && (
+                  <button
+                    type="button"
+                    onClick={() => setInventorySearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 border-none bg-transparent cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Categories */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
+                {['All', 'Screens', 'Batteries', 'Charging Ports', 'Camera Modules', 'Back Housing', 'Other'].map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setInventoryCategory(cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
+                      inventoryCategory === cat
+                        ? 'bg-[#bd00ff] text-white border-[#bd00ff] shadow-xs'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-purple-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Parts List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {(() => {
+                const q = inventorySearch.toLowerCase().trim();
+                let filtered = spareParts.filter(p => {
+                  if (inventoryCategory !== 'All') {
+                    if (inventoryCategory === 'Screens' && !(p.category || '').toLowerCase().includes('screen') && !(p.name || '').toLowerCase().includes('lcd') && !(p.name || '').toLowerCase().includes('screen')) return false;
+                    if (inventoryCategory === 'Batteries' && !(p.category || '').toLowerCase().includes('batter') && !(p.name || '').toLowerCase().includes('batter')) return false;
+                    if (inventoryCategory === 'Charging Ports' && !(p.category || '').toLowerCase().includes('charge') && !(p.category || '').toLowerCase().includes('port') && !(p.name || '').toLowerCase().includes('port') && !(p.name || '').toLowerCase().includes('flex')) return false;
+                    if (inventoryCategory === 'Camera Modules' && !(p.category || '').toLowerCase().includes('camera') && !(p.name || '').toLowerCase().includes('camera')) return false;
+                    if (inventoryCategory === 'Back Housing' && !(p.category || '').toLowerCase().includes('hous') && !(p.category || '').toLowerCase().includes('back') && !(p.name || '').toLowerCase().includes('housing')) return false;
+                  }
+                  if (!q) return true;
+                  return (
+                    (p.name || '').toLowerCase().includes(q) ||
+                    (p.compatibleDevice || '').toLowerCase().includes(q) ||
+                    (p.sku || '').toLowerCase().includes(q) ||
+                    (p.category || '').toLowerCase().includes(q)
+                  );
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center flex flex-col items-center justify-center gap-2">
+                      <Package size={32} className="text-gray-300" />
+                      <p className="text-sm font-bold text-gray-700 m-0">No matching spare parts found</p>
+                      <p className="text-xs text-gray-400 m-0 max-w-sm">
+                        You can close this picker and use &quot;+ Add Custom Item&quot; to quote custom labor or non-inventory parts.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {filtered.map(part => {
+                      const alreadyAddedCount = activeMaterials.filter(m => m.description === part.name || (m as any).sparePartId === part.id).length;
+                      return (
+                        <div
+                          key={part.id}
+                          className="p-3 bg-white rounded-2xl border border-gray-200 hover:border-purple-300 transition-all flex flex-col justify-between gap-2 shadow-2xs hover:shadow-xs group"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-1.5">
+                              <h5 className="font-bold text-xs text-gray-900 group-hover:text-[#bd00ff] m-0 line-clamp-2">
+                                {part.name}
+                              </h5>
+                              <span className="font-mono font-black text-xs text-purple-700 shrink-0">
+                                ₱{Number(part.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                              {part.compatibleDevice && (
+                                <span className="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-semibold truncate max-w-[150px]">
+                                  {part.compatibleDevice}
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                part.stock > 0 
+                                  ? (part.stock < 5 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {part.stock > 0 ? `In Stock: ${part.stock}` : 'Out of Stock'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            <span className="font-mono text-[10px] text-gray-400">
+                              {part.sku || 'Part'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleAddFromInventoryPicker(part);
+                              }}
+                              className="px-2.5 py-1 bg-purple-50 hover:bg-[#bd00ff] text-[#bd00ff] hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-purple-200 hover:border-[#bd00ff] flex items-center gap-1 active:scale-95"
+                            >
+                              <Plus size={12} />
+                              <span>{alreadyAddedCount > 0 ? `Add Another (${alreadyAddedCount})` : 'Add to Quote'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-500 font-medium">
+                {activeMaterials.length} item(s) in current quote
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowInventoryPicker(false)}
+                className="px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl cursor-pointer border-none transition-colors"
+              >
+                Done / Review Quote
+              </button>
+            </div>
           </div>
         </div>
       )}

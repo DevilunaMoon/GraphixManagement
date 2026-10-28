@@ -5,6 +5,7 @@ import { ChevronLeft, Printer, Download, Copy, Check, ShieldCheck } from 'lucide
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { formatDisplayInvoiceId } from '../../lib/invoice';
+import { resolveDisplayUniqueId } from '../../lib/unique-id';
 
 export interface StandardReceiptItem {
   id?: string;
@@ -14,6 +15,7 @@ export interface StandardReceiptItem {
   total: number;
   variations?: string | null;
   imei?: string | null;
+  uniqueId?: string | null;
   discount?: number | null;
 }
 
@@ -29,6 +31,7 @@ export interface StandardReceiptData {
   status?: string;
   branch?: string;
   imei?: string | null;
+  uniqueId?: string | null;
   discount?: number | null;
   downpaymentAmount?: number | null;
   remainingBalance?: number | null;
@@ -208,12 +211,13 @@ export default function StandardDigitalReceipt({
       const line2Pad = Math.max(1, 50 - line2Left.length - line2Right.length);
       text += `${line2Left}${' '.repeat(line2Pad)}${line2Right}\n`;
 
-      const isIphone = (item.name || data.device?.name || '').toLowerCase().includes('iphone');
-      if (item.imei || data.imei) {
-        text += `IMEI: ${item.imei || data.imei}\n`;
-      } else if (isIphone) {
-        text += `IMEI: Pending Pickup (recorded during pickup)\n`;
-      }
+      const rawUniqueId = item.uniqueId || item.imei || data.uniqueId || data.imei;
+      const resolvedUids = rawUniqueId
+        ? String(rawUniqueId).split(',').map(s => s.trim()).filter(Boolean).map((uid, uIdx) => resolveDisplayUniqueId(uid, item.name || data.device?.name, branchLocation, uIdx + 1, shortTransId))
+        : [resolveDisplayUniqueId(null, item.name || data.device?.name, branchLocation, 1, shortTransId)];
+      resolvedUids.forEach((uid) => {
+        text += `Unique ID: ${uid}\n`;
+      });
     });
 
     text += `${separator}\n`;
@@ -472,15 +476,34 @@ export default function StandardDigitalReceipt({
                       {item.quantity} @ {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  {(item.imei || data.imei) ? (
-                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-gray-800 text-left mt-0.5">
-                      IMEI: {item.imei || data.imei}
-                    </div>
-                  ) : isIphone ? (
-                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] text-amber-700 bg-amber-50 rounded px-1.5 py-0.5 border border-amber-200 inline-block text-left mt-0.5">
-                      IMEI: Pending Pickup <span className="text-[8.5px] sm:text-[9px] text-gray-400 font-normal block">IMEI will be recorded during pickup</span>
-                    </div>
-                  ) : null}
+                  {(() => {
+                    const rawUniqueId = item.uniqueId || item.imei || data.uniqueId || data.imei;
+                    const resolvedUids = rawUniqueId
+                      ? String(rawUniqueId)
+                          .split(',')
+                          .map(s => s.trim())
+                          .filter(Boolean)
+                          .map((uid, uIdx) => resolveDisplayUniqueId(uid, item.name || data.device?.name, branchLocation, uIdx + 1, shortTransId))
+                      : [resolveDisplayUniqueId(null, item.name || data.device?.name, branchLocation, 1, shortTransId)];
+
+                    if (resolvedUids.length === 0) return null;
+
+                    return (
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {resolvedUids.map((uid, uIdx) => (
+                          <div 
+                            key={uIdx} 
+                            className="font-mono text-[9.5px] sm:text-[10px] text-gray-800 text-left flex items-center gap-1.5 flex-wrap"
+                          >
+                            <span className="text-[#5c0099] font-bold">● Unique ID:</span>
+                            <span className="font-bold tracking-tight bg-purple-50 text-purple-900 border border-purple-200/80 px-1.5 py-0.2 rounded">
+                              {uid}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}

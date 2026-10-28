@@ -303,6 +303,36 @@ export async function PUT(req: Request, props: { params: Promise<{ id: string }>
                 }
               });
             }
+
+            // If unique IDs are provided, create or link DeviceUnit records
+            const rawUniqueIds: string[] = Array.isArray(v.uniqueIds)
+              ? v.uniqueIds
+              : (v.uniqueId ? [v.uniqueId] : []);
+            if (rawUniqueIds.length > 0) {
+              const targetBranch = (formData.get('branch') as string) || session?.branch || 'Tagoloan';
+              for (const uImei of rawUniqueIds) {
+                if (!uImei || !uImei.trim()) continue;
+                const cleanImei = uImei.trim().toUpperCase();
+                const existingUnit = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
+                if (!existingUnit) {
+                  await tx.deviceUnit.create({
+                    data: {
+                      imei: cleanImei,
+                      deviceId: id,
+                      variationId: createdVar.id,
+                      productId: prodId,
+                      branch: targetBranch,
+                      status: 'Available'
+                    }
+                  });
+                } else if (!existingUnit.variationId) {
+                  await tx.deviceUnit.update({
+                    where: { id: existingUnit.id },
+                    data: { variationId: createdVar.id, productId: prodId }
+                  });
+                }
+              }
+            }
           }
         }
       } else if (stockStr) {

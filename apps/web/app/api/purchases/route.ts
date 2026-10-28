@@ -3,6 +3,7 @@ import { prisma } from 'database';
 import { getSession } from '../../../lib/session';
 import { triggerStockAlert } from '../../../lib/stock-alerts';
 import { generateNextInvoiceId } from '../../../lib/invoice-server';
+import { generateUniqueDeviceId } from '../../../lib/unique-id';
 
 export async function POST(req: Request) {
   try {
@@ -361,6 +362,66 @@ export async function POST(req: Request) {
             : (isCashOrder ? 'Pending Pickup' : (requestedStatus || 'Active'));
           const resolvedSettled = isGcashOrder ? false : (!isCashOrder);
 
+          const targetVarId = vars[0]?.id || null;
+          const qtyToAllocate = item.quantity || 1;
+
+          // 1. Claim available DeviceUnit(s) matching device and branch
+          const matchedUnits = await tx.deviceUnit.findMany({
+            where: {
+              deviceId: item.deviceId,
+              branch: { equals: operatingBranch, mode: 'insensitive' },
+              status: 'Available',
+              ...(targetVarId ? { variationId: targetVarId } : {})
+            },
+            take: qtyToAllocate,
+            orderBy: { createdAt: 'asc' }
+          });
+
+          const allocatedUniqueIds: string[] = [];
+
+          for (const unit of matchedUnits) {
+            await tx.deviceUnit.update({
+              where: { id: unit.id },
+              data: { status: 'Sold' }
+            });
+            allocatedUniqueIds.push(unit.imei);
+          }
+
+          // 2. If additional units needed (legacy stock without pre-registered units), auto-generate
+          const remainingNeeded = qtyToAllocate - allocatedUniqueIds.length;
+          if (remainingNeeded > 0) {
+            const existingCount = await tx.deviceUnit.count({
+              where: {
+                deviceId: item.deviceId,
+                branch: { equals: operatingBranch, mode: 'insensitive' }
+              }
+            });
+
+            for (let u = 0; u < remainingNeeded; u++) {
+              const nextIdx = existingCount + u + 1;
+              const generatedId = generateUniqueDeviceId(device?.name || 'Device', operatingBranch, nextIdx);
+              let uniqueIdToUse = generatedId;
+              const exists = await tx.deviceUnit.findUnique({ where: { imei: uniqueIdToUse } });
+              if (exists) {
+                uniqueIdToUse = `${generatedId}-${Date.now().toString().slice(-4)}`;
+              }
+
+              const newUnit = await tx.deviceUnit.create({
+                data: {
+                  imei: uniqueIdToUse,
+                  deviceId: item.deviceId,
+                  variationId: targetVarId,
+                  productId: vars[0]?.productId || null,
+                  branch: operatingBranch,
+                  status: 'Sold'
+                }
+              });
+              allocatedUniqueIds.push(newUnit.imei);
+            }
+          }
+
+          const safeUniqueId = allocatedUniqueIds.length > 0 ? allocatedUniqueIds.join(', ') : null;
+
           const p = await tx.purchase.create({
             data: {
               userId: session.userId,
@@ -368,6 +429,7 @@ export async function POST(req: Request) {
               amount: discountedPrice * item.quantity,
               quantity: item.quantity,
               variations: item.variations,
+              imei: safeUniqueId,
               paymentType: resolvedPaymentType,
               source: source || 'Online',
               branch: operatingBranch,
@@ -379,6 +441,14 @@ export async function POST(req: Request) {
               receiptUrl: receiptUrl || null
             }
           });
+
+          if (allocatedUniqueIds.length > 0) {
+            await tx.deviceUnit.updateMany({
+              where: { imei: { in: allocatedUniqueIds } },
+              data: { purchaseId: p.id }
+            });
+          }
+
           createdPurchases.push(p);
         }
 
@@ -615,14 +685,72 @@ export async function POST(req: Request) {
         : (isCashOrder ? 'Pending Pickup' : (requestedStatus || 'Active'));
       const singleResolvedSettled = isGcashOrder ? false : (isDp ? settled : (isCashOrder ? false : true));
 
+      // Claim available DeviceUnit(s) matching device and branch
+      const matchedUnits = await tx.deviceUnit.findMany({
+        where: {
+          deviceId: deviceId,
+          branch: { equals: operatingBranch, mode: 'insensitive' },
+          status: 'Available',
+          ...(varId ? { variationId: varId } : {})
+        },
+        take: reqQty,
+        orderBy: { createdAt: 'asc' }
+      });
+
+      const allocatedUniqueIds: string[] = [];
+
+      for (const unit of matchedUnits) {
+        await tx.deviceUnit.update({
+          where: { id: unit.id },
+          data: { status: 'Sold' }
+        });
+        allocatedUniqueIds.push(unit.imei);
+      }
+
+      // If additional units needed (legacy stock without pre-registered units), auto-generate
+      const remainingNeeded = reqQty - allocatedUniqueIds.length;
+      if (remainingNeeded > 0) {
+        const existingCount = await tx.deviceUnit.count({
+          where: {
+            deviceId: deviceId,
+            branch: { equals: operatingBranch, mode: 'insensitive' }
+          }
+        });
+
+        for (let u = 0; u < remainingNeeded; u++) {
+          const nextIdx = existingCount + u + 1;
+          const generatedId = generateUniqueDeviceId(device.name || 'Device', operatingBranch, nextIdx);
+          let uniqueIdToUse = generatedId;
+          const exists = await tx.deviceUnit.findUnique({ where: { imei: uniqueIdToUse } });
+          if (exists) {
+            uniqueIdToUse = `${generatedId}-${Date.now().toString().slice(-4)}`;
+          }
+
+          const newUnit = await tx.deviceUnit.create({
+            data: {
+              imei: uniqueIdToUse,
+              deviceId: deviceId,
+              variationId: varId,
+              productId: targetProdId || null,
+              branch: operatingBranch,
+              status: 'Sold'
+            }
+          });
+          allocatedUniqueIds.push(newUnit.imei);
+        }
+      }
+
+      const safeUniqueId = allocatedUniqueIds.length > 0 ? allocatedUniqueIds.join(', ') : null;
+
       // Record the purchase
-      return await tx.purchase.create({
+      const createdPurchase = await tx.purchase.create({
         data: {
           userId: actualUserId,
           deviceId: deviceId,
           amount: dpAmt,
           quantity: reqQty,
           variations: variations ? (typeof variations === 'string' ? variations : JSON.stringify(variations)) : null,
+          imei: safeUniqueId,
           paymentType: singleResolvedPaymentType,
           source: source || 'Online',
           branch: operatingBranch,
@@ -637,6 +765,15 @@ export async function POST(req: Request) {
           device: true
         }
       });
+
+      if (allocatedUniqueIds.length > 0) {
+        await tx.deviceUnit.updateMany({
+          where: { imei: { in: allocatedUniqueIds } },
+          data: { purchaseId: createdPurchase.id }
+        });
+      }
+
+      return createdPurchase;
     });
 
     const singlePTypeLabel = isGcashOrder ? 'GCash (For Verification)' : (isCashOrder ? 'Cash on Pickup' : (paymentType === 'Downpayment' ? 'Downpayment' : 'Buy Now (Full Payment)'));
@@ -708,8 +845,13 @@ export async function GET(req: Request) {
         })
       ]);
 
+      const formattedPurchases = purchases.map(p => ({
+        ...p,
+        uniqueId: p.imei
+      }));
+
       return NextResponse.json({
-        purchases,
+        purchases: formattedPurchases,
         total,
         page,
         limit,
@@ -727,7 +869,12 @@ export async function GET(req: Request) {
       }
     });
 
-    return NextResponse.json(purchases);
+    const formattedPurchases = purchases.map(p => ({
+      ...p,
+      uniqueId: p.imei
+    }));
+
+    return NextResponse.json(formattedPurchases);
   } catch (error: any) {
     console.error('Error fetching customer purchases:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch purchases' }, { status: 500 });

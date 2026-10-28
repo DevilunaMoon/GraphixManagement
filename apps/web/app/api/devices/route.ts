@@ -4,6 +4,7 @@ import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { getSession } from '../../../lib/session';
 import { triggerStockAlert } from '../../../lib/stock-alerts';
 import { logActivity } from '../../../lib/logger';
+import { generateUniqueDeviceId, extractSequenceIndexFromId } from '../../../lib/unique-id';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -524,6 +525,50 @@ export async function POST(req: Request) {
                   }
                 });
               }
+
+              const unitIds: string[] = Array.isArray(v.uniqueIds) && v.uniqueIds.length > 0
+                ? v.uniqueIds
+                : (v.uniqueId && String(v.uniqueId).trim() ? [String(v.uniqueId).trim()] : []);
+
+              const branchUnits = await tx.deviceUnit.findMany({
+                where: { branch: { equals: operatingBranch, mode: 'insensitive' } },
+                select: { imei: true }
+              });
+              let branchMaxSeq = 0;
+              for (const bu of branchUnits) {
+                const s = extractSequenceIndexFromId(bu.imei);
+                if (s > branchMaxSeq) branchMaxSeq = s;
+              }
+              let nextBranchSeq = Math.max(branchMaxSeq, branchUnits.length);
+
+              for (let u = 0; u < allocatedStock; u++) {
+                nextBranchSeq++;
+                const fallbackImei = generateUniqueDeviceId(name, operatingBranch, nextBranchSeq);
+                const unitImei = unitIds[u] || fallbackImei;
+                if (unitImei && String(unitImei).trim()) {
+                  let cleanImei = String(unitImei).trim().toUpperCase();
+                  const exists = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
+                  if (exists) {
+                    let probe = nextBranchSeq;
+                    while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
+                      probe++;
+                    }
+                    cleanImei = generateUniqueDeviceId(name, operatingBranch, probe);
+                    nextBranchSeq = probe;
+                  }
+
+                  await tx.deviceUnit.create({
+                    data: {
+                      deviceId: existingDevice.id,
+                      variationId: createdVar.id,
+                      productId: prodId,
+                      branch: operatingBranch,
+                      imei: cleanImei,
+                      status: 'Available'
+                    }
+                  }).catch(() => {});
+                }
+              }
             }
           }
         } else {
@@ -673,6 +718,50 @@ export async function POST(req: Request) {
               stock: allocatedStock
             }
           });
+
+          const unitIds: string[] = Array.isArray(v.uniqueIds) && v.uniqueIds.length > 0
+            ? v.uniqueIds
+            : (v.uniqueId && String(v.uniqueId).trim() ? [String(v.uniqueId).trim()] : []);
+
+          const branchUnits = await tx.deviceUnit.findMany({
+            where: { branch: { equals: operatingBranch, mode: 'insensitive' } },
+            select: { imei: true }
+          });
+          let branchMaxSeq = 0;
+          for (const bu of branchUnits) {
+            const s = extractSequenceIndexFromId(bu.imei);
+            if (s > branchMaxSeq) branchMaxSeq = s;
+          }
+          let nextBranchSeq = Math.max(branchMaxSeq, branchUnits.length);
+
+          for (let u = 0; u < allocatedStock; u++) {
+            nextBranchSeq++;
+            const fallbackImei = generateUniqueDeviceId(name, operatingBranch, nextBranchSeq);
+            const unitImei = unitIds[u] || fallbackImei;
+            if (unitImei && String(unitImei).trim()) {
+              let cleanImei = String(unitImei).trim().toUpperCase();
+              const exists = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
+              if (exists) {
+                let probe = nextBranchSeq;
+                while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
+                  probe++;
+                }
+                cleanImei = generateUniqueDeviceId(name, operatingBranch, probe);
+                nextBranchSeq = probe;
+              }
+
+              await tx.deviceUnit.create({
+                data: {
+                  deviceId: createdDevice.id,
+                  variationId: createdVar.id,
+                  productId: prodId,
+                  branch: operatingBranch,
+                  imei: cleanImei,
+                  status: 'Available'
+                }
+              }).catch(() => {});
+            }
+          }
 
           for (const b of branches) {
             await tx.branchStock.create({
