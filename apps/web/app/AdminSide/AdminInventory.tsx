@@ -342,8 +342,15 @@ export default function AdminInventory() {
     return Math.max(0, parseInt(v.tagoloanStock || '0', 10) || 0);
   }
 
-  function getVariantStartUnitIndex(variants: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }[], vIndex: number): number {
-    let count = 1;
+  const [addSequenceOffset, setAddSequenceOffset] = useState<number>(0);
+  const [editSequenceOffset, setEditSequenceOffset] = useState<number>(0);
+
+  function getVariantStartUnitIndex(
+    variants: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }[], 
+    vIndex: number,
+    baseOffset: number = 0
+  ): number {
+    let count = baseOffset + 1;
     for (let i = 0; i < vIndex; i++) {
       const v = variants[i];
       if (!v) continue;
@@ -351,6 +358,28 @@ export default function AdminInventory() {
     }
     return count;
   }
+
+  // Dynamically resolve next available unit sequence for Add Product
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const targetBranch = isSuperAdmin
+      ? (newDeviceBranch && newDeviceBranch !== 'all' ? newDeviceBranch : (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan'))
+      : (userBranch || 'Tagoloan');
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/inventory/units/next-sequence?model=${encodeURIComponent(newDeviceName || 'MODEL')}&branch=${encodeURIComponent(targetBranch)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAddSequenceOffset(Math.max(0, (data.nextIndex || 1) - 1));
+        }
+      } catch (e) {
+        console.warn('Failed to fetch next unit sequence:', e);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [isAddModalOpen, newDeviceName, newDeviceBranch, selectedBranch, isSuperAdmin, userBranch]);
 
   // Edit Product State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -372,6 +401,25 @@ export default function AdminInventory() {
   
   // Unified Edit Product Images (1 to 5)
   const [editImages, setEditImages] = useState<{ id: string; type: 'existing' | 'new'; url: string; file?: File }[]>([]);
+
+  // Dynamically resolve next available unit sequence for Edit Product
+  useEffect(() => {
+    if (!isEditModalOpen || !productToEdit) return;
+    const targetBranch = isSuperAdmin ? (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan') : (userBranch || 'Tagoloan');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/inventory/units/next-sequence?model=${encodeURIComponent(editDeviceName || productToEdit.name || 'MODEL')}&branch=${encodeURIComponent(targetBranch)}&deviceId=${encodeURIComponent(productToEdit.id)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEditSequenceOffset(Math.max(0, (data.nextIndex || 1) - 1));
+        }
+      } catch (e) {
+        console.warn('Failed to fetch edit unit sequence:', e);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [isEditModalOpen, editDeviceName, productToEdit, selectedBranch, isSuperAdmin, userBranch]);
 
   const handleAddEditImages = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -1094,11 +1142,11 @@ export default function AdminInventory() {
         const varTotal = tagStock + vilStock + jasStock;
         totalComputedStock += varTotal;
 
-        const startIdx = getVariantStartUnitIndex(addVariants, idx);
+        const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
         const resolvedUniqueIds: string[] = [];
         for (let u = 0; u < varTotal; u++) {
           const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', targetBranch, startIdx + u);
-          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim()) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim() && !v.uniqueIds[u]?.startsWith('MODEL-')) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
         }
 
         return {
@@ -1268,7 +1316,7 @@ export default function AdminInventory() {
         const resolvedUniqueIds: string[] = [];
         for (let u = 0; u < varTotal; u++) {
           const defaultId = generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, startIdx + u);
-          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim()) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim() && !v.uniqueIds[u]?.startsWith('MODEL-')) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
         }
 
         return {
@@ -3632,7 +3680,7 @@ export default function AdminInventory() {
                     <tbody className="divide-y divide-gray-100">
                       {addVariants.map((v, idx) => {
                         const unitsCount = getVariantStockCount(v);
-                        const startIdx = getVariantStartUnitIndex(addVariants, idx);
+                        const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
 
                         return (
                           <Fragment key={idx}>
@@ -3811,10 +3859,10 @@ export default function AdminInventory() {
                                     <div className="flex flex-wrap items-center gap-2 pt-1">
                                       {Array.from({ length: unitsCount }).map((_, uIdx) => {
                                         const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
-                                        const currentId = v.uniqueIds?.[uIdx] ?? defaultId;
+                                        const currentId = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId;
                                         return (
                                           <div key={uIdx} className="flex items-center gap-1.5 bg-white border border-purple-200 rounded-lg px-2.5 py-1 shadow-2xs">
-                                            <span className="text-[10px] font-bold text-gray-400">#{uIdx + 1}</span>
+                                            <span className="text-[10px] font-bold text-gray-400">#{startIdx + uIdx}</span>
                                             <input
                                               type="text"
                                               value={currentId}
@@ -4283,11 +4331,11 @@ export default function AdminInventory() {
                                   const unitNum = startIdx + uIdx;
                                   const targetBranch = isSuperAdmin ? (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan') : (userBranch || 'Tagoloan');
                                   const autoId = generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, unitNum);
-                                  const currentVal = v.uniqueIds?.[uIdx] ?? autoId;
+                                  const currentVal = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : autoId;
 
                                   return (
                                     <div key={uIdx} className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-purple-200 shadow-2xs">
-                                      <span className="text-[10px] font-black text-purple-700">#{uIdx + 1}</span>
+                                      <span className="text-[10px] font-black text-purple-700">#{unitNum}</span>
                                       <input
                                         type="text"
                                         value={currentVal}
@@ -4504,11 +4552,11 @@ export default function AdminInventory() {
                                           const unitNum = startIdx + uIdx;
                                           const targetBranch = isSuperAdmin ? (selectedBranch !== 'all' ? selectedBranch : 'Tagoloan') : (userBranch || 'Tagoloan');
                                           const autoId = generateUniqueDeviceId(editDeviceName || productToEdit.name || 'MODEL', targetBranch, unitNum);
-                                          const currentVal = v.uniqueIds?.[uIdx] ?? autoId;
+                                          const currentVal = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : autoId;
 
                                           return (
                                             <div key={uIdx} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-purple-200 shadow-2xs">
-                                              <span className="text-[10px] font-black text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">#{uIdx + 1}</span>
+                                              <span className="text-[10px] font-black text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">#{unitNum}</span>
                                               <input
                                                 type="text"
                                                 value={currentVal}

@@ -262,8 +262,10 @@ export default function CashierDevices() {
     return Math.max(0, parseInt(v.tagoloanStock || '0', 10) || 0);
   }
 
-  function getVariantStartUnitIndex(variants: typeof addVariants, vIndex: number): number {
-    let count = 1;
+  const [addSequenceOffset, setAddSequenceOffset] = useState<number>(0);
+
+  function getVariantStartUnitIndex(variants: typeof addVariants, vIndex: number, baseOffset: number = 0): number {
+    let count = baseOffset + 1;
     for (let i = 0; i < vIndex; i++) {
       const v = variants[i];
       if (!v) continue;
@@ -271,6 +273,26 @@ export default function CashierDevices() {
     }
     return count;
   }
+
+  // Dynamically resolve next available unit sequence for Cashier Add Product
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+    const targetBranch = userBranch || 'Tagoloan';
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/inventory/units/next-sequence?model=${encodeURIComponent(newDeviceName || 'MODEL')}&branch=${encodeURIComponent(targetBranch)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAddSequenceOffset(Math.max(0, (data.nextIndex || 1) - 1));
+        }
+      } catch (e) {
+        console.warn('Failed to fetch next unit sequence:', e);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [isAddModalOpen, newDeviceName, userBranch]);
 
   // Edit Product State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -938,11 +960,11 @@ export default function CashierDevices() {
         const varTotal = parseInt(v.tagoloanStock || '0', 10) + parseInt(v.villanuevaStock || '0', 10) + parseInt(v.jasaanStock || '0', 10);
         totalComputedStock += varTotal;
 
-        const startIdx = getVariantStartUnitIndex(addVariants, idx);
+        const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
         const resolvedUniqueIds: string[] = [];
         for (let u = 0; u < varTotal; u++) {
           const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + u);
-          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim()) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim() && !v.uniqueIds[u]?.startsWith('MODEL-')) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
         }
 
         return {
@@ -3300,7 +3322,7 @@ export default function CashierDevices() {
                     <tbody className="divide-y divide-gray-100">
                       {addVariants.map((v, idx) => {
                         const unitsCount = getVariantStockCount(v);
-                        const startIdx = getVariantStartUnitIndex(addVariants, idx);
+                        const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
 
                         return (
                           <Fragment key={idx}>
@@ -3419,10 +3441,10 @@ export default function CashierDevices() {
                                     <div className="flex flex-wrap items-center gap-2 pt-1">
                                       {Array.from({ length: unitsCount }).map((_, uIdx) => {
                                         const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
-                                        const currentId = v.uniqueIds?.[uIdx] ?? defaultId;
+                                        const currentId = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId;
                                         return (
                                           <div key={uIdx} className="flex items-center gap-1.5 bg-white border border-purple-200 rounded-lg px-2.5 py-1 shadow-2xs">
-                                            <span className="text-[10px] font-bold text-gray-400">#{uIdx + 1}</span>
+                                            <span className="text-[10px] font-bold text-gray-400">#{startIdx + uIdx}</span>
                                             <input
                                               type="text"
                                               value={currentId}

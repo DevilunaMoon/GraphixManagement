@@ -533,13 +533,23 @@ export async function POST(req: Request) {
               for (let u = 0; u < allocatedStock; u++) {
                 const unitImei = unitIds[u] || generateUniqueDeviceId(name, operatingBranch, u + 1);
                 if (unitImei && String(unitImei).trim()) {
+                  let cleanImei = String(unitImei).trim().toUpperCase();
+                  const exists = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
+                  if (exists) {
+                    let probe = u + 1;
+                    while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
+                      probe++;
+                    }
+                    cleanImei = generateUniqueDeviceId(name, operatingBranch, probe);
+                  }
+
                   await tx.deviceUnit.create({
                     data: {
                       deviceId: existingDevice.id,
                       variationId: createdVar.id,
                       productId: prodId,
                       branch: operatingBranch,
-                      imei: String(unitImei).trim().toUpperCase(),
+                      imei: cleanImei,
                       status: 'Available'
                     }
                   }).catch(() => {});
@@ -702,13 +712,23 @@ export async function POST(req: Request) {
           for (let u = 0; u < allocatedStock; u++) {
             const unitImei = unitIds[u] || generateUniqueDeviceId(name, operatingBranch, u + 1);
             if (unitImei && String(unitImei).trim()) {
+              let cleanImei = String(unitImei).trim().toUpperCase();
+              const exists = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
+              if (exists) {
+                let probe = u + 1;
+                while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
+                  probe++;
+                }
+                cleanImei = generateUniqueDeviceId(name, operatingBranch, probe);
+              }
+
               await tx.deviceUnit.create({
                 data: {
                   deviceId: createdDevice.id,
                   variationId: createdVar.id,
                   productId: prodId,
                   branch: operatingBranch,
-                  imei: String(unitImei).trim().toUpperCase(),
+                  imei: cleanImei,
                   status: 'Available'
                 }
               }).catch(() => {});

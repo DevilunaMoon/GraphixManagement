@@ -79,6 +79,33 @@ export function getSequenceSuffix(index: number = 1): string {
 }
 
 /**
+ * Decodes a sequence suffix back to a 1-based numeric index.
+ * Example: 'A01' -> 1, 'A10' -> 10, 'A99' -> 99, 'B01' -> 100
+ */
+export function parseSequenceSuffixToIndex(suffix: string): number {
+  if (!suffix || suffix.length < 3) return 0;
+  const letter = suffix.charAt(0).toUpperCase();
+  const num = parseInt(suffix.slice(1), 10);
+  if (isNaN(num)) return 0;
+  const letterOffset = letter.charCodeAt(0) - 65;
+  if (letterOffset < 0) return 0;
+  return (letterOffset * 99) + num;
+}
+
+/**
+ * Extracts the numeric sequence index from any complete Unique ID.
+ * Example: 'IP11PM-TAG-A15' -> 15
+ */
+export function extractSequenceIndexFromId(id: string): number {
+  if (!id) return 0;
+  const match = id.trim().match(/-([A-Za-z]\d{2})$/);
+  if (match && match[1]) {
+    return parseSequenceSuffixToIndex(match[1]);
+  }
+  return 0;
+}
+
+/**
  * Generates the complete Unique Device ID
  * e.g. IP13PM-TAG-A01
  */
