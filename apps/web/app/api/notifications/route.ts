@@ -29,16 +29,16 @@ export async function GET(req: Request) {
       userId: session.userId,
     };
 
-    // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, etc.
+    // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, new products, etc.
     if (isSuperAdmin || isAdmin || isCashier) {
-      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR_ACCEPTED', 'REPAIR_REJECTED', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY'] };
+      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR_ACCEPTED', 'REPAIR_REJECTED', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY', 'NEW_PRODUCT'] };
     }
 
     // Branch filtering
     if (branchParam && branchParam.toLowerCase() !== 'all') {
-      whereClause.branch = branchParam;
+      whereClause.branch = { in: [branchParam, 'all', 'All'] };
     } else if ((isAdmin || isCashier) && session.branch) {
-      whereClause.branch = session.branch;
+      whereClause.branch = { in: [session.branch, 'all', 'All'] };
     }
 
     const [notifications, totalCount, unreadCount] = await Promise.all([

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench, CheckCircle2 } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench, CheckCircle2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
 import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
@@ -147,6 +147,8 @@ export default function AdminNotifications() {
         return <AlertCircle size={20} className="text-white" />;
       case 'PAYMENT':
         return <ShoppingCart size={20} className="text-white" />;
+      case 'NEW_PRODUCT':
+        return <Sparkles size={20} className="text-white" />;
       default:
         return <Bell size={20} className="text-white" />;
     }
@@ -217,6 +219,7 @@ export default function AdminNotifications() {
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
               const isRestock = notification.type === 'RESTOCK';
+              const isNewProduct = notification.type === 'NEW_PRODUCT';
               const isRepairAccepted = notification.type === 'REPAIR_ACCEPTED' || 
                 notification.title.toLowerCase().includes('accepted') || 
                 notification.message.toLowerCase().includes('has been accepted');
@@ -228,7 +231,8 @@ export default function AdminNotifications() {
               const isStockAlert = isStockOut || isStockLow;
 
               let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
-              if (isRestock) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
+              if (isNewProduct) iconBg = !notification.isRead ? 'bg-indigo-600' : 'bg-gray-400';
+              else if (isRestock) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
               else if (isRepairAccepted) iconBg = 'bg-emerald-600';
               else if (isRepairRejected) iconBg = 'bg-rose-500';
               else if (isRepairRequest) iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-400';
@@ -247,7 +251,9 @@ export default function AdminNotifications() {
                       : isRepairRejected
                       ? 'bg-rose-50/30 hover:bg-rose-50/50 border-l-4 border-l-rose-400'
                       : !notification.isRead 
-                        ? isRestock
+                        ? isNewProduct
+                          ? 'bg-indigo-50/50 hover:bg-indigo-50/70 border-l-4 border-l-indigo-600'
+                          : isRestock
                           ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
                           : isRepairRequest
                           ? 'bg-purple-50/70 hover:bg-purple-100/50 border-l-4 border-l-purple-500'
@@ -268,6 +274,12 @@ export default function AdminNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isNewProduct && (
+                        <span className="shrink-0 bg-indigo-100 text-indigo-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-indigo-300 flex items-center gap-1">
+                          <Sparkles size={12} className="text-indigo-600" />
+                          NEW PRODUCT
+                        </span>
+                      )}
                       {isRestock && (
                         <span className="shrink-0 bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-emerald-200">
                           RESTOCK
