@@ -414,12 +414,15 @@ export async function POST(req: Request) {
     // Dispatch automated confirmation notification to the customer
     if (purchase.userId) {
       const isGcash = purchase.paymentType?.toLowerCase().includes('gcash') || Boolean(purchase.receiptUrl);
+      const rawRef = purchase.referenceId || purchase.id;
+      const formattedRef = rawRef.startsWith('#') ? rawRef : `#${rawRef}`;
+
       const notifTitle = isGcash 
-        ? 'GCash Payment Verified & Ready for Pickup'
-        : 'Payment Verified & Official Receipt Unlocked';
+        ? `GCash Payment Verified — Order ${formattedRef}`
+        : `Payment Verified & Official Receipt Unlocked — Order ${formattedRef}`;
       const notifMessage = isGcash
-        ? `Your GCash payment for "${purchase.device?.name || 'Device'}" (Order ${purchase.referenceId || purchase.id}) has been verified! Your order is now READY FOR PICKUP at GraphiX ${purchase.branch || 'store'}. IMEI will be recorded during physical pickup.`
-        : `Your in-store cash payment for "${purchase.device?.name || 'Device'}" at GraphiX ${purchase.branch || 'store'} has been verified as PAID! Your order is ready for device handover.`;
+        ? `Your GCash payment for "${purchase.device?.name || 'Device'}" (Order ${formattedRef}) has been verified! Your order is now READY FOR PICKUP at GraphiX ${purchase.branch || 'store'}. Claim Code: ${formattedRef}. IMEI will be recorded during physical pickup.`
+        : `Your in-store cash payment for "${purchase.device?.name || 'Device'}" (Order ${formattedRef}) at GraphiX ${purchase.branch || 'store'} has been verified as PAID! Your official digital receipt is ready. Claim Code: ${formattedRef}.`;
 
       await prisma.notification.create({
         data: {

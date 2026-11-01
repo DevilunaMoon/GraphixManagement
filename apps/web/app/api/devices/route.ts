@@ -311,6 +311,12 @@ export async function POST(req: Request) {
       ? (customBranch && customBranch !== 'all' ? customBranch : 'Tagoloan')
       : (session.branch || 'Tagoloan');
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { name: true, email: true }
+    });
+    const performerName = currentUser?.name || currentUser?.email || (isSuperAdmin ? 'Super Admin' : `${operatingBranch} Branch Admin`);
+
     const name = formData.get('deviceName') as string;
     const priceStr = formData.get('devicePrice') as string;
     const costStr = (formData.get('deviceCost') as string) || (formData.get('cost') as string) || '0';
@@ -764,16 +770,37 @@ export async function POST(req: Request) {
           }
 
           for (const b of branches) {
+            const bStock = branchStockValues[b] || 0;
             await tx.branchStock.create({
               data: {
                 deviceId: createdDevice.id,
                 variationId: createdVar.id,
                 branch: b,
                 productId: prodId,
-                stock: branchStockValues[b] || 0,
+                stock: bStock,
                 sold: 0
               }
             });
+
+            // Log stock movement for newly added product variation
+            if (bStock > 0 || b === operatingBranch) {
+              await tx.stockMovement.create({
+                data: {
+                  type: 'NEW_PRODUCT',
+                  deviceId: createdDevice.id,
+                  variationId: createdVar.id,
+                  productId: prodId,
+                  productName: `${name} (${v.name})`,
+                  branch: b,
+                  quantity: bStock,
+                  previousStock: 0,
+                  newStock: bStock,
+                  notes: `Initial stock registration under ${b} branch`,
+                  performedBy: performerName,
+                  userRole: session.role || 'ADMIN'
+                }
+              }).catch((smErr) => console.error('Failed to log stock movement for new variant:', smErr));
+            }
           }
         }
       } else {
@@ -804,6 +831,26 @@ export async function POST(req: Request) {
               sold: 0
             }
           });
+
+          // Log stock movement for newly added standard product
+          if (bStock > 0 || b === operatingBranch) {
+            await tx.stockMovement.create({
+              data: {
+                type: 'NEW_PRODUCT',
+                deviceId: createdDevice.id,
+                variationId: createdVar.id,
+                productId: defaultProdId,
+                productName: name,
+                branch: b,
+                quantity: bStock,
+                previousStock: 0,
+                newStock: bStock,
+                notes: `Initial stock registration under ${b} branch`,
+                performedBy: performerName,
+                userRole: session.role || 'ADMIN'
+              }
+            }).catch((smErr) => console.error('Failed to log stock movement for new standard product:', smErr));
+          }
         }
       }
 
@@ -817,6 +864,40 @@ export async function POST(req: Request) {
       userId: session.userId,
       userRole: session.role
     });
+
+    // Strict Branch Scoping (Option A):
+    // Only notify Super Admins and the specific Branch Admins of the branch where the product was added.
+    try {
+      const adminUsers = await prisma.user.findMany({
+        where: {
+          status: 'Active',
+          OR: [
+            { role: 'SUPER_ADMIN' },
+            {
+              role: 'ADMIN',
+              branch: { equals: operatingBranch, mode: 'insensitive' }
+            }
+          ]
+        },
+        select: { id: true, role: true, branch: true }
+      });
+
+      if (adminUsers.length > 0) {
+        const notificationsData = adminUsers.map((admin) => ({
+          userId: admin.id,
+          title: `New Product Added: ${name}`,
+          message: `A new product "${name}" was newly registered under ${operatingBranch} branch by ${performerName}.`,
+          type: 'NEW_PRODUCT',
+          branch: operatingBranch
+        }));
+
+        await prisma.notification.createMany({
+          data: notificationsData
+        });
+      }
+    } catch (notifErr) {
+      console.error('Failed to broadcast new product notification to branch admins:', notifErr);
+    }
 
     await triggerStockAlert({ deviceId: device.id });
 

@@ -14,15 +14,19 @@ export async function GET(req: Request) {
     const purchaseId = searchParams.get('id');
 
     let purchase;
-    if (purchaseId) {
+    const isLatestLookup = !purchaseId || purchaseId === 'latest' || purchaseId === 'undefined' || purchaseId === 'null';
+
+    if (!isLatestLookup && purchaseId) {
       const cleanId = purchaseId.trim();
-      const codeSuffix = cleanId.replace(/^#/, '').replace(/^CMTPQ/i, '').trim();
+      const rawCode = cleanId.replace(/^#/, '').trim();
+      const codeSuffix = rawCode.replace(/^CMTPQ/i, '').replace(/^GRPX-/i, '').trim();
 
       const orItems: any[] = [
         { id: cleanId },
-        { referenceId: cleanId },
-        { referenceId: `#${cleanId.replace(/^#/, '')}` },
-        { referenceId: cleanId.replace(/^#/, '') }
+        { id: rawCode },
+        { referenceId: { equals: cleanId, mode: 'insensitive' } },
+        { referenceId: { equals: `#${rawCode}`, mode: 'insensitive' } },
+        { referenceId: { equals: rawCode, mode: 'insensitive' } }
       ];
 
       if (codeSuffix.length >= 2) {
@@ -30,6 +34,7 @@ export async function GET(req: Request) {
         orItems.push({ referenceId: { contains: codeSuffix, mode: 'insensitive' } });
       }
 
+      // 1. First look up purchase belonging to authenticated user
       purchase = await prisma.purchase.findFirst({
         where: { 
           OR: orItems,
@@ -44,6 +49,38 @@ export async function GET(req: Request) {
           }
         }
       });
+
+      // 2. If staff (ADMIN or CASHIER) is previewing the receipt by ID, allow lookup
+      if (!purchase && (session.role === 'ADMIN' || session.role === 'CASHIER')) {
+        purchase = await prisma.purchase.findFirst({
+          where: { OR: orItems },
+          include: {
+            device: {
+              select: { name: true, price: true, image: true }
+            },
+            user: {
+              select: { name: true, email: true, phone: true }
+            }
+          }
+        });
+      }
+
+      // 3. Fallback: If code did not match (e.g. from an old notification with unparsed ID),
+      // gracefully retrieve customer's latest purchase instead of failing with 404
+      if (!purchase) {
+        purchase = await prisma.purchase.findFirst({
+          where: { userId: session.userId },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            device: {
+              select: { name: true, price: true, image: true }
+            },
+            user: {
+              select: { name: true, email: true, phone: true }
+            }
+          }
+        });
+      }
     } else {
       purchase = await prisma.purchase.findFirst({
         where: { userId: session.userId },

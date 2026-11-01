@@ -50,6 +50,30 @@ const formatDateTime = (dateStr: string) => {
   return `${datePart} • ${timePart}`;
 };
 
+const INVALID_CODE_WORDS = new Set([
+  'reserved', 'is', 'ready', 'for', 'details', 'has', 'status', 'placed',
+  'created', 'summary', 'items', 'confirmation', 'verification', 'cancelled',
+  'rejected', 'alert', 'notice', 'payment', 'pickup', 'order', 'the', 'and', 'my'
+]);
+
+const isValidReferenceCode = (code: string | null | undefined): boolean => {
+  if (!code) return false;
+  const clean = code.replace(/^[#\s]+|[.\s]+$/g, '').trim();
+  if (!clean || clean.length < 2) return false;
+  if (INVALID_CODE_WORDS.has(clean.toLowerCase())) return false;
+  
+  // Standard GraphiX reference (e.g. GRPX-T-A1)
+  if (/^GRPX-[A-Za-z0-9-]+$/i.test(clean)) return true;
+  
+  // Must contain at least one digit or hyphen with letters/numbers
+  if (/\d/.test(clean)) return true;
+  
+  // Known database ID patterns (cuid/uuid)
+  if (/^c[a-z0-9]{20,}$/i.test(clean) || /^[a-f0-9-]{32,}$/i.test(clean)) return true;
+
+  return false;
+};
+
 const parseNotification = (notif: Notification): ParsedNotification => {
   const rawMsg = notif.message || '';
   const title = notif.title || '';
@@ -61,13 +85,25 @@ const parseNotification = (notif: Notification): ParsedNotification => {
     ? (productLinkMatch[1].includes('#') ? productLinkMatch[1] : `${productLinkMatch[1]}#reviews`)
     : null;
 
-  // Extract Claim Code / Order Reference
-  const claimCodeMatch = rawMsg.match(/\[ClaimCode:\s*([^\]]+)\]/i) || rawMsg.match(/Claim Code:\s*([A-Za-z0-9#-]+)/i);
-  const orderIdMatch = title.match(/Order\s+([A-Za-z0-9#-]+)/i) || rawMsg.match(/Order\s+([A-Za-z0-9#-]+)/i);
+  // 1. Direct GRPX invoice code match (#?GRPX-[A-Za-z0-9-]+)
+  const grpxMatch = rawMsg.match(/#?GRPX-[A-Za-z0-9-]+/i) || title.match(/#?GRPX-[A-Za-z0-9-]+/i);
+  const grpxCode = grpxMatch ? grpxMatch[0].replace(/^#/, '').trim() : null;
 
-  const extractedClaimCode = claimCodeMatch?.[1]?.trim() || null;
-  const extractedOrderId = orderIdMatch?.[1]?.replace(/^#/, '').trim() || null;
-  const refCode = extractedOrderId || (extractedClaimCode ? extractedClaimCode.replace(/^#/, '') : null);
+  // 2. Explicit ClaimCode tag or label: [ClaimCode: ...] or Claim Code: ...
+  const claimCodeTagMatch = rawMsg.match(/\[ClaimCode:\s*([^\]]+)\]/i);
+  const claimCodeLabelMatch = rawMsg.match(/Claim Code:\s*([A-Za-z0-9#-]+)/i) || title.match(/Claim Code:\s*([A-Za-z0-9#-]+)/i);
+  const rawClaimCode = claimCodeTagMatch?.[1]?.trim() || claimCodeLabelMatch?.[1]?.trim() || null;
+  const validatedClaimCode = isValidReferenceCode(rawClaimCode) ? rawClaimCode!.replace(/^#/, '').trim() : null;
+
+  // 3. Order Reference pattern: Order #... or Order ... (must be valid code, not regular English words)
+  const orderRefMatch = title.match(/Order\s+(#?[A-Za-z0-9-]+)/i) || rawMsg.match(/Order\s+(#?[A-Za-z0-9-]+)/i);
+  const rawOrderId = orderRefMatch?.[1]?.trim() || null;
+  const validatedOrderId = isValidReferenceCode(rawOrderId) ? rawOrderId!.replace(/^#/, '').trim() : null;
+
+  // Resolve best code
+  const refCode = grpxCode || validatedClaimCode || validatedOrderId || null;
+  const displayClaimCode = grpxCode || validatedClaimCode || null;
+  const displayOrderId = validatedOrderId || (grpxCode ? grpxCode : null);
 
   // Clean raw message of internal bracket tags
   const cleanMessage = rawMsg
@@ -130,10 +166,10 @@ const parseNotification = (notif: Notification): ParsedNotification => {
       categoryBadgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
       iconBgClass: 'bg-amber-100 text-amber-700',
       iconType: 'reservation',
-      actionLabel: isExpired ? 'Browse Store Products' : (refCode ? 'View Order & Receipt' : 'View My Receipts'),
-      actionUrl: isExpired ? '/customer/products' : (refCode ? `/customer/receipt-view/${refCode}` : '/customer/digital-receipt'),
-      claimCode: extractedClaimCode,
-      orderId: extractedOrderId,
+      actionLabel: isExpired ? 'Browse Store Products' : 'View Order & Receipt',
+      actionUrl: isExpired ? '/customer/products' : (refCode ? `/customer/receipt-view/${refCode}` : '/customer/receipt-view/latest'),
+      claimCode: displayClaimCode,
+      orderId: displayOrderId,
       cleanMessage,
     };
   }
@@ -153,10 +189,10 @@ const parseNotification = (notif: Notification): ParsedNotification => {
       categoryBadgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       iconBgClass: 'bg-emerald-100 text-emerald-700',
       iconType: 'order',
-      actionLabel: refCode ? 'View Digital Receipt' : 'View My Receipts',
-      actionUrl: refCode ? `/customer/receipt-view/${refCode}` : '/customer/digital-receipt',
-      claimCode: extractedClaimCode,
-      orderId: extractedOrderId,
+      actionLabel: 'View Digital Receipt',
+      actionUrl: refCode ? `/customer/receipt-view/${refCode}` : '/customer/receipt-view/latest',
+      claimCode: displayClaimCode,
+      orderId: displayOrderId,
       cleanMessage,
     };
   }

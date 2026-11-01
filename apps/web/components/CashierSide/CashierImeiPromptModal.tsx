@@ -296,32 +296,32 @@ export default function CashierImeiPromptModal({
   const canProceed = allComplete && !isAnyChecking && !hasAnyConflict;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200 max-h-[90vh]">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200 max-h-[94dvh] sm:max-h-[90vh]">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-900 to-indigo-900 p-5 sm:p-6 text-white relative shrink-0">
+        <div className="bg-gradient-to-r from-purple-900 to-indigo-900 p-3.5 sm:p-6 text-white relative shrink-0">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="absolute top-5 right-5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all border-none cursor-pointer"
+            className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-1.5 sm:p-2 rounded-full transition-all border-none cursor-pointer"
             title="Close"
           >
             <X size={18} />
           </button>
           
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-white shadow-inner shrink-0">
-              <Smartphone size={24} />
+          <div className="flex items-center gap-2.5 sm:gap-3 pr-8 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-white shadow-inner shrink-0">
+              <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <h3 className="text-xl font-black m-0 leading-tight tracking-wide">
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-xl font-black m-0 leading-tight tracking-wide truncate">
                 {step === 'confirm' 
                   ? (isEditing ? 'Confirm Updated IMEI' : 'Confirm Device Pickup')
                   : (isEditing ? 'Edit Device IMEI' : 'Record iPhone IMEI')}
               </h3>
-              <p className="text-xs text-purple-200 m-0 mt-1">
+              <p className="text-[11px] sm:text-xs text-purple-200 m-0 mt-0.5 line-clamp-1 sm:line-clamp-none">
                 {step === 'confirm' 
                   ? (isEditing ? 'Verify updated IMEI details before saving' : 'Verify handover details before permanently linking IMEI')
                   : (isEditing ? 'Update the 15-digit IMEI assigned to this purchase' : 'Enter the IMEI of the actual iPhone unit being handed to customer')}
@@ -331,7 +331,7 @@ export default function CashierImeiPromptModal({
         </div>
 
         {/* Modal Content Scrollable Area */}
-        <div className="p-5 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-4">
+        <div className="p-3.5 sm:p-6 flex-1 overflow-y-auto flex flex-col gap-3 sm:gap-4 custom-scrollbar">
 
           {/* Success Banner */}
           {isSuccess && (

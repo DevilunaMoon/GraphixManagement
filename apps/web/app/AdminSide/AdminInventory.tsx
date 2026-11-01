@@ -199,6 +199,15 @@ export default function AdminInventory() {
   const [newDeviceDownpaymentImage, setNewDeviceDownpaymentImage] = useState<File | null>(null);
   const [newDeviceDownpaymentImagePreview, setNewDeviceDownpaymentImagePreview] = useState<string | null>(null);
 
+  // New Product Real-time Notification Alert State
+  const [newProductAlert, setNewProductAlert] = useState<{
+    id?: string;
+    title: string;
+    message?: string;
+    branch?: string;
+  } | null>(null);
+  const lastCheckedNotifTimeRef = useRef<number>(Date.now());
+
   // Helpers for Add Product Images (1 to 5)
   const handleAddProductImages = (files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -928,6 +937,43 @@ export default function AdminInventory() {
     fetchCategories();
   }, []);
 
+  // Real-time listener & periodic polling for new product additions
+  useEffect(() => {
+    const checkLatestNewProducts = async () => {
+      try {
+        const branchParam = isSuperAdmin ? 'all' : userBranch;
+        const res = await fetch(`/api/notifications?limit=5&branch=${encodeURIComponent(branchParam)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && Array.isArray(data.notifications)) {
+          const latestNewProdNotif = data.notifications.find(
+            (n: any) => n.type === 'NEW_PRODUCT' && !n.isRead && new Date(n.createdAt).getTime() > lastCheckedNotifTimeRef.current
+          );
+          if (latestNewProdNotif) {
+            lastCheckedNotifTimeRef.current = new Date(latestNewProdNotif.createdAt).getTime();
+            setNewProductAlert({
+              id: latestNewProdNotif.id,
+              title: latestNewProdNotif.title,
+              message: latestNewProdNotif.message,
+              branch: latestNewProdNotif.branch || userBranch,
+            });
+          }
+        }
+      } catch (e) {
+        // Silent catch for background checks
+      }
+    };
+
+    const interval = setInterval(checkLatestNewProducts, 10000);
+    const handleNotifUpdate = () => checkLatestNewProducts();
+    window.addEventListener('notificationsUpdated', handleNotifUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificationsUpdated', handleNotifUpdate);
+    };
+  }, [isSuperAdmin, userBranch]);
+
   // Fetch Stock Movements History
   const fetchHistory = (page = historyPage) => {
     setIsHistoryLoading(true);
@@ -1179,6 +1225,9 @@ export default function AdminInventory() {
       const res = await fetch('/api/devices', { method: 'POST', body: formData });
       if (res.ok) {
         fetchProducts();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notificationsUpdated'));
+        }
         setIsAddModalOpen(false);
         setNewDeviceName(''); setNewDeviceCost(''); setNewDevicePrice(''); setNewDeviceDiscount('');
         setNewDeviceDiscountStartDate(getTodayDateString()); setNewDeviceDiscountEndDate('');
@@ -1604,6 +1653,58 @@ export default function AdminInventory() {
         </div>
       </div>
 
+      {/* Real-Time New Product Alert Banner */}
+      {newProductAlert && (
+        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-800 text-white rounded-2xl p-4 shadow-xl border border-purple-400/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+              <Sparkles className="text-amber-300 animate-pulse" size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="bg-amber-400 text-purple-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  New Product Alert
+                </span>
+                {newProductAlert.branch && (
+                  <span className="text-xs text-purple-200 font-semibold">
+                    {newProductAlert.branch} Branch
+                  </span>
+                )}
+              </div>
+              <p className="text-xs sm:text-sm font-semibold mt-0.5 text-white">
+                {newProductAlert.title} &mdash; <span className="text-purple-200 font-normal">{newProductAlert.message}</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+            <button
+              onClick={async () => {
+                fetchProducts();
+                if (newProductAlert?.id) {
+                  fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notificationId: newProductAlert.id })
+                  }).catch(() => {});
+                }
+                setNewProductAlert(null);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-white text-[#5c0099] hover:bg-purple-50 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <RefreshCw size={13} className="text-[#5c0099]" />
+              <span>Refresh Table</span>
+            </button>
+            <button
+              onClick={() => setNewProductAlert(null)}
+              className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Dismiss notification"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filter & Action Controls Bar */}
       <div className="flex flex-col gap-3.5 w-full">
         {/* Row 1: Search Input + Stock Status Segmented Bar */}
@@ -1876,6 +1977,7 @@ export default function AdminInventory() {
                       {/* Parent Model Row */}
                       {(() => {
                         const now = new Date();
+                        const isNewlyAdded = Boolean(prod.createdAt && (now.getTime() - new Date(prod.createdAt).getTime() < 24 * 60 * 60 * 1000));
                         const isDiscountActive = Boolean(
                           prod.discount && prod.discount > 0 &&
                           (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
@@ -1916,6 +2018,11 @@ export default function AdminInventory() {
                                     <span className="font-bold text-gray-900 text-[0.95rem] hover:text-[#5c0099] transition-colors">
                                       {prod.name}
                                     </span>
+                                    {isNewlyAdded && (
+                                      <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider inline-flex items-center gap-1">
+                                        <Sparkles size={10} className="text-amber-300" /> NEW
+                                      </span>
+                                    )}
                                     {prod.isPreOwned && (
                                       <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
                                         PRE-OWNED
@@ -2292,6 +2399,7 @@ export default function AdminInventory() {
                 : (prod.tagoloanStock || 0);
 
               const now = new Date();
+              const isNewlyAdded = Boolean(prod.createdAt && (now.getTime() - new Date(prod.createdAt).getTime() < 24 * 60 * 60 * 1000));
               const isDiscountActive = Boolean(
                 prod.discount && prod.discount > 0 &&
                 (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
@@ -2325,9 +2433,16 @@ export default function AdminInventory() {
                         </div>
                       )}
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="font-bold text-gray-900 text-sm leading-snug truncate">
-                          {prod.name}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-gray-900 text-sm leading-snug truncate">
+                            {prod.name}
+                          </span>
+                          {isNewlyAdded && (
+                            <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider inline-flex items-center gap-0.5">
+                              <Sparkles size={9} className="text-amber-300" /> NEW
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1.5 flex-wrap mt-1">
                           <span className="text-xs text-gray-500 font-medium">
                             {prod.category?.name || prod.type || 'Smartphone'}
@@ -2927,6 +3042,7 @@ export default function AdminInventory() {
                   className="border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white shadow-sm outline-none cursor-pointer flex-1 sm:flex-none hover:border-purple-300 transition-colors"
                 >
                   <option value="ALL">All Movement Types</option>
+                  <option value="NEW_PRODUCT">New Products</option>
                   <option value="TRANSFER">Transfers</option>
                   <option value="RESTOCK">Restocks</option>
                   <option value="SALE">Sales (POS/Online)</option>
@@ -2967,12 +3083,13 @@ export default function AdminInventory() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+                              m.type === 'NEW_PRODUCT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
                               m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : 
                               m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : 
                               m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 
                               'bg-amber-100 text-amber-800'
                             }`}>
-                              {m.type}
+                              {m.type === 'NEW_PRODUCT' ? 'NEW PRODUCT' : m.type}
                             </span>
                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-800">
                               Qty: {m.quantity}
@@ -3052,8 +3169,14 @@ export default function AdminInventory() {
                               {new Date(m.createdAt).toLocaleString()}
                             </td>
                             <td className="py-3 px-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
-                                {m.type}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                m.type === 'NEW_PRODUCT' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                                m.type === 'TRANSFER' ? 'bg-indigo-100 text-indigo-800' : 
+                                m.type === 'SALE' ? 'bg-emerald-100 text-emerald-800' : 
+                                m.type === 'RESTOCK' ? 'bg-purple-100 text-purple-800' : 
+                                'bg-amber-100 text-amber-800'
+                              }`}>
+                                {m.type === 'NEW_PRODUCT' ? 'NEW PRODUCT' : m.type}
                               </span>
                             </td>
                             <td className="py-3 px-3">
