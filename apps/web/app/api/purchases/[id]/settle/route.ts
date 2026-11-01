@@ -43,11 +43,14 @@ export async function PATCH(
     });
 
     // Create system notification for customer
+    const rawRef = purchase.referenceId || purchase.id;
+    const formattedRef = rawRef.startsWith('#') ? rawRef : `#${rawRef}`;
+
     await prisma.notification.create({
       data: {
         userId: purchase.userId,
-        title: 'Downpayment Balance Settled',
-        message: `Your remaining balance for "${purchase.device.name}" has been fully settled at the store POS desk. Thank you!`,
+        title: `Downpayment Balance Settled — Order ${formattedRef}`,
+        message: `Your remaining balance for "${purchase.device.name}" (Order ${formattedRef}) has been fully settled at the store POS desk. Claim Code: ${formattedRef}. Thank you!`,
         type: 'PAYMENT'
       }
     });

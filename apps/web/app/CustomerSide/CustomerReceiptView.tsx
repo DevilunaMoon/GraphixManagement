@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Receipt } from 'lucide-react';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 
 export default function CustomerReceiptView({ user: _initialUser, orderId }: { user?: any; orderId: string }) {
@@ -11,7 +12,8 @@ export default function CustomerReceiptView({ user: _initialUser, orderId }: { u
 
   useEffect(() => {
     setIsLoading(true);
-    fetch(`/api/purchases/latest?id=${orderId}`)
+    const targetId = (!orderId || orderId === 'undefined' || orderId === 'null') ? 'latest' : orderId;
+    fetch(`/api/purchases/latest?id=${encodeURIComponent(targetId)}`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load");
         return res.json();
@@ -38,14 +40,30 @@ export default function CustomerReceiptView({ user: _initialUser, orderId }: { u
 
   if (!purchase) {
     return (
-      <div className="min-h-screen bg-[#fbfaff] flex flex-col items-center justify-center gap-4 font-['Inter']">
-        <p className="text-red-500 font-bold text-base">Receipt not found.</p>
-        <button 
-          onClick={() => router.back()} 
-          className="px-6 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white rounded-xl font-bold cursor-pointer border-none hover:shadow-md transition-all text-sm"
-        >
-          Go Back
-        </button>
+      <div className="min-h-screen bg-[#fbfaff] flex flex-col items-center justify-center gap-4 font-['Inter'] p-4 text-center">
+        <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center border border-red-100">
+          <Receipt size={28} />
+        </div>
+        <div>
+          <h3 className="text-gray-900 font-black text-base sm:text-lg m-0">Receipt Not Available</h3>
+          <p className="text-gray-500 text-xs sm:text-sm max-w-sm m-0 mt-1">
+            We couldn't locate a verified digital receipt for this order. You can browse your complete transaction history in your receipts.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 mt-2">
+          <button 
+            onClick={() => router.push('/customer/digital-receipt')} 
+            className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7700af] hover:to-[#a700e0] text-white rounded-xl font-bold cursor-pointer border-none hover:shadow-md transition-all text-xs sm:text-sm"
+          >
+            View All My Receipts
+          </button>
+          <button 
+            onClick={() => router.back()} 
+            className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold cursor-pointer border-none transition-colors text-xs sm:text-sm"
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
