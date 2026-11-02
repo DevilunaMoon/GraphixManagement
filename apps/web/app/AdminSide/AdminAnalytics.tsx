@@ -120,11 +120,19 @@ export default function AdminAnalytics() {
   }, [selectedBranch, dateFilter, customStartDate, customEndDate, isSuperAdmin, userBranch]);
 
   const handleDownload = () => {
-    if (reportData.length === 0) return;
-    const headers = ['Year', 'Sales Growth (%)', 'User Growth (%)'];
+    const currentYearNum = new Date().getFullYear();
+    const years = [
+      (currentYearNum - 4).toString(),
+      (currentYearNum - 3).toString(),
+      (currentYearNum - 2).toString(),
+      (currentYearNum - 1).toString(),
+      currentYearNum.toString()
+    ];
+    const yearlySalesMap = analyticsData?.sales?.yearlySales || {};
+    const headers = ['Year', 'Sales (PHP)'];
     const csvRows = [headers.join(',')];
-    for (const row of reportData) {
-      csvRows.push(`${row.year},${row.salesGrowth},${row.userGrowth}`);
+    for (const y of years) {
+      csvRows.push(`${y},${yearlySalesMap[y] ?? 0}`);
     }
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
@@ -322,11 +330,36 @@ export default function AdminAnalytics() {
               <p className="text-sm text-[#666]">All-Time Overview ({effectiveBranchLabel})</p>
             </div>
             
-            <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative overflow-hidden transition-colors duration-300`}>
+            <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
               <div className="w-full h-[250px] sm:h-[300px] px-1.5 py-3 sm:p-5 flex justify-between items-end gap-1 sm:gap-2 text-xs md:text-sm">
-                {reportData.map((data) => (
-                  <ChartBar key={`sales-${data.year}`} label={data.year} height={() => `${data.salesGrowth}%`} color={`bg-gradient-to-t ${styles.gradient}`} />
-                ))}
+                {(() => {
+                  const currentYearNum = new Date().getFullYear();
+                  const years = [
+                    (currentYearNum - 4).toString(),
+                    (currentYearNum - 3).toString(),
+                    (currentYearNum - 2).toString(),
+                    (currentYearNum - 1).toString(),
+                    currentYearNum.toString()
+                  ];
+                  const yearlySalesMap = analyticsData?.sales?.yearlySales || {};
+                  const salesValues = years.map(y => Number(yearlySalesMap[y] ?? 0));
+                  const maxSales = Math.max(...salesValues, 1);
+
+                  return years.map((year) => {
+                    const value = Number(yearlySalesMap[year] ?? 0);
+                    const heightPercent = value > 0 ? Math.max((value / maxSales) * 85, 2) : 2;
+
+                    return (
+                      <ChartBar 
+                        key={`sales-${year}`} 
+                        label={year} 
+                        height={`${heightPercent}%`} 
+                        value={value}
+                        color={`bg-gradient-to-t ${styles.gradient}`} 
+                      />
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -567,22 +600,28 @@ function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: Re
   );
 }
 
-function ChartBar({ label, height, color }: { label: string, height: () => string, color: string }) {
+function ChartBar({ label, height, color, value }: { label: string, height: string, color?: string, value?: number }) {
   const [h, setH] = useState('0%');
   
   useEffect(() => {
     const timer = setTimeout(() => {
-      setH(height());
+      setH(height);
     }, 50);
     return () => clearTimeout(timer);
   }, [height]);
 
   return (
-    <div className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2">
+    <div className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2 group">
       <div 
-        className={`w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] ${color} rounded-t-xs sm:rounded-t-md hover:brightness-125 transition-all duration-1000 ease-out cursor-pointer`}
+        className={`w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] ${color || 'bg-[#bd00ff]'} rounded-t-xs sm:rounded-t-md hover:brightness-125 active:brightness-125 transition-all duration-300 cursor-pointer relative flex justify-center`}
         style={{ height: h }}
-      ></div>
+      >
+        {value !== undefined && (
+          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black text-white text-[10px] sm:text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-20 shadow-lg">
+            {formatCurrency(value)}
+          </div>
+        )}
+      </div>
       <span className="text-[#111] font-semibold text-[9px] xs:text-[10px] sm:text-xs md:text-sm tracking-tight">{label}</span>
     </div>
   );

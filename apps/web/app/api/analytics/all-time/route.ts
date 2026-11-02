@@ -198,6 +198,13 @@ export async function GET(req: Request) {
     let onlineCount = 0;
     let physicalCount = 0;
 
+    const currentYear = now.getFullYear();
+    const chartYears = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
+    const yearlySales: Record<string, number> = {};
+    chartYears.forEach(y => {
+      yearlySales[y.toString()] = 0;
+    });
+
     const activeAllPurchases = targetBranch 
       ? allSystemPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
       : allSystemPurchases;
@@ -216,6 +223,11 @@ export async function GET(req: Request) {
         thisYearSales += amt;
       } else if (createdAt >= lastYearStart && createdAt <= lastYearEnd) {
         lastYearSales += amt;
+      }
+
+      const purchaseYear = createdAt.getFullYear().toString();
+      if (yearlySales[purchaseYear] !== undefined) {
+        yearlySales[purchaseYear] += amt;
       }
 
       if ((p as any).source === 'In-Store') {
@@ -237,6 +249,11 @@ export async function GET(req: Request) {
             thisYearSales += num;
           } else if (createdAt >= lastYearStart && createdAt <= lastYearEnd) {
             lastYearSales += num;
+          }
+
+          const repairYear = createdAt.getFullYear().toString();
+          if (yearlySales[repairYear] !== undefined) {
+            yearlySales[repairYear] += num;
           }
         }
       }
@@ -369,7 +386,8 @@ export async function GET(req: Request) {
       sales: {
         thisYear: thisYearSales,
         lastYear: lastYearSales,
-        allTime: allTimeSales
+        allTime: allTimeSales,
+        yearlySales
       },
       paymentMethods: {
         cash: {
