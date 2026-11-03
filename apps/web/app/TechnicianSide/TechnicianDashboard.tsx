@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Wrench, Search, Cpu, CheckCircle2, ArrowRight, Clock, 
-  AlertCircle, Smartphone, User, RefreshCw, ChevronRight
+  AlertCircle, Smartphone, User, RefreshCw, ChevronRight, MapPin
 } from 'lucide-react';
 
 export default function TechnicianDashboard() {
@@ -111,12 +111,13 @@ export default function TechnicianDashboard() {
       {/* Clean Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-purple-100 pb-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight m-0">
               Technician Dashboard
             </h1>
-            <span className="text-[11px] font-bold bg-purple-100 text-[#8b00cc] px-2.5 py-0.5 rounded-full border border-purple-200">
-              📍 {technician?.branch ? (technician.branch.toLowerCase().includes('branch') ? technician.branch : `${technician.branch} Branch`) : 'Tagoloan Branch'}
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-[#8b00cc] border border-purple-200/80 shrink-0 whitespace-nowrap shadow-xs">
+              <MapPin size={12} className="text-[#8b00cc] shrink-0" />
+              <span>{technician?.branch ? (technician.branch.toLowerCase().includes('branch') ? technician.branch : `${technician.branch} Branch`) : 'Tagoloan Branch'}</span>
             </span>
           </div>
           <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">

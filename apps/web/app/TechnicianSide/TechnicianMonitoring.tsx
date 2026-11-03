@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { 
+import {
+  MapPin,
   Wrench, Search, RefreshCw, CheckCircle2, AlertCircle, Clock, 
   Smartphone, User, Camera, FileText, ChevronRight, X, ChevronLeft, 
   UploadCloud, Plus, Trash2, Cpu, CheckCircle, ShieldAlert, Receipt, Pencil, Eye,
@@ -982,10 +983,11 @@ export default function TechnicianMonitoring() {
         {/* Header and Search */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 sm:pb-5 border-b border-[#F3E8FF]">
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
               <h2 className="text-xl sm:text-2xl font-bold text-[#1F1728] tracking-tight">Devices Monitoring</h2>
-              <span className="text-[11px] font-bold bg-purple-100 text-[#8b00cc] px-2.5 py-0.5 rounded-full border border-purple-200">
-                📍 {technician?.branch || 'Tagoloan'} Branch
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-[#8b00cc] border border-purple-200/80 shrink-0 whitespace-nowrap shadow-xs">
+                <MapPin size={12} className="text-[#8b00cc] shrink-0" />
+                <span>{technician?.branch ? (technician.branch.toLowerCase().includes('branch') ? technician.branch : `${technician.branch} Branch`) : 'Tagoloan Branch'}</span>
               </span>
             </div>
             <p className="text-xs text-[#7e6a99] mt-0.5 font-medium">
@@ -1031,7 +1033,7 @@ export default function TechnicianMonitoring() {
         </div>
 
         {/* Filter Pills Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'DOWNPAYMENTS', 'COMPLETED'] as const).map((tab) => (
             <button
               key={tab}
@@ -1040,13 +1042,19 @@ export default function TechnicianMonitoring() {
                 setStatusFilter(tab);
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer border ${
+              className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer border ${
                 statusFilter === tab
                   ? 'bg-[#9333EA] text-white border-[#9333EA] shadow-xs'
                   : 'bg-[#FAF7FF] text-[#5b4a7a] border-[#E9D8FD] hover:bg-white hover:text-[#9333EA]'
               }`}
             >
-              {tab === 'ALL' ? 'All Assigned' : tab === 'DOWNPAYMENTS' ? 'Downpayments' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+              {tab === 'ALL' ? (
+                <>All<span className="hidden sm:inline"> Assigned</span></>
+              ) : tab === 'DOWNPAYMENTS' ? (
+                'Downpayments'
+              ) : (
+                tab.charAt(0) + tab.slice(1).toLowerCase()
+              )}
             </button>
           ))}
         </div>
