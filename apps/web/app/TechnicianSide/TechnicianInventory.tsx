@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
+import {
+  MapPin,
   Package, Search, RefreshCw, AlertTriangle, CheckCircle2, 
   Wrench, Plus, ChevronLeft, ChevronRight, Filter, X, 
   Layers, DollarSign, Smartphone, Sparkles, Box, ShieldCheck, Tag,
@@ -338,12 +339,13 @@ export default function TechnicianInventory() {
             <Wrench size={24} />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
               <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight m-0">
                 Spare Parts & Materials
               </h1>
-              <span className="text-[11px] font-bold bg-purple-100 text-[#8b00cc] px-2.5 py-0.5 rounded-full border border-purple-200">
-                📍 {activeBranch} Branch
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-[#8b00cc] border border-purple-200/80 shrink-0 whitespace-nowrap shadow-xs">
+                <MapPin size={12} className="text-[#8b00cc] shrink-0" />
+                <span>{activeBranch.toLowerCase().includes('branch') ? activeBranch : `${activeBranch} Branch`}</span>
               </span>
             </div>
             <p className="text-xs sm:text-sm text-gray-500 font-medium m-0 mt-0.5">
@@ -400,7 +402,7 @@ export default function TechnicianInventory() {
         </div>
 
         {/* Stock Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
+        <div className="flex flex-wrap items-center gap-2 pb-1 lg:pb-0">
           <button
             type="button"
             onClick={() => { setStockFilter('all'); setCurrentPage(1); }}
@@ -437,221 +439,315 @@ export default function TechnicianInventory() {
         </div>
       </div>
 
-      {/* Main Spare Parts Table */}
+      {/* Main Spare Parts Table / Mobile Cards */}
       <div className="bg-white rounded-2xl border border-purple-100 shadow-sm overflow-hidden flex flex-col">
-        <div className="w-full overflow-x-auto">
-          <table className="w-full border-collapse text-left min-w-[760px]">
-            <thead>
-              <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
-                <th className="py-4 px-6">Part / Component Name</th>
-                <th className="py-4 px-4 text-left">Compatible Device</th>
-                <th className="py-4 px-4 text-center">Category</th>
-                <th className="py-4 px-4 text-center">{activeBranch} Stock</th>
-                <th className="py-4 px-4 text-right">Unit Price</th>
-                <th className="py-4 px-4 text-center">Status</th>
-                <th className="py-4 px-6 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <div className="w-9 h-9 border-3 border-purple-200 border-t-[#8b00cc] rounded-full animate-spin"></div>
-                      <span className="text-gray-500 font-semibold text-xs">
-                        Loading {activeBranch} spare parts inventory...
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ) : paginatedParts.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto p-4">
-                      <div className="w-14 h-14 rounded-2xl bg-purple-50 text-[#8b00cc] flex items-center justify-center mb-1">
-                        <Box size={28} />
-                      </div>
-                      <h3 className="text-sm font-bold text-gray-900 m-0">No spare parts recorded yet</h3>
-                      <p className="text-xs text-gray-500 m-0 leading-relaxed text-center">
-                        {search 
-                          ? 'No spare parts match your search query.' 
-                          : 'You can add replacement screens, batteries, flex cables, and repair materials by clicking "+ Add Spare Part" above.'}
-                      </p>
-                      {search ? (
-                        <button
-                          onClick={() => setSearch('')}
-                          className="mt-2 px-3 py-1.5 rounded-xl bg-purple-100 text-purple-700 font-bold text-xs cursor-pointer border-none hover:bg-purple-200"
-                        >
-                          Clear Search
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setIsAddModalOpen(true)}
-                          className="mt-2 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs cursor-pointer border-none hover:bg-purple-700 shadow-sm flex items-center gap-1.5"
-                        >
-                          <Plus size={14} />
-                          <span>Add First Spare Part</span>
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+        {loading ? (
+          <div className="py-16 text-center">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <div className="w-9 h-9 border-3 border-purple-200 border-t-[#8b00cc] rounded-full animate-spin"></div>
+              <span className="text-gray-500 font-semibold text-xs">
+                Loading {activeBranch} spare parts inventory...
+              </span>
+            </div>
+          </div>
+        ) : paginatedParts.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto p-4">
+              <div className="w-14 h-14 rounded-2xl bg-purple-50 text-[#8b00cc] flex items-center justify-center mb-1">
+                <Box size={28} />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900 m-0">No spare parts recorded yet</h3>
+              <p className="text-xs text-gray-500 m-0 leading-relaxed text-center">
+                {search 
+                  ? 'No spare parts match your search query.' 
+                  : 'You can add replacement screens, batteries, flex cables, and repair materials by clicking "+ Add Spare Part" above.'}
+              </p>
+              {search ? (
+                <button
+                  onClick={() => setSearch('')}
+                  className="mt-2 px-3 py-1.5 rounded-xl bg-purple-100 text-purple-700 font-bold text-xs cursor-pointer border-none hover:bg-purple-200"
+                >
+                  Clear Search
+                </button>
               ) : (
-                paginatedParts.map((item) => {
-                  const stock = item.stock ?? 0;
-                  const isOut = stock === 0;
-                  const isLow = stock > 0 && stock < 5;
-                  const compatibleDevice = item.compatibleDevice || 'Universal';
-                  const categoryName = item.category || 'Other Materials';
-                  const sku = item.sku || `SP-${item.id.slice(-4).toUpperCase()}`;
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="mt-2 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs cursor-pointer border-none hover:bg-purple-700 shadow-sm flex items-center gap-1.5"
+                >
+                  <Plus size={14} />
+                  <span>Add First Spare Part</span>
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* --- DESKTOP VIEW: Data Table (Hidden on Mobile) --- */}
+            <div className="hidden md:block w-full overflow-x-auto">
+              <table className="w-full border-collapse text-left min-w-[760px]">
+                <thead>
+                  <tr className="bg-purple-50/70 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-purple-200/50">
+                    <th className="py-4 px-6">Part / Component Name</th>
+                    <th className="py-4 px-4 text-left">Compatible Device</th>
+                    <th className="py-4 px-4 text-center">Category</th>
+                    <th className="py-4 px-4 text-center">{activeBranch} Stock</th>
+                    <th className="py-4 px-4 text-right">Unit Price</th>
+                    <th className="py-4 px-4 text-center">Status</th>
+                    <th className="py-4 px-6 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 text-sm">
+                  {paginatedParts.map((item) => {
+                    const stock = item.stock ?? 0;
+                    const isOut = stock === 0;
+                    const isLow = stock > 0 && stock < 5;
+                    const compatibleDevice = item.compatibleDevice || 'Universal';
+                    const categoryName = item.category || 'Other Materials';
+                    const sku = item.sku || `SP-${item.id.slice(-4).toUpperCase()}`;
 
-                  return (
-                    <tr key={item.id} className="hover:bg-purple-50/30 transition-colors">
-                      {/* Part Name & Thumbnail */}
-                      <td className="py-3.5 px-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <Wrench size={18} className="text-purple-600" />
+                    return (
+                      <tr key={item.id} className="hover:bg-purple-50/30 transition-colors">
+                        {/* Part Name & Thumbnail */}
+                        <td className="py-3.5 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
+                              {item.image ? (
+                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <Wrench size={18} className="text-purple-600" />
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-gray-900 text-xs sm:text-sm truncate">
+                                {item.name}
+                              </span>
+                              <span className="text-[11px] text-gray-400 font-mono">
+                                SKU: {sku}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Compatible Device */}
+                        <td className="py-3.5 px-4 text-xs font-semibold text-gray-700">
+                          <div className="flex items-center gap-1.5">
+                            <Smartphone size={13} className="text-purple-600 shrink-0" />
+                            <span className="truncate">{compatibleDevice}</span>
+                          </div>
+                        </td>
+
+                        {/* Category */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/70">
+                            {categoryName}
+                          </span>
+                        </td>
+
+                        {/* Live Branch Stock */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-block px-2.5 py-1 rounded-lg font-mono font-extrabold text-xs ${
+                            isOut ? 'bg-red-50 text-red-600 border border-red-200' :
+                            isLow ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          }`}>
+                            {stock} pcs
+                          </span>
+                        </td>
+
+                        {/* Unit Price */}
+                        <td className="py-3.5 px-4 text-right">
+                          <span className="font-mono font-bold text-gray-900 text-xs sm:text-sm">
+                            ₱{(item.price || 0).toLocaleString()}
+                          </span>
+                        </td>
+
+                        {/* Status Badge */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                            isOut ? 'bg-red-100 text-red-700' :
+                            isLow ? 'bg-amber-100 text-amber-800' :
+                            'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
+                          </span>
+                        </td>
+
+                        {/* Actions (3 Vertical Dots Dropdown) */}
+                        <td className="py-3.5 px-6 text-center">
+                          <div className="relative inline-block text-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (activeActionMenuId === item.id) {
+                                  setActiveActionMenuId(null);
+                                  setActionMenuPosition(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  setActionMenuPosition({
+                                    top: rect.bottom + 6,
+                                    left: Math.max(10, rect.right - 145),
+                                  });
+                                  setActiveActionMenuId(item.id);
+                                }
+                              }}
+                              className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                                activeActionMenuId === item.id
+                                  ? 'bg-[#8b00cc] text-white border-[#8b00cc] shadow-sm'
+                                  : 'text-gray-500 hover:text-purple-900 hover:bg-purple-50 border-gray-200 bg-white'
+                              }`}
+                              title="Actions"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+
+                            {activeActionMenuId === item.id && actionMenuPosition && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-40" 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveActionMenuId(null);
+                                    setActionMenuPosition(null);
+                                  }} 
+                                />
+                                <div 
+                                  className="fixed w-36 bg-white rounded-2xl shadow-xl border border-purple-100 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left"
+                                  style={{ top: `${actionMenuPosition.top}px`, left: `${actionMenuPosition.left}px` }}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      setActionMenuPosition(null);
+                                      handleOpenEditModal(item);
+                                    }}
+                                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Pencil size={14} className="text-purple-600" />
+                                    <span>Edit</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveActionMenuId(null);
+                                      setActionMenuPosition(null);
+                                      handleDeletePart(item.id, item.name);
+                                    }}
+                                    className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                  >
+                                    <Trash2 size={14} className="text-red-500" />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              </>
                             )}
                           </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="font-bold text-gray-900 text-xs sm:text-sm truncate">
-                              {item.name}
-                            </span>
-                            <span className="text-[11px] text-gray-400 font-mono">
-                              SKU: {sku}
-                            </span>
-                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* --- MOBILE VIEW: Responsive Cards (Hidden on Desktop) --- */}
+            <div className="block md:hidden p-3.5 space-y-3">
+              {paginatedParts.map((item) => {
+                const stock = item.stock ?? 0;
+                const isOut = stock === 0;
+                const isLow = stock > 0 && stock < 5;
+                const compatibleDevice = item.compatibleDevice || 'Universal';
+                const categoryName = item.category || 'Other Materials';
+                const sku = item.sku || `SP-${item.id.slice(-4).toUpperCase()}`;
+
+                return (
+                  <div 
+                    key={item.id} 
+                    className="p-4 rounded-2xl border border-purple-100 bg-[#FAF7FF]/50 shadow-xs flex flex-col gap-3 hover:border-purple-300 transition-colors"
+                  >
+                    {/* Header: Thumbnail, Name, SKU, Stock */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-white border border-purple-100 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+                          {item.image ? (
+                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Wrench size={20} className="text-[#8b00cc]" />
+                          )}
                         </div>
-                      </td>
-
-                      {/* Compatible Device */}
-                      <td className="py-3.5 px-4 text-xs font-semibold text-gray-700">
-                        <div className="flex items-center gap-1.5">
-                          <Smartphone size={13} className="text-purple-600 shrink-0" />
-                          <span className="truncate">{compatibleDevice}</span>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm text-gray-900 leading-tight truncate m-0">
+                            {item.name}
+                          </h4>
+                          <span className="text-[11px] text-gray-400 font-mono block mt-0.5">
+                            SKU: {sku}
+                          </span>
                         </div>
-                      </td>
+                      </div>
 
-                      {/* Category */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/70">
-                          {categoryName}
-                        </span>
-                      </td>
-
-                      {/* Live Branch Stock */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-block px-2.5 py-1 rounded-lg font-mono font-extrabold text-xs ${
+                      {/* Stock Pill & Status */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className={`px-2.5 py-0.5 rounded-lg font-mono font-extrabold text-xs ${
                           isOut ? 'bg-red-50 text-red-600 border border-red-200' :
                           isLow ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                           'bg-emerald-50 text-emerald-700 border border-emerald-200'
                         }`}>
                           {stock} pcs
                         </span>
-                      </td>
-
-                      {/* Unit Price */}
-                      <td className="py-3.5 px-4 text-right">
-                        <span className="font-mono font-bold text-gray-900 text-xs sm:text-sm">
-                          ₱{(item.price || 0).toLocaleString()}
-                        </span>
-                      </td>
-
-                      {/* Status Badge */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          isOut ? 'bg-red-100 text-red-700' :
-                          isLow ? 'bg-amber-100 text-amber-800' :
-                          'bg-emerald-100 text-emerald-800'
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${
+                          isOut ? 'text-red-600' : isLow ? 'text-amber-700' : 'text-emerald-700'
                         }`}>
                           {isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'In Stock'}
                         </span>
-                      </td>
+                      </div>
+                    </div>
 
-                      {/* Actions (3 Vertical Dots Dropdown) */}
-                      <td className="py-3.5 px-6 text-center">
-                        <div className="relative inline-block text-center">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (activeActionMenuId === item.id) {
-                                setActiveActionMenuId(null);
-                                setActionMenuPosition(null);
-                              } else {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setActionMenuPosition({
-                                  top: rect.bottom + 6,
-                                  left: Math.max(10, rect.right - 145),
-                                });
-                                setActiveActionMenuId(item.id);
-                              }
-                            }}
-                            className={`p-2 rounded-xl transition-all cursor-pointer border ${
-                              activeActionMenuId === item.id
-                                ? 'bg-[#8b00cc] text-white border-[#8b00cc] shadow-sm'
-                                : 'text-gray-500 hover:text-purple-900 hover:bg-purple-50 border-gray-200 bg-white'
-                            }`}
-                            title="Actions"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
+                    {/* Metadata: Device & Category & Price */}
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-purple-100/70 items-center">
+                      <div className="flex items-center gap-1.5 text-gray-700 min-w-0">
+                        <Smartphone size={13} className="text-[#8b00cc] shrink-0" />
+                        <span className="truncate font-medium" title={compatibleDevice}>{compatibleDevice}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-bold text-gray-900 text-sm">
+                          ₱{(item.price || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
 
-                          {activeActionMenuId === item.id && actionMenuPosition && (
-                            <>
-                              <div 
-                                className="fixed inset-0 z-40" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveActionMenuId(null);
-                                  setActionMenuPosition(null);
-                                }} 
-                              />
-                              <div 
-                                className="fixed w-36 bg-white rounded-2xl shadow-xl border border-purple-100 py-1.5 z-50 animate-in fade-in zoom-in-95 text-left"
-                                style={{ top: `${actionMenuPosition.top}px`, left: `${actionMenuPosition.left}px` }}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    setActionMenuPosition(null);
-                                    handleOpenEditModal(item);
-                                  }}
-                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-purple-900 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
-                                >
-                                  <Pencil size={14} className="text-purple-600" />
-                                  <span>Edit</span>
-                                </button>
+                    {/* Footer: Category & Direct Actions */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-purple-100/50">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200/70">
+                        {categoryName}
+                      </span>
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    setActionMenuPosition(null);
-                                    handleDeletePart(item.id, item.name);
-                                  }}
-                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
-                                >
-                                  <Trash2 size={14} className="text-red-500" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditModal(item)}
+                          className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#8b00cc] font-bold text-xs flex items-center gap-1.5 transition-all border border-purple-200/80 cursor-pointer active:scale-95"
+                        >
+                          <Pencil size={13} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePart(item.id, item.name)}
+                          className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs flex items-center gap-1.5 transition-all border border-red-200/80 cursor-pointer active:scale-95"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {/* Pagination Footer */}
         {totalCount > 0 && (
