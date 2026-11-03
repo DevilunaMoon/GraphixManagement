@@ -274,11 +274,11 @@ export default function RepairAnalyticsView({
             <p className="text-sm text-[#666]">Repair Volume Overview ({effectiveBranchLabel})</p>
           </div>
 
-          <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative overflow-hidden transition-colors duration-300`}>
+          <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
             <div className="w-full h-[250px] sm:h-[300px] px-1.5 py-3 sm:p-5 flex justify-between items-end gap-1 sm:gap-2 text-xs md:text-sm">
               {months.map((month, i) => {
                 const count = monthlyActivity[i];
-                const heightPercent = count > 0 ? Math.max((count / maxRepairs) * 85, 4) : 2;
+                const heightPercent = count > 0 ? Math.max((count / maxRepairs) * 75, 4) : 2;
 
                 return (
                   <div

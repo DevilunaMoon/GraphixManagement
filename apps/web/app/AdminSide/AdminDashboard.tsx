@@ -203,7 +203,7 @@ export default function AdminDashboard() {
               <p className="text-sm text-[#666]">Monthly Overview ({new Date().getFullYear()})</p>
             </div>
             
-            <div className="w-full border-2 border-[#BF00FF] rounded-xl relative overflow-hidden">
+            <div className="w-full border-2 border-[#BF00FF] rounded-xl relative">
               <div className="w-full h-[250px] sm:h-[300px] flex justify-between items-end gap-1 sm:gap-2 px-1.5 py-3 sm:p-5">
               {(() => {
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
                 
                 return months.map((month, i) => {
                   const value = salesData[i];
-                  const heightPercent = value > 0 ? Math.max((value / maxSales) * 85, 2) : 2;
+                  const heightPercent = value > 0 ? Math.max((value / maxSales) * 75, 2) : 2;
                   
                   return <ChartBar key={month} label={month} height={`${heightPercent}%`} value={value} />;
                 });
