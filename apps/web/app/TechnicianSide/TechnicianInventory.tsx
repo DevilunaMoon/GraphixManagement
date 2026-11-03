@@ -825,7 +825,7 @@ export default function TechnicianInventory() {
                   placeholder="e.g. iPhone 11 Pro Max OLED Screen Assembly"
                   value={addPartName}
                   onChange={(e) => setAddPartName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                 />
               </div>
 
@@ -839,7 +839,7 @@ export default function TechnicianInventory() {
                     placeholder="e.g. iPhone 11 Pro Max, Universal"
                     value={addCompatibleModel}
                     onChange={(e) => setAddCompatibleModel(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
 
@@ -850,7 +850,7 @@ export default function TechnicianInventory() {
                   <select
                     value={addCategory}
                     onChange={(e) => setAddCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900"
                   >
                     {PART_CATEGORIES.filter(c => c !== 'All Categories').map((c) => (
                       <option key={c} value={c}>{c}</option>
@@ -870,7 +870,7 @@ export default function TechnicianInventory() {
                     required
                     value={addStock}
                     onChange={(e) => setAddStock(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
 
@@ -884,7 +884,7 @@ export default function TechnicianInventory() {
                     placeholder="0"
                     value={addCost}
                     onChange={(e) => setAddCost(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
 
@@ -899,7 +899,7 @@ export default function TechnicianInventory() {
                     placeholder="0"
                     value={addPrice}
                     onChange={(e) => setAddPrice(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -1001,7 +1001,7 @@ export default function TechnicianInventory() {
                   placeholder="e.g. LCD Screen, iPhone Battery, Charging Flex"
                   value={editPartName}
                   onChange={(e) => setEditPartName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                 />
               </div>
 
@@ -1015,7 +1015,7 @@ export default function TechnicianInventory() {
                     placeholder="e.g. iPhone 13, Galaxy S21"
                     value={editCompatibleModel}
                     onChange={(e) => setEditCompatibleModel(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
                 <div>
@@ -1025,7 +1025,7 @@ export default function TechnicianInventory() {
                   <select
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900"
                   >
                     {PART_CATEGORIES.filter(c => c !== 'All Categories').map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
@@ -1045,7 +1045,7 @@ export default function TechnicianInventory() {
                     required
                     value={editStock}
                     onChange={(e) => setEditStock(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
                 <div>
@@ -1058,7 +1058,7 @@ export default function TechnicianInventory() {
                     placeholder="0"
                     value={editCost}
                     onChange={(e) => setEditCost(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
                 <div>
@@ -1072,7 +1072,7 @@ export default function TechnicianInventory() {
                     placeholder="0"
                     value={editPrice}
                     onChange={(e) => setEditPrice(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
               </div>
