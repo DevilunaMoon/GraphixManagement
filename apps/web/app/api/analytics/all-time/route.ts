@@ -246,7 +246,8 @@ export async function GET(req: Request) {
       ];
       chartBuckets = slots.map((s, idx) => {
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), s.h, 0, 0, 0);
-        const nextHour = idx === slots.length - 1 ? 24 : slots[idx + 1].h;
+        const nextSlot = slots[idx + 1];
+        const nextHour = nextSlot ? nextSlot.h : 24;
         const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nextHour - 1, 59, 59, 999);
         return { label: s.label, start, end, value: 0 };
       });
@@ -257,7 +258,8 @@ export async function GET(req: Request) {
         const d = new Date(baseStart.getTime() + i * 24 * 60 * 60 * 1000);
         const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
         const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-        chartBuckets.push({ label: dayNames[d.getDay()], start, end, value: 0 });
+        const label = dayNames[d.getDay()] || 'Day';
+        chartBuckets.push({ label, start, end, value: 0 });
       }
     } else if (dateFilter === 'month') {
       const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
