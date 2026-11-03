@@ -410,7 +410,8 @@ export default function AdminAnalytics() {
                   const maxSales = Math.max(...bars.map(b => b.value), 1);
 
                   return bars.map((bar, idx) => {
-                    const heightPercent = bar.value > 0 ? Math.max((bar.value / maxSales) * 85, 2) : 2;
+                    const heightPercent = bar.value > 0 ? Math.max((bar.value / maxSales) * 75, 2) : 2;
+                    const align = idx === bars.length - 1 ? 'right' : (idx === 0 ? 'left' : 'center');
 
                     return (
                       <ChartBar 
@@ -419,6 +420,7 @@ export default function AdminAnalytics() {
                         height={`${heightPercent}%`} 
                         value={bar.value}
                         color={`bg-gradient-to-t ${styles.gradient}`} 
+                        align={align}
                       />
                     );
                   });
@@ -664,7 +666,19 @@ function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: Re
   );
 }
 
-function ChartBar({ label, height, color, value }: { label: string, height: string, color?: string, value?: number }) {
+function ChartBar({ 
+  label, 
+  height, 
+  color, 
+  value,
+  align = 'center'
+}: { 
+  label: string, 
+  height: string, 
+  color?: string, 
+  value?: number,
+  align?: 'center' | 'left' | 'right'
+}) {
   const [h, setH] = useState('0%');
   
   useEffect(() => {
@@ -674,6 +688,11 @@ function ChartBar({ label, height, color, value }: { label: string, height: stri
     return () => clearTimeout(timer);
   }, [height]);
 
+  const tooltipAlignClass = 
+    align === 'right' ? 'right-0' :
+    align === 'left' ? 'left-0' :
+    'left-1/2 -translate-x-1/2';
+
   return (
     <div className="flex flex-col items-center justify-end h-full w-full gap-1 sm:gap-2 group">
       <div 
@@ -681,7 +700,7 @@ function ChartBar({ label, height, color, value }: { label: string, height: stri
         style={{ height: h }}
       >
         {value !== undefined && (
-          <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black text-white text-[10px] sm:text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-20 shadow-lg">
+          <div className={`absolute bottom-full mb-2.5 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-all bg-black text-white text-[10px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-30 shadow-xl ${tooltipAlignClass}`}>
             {formatCurrency(value)}
           </div>
         )}

@@ -279,6 +279,7 @@ export default function RepairAnalyticsView({
               {months.map((month, i) => {
                 const count = monthlyActivity[i];
                 const heightPercent = count > 0 ? Math.max((count / maxRepairs) * 75, 4) : 2;
+                const tooltipAlign = i === months.length - 1 ? 'right-0' : (i === 0 ? 'left-0' : 'left-1/2 -translate-x-1/2');
 
                 return (
                   <div
@@ -290,7 +291,7 @@ export default function RepairAnalyticsView({
                       className={`w-full max-w-[14px] xs:max-w-[20px] sm:max-w-[32px] md:max-w-[40px] bg-gradient-to-t ${styles.gradient} rounded-t-xs sm:rounded-t-md hover:brightness-125 active:brightness-125 transition-all duration-300 relative flex justify-center`}
                       style={{ height: `${heightPercent}%` }}
                     >
-                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity bg-black/90 text-white text-[10px] sm:text-xs px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-20 shadow-lg flex flex-col items-center gap-0.5">
+                      <div className={`absolute bottom-full mb-2.5 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-all bg-black/90 text-white text-[10px] sm:text-xs px-2.5 py-1.5 rounded-lg pointer-events-none whitespace-nowrap z-30 shadow-xl flex flex-col items-center gap-0.5 ${tooltipAlign}`}>
                         <span className="font-bold">{month}: {count} repairs</span>
                         <span className="text-[10px] text-purple-300 font-semibold">{formatCurrency(monthlyRevenue[i])}</span>
                       </div>
