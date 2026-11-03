@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCheck, Clock, Wrench, RefreshCw, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, CheckCheck, Clock, Wrench, RefreshCw, CheckCircle2, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 interface NotificationItem {
@@ -188,8 +188,9 @@ export default function TechnicianNotifications() {
                   {n.message}
                 </p>
                 {n.branch && (
-                  <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md w-fit mt-1">
-                    📍 {n.branch} Branch
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded-md w-fit mt-1">
+                    <MapPin size={10} className="text-[#8b00cc] shrink-0" />
+                    <span>{n.branch.toLowerCase().includes('branch') ? n.branch : `${n.branch} Branch`}</span>
                   </span>
                 )}
               </div>
