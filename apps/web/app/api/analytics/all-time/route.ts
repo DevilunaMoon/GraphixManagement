@@ -74,6 +74,28 @@ export async function GET(req: Request) {
       }
     }
 
+    // Previous period boundaries for dynamic comparative metrics
+    let prevStart: Date | null = null;
+    let prevEnd: Date | null = null;
+
+    if (dateFilter === 'today') {
+      prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
+      prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+    } else if (dateFilter === 'week') {
+      prevStart = new Date((filterStart || now).getTime() - 7 * 24 * 60 * 60 * 1000);
+      prevEnd = new Date((filterEnd || now).getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (dateFilter === 'month') {
+      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    } else if (dateFilter === 'year') {
+      prevStart = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
+      prevEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+    } else if (dateFilter === 'custom' && filterStart && filterEnd) {
+      const diff = filterEnd.getTime() - filterStart.getTime();
+      prevEnd = new Date(filterStart.getTime() - 1);
+      prevStart = new Date(prevEnd.getTime() - diff);
+    }
+
     const dateWhere: any = {};
     if (filterStart && filterEnd) {
       dateWhere.createdAt = {
@@ -188,7 +210,9 @@ export async function GET(req: Request) {
         .filter(t => t && t.trim() !== '')
     ).size;
 
-    // 1. Calculate general Sales
+    // 1. Calculate general & dynamic period Sales
+    let periodSales = 0;
+    let previousPeriodSales = 0;
     let thisYearSales = 0;
     let lastYearSales = 0;
     let allTimeSales = 0;
@@ -197,6 +221,88 @@ export async function GET(req: Request) {
 
     let onlineCount = 0;
     let physicalCount = 0;
+
+    const currentYear = now.getFullYear();
+    const chartYears = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
+    const yearlySales: Record<string, number> = {};
+    chartYears.forEach(y => {
+      yearlySales[y.toString()] = 0;
+    });
+
+    // Dynamic Chart Buckets based on dateFilter
+    let chartBuckets: { label: string; start: Date; end: Date; value: number }[] = [];
+
+    if (dateFilter === 'today') {
+      const slots = [
+        { label: '6 AM', h: 6 },
+        { label: '8 AM', h: 8 },
+        { label: '10 AM', h: 10 },
+        { label: '12 PM', h: 12 },
+        { label: '2 PM', h: 14 },
+        { label: '4 PM', h: 16 },
+        { label: '6 PM', h: 18 },
+        { label: '8 PM', h: 20 },
+        { label: '10 PM', h: 22 },
+      ];
+      chartBuckets = slots.map((s, idx) => {
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), s.h, 0, 0, 0);
+        const nextSlot = slots[idx + 1];
+        const nextHour = nextSlot ? nextSlot.h : 24;
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nextHour - 1, 59, 59, 999);
+        return { label: s.label, start, end, value: 0 };
+      });
+    } else if (dateFilter === 'week') {
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const baseStart = filterStart || new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(baseStart.getTime() + i * 24 * 60 * 60 * 1000);
+        const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+        const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+        const label = dayNames[d.getDay()] || 'Day';
+        chartBuckets.push({ label, start, end, value: 0 });
+      }
+    } else if (dateFilter === 'month') {
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const weekRanges = [
+        { label: 'Week 1', startDay: 1, endDay: 7 },
+        { label: 'Week 2', startDay: 8, endDay: 14 },
+        { label: 'Week 3', startDay: 15, endDay: 21 },
+        { label: 'Week 4', startDay: 22, endDay: 28 },
+      ];
+      if (daysInMonth > 28) {
+        weekRanges.push({ label: 'Week 5', startDay: 29, endDay: daysInMonth });
+      }
+      chartBuckets = weekRanges.map(w => {
+        const start = new Date(now.getFullYear(), now.getMonth(), w.startDay, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), now.getMonth(), Math.min(w.endDay, daysInMonth), 23, 59, 59, 999);
+        return { label: w.label, start, end, value: 0 };
+      });
+    } else if (dateFilter === 'year') {
+      chartBuckets = chartYears.map(y => {
+        const start = new Date(y, 0, 1, 0, 0, 0, 0);
+        const end = new Date(y, 11, 31, 23, 59, 59, 999);
+        return { label: y.toString(), start, end, value: 0 };
+      });
+    } else if (dateFilter === 'custom' && filterStart && filterEnd) {
+      const daysDiff = Math.max(1, Math.ceil((filterEnd.getTime() - filterStart.getTime()) / (1000 * 60 * 60 * 24)));
+      if (daysDiff <= 14) {
+        for (let i = 0; i < daysDiff; i++) {
+          const d = new Date(filterStart.getTime() + i * 24 * 60 * 60 * 1000);
+          const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+          const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+          const label = `${d.getMonth() + 1}/${d.getDate()}`;
+          chartBuckets.push({ label, start, end, value: 0 });
+        }
+      } else {
+        const step = (filterEnd.getTime() - filterStart.getTime()) / 6;
+        for (let i = 0; i < 6; i++) {
+          const start = new Date(filterStart.getTime() + i * step);
+          const end = new Date(filterStart.getTime() + (i + 1) * step);
+          const label = `${start.getMonth() + 1}/${start.getDate()}`;
+          chartBuckets.push({ label, start, end, value: 0 });
+        }
+      }
+    }
 
     const activeAllPurchases = targetBranch 
       ? allSystemPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
@@ -216,6 +322,25 @@ export async function GET(req: Request) {
         thisYearSales += amt;
       } else if (createdAt >= lastYearStart && createdAt <= lastYearEnd) {
         lastYearSales += amt;
+      }
+
+      if (filterStart && filterEnd && createdAt >= filterStart && createdAt <= filterEnd) {
+        periodSales += amt;
+      }
+      if (prevStart && prevEnd && createdAt >= prevStart && createdAt <= prevEnd) {
+        previousPeriodSales += amt;
+      }
+
+      for (const b of chartBuckets) {
+        if (createdAt >= b.start && createdAt <= b.end) {
+          b.value += amt;
+          break;
+        }
+      }
+
+      const purchaseYear = createdAt.getFullYear().toString();
+      if (yearlySales[purchaseYear] !== undefined) {
+        yearlySales[purchaseYear] += amt;
       }
 
       if ((p as any).source === 'In-Store') {
@@ -238,9 +363,33 @@ export async function GET(req: Request) {
           } else if (createdAt >= lastYearStart && createdAt <= lastYearEnd) {
             lastYearSales += num;
           }
+
+          if (filterStart && filterEnd && createdAt >= filterStart && createdAt <= filterEnd) {
+            periodSales += num;
+          }
+          if (prevStart && prevEnd && createdAt >= prevStart && createdAt <= prevEnd) {
+            previousPeriodSales += num;
+          }
+
+          for (const b of chartBuckets) {
+            if (createdAt >= b.start && createdAt <= b.end) {
+              b.value += num;
+              break;
+            }
+          }
+
+          const repairYear = createdAt.getFullYear().toString();
+          if (yearlySales[repairYear] !== undefined) {
+            yearlySales[repairYear] += num;
+          }
         }
       }
     });
+
+    const chartData = chartBuckets.map(b => ({
+      label: b.label,
+      value: b.value
+    }));
 
     // 2. Calculate Payment Methods for the filtered timeframe
     let cashAmount = 0;
@@ -367,9 +516,13 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       sales: {
+        periodSales,
+        previousPeriodSales,
         thisYear: thisYearSales,
         lastYear: lastYearSales,
-        allTime: allTimeSales
+        allTime: allTimeSales,
+        yearlySales,
+        chartData
       },
       paymentMethods: {
         cash: {
