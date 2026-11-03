@@ -120,20 +120,28 @@ export default function AdminAnalytics() {
   }, [selectedBranch, dateFilter, customStartDate, customEndDate, isSuperAdmin, userBranch]);
 
   const handleDownload = () => {
-    const currentYearNum = new Date().getFullYear();
-    const years = [
-      (currentYearNum - 4).toString(),
-      (currentYearNum - 3).toString(),
-      (currentYearNum - 2).toString(),
-      (currentYearNum - 1).toString(),
-      currentYearNum.toString()
-    ];
-    const yearlySalesMap = analyticsData?.sales?.yearlySales || {};
-    const headers = ['Year', 'Sales (PHP)'];
-    const csvRows = [headers.join(',')];
-    for (const y of years) {
-      csvRows.push(`${y},${yearlySalesMap[y] ?? 0}`);
+    let headers: string[] = [];
+    let rows: string[] = [];
+
+    if (dateFilter === 'year') {
+      const currentYearNum = new Date().getFullYear();
+      const years = [
+        (currentYearNum - 4).toString(),
+        (currentYearNum - 3).toString(),
+        (currentYearNum - 2).toString(),
+        (currentYearNum - 1).toString(),
+        currentYearNum.toString()
+      ];
+      const yearlySalesMap = analyticsData?.sales?.yearlySales || {};
+      headers = ['Year', 'Sales (PHP)'];
+      rows = years.map(y => `${y},${yearlySalesMap[y] ?? 0}`);
+    } else {
+      const chartData: Array<{ label: string; value: number }> = analyticsData?.sales?.chartData || [];
+      headers = ['Timeframe', 'Sales (PHP)'];
+      rows = chartData.map(b => `"${b.label}",${b.value}`);
     }
+
+    const csvRows = [headers.join(','), ...rows];
     const csvString = csvRows.join('\n');
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -282,79 +290,134 @@ export default function AdminAnalytics() {
           )}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            icon={<span className="text-[22px] font-bold">₱</span>}
-            label="This Year's Sales" 
-            value={formatCurrency(analyticsData?.sales?.thisYear ?? 0)} 
-            subText={
-              <span className={`truncate block ${(analyticsData?.sales?.thisYear ?? 0) >= (analyticsData?.sales?.lastYear ?? 0) ? 'text-green-600' : 'text-red-500'}`}>
-                vs Last Year: {formatCurrency(analyticsData?.sales?.lastYear ?? 0)}
-              </span>
-            }
-            iconBg="bg-green-100" 
-            iconColor="text-green-600" 
-          />
-          <StatCard 
-            icon={<span className="text-[22px] font-bold">₱</span>}
-            label="Last Year's Sales" 
-            value={formatCurrency(analyticsData?.sales?.lastYear ?? 0)} 
-            iconBg="bg-blue-100" 
-            iconColor="text-blue-600" 
-          />
-          <StatCard 
-            icon={<span className="text-[22px] font-bold">₱</span>}
-            label="All-Time Sales" 
-            value={formatCurrency(analyticsData?.sales?.allTime ?? 0)} 
-            iconBg="bg-purple-100" 
-            iconColor="text-purple-600" 
-          />
-          <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1 no-underline">
-            <StatCard 
-              icon={<Users size={24} />} 
-              label="Total Users (All-Time)" 
-              value={userCount.toString()} 
-              iconBg="bg-sky-100" 
-              iconColor="text-sky-600" 
-            />
-          </Link>
-        </div>
+        {/* Dynamic Period Stats Grid */}
+        {(() => {
+          let currentPeriodLabel = "This Year's Sales";
+          let previousPeriodLabel = "Last Year's Sales";
+          let previousPeriodCompareLabel = "vs Last Year";
+
+          if (dateFilter === 'today') {
+            currentPeriodLabel = "Today's Sales";
+            previousPeriodLabel = "Yesterday's Sales";
+            previousPeriodCompareLabel = "vs Yesterday";
+          } else if (dateFilter === 'week') {
+            currentPeriodLabel = "This Week's Sales";
+            previousPeriodLabel = "Last Week's Sales";
+            previousPeriodCompareLabel = "vs Last Week";
+          } else if (dateFilter === 'month') {
+            currentPeriodLabel = "This Month's Sales";
+            previousPeriodLabel = "Last Month's Sales";
+            previousPeriodCompareLabel = "vs Last Month";
+          } else if (dateFilter === 'custom') {
+            currentPeriodLabel = "Period Sales";
+            previousPeriodLabel = "Prev Period Sales";
+            previousPeriodCompareLabel = "vs Prev Period";
+          }
+
+          const currentSales = (dateFilter === 'year' 
+            ? analyticsData?.sales?.thisYear 
+            : analyticsData?.sales?.periodSales) ?? 0;
+
+          const prevSales = (dateFilter === 'year'
+            ? analyticsData?.sales?.lastYear
+            : analyticsData?.sales?.previousPeriodSales) ?? 0;
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard 
+                icon={<span className="text-[22px] font-bold">₱</span>}
+                label={currentPeriodLabel} 
+                value={formatCurrency(currentSales)} 
+                subText={
+                  <span className={`truncate block ${currentSales >= prevSales ? 'text-green-600' : 'text-red-500'}`}>
+                    {previousPeriodCompareLabel}: {formatCurrency(prevSales)}
+                  </span>
+                }
+                iconBg="bg-green-100" 
+                iconColor="text-green-600" 
+              />
+              <StatCard 
+                icon={<span className="text-[22px] font-bold">₱</span>}
+                label={previousPeriodLabel} 
+                value={formatCurrency(prevSales)} 
+                iconBg="bg-blue-100" 
+                iconColor="text-blue-600" 
+              />
+              <StatCard 
+                icon={<span className="text-[22px] font-bold">₱</span>}
+                label="All-Time Sales" 
+                value={formatCurrency(analyticsData?.sales?.allTime ?? 0)} 
+                iconBg="bg-purple-100" 
+                iconColor="text-purple-600" 
+              />
+              <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1 no-underline">
+                <StatCard 
+                  icon={<Users size={24} />} 
+                  label="Total Users (All-Time)" 
+                  value={userCount.toString()} 
+                  iconBg="bg-sky-100" 
+                  iconColor="text-sky-600" 
+                />
+              </Link>
+            </div>
+          );
+        })()}
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-          {/* Year-Over-Year Sales Growth Bar Chart */}
+          {/* Dynamic Sales Breakdown Bar Chart */}
           <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-purple-500/15 shadow-sm p-4 sm:p-6 md:p-8 lg:col-span-2">
             <div className="mb-6 sm:mb-8">
-              <h3 className="text-xl font-bold text-[#111] mb-1">Year-Over-Year Sales Growth</h3>
-              <p className="text-sm text-[#666]">All-Time Overview ({effectiveBranchLabel})</p>
+              <h3 className="text-xl font-bold text-[#111] mb-1">
+                {dateFilter === 'today' ? "Today's Sales Breakdown" :
+                 dateFilter === 'week' ? "Weekly Sales Breakdown" :
+                 dateFilter === 'month' ? "Monthly Sales Breakdown" :
+                 dateFilter === 'year' ? "Year-Over-Year Sales Growth" :
+                 "Period Sales Breakdown"}
+              </h3>
+              <p className="text-sm text-[#666]">
+                {dateFilter === 'today' ? `Hourly Overview (${effectiveBranchLabel})` :
+                 dateFilter === 'week' ? `Daily Overview (${effectiveBranchLabel})` :
+                 dateFilter === 'month' ? `Weekly Overview (${effectiveBranchLabel})` :
+                 dateFilter === 'year' ? `All-Time Overview (${effectiveBranchLabel})` :
+                 `Selected Period Overview (${effectiveBranchLabel})`}
+              </p>
             </div>
             
             <div className={`w-full border-2 ${styles.borderMain} rounded-xl relative transition-colors duration-300`}>
               <div className="w-full h-[250px] sm:h-[300px] px-1.5 py-3 sm:p-5 flex justify-between items-end gap-1 sm:gap-2 text-xs md:text-sm">
                 {(() => {
-                  const currentYearNum = new Date().getFullYear();
-                  const years = [
-                    (currentYearNum - 4).toString(),
-                    (currentYearNum - 3).toString(),
-                    (currentYearNum - 2).toString(),
-                    (currentYearNum - 1).toString(),
-                    currentYearNum.toString()
-                  ];
-                  const yearlySalesMap = analyticsData?.sales?.yearlySales || {};
-                  const salesValues = years.map(y => Number(yearlySalesMap[y] ?? 0));
-                  const maxSales = Math.max(...salesValues, 1);
+                  let bars: Array<{ label: string; value: number }> = [];
 
-                  return years.map((year) => {
-                    const value = Number(yearlySalesMap[year] ?? 0);
-                    const heightPercent = value > 0 ? Math.max((value / maxSales) * 85, 2) : 2;
+                  if (dateFilter === 'year') {
+                    const currentYearNum = new Date().getFullYear();
+                    const years = [
+                      (currentYearNum - 4).toString(),
+                      (currentYearNum - 3).toString(),
+                      (currentYearNum - 2).toString(),
+                      (currentYearNum - 1).toString(),
+                      currentYearNum.toString()
+                    ];
+                    const yearlySalesMap = analyticsData?.sales?.yearlySales || {};
+                    bars = years.map(y => ({
+                      label: y,
+                      value: Number(yearlySalesMap[y] ?? 0)
+                    }));
+                  } else {
+                    bars = analyticsData?.sales?.chartData || [];
+                  }
+
+                  const maxSales = Math.max(...bars.map(b => b.value), 1);
+
+                  return bars.map((bar, idx) => {
+                    const heightPercent = bar.value > 0 ? Math.max((bar.value / maxSales) * 85, 2) : 2;
 
                     return (
                       <ChartBar 
-                        key={`sales-${year}`} 
-                        label={year} 
+                        key={`bar-${bar.label}-${idx}`} 
+                        label={bar.label} 
                         height={`${heightPercent}%`} 
-                        value={value}
+                        value={bar.value}
                         color={`bg-gradient-to-t ${styles.gradient}`} 
                       />
                     );
@@ -364,12 +427,13 @@ export default function AdminAnalytics() {
             </div>
           </div>
 
-          {/* Yearly Best Sellers Section */}
+          {/* Best Sellers Section */}
           <YearlyBestSellersSection 
             branchBestSellers={analyticsData?.branchBestSellers}
             topProducts={analyticsData?.topProductsThisYear || []}
             isSuperAdmin={isSuperAdmin}
             currentBranch={isSuperAdmin ? selectedBranch : (userBranch || 'Tagoloan')}
+            title={dateFilter === 'year' ? 'Yearly Best Sellers' : 'Top Selling Products'}
             timeframeLabel={
               dateFilter === 'year' ? 'By Units Sold (This Year)' :
               dateFilter === 'month' ? 'By Units Sold (This Month)' :

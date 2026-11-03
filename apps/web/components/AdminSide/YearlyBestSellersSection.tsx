@@ -36,6 +36,7 @@ interface YearlyBestSellersSectionProps {
   isSuperAdmin: boolean;
   currentBranch?: string;
   timeframeLabel?: string;
+  title?: string;
 }
 
 const SUPER_ADMIN_BRANCH_BUTTONS = ['All Branches', 'Tagoloan', 'Villanueva', 'Jasaan'];
@@ -46,7 +47,8 @@ export default function YearlyBestSellersSection({
   topProducts = [],
   isSuperAdmin,
   currentBranch = 'Tagoloan',
-  timeframeLabel = 'By Units Sold'
+  timeframeLabel = 'By Units Sold',
+  title = 'Best Sellers'
 }: YearlyBestSellersSectionProps) {
   // Determine active branch tab for Super Admin; default to 'Tagoloan' or 'All Branches'
   const [activeBranch, setActiveBranch] = useState<string>(() => {
@@ -164,7 +166,7 @@ export default function YearlyBestSellersSection({
         <div>
           <div className="flex items-start justify-between gap-2.5 mb-3">
             <div className="min-w-0">
-              <h3 className="text-lg sm:text-xl font-bold text-[#111] leading-snug">Yearly Best Sellers</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-[#111] leading-snug">{title}</h3>
               <p className="text-xs sm:text-sm text-[#666] mt-0.5 font-medium">{timeframeLabel}</p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
