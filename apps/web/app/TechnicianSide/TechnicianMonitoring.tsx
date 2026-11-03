@@ -1033,7 +1033,7 @@ export default function TechnicianMonitoring() {
         </div>
 
         {/* Filter Pills Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'DOWNPAYMENTS', 'COMPLETED'] as const).map((tab) => (
             <button
               key={tab}
@@ -1042,13 +1042,19 @@ export default function TechnicianMonitoring() {
                 setStatusFilter(tab);
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer border ${
+              className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer border ${
                 statusFilter === tab
                   ? 'bg-[#9333EA] text-white border-[#9333EA] shadow-xs'
                   : 'bg-[#FAF7FF] text-[#5b4a7a] border-[#E9D8FD] hover:bg-white hover:text-[#9333EA]'
               }`}
             >
-              {tab === 'ALL' ? 'All Assigned' : tab === 'DOWNPAYMENTS' ? 'Downpayments' : tab.charAt(0) + tab.slice(1).toLowerCase()}
+              {tab === 'ALL' ? (
+                <>All<span className="hidden sm:inline"> Assigned</span></>
+              ) : tab === 'DOWNPAYMENTS' ? (
+                'Downpayments'
+              ) : (
+                tab.charAt(0) + tab.slice(1).toLowerCase()
+              )}
             </button>
           ))}
         </div>
