@@ -1,106 +1,23 @@
 /**
- * Semaphore SMS Service Helper
+ * Semaphore SMS Service Helper (Server-side)
  * Handles Philippine mobile number normalization, telco network detection,
  * DITO 10-day approval fallback routing, and API communication with Semaphore v4.
+ *
+ * Includes automated Repair Progress SMS notification engine for GraphiX Store.
  */
 
-export interface SendSmsResult {
-  success: boolean;
-  network: 'DITO' | 'GLOBE' | 'SMART' | 'UNKNOWN';
-  senderNameUsed: string | null;
-  messageId?: number;
-  status?: string;
-  rawResponse?: any;
-  error?: string;
-}
+import { prisma } from 'database';
+export * from './sms-utils';
+import {
+  normalizePhilippineNumber,
+  detectTelcoNetwork,
+  isDitoNetwork,
+  canonicalizeRepairStatus,
+  buildRepairSmsMessage,
+  SendSmsResult,
+  SemaphoreAccountStatus
+} from './sms-utils';
 
-export interface SemaphoreAccountStatus {
-  configured: boolean;
-  accountId?: number;
-  accountName?: string;
-  status?: string;
-  creditBalance?: number;
-  customSenderName: string;
-  ditoApproved: boolean;
-  error?: string;
-}
-
-/**
- * Normalizes any Philippine mobile phone number into clean 11-digit format: 09XXXXXXXXX
- * Supports formats:
- * - 09171234567
- * - +639171234567
- * - 639171234567
- * - 9171234567
- * - 0917-123-4567 / (0917) 123 4567
- */
-export function normalizePhilippineNumber(phone: string): string {
-  if (!phone) return '';
-  let clean = phone.replace(/\D/g, '');
-
-  if (clean.startsWith('63') && clean.length === 12) {
-    clean = '0' + clean.slice(2);
-  } else if (clean.startsWith('9') && clean.length === 10) {
-    clean = '0' + clean;
-  }
-
-  return clean;
-}
-
-/**
- * Detects the Philippine telco network based on mobile prefix.
- */
-export function detectTelcoNetwork(phone: string): 'DITO' | 'GLOBE' | 'SMART' | 'UNKNOWN' {
-  const normalized = normalizePhilippineNumber(phone);
-  if (!normalized || normalized.length !== 11) return 'UNKNOWN';
-
-  const prefix = normalized.slice(0, 4);
-
-  // DITO Telecommunity Prefixes
-  const ditoPrefixes = [
-    '0895', '0896', '0897', '0898',
-    '0991', '0992', '0993', '0994'
-  ];
-  if (ditoPrefixes.includes(prefix)) {
-    return 'DITO';
-  }
-
-  // Globe / TM Prefixes
-  const globePrefixes = [
-    '0905', '0906', '0915', '0916', '0917', '0925', '0926', '0927',
-    '0935', '0936', '0937', '0945', '0953', '0954', '0955', '0956',
-    '0965', '0966', '0967', '0975', '0976', '0977', '0978', '0979',
-    '0995', '0996', '0997'
-  ];
-  if (globePrefixes.includes(prefix)) {
-    return 'GLOBE';
-  }
-
-  // Smart / TNT / Sun Prefixes
-  const smartPrefixes = [
-    '0907', '0908', '0909', '0910', '0911', '0912', '0913', '0914',
-    '0918', '0919', '0920', '0921', '0928', '0929', '0930', '0938',
-    '0939', '0946', '0947', '0948', '0949', '0950', '0951', '0961',
-    '0963', '0968', '0969', '0970', '0971', '0981', '0982', '0985',
-    '0989', '0998', '0999'
-  ];
-  if (smartPrefixes.includes(prefix)) {
-    return 'SMART';
-  }
-
-  return 'UNKNOWN';
-}
-
-/**
- * Returns true if the phone number belongs to DITO Telecommunity.
- */
-export function isDitoNumber(phone: string): boolean {
-  return detectTelcoNetwork(phone) === 'DITO';
-}
-
-/**
- * Retrieves the current Semaphore account status, credit balance, and configuration.
- */
 export async function getSemaphoreStatus(): Promise<SemaphoreAccountStatus> {
   const apiKey = process.env.SEMAPHORE_API_KEY?.trim();
   const customSenderName = process.env.SEMAPHORE_SENDER_NAME?.trim() || 'GRAPHIX';
@@ -269,3 +186,261 @@ export async function sendSms(to: string, message: string): Promise<SendSmsResul
   }
 }
 
+/**
+ * Builds the exact dynamic SMS notification message for repair status transitions
+ * as specified in the GraphiX project requirements:
+ *
+ * A. Diagnostic:
+ * "GraphiX Store: Hello [Customer Name], your gadget ([Device Name]) is currently undergoing diagnostic evaluation. We will update you regarding its repair progress. Reference: [Repair Reference]."
+ *
+ * B. Repairing:
+ * "GraphiX Store: Hello [Customer Name], your gadget ([Device Name]) is now undergoing repair. Our technician is currently working on your device. Reference: [Repair Reference]."
+ *
+ * C. Completed:
+ * "GraphiX Store: Good news, [Customer Name]! Your gadget repair ([Repair Reference]) has been completed. Please coordinate with our [Branch Name] Branch regarding device pickup. Thank you for choosing GraphiX Store!"
+ *
+ * D. Cancelled:
+ * "GraphiX Store: Hello [Customer Name], your gadget repair request ([Repair Reference]) has been cancelled. For further information, please contact our [Branch Name] Branch. Thank you."
+ */
+export async function resolveRepairTrackingNumber(repairId: string, branch: string = 'Tagoloan'): Promise<string> {
+  try {
+    const rawBranch = branch.toLowerCase();
+    let branchCode = 'TAG';
+    if (rawBranch.includes('vil')) branchCode = 'VIL';
+    else if (rawBranch.includes('jas')) branchCode = 'JAS';
+    else branchCode = 'TAG';
+
+    const branchRepairs = await prisma.repairRequest.findMany({
+      where: { branch: { equals: branch, mode: 'insensitive' } },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true }
+    });
+
+    const index = branchRepairs.findIndex(r => r.id === repairId);
+    const seqNum = index >= 0 ? index + 1 : 1;
+    const letterIndex = Math.floor((seqNum - 1) / 1000);
+    const letter = String.fromCharCode(65 + (letterIndex % 26));
+    const seriesNum = ((seqNum - 1) % 1000) + 1;
+    return `GRPX-${branchCode}-${letter}${seriesNum}`;
+  } catch {
+    return 'GRPX-TAG-A1';
+  }
+}
+
+/**
+ * Standardizes raw status into one of the 4 official statuses:
+ * Diagnostic, Repairing, Completed, Cancelled
+ */
+export interface RepairStatusSmsTriggerParams {
+  repairId: string;
+  previousProgress: string;
+  newProgress: string;
+  technicianName?: string | null;
+  explicitCustomerPhone?: string | null;
+}
+
+export interface RepairStatusSmsResult {
+  sent: boolean;
+  skipped?: boolean;
+  reason?: string;
+  recipient?: string;
+  network?: string;
+  senderNameUsed?: string | null;
+  messageId?: number;
+  status?: string;
+  error?: string;
+  smsRecordId?: string;
+}
+
+/**
+ * Core automatic SMS trigger:
+ * Automatically invoked when a technician saves changes. Compares previous status with
+ * newly saved status. If changed, dynamically builds message, sends via Semaphore,
+ * and logs to the RepairSmsHistory table.
+ *
+ * Never throws an exception that would roll back the repair update.
+ */
+export async function triggerRepairStatusSms(params: RepairStatusSmsTriggerParams): Promise<RepairStatusSmsResult> {
+  const { repairId, previousProgress, newProgress, technicianName, explicitCustomerPhone } = params;
+
+  // 1. Strict status change check: do not send if status did not change
+  const prevCanonical = canonicalizeRepairStatus(previousProgress || '');
+  const newCanonical = canonicalizeRepairStatus(newProgress || '');
+
+  if (!newCanonical) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: `New progress "${newProgress}" is not one of the 4 SMS-eligible statuses.`
+    };
+  }
+
+  if (prevCanonical === newCanonical) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: `Repair progress did not change (${previousProgress} -> ${newProgress}). No SMS sent.`
+    };
+  }
+
+  // 2. Prevent duplicate SMS within 2 minutes for the same repair and transition
+  try {
+    const recentDuplicate = await prisma.repairSmsHistory.findFirst({
+      where: {
+        repairId,
+        newStatus: newCanonical,
+        sentAt: { gte: new Date(Date.now() - 2 * 60 * 1000) },
+        sendingStatus: 'Submitted'
+      }
+    });
+
+    if (recentDuplicate) {
+      console.log(`[SMS] Duplicate prevention: SMS for ${repairId} -> ${newCanonical} was already submitted at ${recentDuplicate.sentAt.toISOString()}`);
+      return {
+        sent: false,
+        skipped: true,
+        reason: 'Duplicate SMS notification prevented (already sent recently).'
+      };
+    }
+  } catch (dupCheckErr) {
+    console.warn('[SMS] Duplicate check warning:', dupCheckErr);
+  }
+
+  // 3. Fetch full repair record and customer data
+  const repair = await prisma.repairRequest.findUnique({
+    where: { id: repairId },
+    include: { user: true }
+  });
+
+  if (!repair) {
+    return {
+      sent: false,
+      error: `Repair record not found for ID: ${repairId}`
+    };
+  }
+
+  // 4. Resolve tracking reference and dynamic template parameters
+  const trackingNumber = await resolveRepairTrackingNumber(repair.id, repair.branch);
+  
+  let parsedHistory: any = null;
+  if (repair.repairHistory && typeof repair.repairHistory === 'string' && repair.repairHistory.trim().startsWith('{')) {
+    try {
+      parsedHistory = JSON.parse(repair.repairHistory);
+    } catch {}
+  }
+
+  const customerName = repair.ownerName?.trim() || repair.user?.name?.trim() || parsedHistory?.customerName?.trim() || 'Valued Customer';
+  const deviceName = repair.deviceName || 'Device';
+  const branchName = repair.branch || 'Tagoloan';
+
+  // 5. Resolve recipient phone number
+  const rawPhone = (
+    explicitCustomerPhone || 
+    parsedHistory?.customerPhone || 
+    repair.user?.phone || 
+    ''
+  ).trim();
+
+  const normalizedPhone = normalizePhilippineNumber(rawPhone);
+  const network = detectTelcoNetwork(normalizedPhone);
+
+  // 6. Generate the message content
+  const messageContent = buildRepairSmsMessage({
+    status: newCanonical,
+    customerName,
+    deviceName,
+    repairReference: trackingNumber,
+    branchName
+  });
+
+  if (!messageContent) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: 'Failed to build SMS template message.'
+    };
+  }
+
+  // 7. Check if phone is missing or invalid
+  if (!normalizedPhone || normalizedPhone.length !== 11) {
+    const errorMsg = !rawPhone 
+      ? 'Customer mobile number is missing from repair record.'
+      : `Invalid mobile number: "${rawPhone}". Must be 11 digits (e.g. 09XXXXXXXXX).`;
+
+    try {
+      const historyRecord = await prisma.repairSmsHistory.create({
+        data: {
+          repairId: repair.id,
+          repairReference: trackingNumber,
+          customerId: repair.userId,
+          customerName,
+          recipientNumber: rawPhone || 'N/A',
+          network: 'UNKNOWN',
+          technicianName: technicianName || repair.technician || 'Technician',
+          branch: repair.branch || 'Tagoloan',
+          previousStatus: previousProgress || 'None',
+          newStatus: newCanonical,
+          message: messageContent,
+          sendingStatus: 'Failed',
+          errorMessage: errorMsg,
+          sentAt: new Date()
+        }
+      });
+
+      return {
+        sent: false,
+        recipient: rawPhone || 'N/A',
+        error: errorMsg,
+        smsRecordId: historyRecord.id
+      };
+    } catch (e: any) {
+      console.error('[SMS] Error logging failed SMS history:', e);
+      return {
+        sent: false,
+        recipient: rawPhone || 'N/A',
+        error: errorMsg
+      };
+    }
+  }
+
+  // 8. Send SMS through Semaphore (with DITO fallback)
+  const sendResult = await sendSms(normalizedPhone, messageContent);
+
+  // 9. Record SMS sending result in RepairSmsHistory
+  let historyRecordId: string | undefined = undefined;
+  try {
+    const historyRecord = await prisma.repairSmsHistory.create({
+      data: {
+        repairId: repair.id,
+        repairReference: trackingNumber,
+        customerId: repair.userId,
+        customerName,
+        recipientNumber: normalizedPhone,
+        network: sendResult.network,
+        technicianName: technicianName || repair.technician || 'Technician',
+        branch: repair.branch || 'Tagoloan',
+        previousStatus: previousProgress || 'None',
+        newStatus: newCanonical,
+        message: messageContent,
+        semaphoreMessageId: sendResult.messageId ? String(sendResult.messageId) : null,
+        sendingStatus: sendResult.success ? 'Submitted' : 'Failed',
+        errorMessage: sendResult.error || null,
+        sentAt: new Date()
+      }
+    });
+    historyRecordId = historyRecord.id;
+  } catch (dbErr) {
+    console.error('[SMS] Failed to create RepairSmsHistory record:', dbErr);
+  }
+
+  return {
+    sent: sendResult.success,
+    recipient: normalizedPhone,
+    network: sendResult.network,
+    senderNameUsed: sendResult.senderNameUsed,
+    messageId: sendResult.messageId,
+    status: sendResult.status,
+    error: sendResult.error,
+    smsRecordId: historyRecordId
+  };
+}

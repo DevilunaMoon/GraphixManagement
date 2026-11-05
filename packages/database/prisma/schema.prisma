@@ -37,6 +37,7 @@ model User {
   notifications    Notification[]
   customerQuestions CustomerQuestion[]
   questionReplies   CustomerQuestionReply[]
+  repairSmsHistory  RepairSmsHistory[]
 
   @@index([name])
   @@index([branch])
@@ -139,6 +140,7 @@ model RepairRequest {
   userId        String?
   user          User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   timeline      RepairTimeline[]
+  smsHistory    RepairSmsHistory[]
 
   @@index([userId])
   @@index([createdAt])
@@ -457,4 +459,30 @@ model SparePart {
   @@index([name])
 }
 
+model RepairSmsHistory {
+  id                  String        @id @default(cuid())
+  repairId            String
+  repairReference     String?
+  customerId          String?
+  customerName        String?
+  recipientNumber     String
+  network             String?
+  technicianName      String?
+  branch              String        @default("Tagoloan")
+  previousStatus      String
+  newStatus           String
+  message             String
+  semaphoreMessageId  String?
+  sendingStatus       String        @default("Submitted")
+  errorMessage        String?
+  sentAt              DateTime      @default(now())
 
+  repair              RepairRequest @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  customer            User?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([repairId])
+  @@index([branch])
+  @@index([sentAt])
+  @@index([recipientNumber])
+  @@index([sendingStatus])
+}

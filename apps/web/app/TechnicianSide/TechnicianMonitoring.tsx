@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import {
+  MessageSquare,
+  Send,
   MapPin,
   Wrench, Search, RefreshCw, CheckCircle2, AlertCircle, Clock, 
   Smartphone, User, Camera, FileText, ChevronRight, X, ChevronLeft, 
@@ -190,8 +192,51 @@ export default function TechnicianMonitoring() {
 
   // Modals
   const [customerDetailsTarget, setCustomerDetailsTarget] = useState<{ id?: string; name?: string } | null>(null);
+  const [deviceSmsLogs, setDeviceSmsLogs] = useState<any[]>([]);
+  const [isLoadingSmsLogs, setIsLoadingSmsLogs] = useState(false);
+  const [retryingSmsId, setRetryingSmsId] = useState<string | null>(null);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [deviceToView, setDeviceToView] = useState<DeviceItem | null>(null);
+
+  useEffect(() => {
+    if (viewDetailsOpen && deviceToView?.id) {
+      setIsLoadingSmsLogs(true);
+      fetch(`/api/repairs/sms-history?repairId=${deviceToView.id}`)
+        .then(res => res.json())
+        .then(data => {
+          setDeviceSmsLogs(data.history || []);
+        })
+        .catch(err => {
+          console.error('Failed to load SMS history for device:', err);
+          setDeviceSmsLogs([]);
+        })
+        .finally(() => setIsLoadingSmsLogs(false));
+    }
+  }, [viewDetailsOpen, deviceToView?.id]);
+
+  const handleRetryDeviceSms = async (smsId: string) => {
+    setRetryingSmsId(smsId);
+    try {
+      const res = await fetch(`/api/repairs/sms-history/${smsId}/retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (deviceToView?.id) {
+          const refetch = await fetch(`/api/repairs/sms-history?repairId=${deviceToView.id}`);
+          const refetchData = await refetch.json();
+          setDeviceSmsLogs(refetchData.history || []);
+        }
+      } else {
+        alert(data.error || 'Failed to retry SMS notification.');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Network error while retrying SMS.');
+    } finally {
+      setRetryingSmsId(null);
+    }
+  };
 
   // Workbench Modal State
   const [selectedDevice, setSelectedDevice] = useState<DeviceItem | null>(null);
@@ -809,6 +854,7 @@ export default function TechnicianMonitoring() {
     formData.append('technician', editTechnician || technician?.name || selectedDevice.technician || 'Branch Technician');
     if (editRepairCost !== null) formData.append('repairCost', editRepairCost);
     if (editDownpayment !== null) formData.append('downpayment', editDownpayment);
+    if (editCustomerPhone) formData.append('customerPhone', editCustomerPhone);
 
     if (editProgress === 'Completed') {
       formData.append('status', 'Completed');
@@ -881,11 +927,26 @@ export default function TechnicianMonitoring() {
           image: updatedDevice.image || d.image,
           status: updatedDevice.status || (editProgress === 'Completed' ? 'Completed' : 'Active')
         } : d));
-        setModalSuccess('Repair details updated successfully!');
+        let feedbackMsg = 'Repair details updated successfully!';
+        let closeDelay = 900;
+
+        if (updatedDevice.smsResult) {
+          if (updatedDevice.smsResult.sent) {
+            feedbackMsg = `Repair updated & SMS notification sent to ${updatedDevice.smsResult.recipient} (${updatedDevice.smsResult.network})!`;
+            closeDelay = 1800;
+          } else if (updatedDevice.smsResult.skipped) {
+            feedbackMsg = 'Repair details updated successfully.';
+          } else if (updatedDevice.smsResult.error) {
+            feedbackMsg = `Repair updated successfully. (SMS Note: ${updatedDevice.smsResult.error})`;
+            closeDelay = 2200;
+          }
+        }
+
+        setModalSuccess(feedbackMsg);
         setTimeout(() => {
           setIsModalOpen(false);
           fetchProfileAndDevices();
-        }, 800);
+        }, closeDelay);
       } else {
         const text = await res.text();
         let errMsg = text;
@@ -1577,6 +1638,74 @@ export default function TechnicianMonitoring() {
                   </div>
                 </div>
               )}
+
+              
+              {/* SMS Notification Log */}
+              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageSquare size={14} className="text-purple-600" />
+                    SMS Notification History ({deviceSmsLogs.length})
+                  </span>
+                  {isLoadingSmsLogs && (
+                    <span className="text-[11px] text-slate-500 font-medium">Checking SMS history...</span>
+                  )}
+                </div>
+
+                {isLoadingSmsLogs ? (
+                  <div className="py-4 text-center text-xs text-slate-400">Loading SMS records...</div>
+                ) : deviceSmsLogs.length === 0 ? (
+                  <div className="py-3 text-center text-xs text-slate-400 italic">
+                    No SMS notifications have been triggered for this repair yet. (SMS is automatically sent when Repair Progress changes).
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {deviceSmsLogs.map((log: any) => (
+                      <div key={log.id} className="p-3 bg-white rounded-xl border border-slate-200 text-xs shadow-xs space-y-1.5">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                            <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold border border-purple-200">
+                              {log.previousStatus} &rarr; {log.newStatus}
+                            </span>
+                            <span className="text-slate-500 font-normal text-[11px]">
+                              {log.recipientNumber} {log.network ? `(${log.network})` : ''}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(log.sentAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              log.sendingStatus === 'Submitted'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : 'bg-rose-100 text-rose-800 border border-rose-200'
+                            }`}>
+                              {log.sendingStatus}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg font-mono leading-relaxed border border-slate-100">
+                          {log.message}
+                        </p>
+                        {log.errorMessage && (
+                          <div className="text-[11px] text-rose-600 font-medium flex items-center justify-between gap-2 pt-1">
+                            <span>Error: {log.errorMessage}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRetryDeviceSms(log.id)}
+                              disabled={retryingSmsId === log.id}
+                              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-bold transition-all disabled:opacity-50 cursor-pointer border-none flex items-center gap-1"
+                            >
+                              <Send size={10} />
+                              {retryingSmsId === log.id ? 'Retrying...' : 'Retry SMS'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="flex justify-end pt-3 border-t border-gray-100">
                 <button
