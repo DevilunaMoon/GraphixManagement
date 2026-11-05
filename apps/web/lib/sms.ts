@@ -260,8 +260,56 @@ export interface RepairStatusSmsResult {
  *
  * Never throws an exception that would roll back the repair update.
  */
+
+let isTableInitialized = false;
+
+/**
+ * Ensures the RepairSmsHistory table exists in the target database (Contabo/PostgreSQL).
+ * Runs an idempotent CREATE TABLE IF NOT EXISTS check so Contabo VPS deployments
+ * require zero manual database setup.
+ */
+export async function ensureSmsHistoryTableExists(): Promise<void> {
+  if (isTableInitialized) return;
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "RepairSmsHistory" (
+        "id" TEXT NOT NULL,
+        "repairId" TEXT NOT NULL,
+        "repairReference" TEXT,
+        "customerId" TEXT,
+        "customerName" TEXT,
+        "recipientNumber" TEXT NOT NULL,
+        "network" TEXT,
+        "technicianName" TEXT,
+        "branch" TEXT NOT NULL DEFAULT 'Tagoloan',
+        "previousStatus" TEXT NOT NULL,
+        "newStatus" TEXT NOT NULL,
+        "message" TEXT NOT NULL,
+        "semaphoreMessageId" TEXT,
+        "sendingStatus" TEXT NOT NULL DEFAULT 'Submitted',
+        "errorMessage" TEXT,
+        "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT "RepairSmsHistory_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "RepairSmsHistory_repairId_fkey" FOREIGN KEY ("repairId") REFERENCES "RepairRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "RepairSmsHistory_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS "RepairSmsHistory_repairId_idx" ON "RepairSmsHistory"("repairId");
+      CREATE INDEX IF NOT EXISTS "RepairSmsHistory_branch_idx" ON "RepairSmsHistory"("branch");
+      CREATE INDEX IF NOT EXISTS "RepairSmsHistory_sentAt_idx" ON "RepairSmsHistory"("sentAt");
+      CREATE INDEX IF NOT EXISTS "RepairSmsHistory_recipientNumber_idx" ON "RepairSmsHistory"("recipientNumber");
+      CREATE INDEX IF NOT EXISTS "RepairSmsHistory_sendingStatus_idx" ON "RepairSmsHistory"("sendingStatus");
+    `);
+    isTableInitialized = true;
+  } catch (err) {
+    console.warn('[SMS] Contabo auto-migration check notice:', err);
+  }
+}
+
 export async function triggerRepairStatusSms(params: RepairStatusSmsTriggerParams): Promise<RepairStatusSmsResult> {
   const { repairId, previousProgress, newProgress, technicianName, explicitCustomerPhone } = params;
+  await ensureSmsHistoryTableExists();
 
   // 1. Strict status change check: do not send if status did not change
   const prevCanonical = canonicalizeRepairStatus(previousProgress || '');

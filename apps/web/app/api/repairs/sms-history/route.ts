@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
+import { ensureSmsHistoryTableExists } from '../../../../lib/sms';
 
 export async function GET(req: Request) {
   try {
@@ -8,6 +9,9 @@ export async function GET(req: Request) {
     if (!session || !['SUPERADMIN', 'ADMIN', 'TECHNICIAN'].includes(session.role)) {
       return NextResponse.json({ error: 'Unauthorized: internal access only' }, { status: 401 });
     }
+
+    await ensureSmsHistoryTableExists();
+    
 
     const { searchParams } = new URL(req.url);
     const repairId = searchParams.get('repairId');
