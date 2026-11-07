@@ -121,31 +121,37 @@ export default function TechnicianProfile({ user }: { user?: any }) {
             </div>
 
             {/* Email field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
                 Email Address
                 <HelpCircle size={14} className="text-gray-400 cursor-help" />
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-gray-900 text-white text-xs px-3 py-2 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-25 text-center shadow-xl leading-normal font-medium">
                   Your registered staff email cannot be updated directly.
                 </div>
               </label>
-              <div className="flex-1 text-gray-800 font-semibold pl-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                <span>{user?.email || 'tech@graphix.com'}</span>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Primary</span>
+              <div className="flex-1 h-11 bg-gray-50/90 border-2 border-gray-200 rounded-xl px-4 flex items-center justify-between gap-2 overflow-hidden shadow-2xs">
+                <span className="truncate min-w-0 text-sm font-semibold text-gray-800" title={user?.email || 'tech@graphix.com'}>
+                  {user?.email || 'tech@graphix.com'}
+                </span>
+                <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-[#bd00ff] px-2 py-0.5 rounded-md border border-purple-200/80">
+                  Primary
+                </span>
               </div>
             </div>
 
             {/* Phone field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0">
                 Phone Number
               </label>
-              <div className="flex-1 flex gap-4 items-center pl-1">
-                <span className="text-gray-900 font-semibold">{phone || 'None'}</span>
+              <div className="flex-1 h-11 border-2 border-gray-200 bg-white rounded-xl px-4 flex items-center justify-between gap-2 focus-within:border-[#bd00ff] transition-colors shadow-2xs">
+                <span className={`text-sm font-semibold truncate ${phone ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                  {phone || 'No phone number added'}
+                </span>
                 <button 
                   type="button"
                   onClick={() => setIsPhoneModalOpen(true)} 
-                  className="text-[#bd00ff] hover:underline bg-transparent border-none cursor-pointer font-bold text-sm p-0"
+                  className="shrink-0 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-xs uppercase tracking-wider border border-purple-200/70 transition-colors cursor-pointer"
                 >
                   Change
                 </button>
