@@ -203,6 +203,7 @@ export default function AdminRepairTransactions({ type = "full" }: { type?: "ful
                   setFilterDate(val);
                   setCurrentPage(1);
                 }}
+                clearable
                 className="w-full h-[48px] px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus-within:border-purple-500 focus-within:bg-white outline-none transition-all text-sm font-semibold text-gray-600 shadow-sm"
                 placeholder="Filter date..."
               />

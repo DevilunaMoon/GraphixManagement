@@ -294,6 +294,7 @@ export default function AdminFeedback() {
                 setCurrentPage(1);
               }}
               placeholder="Filter by Date"
+              clearable
               className="w-full px-3.5 py-2.5 bg-gray-50/80 border border-gray-200 hover:border-[#BF00FF] rounded-xl text-xs sm:text-sm font-semibold text-gray-800 transition-all flex items-center justify-between shadow-2xs"
             />
           </div>
