@@ -142,7 +142,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
             <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3 text-amber-900 text-xs sm:text-sm font-semibold animate-in fade-in">
               <div className="flex items-center gap-2.5">
                 <Phone size={18} className="text-amber-600 shrink-0" />
-                <span>Please add and save your phone number below to unlock the <strong>Request Repair</strong> feature.</span>
+                <span>Please add and save your phone number below to receive real-time SMS progress updates for your repairs.</span>
               </div>
               <button 
                 type="button" 

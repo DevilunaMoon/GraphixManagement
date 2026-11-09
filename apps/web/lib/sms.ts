@@ -382,12 +382,19 @@ export async function triggerRepairStatusSms(params: RepairStatusSmsTriggerParam
   const branchName = repair.branch || 'Tagoloan';
 
   // 5. Resolve recipient phone number
-  const rawPhone = (
-    explicitCustomerPhone || 
-    parsedHistory?.customerPhone || 
-    repair.user?.phone || 
-    ''
-  ).trim();
+  // Checks whether SMS progress should route to Emergency Contact (customer's only phone in repair)
+  // or to the Customer's Primary Phone (customer has another active device)
+  let rawPhone = '';
+  if (explicitCustomerPhone) {
+    rawPhone = explicitCustomerPhone;
+  } else if (parsedHistory?.smsRecipient === 'EMERGENCY_CONTACT' && parsedHistory?.emergencyContactPhone) {
+    rawPhone = parsedHistory.emergencyContactPhone;
+  } else if (parsedHistory?.smsRecipient === 'CUSTOMER_PHONE' && (parsedHistory?.customerPhone || repair.user?.phone)) {
+    rawPhone = parsedHistory.customerPhone || repair.user?.phone;
+  } else {
+    rawPhone = parsedHistory?.customerPhone || parsedHistory?.emergencyContactPhone || repair.user?.phone || '';
+  }
+  rawPhone = (rawPhone || '').trim();
 
   const normalizedPhone = normalizePhilippineNumber(rawPhone);
   const network = detectTelcoNetwork(normalizedPhone);

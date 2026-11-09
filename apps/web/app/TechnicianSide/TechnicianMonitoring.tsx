@@ -8,7 +8,7 @@ import {
   Wrench, Search, RefreshCw, CheckCircle2, AlertCircle, Clock, 
   Smartphone, User, Camera, FileText, ChevronRight, X, ChevronLeft, 
   UploadCloud, Plus, Trash2, Cpu, CheckCircle, ShieldAlert, Receipt, Pencil, Eye,
-  Building2, ChevronDown, Upload, Check, Lock, Circle, Activity
+  Building2, ChevronDown, Upload, Check, Lock, Circle, Activity, PhoneCall
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
@@ -94,6 +94,10 @@ interface StructuredRepairDetails {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  emergencyContactPhone?: string;
+  emergencyContactName?: string;
+  smsRecipient?: 'CUSTOMER_PHONE' | 'EMERGENCY_CONTACT';
+  hasExtraDevice?: boolean;
   notes?: string;
   photos?: string[];
   submittedAt?: string;
@@ -263,6 +267,9 @@ export default function TechnicianMonitoring() {
   const [editOwnerName, setEditOwnerName] = useState('');
   const [editCustomerPhone, setEditCustomerPhone] = useState('');
   const [editCustomerEmail, setEditCustomerEmail] = useState('');
+  const [editEmergencyPhone, setEditEmergencyPhone] = useState('');
+  const [editEmergencyName, setEditEmergencyName] = useState('');
+  const [editSmsRecipient, setEditSmsRecipient] = useState<'CUSTOMER_PHONE' | 'EMERGENCY_CONTACT'>('CUSTOMER_PHONE');
   const [editProgress, setEditProgress] = useState('Accepted');
   const [initialEditProgress, setInitialEditProgress] = useState('Accepted');
   const [editCause, setEditCause] = useState('');
@@ -323,6 +330,9 @@ export default function TechnicianMonitoring() {
   const [addOwnerName, setAddOwnerName] = useState('');
   const [addCustomerPhone, setAddCustomerPhone] = useState('');
   const [addCustomerEmail, setAddCustomerEmail] = useState('');
+  const [addEmergencyPhone, setAddEmergencyPhone] = useState('');
+  const [addEmergencyName, setAddEmergencyName] = useState('');
+  const [addSmsRecipient, setAddSmsRecipient] = useState<'CUSTOMER_PHONE' | 'EMERGENCY_CONTACT'>('CUSTOMER_PHONE');
   const [addUserId, setAddUserId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [addProgress, setAddProgress] = useState('Diagnostic');
@@ -477,6 +487,10 @@ export default function TechnicianMonitoring() {
       customerName: addOwnerName,
       customerEmail: addCustomerEmail,
       customerPhone: addCustomerPhone,
+      emergencyContactPhone: addEmergencyPhone.trim() || undefined,
+      emergencyContactName: addEmergencyName.trim() || undefined,
+      smsRecipient: addSmsRecipient,
+      hasExtraDevice: addSmsRecipient === 'CUSTOMER_PHONE',
       notes: addRepairHistory.trim(),
       submittedAt: new Date().toISOString()
     };
@@ -515,6 +529,9 @@ export default function TechnicianMonitoring() {
         setAddOwnerName('');
         setAddCustomerEmail('');
         setAddCustomerPhone('');
+        setAddEmergencyPhone('');
+        setAddEmergencyName('');
+        setAddSmsRecipient('CUSTOMER_PHONE');
         setAddUserId(null);
         setAddProgress('Diagnostic');
         setAddCause('');
@@ -682,6 +699,9 @@ export default function TechnicianMonitoring() {
       setEditHasPhysicalDamage(parsed.hasPhysicalDamage || 'No');
       setEditCustomerPhone(parsed.customerPhone || device.user?.phone || '');
       setEditCustomerEmail(parsed.customerEmail || device.user?.email || '');
+      setEditEmergencyPhone(parsed.emergencyContactPhone || '');
+      setEditEmergencyName(parsed.emergencyContactName || '');
+      setEditSmsRecipient(parsed.smsRecipient || 'CUSTOMER_PHONE');
       setEditBranch(parsed.branch || device.branch || 'Tagoloan');
 
       const photosList: string[] = [];
@@ -707,6 +727,9 @@ export default function TechnicianMonitoring() {
       setEditHasPhysicalDamage('No');
       setEditCustomerPhone(device.user?.phone || '');
       setEditCustomerEmail(device.user?.email || '');
+      setEditEmergencyPhone('');
+      setEditEmergencyName('');
+      setEditSmsRecipient('CUSTOMER_PHONE');
       setEditBranch(device.branch || 'Tagoloan');
       setEditExistingPhotos(device.image ? [device.image] : []);
     }
@@ -878,6 +901,10 @@ export default function TechnicianMonitoring() {
       customerName: editOwnerName,
       customerEmail: editCustomerEmail,
       customerPhone: editCustomerPhone,
+      emergencyContactPhone: editEmergencyPhone.trim() || undefined,
+      emergencyContactName: editEmergencyName.trim() || undefined,
+      smsRecipient: editSmsRecipient,
+      hasExtraDevice: editSmsRecipient === 'CUSTOMER_PHONE',
       notes: editRepairHistory.trim(),
       photos: editExistingPhotos,
       submittedAt: new Date().toISOString()
@@ -1524,16 +1551,28 @@ export default function TechnicianMonitoring() {
               </div>
 
               {/* Customer Contact & Account Info */}
-              {(parsed?.customerEmail || parsed?.customerPhone || deviceToView.ownerName || deviceToView.user?.email || deviceToView.user?.phone) && (
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                    <User size={14} className="text-[#bd00ff]" />
-                    Customer Information (Auto-retrieved)
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-700">
+              {(parsed?.customerEmail || parsed?.customerPhone || parsed?.emergencyContactPhone || deviceToView.ownerName || deviceToView.user?.email || deviceToView.user?.phone) && (
+                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
+                      <User size={14} className="text-[#bd00ff]" />
+                      Customer Information (Auto-retrieved)
+                    </span>
+                    {parsed?.smsRecipient === 'EMERGENCY_CONTACT' ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                        🚨 SMS Target: Emergency Contact (Only phone in repair)
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
+                        📱 SMS Target: Customer Primary Phone (Has extra device)
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-700">
                     <div><strong className="text-black">Full Name:</strong> {deviceToView.ownerName || parsed?.customerName || deviceToView.user?.name || 'Walk-in Customer'}</div>
+                    <div><strong className="text-black">Primary Phone:</strong> {parsed?.customerPhone || deviceToView.user?.phone || 'Not provided'}</div>
+                    <div><strong className="text-black">Emergency Contact:</strong> {parsed?.emergencyContactPhone ? `${parsed.emergencyContactPhone} ${parsed.emergencyContactName ? `(${parsed.emergencyContactName})` : ''}` : 'None provided'}</div>
                     <div><strong className="text-black">Email:</strong> {parsed?.customerEmail || deviceToView.user?.email || 'Not provided'}</div>
-                    <div><strong className="text-black">Phone:</strong> {parsed?.customerPhone || deviceToView.user?.phone || 'Not provided'}</div>
                   </div>
                 </div>
               )}
@@ -1813,6 +1852,27 @@ export default function TechnicianMonitoring() {
                     />
                   </div>
                 </div>
+
+                {(editEmergencyPhone || editSmsRecipient) && (
+                  <div className="pt-2 border-t border-gray-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="text-gray-700">
+                      <strong className="text-black">Emergency Contact:</strong>{' '}
+                      {editEmergencyPhone ? `${editEmergencyPhone} ${editEmergencyName ? `(${editEmergencyName})` : ''}` : 'None provided'}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-gray-500">SMS Progress Target:</span>
+                      {editSmsRecipient === 'EMERGENCY_CONTACT' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                          🚨 Emergency Contact (Only phone in repair)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
+                          📱 Customer Primary Phone (Has extra device)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 2. Branch & Device Info Section */}
@@ -2431,6 +2491,111 @@ export default function TechnicianMonitoring() {
                       placeholder="e.g. 09171234567" 
                       className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm" 
                     />
+                  </div>
+                </div>
+
+                {/* Emergency Contact & SMS Recipient Selector */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200/80">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700 flex items-center justify-between">
+                      <span>Emergency Contact Phone</span>
+                      <span className="text-[11px] text-gray-500 font-normal">If only 1 phone is owned</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      value={addEmergencyPhone} 
+                      onChange={(e) => setAddEmergencyPhone(e.target.value)} 
+                      placeholder="e.g. 09189876543" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm" 
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-semibold text-xs text-gray-700">Emergency Contact Name / Relationship (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={addEmergencyName} 
+                      onChange={(e) => setAddEmergencyName(e.target.value)} 
+                      placeholder="e.g. Maria Picardal (Spouse / Parent)" 
+                      className="h-10 border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl px-4 outline-none transition-colors text-black text-sm" 
+                    />
+                  </div>
+                </div>
+
+                {/* SMS Progress Notification Target Selection */}
+                <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-bold text-gray-900 uppercase tracking-wide flex items-center gap-1.5">
+                      <PhoneCall size={14} className="text-[#bd00ff]" />
+                      SMS Progress Notification Recipient
+                    </span>
+                    <span className="text-[11px] text-purple-700 font-medium">
+                      Select which number receives automated SMS progress updates
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label 
+                      onClick={() => setAddSmsRecipient('CUSTOMER_PHONE')}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        addSmsRecipient === 'CUSTOMER_PHONE' 
+                          ? 'border-[#bd00ff] bg-white shadow-sm' 
+                          : 'border-purple-200/60 bg-white/60 hover:bg-white'
+                      }`}
+                    >
+                      <input 
+                        type="radio" 
+                        name="technicianAddSmsRecipient" 
+                        checked={addSmsRecipient === 'CUSTOMER_PHONE'} 
+                        onChange={() => setAddSmsRecipient('CUSTOMER_PHONE')}
+                        className="mt-1 accent-[#bd00ff]" 
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-black flex items-center gap-1">
+                          Customer Primary Phone
+                        </span>
+                        <span className="text-[11px] text-gray-500">Customer has an extra device/phone with them</span>
+                        <span className="text-xs font-semibold text-purple-700 mt-1 font-mono">
+                          {addCustomerPhone || 'No number entered'}
+                        </span>
+                      </div>
+                    </label>
+
+                    <label 
+                      onClick={() => setAddSmsRecipient('EMERGENCY_CONTACT')}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        addSmsRecipient === 'EMERGENCY_CONTACT' 
+                          ? 'border-[#bd00ff] bg-white shadow-sm' 
+                          : 'border-purple-200/60 bg-white/60 hover:bg-white'
+                      }`}
+                    >
+                      <input 
+                        type="radio" 
+                        name="technicianAddSmsRecipient" 
+                        checked={addSmsRecipient === 'EMERGENCY_CONTACT'} 
+                        onChange={() => setAddSmsRecipient('EMERGENCY_CONTACT')}
+                        className="mt-1 accent-[#bd00ff]" 
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-black flex items-center gap-1">
+                          Emergency Contact Number
+                        </span>
+                        <span className="text-[11px] text-gray-500">Only 1 phone (leaving it in store for repair)</span>
+                        <span className="text-xs font-semibold text-amber-700 mt-1 font-mono">
+                          {addEmergencyPhone || 'No number entered'} {addEmergencyName ? `(${addEmergencyName})` : ''}
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  <div className="text-[11px] font-medium text-gray-600 flex items-center gap-1.5 pt-1">
+                    <span className="w-2 h-2 rounded-full bg-[#bd00ff]"></span>
+                    Repair progress updates (Diagnostic, In-Progress, Completed) will be dispatched to:{' '}
+                    <strong className="text-black">
+                      {addSmsRecipient === 'EMERGENCY_CONTACT'
+                        ? (addEmergencyPhone ? `Emergency Contact (${addEmergencyPhone})` : 'Emergency Contact (⚠️ Number not entered yet)')
+                        : (addCustomerPhone ? `Customer Primary (${addCustomerPhone})` : 'Customer Primary (⚠️ Number not entered yet)')}
+                    </strong>
                   </div>
                 </div>
               </div>
