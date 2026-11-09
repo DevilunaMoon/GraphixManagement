@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, ShoppingCart, CheckCircle, Star, ChevronDown, MapPin, Clock } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { 
+  ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, ShoppingCart, 
+  CheckCircle, Star, ChevronDown, MapPin, Clock, Lock, FileText, 
+  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar
+} from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CountdownTimer from '../../components/Common/CountdownTimer';
 
@@ -34,13 +38,47 @@ function CustomerProductInfoContent() {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  // Installment & Send Requirements States
+  const [installmentProvider, setInstallmentProvider] = useState<string>('');
+  const [isRequirementsModalOpen, setIsRequirementsModalOpen] = useState(false);
+  const [reqName, setReqName] = useState('');
+  const [reqAge, setReqAge] = useState('');
+  const [reqPhone, setReqPhone] = useState('');
+  const [reqIdFile, setReqIdFile] = useState<File | null>(null);
+  const [reqIdPreview, setReqIdPreview] = useState<string | null>(null);
+  const [isSubmittingReq, setIsSubmittingReq] = useState(false);
+  const [reqSuccess, setReqSuccess] = useState(false);
+  const [reqError, setReqError] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setUserProfile(data);
+          if (data.name) setReqName(data.name);
+          if (data.phone) setReqPhone(data.phone);
+          if (data.dateOfBirth) {
+            const birth = new Date(data.dateOfBirth);
+            if (!isNaN(birth.getTime())) {
+              const ageCalc = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+              if (ageCalc >= 18) setReqAge(ageCalc.toString());
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const brandName = useMemo(() => {
     if (!product) return 'Graphix';
     return product.category?.name || product.name.split(' ')[0] || 'Graphix';
   }, [product]);
 
   useEffect(() => {
-    if (showSuccessModal) {
+    if (showSuccessModal || isRequirementsModalOpen) {
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
       const scrollables = document.querySelectorAll('main, .overflow-y-auto');
@@ -65,7 +103,7 @@ function CustomerProductInfoContent() {
         (el as HTMLElement).style.overflow = '';
       });
     };
-  }, [showSuccessModal]);
+  }, [showSuccessModal, isRequirementsModalOpen]);
 
   const branchData = useMemo(() => {
     if (!product) return null;
@@ -139,6 +177,97 @@ function CustomerProductInfoContent() {
       alert('Error adding to cart.');
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setReqIdFile(file);
+      const url = URL.createObjectURL(file);
+      setReqIdPreview(url);
+      setReqError(null);
+    }
+  };
+
+  const handleResetReqForm = () => {
+    setReqIdFile(null);
+    if (reqIdPreview) {
+      URL.revokeObjectURL(reqIdPreview);
+      setReqIdPreview(null);
+    }
+    setReqSuccess(false);
+    setReqError(null);
+    setIsRequirementsModalOpen(false);
+  };
+
+  const handleSubmitRequirements = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setReqError(null);
+
+    if (!reqIdFile) {
+      setReqError('Please upload an image of your valid ID.');
+      return;
+    }
+    if (!reqName.trim()) {
+      setReqError('Please enter your full legal name.');
+      return;
+    }
+    const ageNum = parseInt(reqAge, 10);
+    if (!ageNum || ageNum < 18) {
+      setReqError('You must be at least 18 years old to apply for installment.');
+      return;
+    }
+    if (!reqPhone.trim()) {
+      setReqError('Please provide your active phone number.');
+      return;
+    }
+
+    setIsSubmittingReq(true);
+    try {
+      // 1. Upload ID Image
+      const formData = new FormData();
+      formData.append('file', reqIdFile);
+      formData.append('folder', 'installment-ids');
+
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload Valid ID image. Please try again.');
+      }
+      const uploadData = await uploadRes.json();
+      const validIdUrl = uploadData.url;
+
+      // 2. Submit Application
+      const appRes = await fetch('/api/customer/installment-requirements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: reqName.trim(),
+          age: ageNum,
+          phone: reqPhone.trim(),
+          validIdUrl,
+          provider: installmentProvider,
+          deviceId: targetDeviceId,
+          deviceName: product?.name || 'Selected Device',
+          branch: selectedBranch,
+        }),
+      });
+
+      const appData = await appRes.json();
+      if (!appRes.ok) {
+        throw new Error(appData.error || 'Failed to submit requirements.');
+      }
+
+      setReqSuccess(true);
+    } catch (err: any) {
+      console.error("Installment submission error:", err);
+      setReqError(err.message || 'An unexpected error occurred while submitting.');
+    } finally {
+      setIsSubmittingReq(false);
     }
   };
   
@@ -378,6 +507,45 @@ function CustomerProductInfoContent() {
                     <span className={`w-1.5 h-1.5 rounded-full ${currentStock > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
                     {currentStock > 0 ? `Available (${currentStock} in stock)` : 'Out of Stock'}
                   </span>
+
+                  {/* Installment Provider Dropdown (Skyro / Home Credit) */}
+                  <div className="relative inline-flex items-center">
+                    <select
+                      id="installmentProviderSelect"
+                      value={installmentProvider}
+                      onChange={(e) => setInstallmentProvider(e.target.value)}
+                      className="bg-purple-50/70 border border-purple-200 hover:border-[#8b00cc] text-[#8b00cc] font-black text-xs rounded-xl px-3 py-1 pr-7 appearance-none outline-none transition-all cursor-pointer shadow-2xs focus:ring-2 focus:ring-[#8b00cc]/20"
+                    >
+                      <option value="" className="text-gray-500 font-semibold">Installment Option</option>
+                      <option value="Skyro" className="text-black font-semibold">Skyro</option>
+                      <option value="Home Credit" className="text-black font-semibold">Home Credit</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-[#8b00cc]">
+                      <ChevronDown size={14} strokeWidth={2.5} />
+                    </div>
+                  </div>
+
+                  {/* Send Requirements Button (Locked until Skyro or Home Credit is chosen) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (installmentProvider) {
+                        setReqError(null);
+                        setReqSuccess(false);
+                        setIsRequirementsModalOpen(true);
+                      }
+                    }}
+                    disabled={!installmentProvider}
+                    title={!installmentProvider ? "Select Skyro or Home Credit to unlock" : "Submit installment requirements"}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                      installmentProvider
+                        ? 'bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
+                        : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    {installmentProvider ? <FileText size={13} strokeWidth={2.5} /> : <Lock size={12} />}
+                    <span>Send Requirements</span>
+                  </button>
                 </div>
               </div>
 
@@ -640,6 +808,225 @@ function CustomerProductInfoContent() {
             </div>
             <h3 className="text-2xl font-black text-gray-900 m-0 text-center tracking-tight">Added to Cart!</h3>
             <p className="text-gray-500 text-center font-bold text-sm m-0">Your item has been successfully added to your shopping cart.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Send Requirements Modal */}
+      {isRequirementsModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain overflow-y-auto"
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 border border-purple-100 my-8 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button 
+              type="button"
+              onClick={handleResetReqForm}
+              className="absolute top-5 right-5 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer border-none bg-transparent"
+              title="Close"
+            >
+              <X size={20} />
+            </button>
+
+            {reqSuccess ? (
+              <div className="flex flex-col items-center text-center gap-4 py-4">
+                <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center border-2 border-emerald-200 shadow-sm">
+                  <CheckCircle size={44} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-50 text-[#8b00cc] border border-purple-200 mb-2">
+                    <Sparkles size={13} />
+                    {installmentProvider} Installment Application
+                  </span>
+                  <h3 className="text-2xl font-black text-gray-900 m-0 tracking-tight">Requirements Submitted!</h3>
+                  <p className="text-gray-600 font-medium text-sm mt-2 leading-relaxed">
+                    Thank you, <strong className="text-gray-900">{reqName}</strong>! Your requirements for <strong className="text-purple-900">{product?.name}</strong> have been forwarded to the <strong className="text-gray-900">{selectedBranch} Branch</strong> team.
+                  </p>
+                  <p className="text-xs text-gray-500 font-semibold mt-2">
+                    Our installment officer will review your Valid ID and contact you at <strong className="text-black">{reqPhone}</strong> within 24 hours.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetReqForm}
+                  className="w-full mt-2 py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-extrabold rounded-xl shadow-md cursor-pointer border-none transition-all active:scale-95"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="border-b border-gray-100 pb-4 pr-8">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider bg-purple-100 text-[#8b00cc] border border-purple-200">
+                      {installmentProvider}
+                    </span>
+                    <span className="text-xs font-bold text-gray-500">
+                      • {selectedBranch} Branch
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0 mt-1.5 tracking-tight">
+                    Send Installment Requirements
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium m-0 mt-0.5">
+                    Submit required details for <strong className="text-gray-800">{product?.name}</strong> pre-approval.
+                  </p>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSubmitRequirements} className="flex flex-col gap-4">
+                  {/* Error Alert */}
+                  {reqError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+                      <AlertCircle size={16} className="shrink-0 text-rose-500" />
+                      <span>{reqError}</span>
+                    </div>
+                  )}
+
+                  {/* 1. Upload Valid ID */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                      <span>1. Upload Image of your Valid ID <span className="text-rose-500">*</span></span>
+                      <span className="text-[10px] text-gray-400 font-normal">Passport, Driver's License, UMID, etc.</span>
+                    </label>
+
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      accept="image/*"
+                      onChange={handleIdFileChange}
+                      className="hidden" 
+                    />
+
+                    {reqIdPreview ? (
+                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/50 border-2 border-purple-200 relative group">
+                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-purple-100 shrink-0">
+                          <img src={reqIdPreview} alt="Valid ID Preview" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black text-gray-900 truncate m-0">{reqIdFile?.name}</p>
+                          <p className="text-[11px] text-gray-500 font-semibold m-0 mt-0.5">
+                            {reqIdFile ? `${(reqIdFile.size / 1024).toFixed(1)} KB` : ''} • Image Attached
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-[#8b00cc] font-bold text-xs border border-purple-200 transition-colors cursor-pointer shrink-0"
+                        >
+                          Change ID
+                        </button>
+                      </div>
+                    ) : (
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-purple-200 hover:border-[#8b00cc] bg-purple-50/30 hover:bg-purple-50/60 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-purple-100 text-[#8b00cc] flex items-center justify-center group-hover:scale-105 transition-transform">
+                          <UploadCloud size={20} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-extrabold text-gray-900 m-0">Click or Drag to Upload Valid ID</p>
+                          <p className="text-[11px] text-gray-500 font-medium m-0 mt-0.5">PNG, JPG, or WEBP up to 5MB</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. Your Name */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                      2. Your Full Legal Name <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input 
+                        type="text"
+                        required
+                        value={reqName}
+                        onChange={(e) => setReqName(e.target.value)}
+                        placeholder="e.g. Juan Dela Cruz"
+                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* 3. Your Age */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                        3. Your Age <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="number"
+                          required
+                          min="18"
+                          max="100"
+                          value={reqAge}
+                          onChange={(e) => setReqAge(e.target.value)}
+                          placeholder="e.g. 25"
+                          className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4. Your Phone Number */}
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                        4. Phone Number <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input 
+                          type="tel"
+                          required
+                          value={reqPhone}
+                          onChange={(e) => setReqPhone(e.target.value)}
+                          placeholder="e.g. 09123456789"
+                          className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5 mt-2">
+                    <button
+                      type="button"
+                      onClick={handleResetReqForm}
+                      disabled={isSubmittingReq}
+                      className="px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingReq}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-extrabold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-1.5 active:scale-95 border-none"
+                    >
+                      {isSubmittingReq ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Submitting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck size={14} />
+                          <span>Submit Requirements</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}

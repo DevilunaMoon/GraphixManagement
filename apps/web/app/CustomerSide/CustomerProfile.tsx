@@ -186,10 +186,12 @@ export default function CustomerProfile({ user }: { user?: any }) {
                     Email address is associated with your account login
                   </div>
                 </label>
-                <div className="flex-1 flex items-center gap-2">
-                  <div className="w-full h-11 border border-gray-100 bg-gray-50/80 rounded-xl px-4 text-gray-700 font-semibold text-xs sm:text-sm flex items-center justify-between">
-                    <span className="truncate">{user?.email || 'No email attached'}</span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Read-only</span>
+                <div className="flex-1 w-full">
+                  <div className="w-full h-11 border border-purple-100 bg-gray-50/80 rounded-xl px-4 text-gray-700 font-semibold text-xs sm:text-sm flex items-center justify-between gap-2 shadow-2xs">
+                    <span className="truncate min-w-0" title={user?.email || 'No email attached'}>{user?.email || 'No email attached'}</span>
+                    <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-[#8b00cc] px-2 py-0.5 rounded-md border border-purple-200/80">
+                      Read-only
+                    </span>
                   </div>
                 </div>
               </div>
@@ -199,22 +201,22 @@ export default function CustomerProfile({ user }: { user?: any }) {
                 <label className="sm:w-[120px] text-left sm:text-right text-gray-600 font-bold text-xs sm:text-sm shrink-0">
                   Phone Number
                 </label>
-                <div className="flex-1 flex gap-3 items-center">
-                  <div className="flex-1 h-11 border border-purple-100 bg-gray-50/60 rounded-xl px-4 text-gray-900 font-semibold text-xs sm:text-sm flex items-center justify-between">
-                    <span className={phone ? "text-gray-900" : "text-gray-400 italic"}>
+                <div className="flex-1 w-full">
+                  <div className="w-full h-11 border border-purple-100 bg-gray-50/60 rounded-xl px-4 flex items-center justify-between gap-2 focus-within:border-[#8b00cc] focus-within:ring-2 focus-within:ring-purple-200 shadow-2xs transition-all">
+                    <span className={`text-xs sm:text-sm font-semibold truncate ${phone ? "text-gray-900" : "text-gray-400 italic"}`}>
                       {phone || "No phone number added"}
                     </span>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setNewPhone(phone);
+                        setIsPhoneModalOpen(true);
+                      }} 
+                      className="shrink-0 px-3 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#8b00cc] hover:text-[#7a00b3] font-bold text-xs uppercase tracking-wider border border-purple-200/80 cursor-pointer transition-colors"
+                    >
+                      {phone ? 'Change' : '+ Add Phone'}
+                    </button>
                   </div>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setNewPhone(phone);
-                      setIsPhoneModalOpen(true);
-                    }} 
-                    className="px-4 h-11 rounded-xl bg-purple-50 hover:bg-purple-100 text-[#8b00cc] hover:text-[#7a00b3] font-bold text-xs border border-purple-200/80 cursor-pointer transition-colors shrink-0"
-                  >
-                    {phone ? 'Change' : '+ Add Phone'}
-                  </button>
                 </div>
               </div>
 

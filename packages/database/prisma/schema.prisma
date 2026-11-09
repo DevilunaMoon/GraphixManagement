@@ -38,6 +38,7 @@ model User {
   customerQuestions CustomerQuestion[]
   questionReplies   CustomerQuestionReply[]
   repairSmsHistory  RepairSmsHistory[]
+  installmentApplications InstallmentApplication[]
 
   @@index([name])
   @@index([branch])
@@ -73,6 +74,7 @@ model Device {
   branchStocks     BranchStock[]
   deviceUnits      DeviceUnit[]
   stockMovements   StockMovement[]
+  installmentApplications InstallmentApplication[]
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
@@ -485,4 +487,31 @@ model RepairSmsHistory {
   @@index([sentAt])
   @@index([recipientNumber])
   @@index([sendingStatus])
+}
+
+model InstallmentApplication {
+  id            String   @id @default(cuid())
+  customerId    String?
+  customerName  String
+  customerAge   Int
+  customerPhone String
+  validIdUrl    String
+  provider      String   // "Skyro" | "Home Credit"
+  deviceId      String?
+  deviceName    String
+  branch        String   @default("Tagoloan")
+  status        String   @default("Pending") // "Pending" | "Contacted" | "Approved" | "Declined"
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer      User?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  device        Device?  @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([branch])
+  @@index([provider])
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([deviceId])
 }
