@@ -225,21 +225,35 @@ function CustomerProductInfoContent() {
 
     setIsSubmittingReq(true);
     try {
-      // 1. Upload ID Image
-      const formData = new FormData();
-      formData.append('file', reqIdFile);
-      formData.append('folder', 'installment-ids');
+      // 1. Upload ID Image (with resilient Base64 fallback if server upload endpoint fails)
+      let validIdUrl = '';
+      try {
+        const formData = new FormData();
+        formData.append('file', reqIdFile);
+        formData.append('folder', 'installment-ids');
 
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-      if (!uploadRes.ok) {
-        throw new Error('Failed to upload Valid ID image. Please try again.');
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          validIdUrl = uploadData.url;
+        }
+      } catch (uploadFetchErr) {
+        console.warn("Server upload attempt failed, falling back to local encoding:", uploadFetchErr);
       }
-      const uploadData = await uploadRes.json();
-      const validIdUrl = uploadData.url;
+
+      // If server upload didn't return a URL, convert file directly to Base64 Data URL
+      if (!validIdUrl) {
+        validIdUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to process Valid ID image.'));
+          reader.readAsDataURL(reqIdFile);
+        });
+      }
 
       // 2. Submit Application
       const appRes = await fetch('/api/customer/installment-requirements', {
