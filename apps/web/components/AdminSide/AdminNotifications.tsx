@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench, CheckCircle2, Sparkles } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench, CheckCircle2, Sparkles, FileText, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
 import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
@@ -132,6 +132,8 @@ export default function AdminNotifications() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'INSTALLMENT_APPLICATION':
+        return <FileText size={20} className="text-white" />;
       case 'RESTOCK':
         return <Package size={20} className="text-white" />;
       case 'REPAIR_ACCEPTED':
@@ -218,6 +220,9 @@ export default function AdminNotifications() {
         ) : (
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
+              const isInstallment = notification.type === 'INSTALLMENT_APPLICATION';
+              const isHomeCredit = isInstallment && (notification.title.toLowerCase().includes('home credit') || notification.message.toLowerCase().includes('home credit'));
+              const isSkyro = isInstallment && (notification.title.toLowerCase().includes('skyro') || notification.message.toLowerCase().includes('skyro'));
               const isRestock = notification.type === 'RESTOCK';
               const isNewProduct = notification.type === 'NEW_PRODUCT';
               const isRepairAccepted = notification.type === 'REPAIR_ACCEPTED' || 
@@ -231,7 +236,8 @@ export default function AdminNotifications() {
               const isStockAlert = isStockOut || isStockLow;
 
               let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
-              if (isNewProduct) iconBg = !notification.isRead ? 'bg-indigo-600' : 'bg-gray-400';
+              if (isInstallment) iconBg = !notification.isRead ? 'bg-gradient-to-tr from-[#7a00b3] to-[#bd00ff]' : 'bg-gray-400';
+              else if (isNewProduct) iconBg = !notification.isRead ? 'bg-indigo-600' : 'bg-gray-400';
               else if (isRestock) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
               else if (isRepairAccepted) iconBg = 'bg-emerald-600';
               else if (isRepairRejected) iconBg = 'bg-rose-500';
@@ -251,7 +257,9 @@ export default function AdminNotifications() {
                       : isRepairRejected
                       ? 'bg-rose-50/30 hover:bg-rose-50/50 border-l-4 border-l-rose-400'
                       : !notification.isRead 
-                        ? isNewProduct
+                        ? isInstallment
+                          ? 'bg-purple-50/60 hover:bg-purple-100/50 border-l-4 border-l-[#8b00cc]'
+                          : isNewProduct
                           ? 'bg-indigo-50/50 hover:bg-indigo-50/70 border-l-4 border-l-indigo-600'
                           : isRestock
                           ? 'bg-emerald-50/40 hover:bg-emerald-50/60'
@@ -274,6 +282,18 @@ export default function AdminNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isInstallment && (
+                        <span className={`shrink-0 text-xs font-black px-2.5 py-0.5 rounded-full shadow-2xs border flex items-center gap-1 ${
+                          isHomeCredit
+                            ? 'bg-rose-50 text-rose-700 border-rose-300'
+                            : isSkyro
+                              ? 'bg-sky-50 text-sky-700 border-sky-300'
+                              : 'bg-purple-100 text-[#5c0099] border-purple-200'
+                        }`}>
+                          <CreditCard size={12} className={isHomeCredit ? 'text-rose-600' : isSkyro ? 'text-sky-600' : 'text-[#8b00cc]'} />
+                          {isHomeCredit ? 'HOME CREDIT' : isSkyro ? 'SKYRO' : 'INSTALLMENT APPLICATION'}
+                        </span>
+                      )}
                       {isNewProduct && (
                         <span className="shrink-0 bg-indigo-100 text-indigo-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-indigo-300 flex items-center gap-1">
                           <Sparkles size={12} className="text-indigo-600" />
@@ -331,6 +351,15 @@ export default function AdminNotifications() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 sm:self-center" onClick={e => e.stopPropagation()}>
+                    {isInstallment && (
+                      <Link 
+                        href="/admin/inventory?openInstallment=true"
+                        onClick={() => handleAction(notification.id, 'READ', false)}
+                        className="shrink-0 px-3.5 py-2 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-bold text-xs rounded-xl transition-all shadow-xs hover:shadow-md flex items-center gap-1.5 no-underline cursor-pointer"
+                      >
+                        <FileText size={14} /> Review Application
+                      </Link>
+                    )}
                     {isRestock && (
                       <Link 
                         href="/admin/inventory"

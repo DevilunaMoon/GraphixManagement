@@ -58,11 +58,11 @@ export async function POST(req: Request) {
       }
     });
 
-    // Notify branch staff (Admins and Super Admins)
+    // Notify branch staff (Admins, Super Admins, and Cashiers)
     try {
       const staffMembers = await prisma.user.findMany({
         where: {
-          role: { in: ['ADMIN', 'SUPER_ADMIN', 'STAFF'] },
+          role: { in: ['ADMIN', 'SUPER_ADMIN', 'CASHIER', 'STAFF'] },
           OR: [
             { branch: targetBranch },
             { role: 'SUPER_ADMIN' }

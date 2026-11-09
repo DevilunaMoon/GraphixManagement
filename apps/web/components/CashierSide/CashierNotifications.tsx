@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, RefreshCw, CheckCircle2, Wrench } from 'lucide-react';
+import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, ArrowRight, CheckCheck, RotateCcw, RefreshCw, CheckCircle2, Wrench, FileText, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 interface Notification {
@@ -116,6 +116,8 @@ export default function CashierNotifications() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'INSTALLMENT_APPLICATION':
+        return <FileText size={20} className="text-white" />;
       case 'RESTOCK':
         return <Package size={20} className="text-white" />;
       case 'REPAIR_ACCEPTED':
@@ -197,6 +199,9 @@ export default function CashierNotifications() {
         ) : (
           <div className="flex flex-col divide-y divide-gray-100">
             {notifications.map((notification) => {
+              const isInstallment = notification.type === 'INSTALLMENT_APPLICATION';
+              const isHomeCredit = isInstallment && (notification.title.toLowerCase().includes('home credit') || notification.message.toLowerCase().includes('home credit'));
+              const isSkyro = isInstallment && (notification.title.toLowerCase().includes('skyro') || notification.message.toLowerCase().includes('skyro'));
               const isRestock = notification.type === 'RESTOCK';
               const isStockOut = notification.type === 'STOCK_OUT';
               const isStockLow = notification.type === 'STOCK_LOW';
@@ -227,7 +232,9 @@ export default function CashierNotifications() {
               const isRepairRequest = (notification.type === 'REPAIR_REQUEST' || notification.type === 'REPAIR') && !isRepairAccepted && !isRepairRejected;
 
               let iconBg = !notification.isRead ? 'bg-[#bd00ff]' : 'bg-gray-300';
-              if (isRestock) {
+              if (isInstallment) {
+                iconBg = !notification.isRead ? 'bg-gradient-to-tr from-[#7a00b3] to-[#bd00ff]' : 'bg-gray-400';
+              } else if (isRestock) {
                 iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
               } else if (isRepairAccepted) {
                 iconBg = 'bg-emerald-600';
@@ -252,7 +259,8 @@ export default function CashierNotifications() {
               } else if (isRepairRejected) {
                 cardBg = 'bg-rose-50/30 hover:bg-rose-50/50 border-l-4 border-l-rose-400';
               } else if (!notification.isRead) {
-                if (isRestock) cardBg = 'bg-emerald-50/40 hover:bg-emerald-50/60';
+                if (isInstallment) cardBg = 'bg-purple-50/60 hover:bg-purple-100/50 border-l-4 border-l-[#8b00cc]';
+                else if (isRestock) cardBg = 'bg-emerald-50/40 hover:bg-emerald-50/60';
                 else if (isRepairRequest) cardBg = 'bg-purple-50/70 hover:bg-purple-100/50 border-l-4 border-l-purple-500';
                 else if (isStockOut) cardBg = 'bg-rose-50/40 hover:bg-rose-50/60';
                 else if (isStockLow) cardBg = 'bg-amber-50/40 hover:bg-amber-50/60';
@@ -278,6 +286,18 @@ export default function CashierNotifications() {
                       <h3 className={`text-base font-bold truncate ${!notification.isRead ? 'text-[#111]' : 'text-gray-600'}`}>
                         {notification.title}
                       </h3>
+                      {isInstallment && (
+                        <span className={`shrink-0 text-xs font-black px-2.5 py-0.5 rounded-full shadow-2xs border flex items-center gap-1 ${
+                          isHomeCredit
+                            ? 'bg-rose-50 text-rose-700 border-rose-300'
+                            : isSkyro
+                              ? 'bg-sky-50 text-sky-700 border-sky-300'
+                              : 'bg-purple-100 text-[#5c0099] border-purple-200'
+                        }`}>
+                          <CreditCard size={12} className={isHomeCredit ? 'text-rose-600' : isSkyro ? 'text-sky-600' : 'text-[#8b00cc]'} />
+                          {isHomeCredit ? 'HOME CREDIT' : isSkyro ? 'SKYRO' : 'INSTALLMENT APPLICATION'}
+                        </span>
+                      )}
                       {isRestock && (
                         <span className="shrink-0 bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-emerald-200">
                           RESTOCK

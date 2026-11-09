@@ -29,9 +29,9 @@ export async function GET(req: Request) {
       userId: session.userId,
     };
 
-    // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, new products, etc.
+    // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, new products, installment applications, etc.
     if (isSuperAdmin || isAdmin || isCashier) {
-      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR_ACCEPTED', 'REPAIR_REJECTED', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY', 'NEW_PRODUCT'] };
+      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR_ACCEPTED', 'REPAIR_REJECTED', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY', 'NEW_PRODUCT', 'INSTALLMENT_APPLICATION'] };
     }
 
     // Branch filtering

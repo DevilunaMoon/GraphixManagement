@@ -871,6 +871,19 @@ export default function AdminInventory() {
     }
   };
 
+  // Auto-fetch installment counts and auto-open modal if navigated from notification
+  useEffect(() => {
+    fetchInstallmentApplications();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('openInstallment') === 'true' || params.get('tab') === 'installment') {
+        setInstallmentModalOpen(true);
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [userBranch, isSuperAdmin]);
+
   const handleUpdateAppStatus = async (appId: string, newStatus: string) => {
     setUpdatingAppId(appId);
     try {
