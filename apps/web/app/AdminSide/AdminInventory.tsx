@@ -5,7 +5,7 @@ import {
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
-  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
@@ -176,6 +176,18 @@ export default function AdminInventory() {
   const [isDiscountsLoading, setIsDiscountsLoading] = useState(false);
   const [discountFilterStatus, setDiscountFilterStatus] = useState<'ALL' | 'ACTIVE' | 'SCHEDULED' | 'EXPIRED'>('ALL');
   const [allEligibleProducts, setAllEligibleProducts] = useState<any[]>([]);
+
+  // Installment Applications State (Skyro / Home Credit)
+  const [installmentModalOpen, setInstallmentModalOpen] = useState(false);
+  const [installmentApplications, setInstallmentApplications] = useState<any[]>([]);
+  const [isInstallmentLoading, setIsInstallmentLoading] = useState(false);
+  const [installmentSearch, setInstallmentSearch] = useState('');
+  const [installmentStatusFilter, setInstallmentStatusFilter] = useState('all');
+  const [installmentProviderFilter, setInstallmentProviderFilter] = useState('all');
+  const [installmentBranchFilter, setInstallmentBranchFilter] = useState('all');
+  const [installmentPendingCount, setInstallmentPendingCount] = useState(0);
+  const [viewingValidIdUrl, setViewingValidIdUrl] = useState<string | null>(null);
+  const [updatingAppId, setUpdatingAppId] = useState<string | null>(null);
 
   // Add Product State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -832,6 +844,81 @@ export default function AdminInventory() {
       .catch(err => console.error("Error fetching inventory:", err))
       .finally(() => setIsLoading(false));
   };
+
+  const fetchInstallmentApplications = async () => {
+    setIsInstallmentLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (installmentSearch) params.set('search', installmentSearch);
+      if (installmentStatusFilter !== 'all') params.set('status', installmentStatusFilter);
+      if (installmentProviderFilter !== 'all') params.set('provider', installmentProviderFilter);
+      if (isSuperAdmin && installmentBranchFilter !== 'all') {
+        params.set('branch', installmentBranchFilter);
+      } else if (!isSuperAdmin) {
+        params.set('branch', userBranch);
+      }
+
+      const res = await fetch(`/api/admin/installment-applications?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setInstallmentApplications(data.applications || []);
+        setInstallmentPendingCount(data.pendingCount || 0);
+      }
+    } catch (err) {
+      console.error("Failed to load installment applications:", err);
+    } finally {
+      setIsInstallmentLoading(false);
+    }
+  };
+
+  // Auto-fetch installment counts and auto-open modal if navigated from notification
+  useEffect(() => {
+    fetchInstallmentApplications();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('openInstallment') === 'true' || params.get('tab') === 'installment') {
+        setInstallmentModalOpen(true);
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+  }, [userBranch, isSuperAdmin]);
+
+  const handleUpdateAppStatus = async (appId: string, newStatus: string) => {
+    setUpdatingAppId(appId);
+    try {
+      const res = await fetch(`/api/admin/installment-applications/${appId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        setInstallmentApplications(prev => prev.map(app => app.id === appId ? { ...app, status: newStatus } : app));
+        if (newStatus !== 'Pending') {
+          setInstallmentPendingCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to update application status.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating application status.');
+    } finally {
+      setUpdatingAppId(null);
+    }
+  };
+
+  useEffect(() => {
+    fetch('/api/admin/installment-applications')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setInstallmentPendingCount(data.pendingCount || 0);
+        }
+      })
+      .catch(() => {});
+  }, [userBranch]);
 
   const fetchCategories = () => {
     fetch('/api/categories?t=' + Date.now())
@@ -1643,11 +1730,29 @@ export default function AdminInventory() {
             {/* Audit History Button */}
             <button
               onClick={() => setHistoryModalOpen(true)}
-              className={`flex items-center justify-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold transition-colors text-xs sm:text-sm border border-gray-300 cursor-pointer whitespace-nowrap ${!isSuperAdmin ? 'col-span-2 sm:col-span-1' : ''}`}
+              className="flex items-center justify-center gap-1 sm:gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold transition-colors text-xs sm:text-sm border border-gray-300 cursor-pointer whitespace-nowrap"
               title="View stock movement history"
             >
               <History size={14} className="text-purple-600 shrink-0" />
               <span>Stock History</span>
+            </button>
+
+            {/* Installment Applications Button */}
+            <button
+              onClick={() => {
+                setInstallmentModalOpen(true);
+                fetchInstallmentApplications();
+              }}
+              className="flex items-center justify-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-[#5c0099] border border-purple-200 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap shadow-xs"
+              title={isSuperAdmin ? "Monitor customer installment requirements across all branches" : `View customer installment requirements for ${userBranch} branch`}
+            >
+              <FileText size={14} className="text-[#5c0099] shrink-0" />
+              <span>Installment Inquiries</span>
+              {installmentPendingCount > 0 && (
+                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-xs animate-pulse">
+                  {installmentPendingCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -5745,6 +5850,398 @@ export default function AdminInventory() {
               >
                 Yes, Discard All
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* 10. INSTALLMENT APPLICATIONS MODAL (SKYRO & HOME CREDIT)   */}
+      {/* ========================================================== */}
+      {installmentModalOpen && (
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => setInstallmentModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-purple-100 animate-in zoom-in-95 duration-200 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-gray-100 flex items-center justify-between gap-4 bg-gradient-to-r from-purple-50/60 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-purple-100 text-[#5c0099] flex items-center justify-center shrink-0 border border-purple-200 shadow-2xs">
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-black text-gray-950 m-0 tracking-tight">
+                      Installment Applications
+                    </h3>
+                    <span className="bg-purple-100 text-[#5c0099] border border-purple-200 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Skyro & Home Credit
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 m-0 mt-0.5 font-medium">
+                    {isSuperAdmin 
+                      ? 'Global installment requirements monitoring across Tagoloan, Villanueva, and Jasaan branches.' 
+                      : `Customer installment requirements submitted for ${userBranch} Branch.`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={fetchInstallmentApplications}
+                  className="p-2 text-gray-500 hover:text-[#5c0099] hover:bg-purple-50 rounded-xl transition-colors cursor-pointer border-none bg-transparent"
+                  title="Refresh list"
+                >
+                  <RefreshCw size={18} className={isInstallmentLoading ? "animate-spin" : ""} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInstallmentModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer border-none bg-transparent"
+                  title="Close modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="p-4 sm:p-5 border-b border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[260px]">
+                {/* Search */}
+                <div className="flex items-center bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-2xs flex-1 sm:max-w-xs">
+                  <Search size={15} className="text-gray-400 mr-2 shrink-0" />
+                  <input 
+                    type="text"
+                    value={installmentSearch}
+                    onChange={(e) => setInstallmentSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && fetchInstallmentApplications()}
+                    placeholder="Search applicant, phone, device..."
+                    className="border-none outline-none w-full text-xs font-semibold text-gray-800 bg-transparent placeholder-gray-400"
+                  />
+                  {installmentSearch && (
+                    <button onClick={() => { setInstallmentSearch(''); }} className="text-gray-400 hover:text-black cursor-pointer bg-transparent border-none">
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Provider Filter */}
+                <select
+                  value={installmentProviderFilter}
+                  onChange={(e) => {
+                    setInstallmentProviderFilter(e.target.value);
+                  }}
+                  className="bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-700 outline-none cursor-pointer shadow-2xs"
+                >
+                  <option value="all">All Providers</option>
+                  <option value="Skyro">Skyro</option>
+                  <option value="Home Credit">Home Credit</option>
+                </select>
+
+                {/* Status Filter */}
+                <select
+                  value={installmentStatusFilter}
+                  onChange={(e) => {
+                    setInstallmentStatusFilter(e.target.value);
+                  }}
+                  className="bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-gray-700 outline-none cursor-pointer shadow-2xs"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Approved">Approved</option>
+                  <option value="Declined">Declined</option>
+                </select>
+
+                {/* Branch Switcher (SUPER ADMIN ONLY) */}
+                {isSuperAdmin ? (
+                  <select
+                    value={installmentBranchFilter}
+                    onChange={(e) => {
+                      setInstallmentBranchFilter(e.target.value);
+                    }}
+                    className="bg-purple-50 border border-purple-200 text-[#5c0099] rounded-xl px-2.5 py-1.5 text-xs font-bold outline-none cursor-pointer shadow-2xs"
+                  >
+                    <option value="all">🌐 All Branches</option>
+                    <option value="Tagoloan">📍 Tagoloan Branch</option>
+                    <option value="Villanueva">📍 Villanueva Branch</option>
+                    <option value="Jasaan">📍 Jasaan Branch</option>
+                  </select>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-xl bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700">
+                    📍 {userBranch} Branch Only
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={fetchInstallmentApplications}
+                  className="px-3 py-1.5 rounded-xl bg-[#5c0099] hover:bg-[#4a007a] text-white font-bold text-xs shadow-xs cursor-pointer border-none transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+
+            {/* Applications Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[62vh] flex flex-col gap-3">
+              {isInstallmentLoading ? (
+                <div className="py-16 flex flex-col items-center justify-center gap-3 text-gray-400">
+                  <div className="w-10 h-10 border-3 border-purple-200 border-t-[#5c0099] rounded-full animate-spin" />
+                  <span className="text-xs font-bold tracking-wider uppercase">Loading applications...</span>
+                </div>
+              ) : installmentApplications.length === 0 ? (
+                <div className="py-16 flex flex-col items-center justify-center gap-3 text-center text-gray-400">
+                  <div className="w-16 h-16 rounded-full bg-purple-50 text-purple-300 flex items-center justify-center">
+                    <FileText size={32} />
+                  </div>
+                  <h4 className="text-base font-bold text-gray-800 m-0">No Installment Applications Found</h4>
+                  <p className="text-xs text-gray-500 m-0 max-w-sm">
+                    {isSuperAdmin 
+                      ? 'No customer installment applications have been submitted for this filter.' 
+                      : `No customer installment applications have been submitted for ${userBranch} branch yet.`}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-2xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-purple-50/70 text-purple-950 font-bold border-b border-purple-100 uppercase tracking-wider">
+                          <th className="py-3 px-4">Applicant</th>
+                          <th className="py-3 px-4">Contact Phone</th>
+                          <th className="py-3 px-4">Applied Device</th>
+                          <th className="py-3 px-4 text-center">Provider</th>
+                          <th className="py-3 px-4 text-center">Branch</th>
+                          <th className="py-3 px-4 text-center">Valid ID</th>
+                          <th className="py-3 px-4 text-center">Status</th>
+                          <th className="py-3 px-4">Submitted</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 font-medium text-gray-800">
+                        {installmentApplications.map((app) => (
+                          <tr key={app.id} className="hover:bg-purple-50/30 transition-colors">
+                            {/* Applicant */}
+                            <td className="py-3.5 px-4 font-bold text-gray-950">
+                              <div className="flex flex-col">
+                                <span>{app.customerName}</span>
+                                <span className="text-[11px] font-semibold text-gray-400">
+                                  Age: {app.customerAge}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Contact Phone */}
+                            <td className="py-3.5 px-4">
+                              <a 
+                                href={`tel:${app.customerPhone}`}
+                                className="inline-flex items-center gap-1 font-mono font-bold text-purple-900 hover:text-[#5c0099] hover:underline"
+                                title="Click to call"
+                              >
+                                <Phone size={12} className="text-purple-600 shrink-0" />
+                                <span>{app.customerPhone}</span>
+                              </a>
+                            </td>
+
+                            {/* Applied Device */}
+                            <td className="py-3.5 px-4">
+                              <span className="font-bold text-gray-900 line-clamp-1" title={app.deviceName}>
+                                {app.deviceName}
+                              </span>
+                            </td>
+
+                            {/* Provider */}
+                            <td className="py-3.5 px-4 text-center">
+                              <span className={`px-2.5 py-0.8 rounded-full text-[10px] font-black uppercase tracking-wider inline-block ${
+                                app.provider === 'Skyro' 
+                                  ? 'bg-blue-50 text-blue-800 border border-blue-200' 
+                                  : 'bg-rose-50 text-rose-800 border border-rose-200'
+                              }`}>
+                                {app.provider}
+                              </span>
+                            </td>
+
+                            {/* Branch */}
+                            <td className="py-3.5 px-4 text-center">
+                              <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-900 border border-purple-200 inline-block">
+                                📍 {app.branch}
+                              </span>
+                            </td>
+
+                            {/* Valid ID Image Preview */}
+                            <td className="py-3.5 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setViewingValidIdUrl(app.validIdUrl)}
+                                className="group relative w-12 h-12 rounded-xl overflow-hidden border border-purple-200 bg-gray-50 inline-flex items-center justify-center cursor-pointer hover:shadow-md transition-all"
+                                title="Click to view full Valid ID image"
+                              >
+                                <img src={app.validIdUrl} alt="Valid ID" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                  <Eye size={16} />
+                                </div>
+                              </button>
+                            </td>
+
+                            {/* Status Selector */}
+                            <td className="py-3.5 px-4 text-center">
+                              <select
+                                value={app.status}
+                                disabled={updatingAppId === app.id}
+                                onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)}
+                                className={`text-[11px] font-black px-2.5 py-1 rounded-xl border outline-none cursor-pointer transition-colors ${
+                                  app.status === 'Pending'
+                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                    : app.status === 'Contacted'
+                                      ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                      : app.status === 'Approved'
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        : 'bg-rose-50 text-rose-800 border-rose-200'
+                                }`}
+                              >
+                                <option value="Pending">⏳ Pending</option>
+                                <option value="Contacted">📞 Contacted</option>
+                                <option value="Approved">✅ Approved</option>
+                                <option value="Declined">❌ Declined</option>
+                              </select>
+                            </td>
+
+                            {/* Date */}
+                            <td className="py-3.5 px-4 text-gray-500 text-[11px] font-semibold whitespace-nowrap">
+                              {new Date(app.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="block md:hidden flex flex-col gap-3">
+                    {installmentApplications.map((app) => (
+                      <div key={app.id} className="p-4 rounded-2xl bg-white border border-purple-100 shadow-xs flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="font-black text-sm text-gray-950">{app.customerName}</span>
+                            <span className="text-xs text-gray-400 font-semibold block">Age: {app.customerAge} • 📍 {app.branch}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
+                            app.provider === 'Skyro' ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                          }`}>
+                            {app.provider}
+                          </span>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-purple-50/50 border border-purple-100 text-xs flex flex-col gap-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500 font-semibold text-[11px]">Device:</span>
+                            <span className="font-bold text-gray-900">{app.deviceName}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500 font-semibold text-[11px]">Phone:</span>
+                            <a href={`tel:${app.customerPhone}`} className="font-mono font-bold text-purple-900 underline">
+                              {app.customerPhone}
+                            </a>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => setViewingValidIdUrl(app.validIdUrl)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-[#5c0099] hover:underline cursor-pointer bg-transparent border-none p-0"
+                          >
+                            <Eye size={14} />
+                            <span>View Valid ID</span>
+                          </button>
+
+                          <select
+                            value={app.status}
+                            disabled={updatingAppId === app.id}
+                            onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)}
+                            className="text-xs font-bold px-2 py-1 rounded-xl border bg-white cursor-pointer"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Contacted">Contacted</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Declined">Declined</option>
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500">
+                Total: <strong>{installmentApplications.length}</strong> applications
+              </span>
+              <button
+                type="button"
+                onClick={() => setInstallmentModalOpen(false)}
+                className="px-5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors shadow-2xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Resolution Valid ID Viewer Modal */}
+      {viewingValidIdUrl && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setViewingValidIdUrl(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-4 sm:p-6 max-w-2xl w-full shadow-2xl flex flex-col gap-3 relative animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={18} className="text-[#5c0099]" />
+                <h4 className="text-base font-black text-gray-900 m-0">Verified Customer Valid ID</h4>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingValidIdUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 text-purple-700 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"
+                  title="Open full image in new tab"
+                >
+                  <ExternalLink size={14} />
+                  <span>Full Size</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setViewingValidIdUrl(null)}
+                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg cursor-pointer border-none bg-transparent"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="w-full max-h-[70vh] overflow-hidden rounded-2xl bg-gray-950 flex items-center justify-center p-2">
+              <img 
+                src={viewingValidIdUrl} 
+                alt="Valid ID Full View" 
+                className="max-h-[66vh] max-w-full object-contain rounded-xl shadow-lg" 
+              />
             </div>
           </div>
         </div>

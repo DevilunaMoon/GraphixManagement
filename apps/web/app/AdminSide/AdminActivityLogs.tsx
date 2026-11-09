@@ -219,6 +219,7 @@ export default function AdminActivityLogs() {
               value={filterDate}
               onChange={(val) => { setFilterDate(val); setCurrentPage(1); }}
               placeholder="Filter by date..."
+              clearable
               className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gray-50 hover:bg-gray-100/60 rounded-xl sm:rounded-2xl border border-gray-200 text-xs sm:text-sm font-semibold text-gray-700 outline-none cursor-pointer transition-colors"
             />
           </div>

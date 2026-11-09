@@ -9,9 +9,16 @@ interface DatePickerProps {
   onChange: (value: string) => void;
   className?: string;
   placeholder?: string;
+  clearable?: boolean;
 }
 
-export default function DatePicker({ value, onChange, className = '', placeholder = 'Select date' }: DatePickerProps) {
+export default function DatePicker({ 
+  value, 
+  onChange, 
+  className = '', 
+  placeholder = 'Select date',
+  clearable = false 
+}: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   let selectedDate: Date | null = null;
@@ -46,7 +53,7 @@ export default function DatePicker({ value, onChange, className = '', placeholde
           {selectedDate ? format(selectedDate, 'MMM d, yyyy') : placeholder}
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {value && (
+          {clearable && value && (
             <button
               type="button"
               onClick={handleClear}

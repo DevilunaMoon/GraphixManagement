@@ -3,6 +3,7 @@ import { prisma } from 'database';
 import { sendNotificationEmail } from '../../../../lib/email';
 import { uploadToCloudinary } from '../../../../lib/cloudinary';
 import { getSession } from '../../../../lib/session';
+import { triggerRepairStatusSms } from '../../../../lib/sms';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -74,6 +75,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     let updateData: any = {};
     let progress: string | undefined;
     let action: string | undefined;
+    let customerPhone: string | null = null;
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
@@ -87,6 +89,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const ownerName = formData.get('ownerName') as string | null;
       const proofImage = formData.get('proofImage') as File | null;
       const repairHistory = formData.get('repairHistory') as string | null;
+      customerPhone = formData.get('customerPhone') as string | null;
       action = (formData.get('action') as string) || undefined;
 
       if (status !== null) updateData.status = status;
@@ -133,6 +136,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const { status, cause, technician, repairCost, downpayment, materials, repairHistory, ownerName } = body;
       progress = body.progress;
       action = body.action;
+      customerPhone = body.customerPhone || null;
 
       if (status !== undefined) updateData.status = status;
       if (progress !== undefined) updateData.progress = progress;
@@ -351,7 +355,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       await sendNotificationEmail(request.user.email, request.deviceName, progress, false, baseUrl);
     }
 
-    return NextResponse.json(request);
+    // Automatic SMS trigger via Semaphore for repair progress updates
+    let smsResult: any = null;
+    if (isProgressChanged && progress) {
+      try {
+        smsResult = await triggerRepairStatusSms({
+          repairId: request.id,
+          previousProgress: existingRequest.progress,
+          newProgress: progress,
+          technicianName: request.technician || session?.name || 'Technician',
+          explicitCustomerPhone: customerPhone || undefined,
+        });
+      } catch (smsErr: any) {
+        console.error('Non-blocking SMS trigger error in monitoring route:', smsErr);
+        smsResult = {
+          sent: false,
+          error: smsErr?.message || 'Semaphore service error'
+        };
+      }
+    }
+
+    return NextResponse.json({ ...request, smsResult });
   } catch (error: any) {
     console.error('Error updating repair request:', error);
     return NextResponse.json({ error: error.message || 'Failed to update repair request' }, { status: 500 });

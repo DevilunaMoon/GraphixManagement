@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Wrench, Plus, Lock, ArrowRight, PhoneCall, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Wrench } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import CustomerRepairRequestModal from '../../components/CustomerSide/CustomerRepairRequestModal';
 
 interface MonitoringDevice {
   id: string;
@@ -32,8 +31,6 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
   const filterRef = useRef<HTMLDivElement>(null);
   const [devices, setDevices] = useState<MonitoringDevice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
-  const [isPhoneRequiredModalOpen, setIsPhoneRequiredModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     id?: string;
     name?: string | null;
@@ -61,21 +58,6 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
-
-  const hasPhoneNumber = Boolean(
-    userProfile?.phone &&
-    userProfile.phone.trim() !== '' &&
-    !userProfile.phone.includes('₱') &&
-    !userProfile.phone.toLowerCase().includes('cash')
-  );
-
-  const handleRequestRepairClick = () => {
-    if (hasPhoneNumber) {
-      setIsRequestModalOpen(true);
-    } else {
-      setIsPhoneRequiredModalOpen(true);
-    }
-  };
 
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
@@ -188,35 +170,12 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
                 Device Monitoring Progress
               </h2>
               <p className="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium m-0 mt-0.5">
-                Track your repair progress or submit a new repair request
+                Track your device repair progress and diagnostic status in real-time
               </p>
             </div>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* Request Repair Button */}
-            {hasPhoneNumber ? (
-              <button
-                onClick={handleRequestRepairClick}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:brightness-110 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer border-none w-full sm:w-auto text-xs sm:text-sm shrink-0"
-              >
-                <Plus size={18} />
-                <span>Request Repair</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleRequestRepairClick}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#690099] to-[#8b00cc] hover:brightness-110 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer border border-purple-300/30 w-full sm:w-auto text-xs sm:text-sm shrink-0 group"
-                title="Locked: Phone number required"
-              >
-                <Lock size={16} className="text-purple-200 group-hover:scale-110 transition-transform" />
-                <span>Request Repair</span>
-                <span className="text-[10px] font-extrabold uppercase tracking-wide bg-black/30 text-purple-100 px-2 py-0.5 rounded-full border border-white/20">
-                  Locked
-                </span>
-              </button>
-            )}
-
             {/* Search Bar */}
             <div className="flex items-center border border-purple-100 focus-within:border-[#bd00ff] focus-within:ring-2 focus-within:ring-[#bd00ff]/20 rounded-xl px-3.5 py-2 bg-white w-full sm:w-[220px] md:w-[260px] shadow-sm transition-all">
               <Search size={16} className="text-gray-400 shrink-0" />
@@ -330,26 +289,10 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
               <div className="w-16 h-16 rounded-full bg-purple-50 flex items-center justify-center text-[#8b00cc] mb-1">
                 <Wrench size={30} />
               </div>
-              <h3 className="text-gray-900 font-bold text-lg m-0 border-none">No active monitoring devices</h3>
-              <p className="text-gray-500 text-xs sm:text-sm max-w-md m-0">
-                Have a device that needs repair? Click the button below to submit a new repair request.
+              <h3 className="text-gray-900 font-bold text-lg m-0 border-none">No active repair devices</h3>
+              <p className="text-gray-500 text-xs sm:text-sm max-w-md m-0 leading-relaxed">
+                No active device repairs found under your account. To drop off a device for diagnostic evaluation and repair intake, visit any Graphix store branch (Tagoloan, Villanueva, or Jasaan).
               </p>
-              <button
-                onClick={handleRequestRepairClick}
-                className="mt-3 px-6 py-2.5 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white font-bold rounded-xl text-xs sm:text-sm shadow-md hover:brightness-110 transition-all cursor-pointer border-none flex items-center justify-center gap-2"
-              >
-                {hasPhoneNumber ? (
-                  <>
-                    <Plus size={16} />
-                    <span>Request Repair Now</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock size={16} className="text-purple-200" />
-                    <span>Request Repair Now (Locked)</span>
-                  </>
-                )}
-              </button>
             </div>
           )}
         </div>
@@ -380,73 +323,6 @@ export default function CustomerMonitoring({ initialUser }: CustomerMonitoringPr
         )}
 
       </div>
-
-      {/* Customer Repair Request Modal */}
-      <CustomerRepairRequestModal
-        isOpen={isRequestModalOpen}
-        onClose={() => setIsRequestModalOpen(false)}
-        onSuccess={() => {
-          fetchDevices();
-        }}
-        initialCustomerPhone={userProfile?.phone || ''}
-      />
-
-      {/* Phone Required Modal */}
-      {isPhoneRequiredModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-center items-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-purple-100 flex flex-col gap-6 animate-in zoom-in-95">
-            <div className="flex items-start justify-between border-b border-purple-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center shrink-0 shadow-xs">
-                  <Lock size={20} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-gray-950 m-0">Phone Number Required</h3>
-                  <p className="text-gray-500 m-0 text-xs font-medium">Profile update required to unlock repairs</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsPhoneRequiredModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center border-none cursor-pointer transition-colors shrink-0"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-100 flex items-start gap-3">
-                <PhoneCall size={20} className="text-[#8b00cc] shrink-0 mt-0.5" />
-                <p className="text-xs sm:text-sm text-gray-700 font-medium m-0 leading-relaxed">
-                  To submit a device repair request, you need to add your <strong className="text-purple-950 font-bold">contact phone number</strong> in your profile. Our technicians use this number to contact you regarding diagnostic updates, estimates, and repair completion.
-                </p>
-              </div>
-
-              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl px-4 py-2.5 text-xs text-amber-900 font-semibold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                <span>Feature is currently locked until your phone number is saved.</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row gap-2.5 w-full pt-1">
-              <button 
-                type="button"
-                onClick={() => setIsPhoneRequiredModalOpen(false)}
-                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl cursor-pointer border-none transition-colors text-xs sm:text-sm"
-              >
-                Cancel
-              </button>
-              <button 
-                type="button"
-                onClick={() => router.push('/customer/profile?action=phone&from=monitoring')}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:brightness-110 text-white font-bold rounded-xl border-none cursor-pointer hover:shadow-md transition-all text-xs sm:text-sm flex items-center justify-center gap-2"
-              >
-                <span>Go to Profile</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

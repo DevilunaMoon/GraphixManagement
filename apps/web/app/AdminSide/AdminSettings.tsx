@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle, Lock } from 'lucide-react';
+import { MailCheck, KeyRound, FileText, ChevronRight, Building2, MessageSquare, MessageSquarePlus, HelpCircle, Lock , Radio } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
 
 export default function AdminSettings() {
@@ -27,6 +27,13 @@ export default function AdminSettings() {
             label="Branch & Contact Settings"
             sublabel="Manage store contact email, phone, location address, and checkout GCash"
             onClick={() => navigate('/admin/branches')}
+          />
+
+          <SettingsItem 
+            icon={<Radio className="text-[#BF00FF] w-6 h-6 sm:w-7 sm:h-7" />}
+            label="Semaphore SMS Gateway"
+            sublabel="Monitor Semaphore connection, check live SMS credits, and test DITO / Globe / Smart delivery"
+            onClick={() => navigate('/admin/sms-gateway')}
           />
           
           <SettingsItem 

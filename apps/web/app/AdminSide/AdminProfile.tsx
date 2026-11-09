@@ -132,13 +132,13 @@ export default function AdminProfile({ user }: { user?: any }) {
           </span>
         </div>
 
-        <div className="flex flex-col-reverse md:flex-row gap-8">
+        <div className="flex flex-col-reverse md:flex-row gap-6 md:gap-8">
           {/* Form Fields */}
-          <div className="flex-1 flex flex-col gap-5">
+          <div className="flex-1 flex flex-col gap-4 sm:gap-5">
             
             {/* Username / Full Name field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0">
                 Full Name
               </label>
               <div className="flex-1">
@@ -147,52 +147,63 @@ export default function AdminProfile({ user }: { user?: any }) {
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full h-11 border-2 border-gray-200 bg-white rounded-xl px-4 text-black outline-none focus:border-[#bd00ff] focus:bg-white transition-colors font-semibold"
+                  className="w-full h-11 border-2 border-gray-200 bg-white rounded-xl px-4 text-gray-900 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all font-semibold text-sm"
                 />
               </div>
             </div>
 
             {/* Email field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0 flex items-center justify-start sm:justify-end gap-1 group relative">
                 Email Address
                 <HelpCircle size={14} className="text-gray-400 cursor-help" />
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-gray-900 text-white text-xs px-3 py-2 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-25 text-center shadow-xl leading-normal font-medium">
                   Your registered administrator email cannot be updated directly.
                 </div>
               </label>
-              <div className="flex-1 text-gray-800 font-semibold pl-1 bg-gray-50/80 border border-gray-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                <span>{user?.email || 'admin@graphix.com'}</span>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Primary</span>
+              <div className="flex-1 w-full">
+                <div className="w-full h-11 bg-gray-50/90 border-2 border-gray-200 rounded-xl px-4 flex items-center justify-between gap-2 overflow-hidden shadow-2xs">
+                  <span className="truncate min-w-0 text-sm font-semibold text-gray-800" title={user?.email || 'admin@graphix.com'}>
+                    {user?.email || 'admin@graphix.com'}
+                  </span>
+                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-[#bd00ff] px-2 py-0.5 rounded-md border border-purple-200/80">
+                    Primary
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Phone field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0">
                 Phone Number
               </label>
-              <div className="flex-1 flex gap-4 items-center pl-1">
-                <span className="text-black font-semibold">{phone || 'None'}</span>
-                <button 
-                  onClick={() => setIsPhoneModalOpen(true)} 
-                  className="text-[#bd00ff] hover:underline bg-transparent border-none cursor-pointer font-bold text-sm p-0"
-                >
-                  Change
-                </button>
+              <div className="flex-1 w-full">
+                <div className="w-full h-11 border-2 border-gray-200 bg-white rounded-xl px-4 flex items-center justify-between gap-2 focus-within:border-[#bd00ff] focus-within:ring-2 focus-within:ring-purple-500/20 transition-all shadow-2xs">
+                  <span className={`text-sm font-semibold truncate ${phone ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                    {phone || 'No phone number added'}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => setIsPhoneModalOpen(true)} 
+                    className="shrink-0 px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-[#bd00ff] font-bold text-xs uppercase tracking-wider border border-purple-200/70 transition-colors cursor-pointer"
+                  >
+                    Change
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Gender field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0">
                 Gender
               </label>
               <div className="flex-1">
                 <select 
                   value={gender} 
                   onChange={e => setGender(e.target.value)}
-                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] text-black font-semibold transition-colors bg-white cursor-pointer"
+                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 text-gray-900 font-semibold text-sm transition-all bg-white cursor-pointer"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -202,15 +213,15 @@ export default function AdminProfile({ user }: { user?: any }) {
             </div>
 
             {/* DOB field */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 w-full mb-2">
-              <label className="sm:w-[130px] text-left sm:text-right text-gray-600 font-bold text-sm shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-6 w-full mb-1">
+              <label className="sm:w-[130px] text-left sm:text-right text-gray-700 font-bold text-xs sm:text-sm shrink-0">
                 Date of Birth
               </label>
               <div className="flex-1">
                 <DatePicker 
                   value={dob} 
                   onChange={setDob}
-                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] transition-colors bg-white font-semibold text-black"
+                  className="w-full h-11 border-2 border-gray-200 rounded-xl px-4 outline-none focus:border-[#bd00ff] focus:ring-2 focus:ring-purple-500/20 transition-all bg-white font-semibold text-gray-900 text-sm"
                 />
               </div>
             </div>
@@ -218,12 +229,12 @@ export default function AdminProfile({ user }: { user?: any }) {
           </div>
 
           {/* Avatar Upload Container */}
-          <div className="flex flex-col items-center gap-4 shrink-0 md:border-l md:border-gray-100 md:pl-8 justify-center">
-            <div className="w-[120px] h-[120px] bg-purple-50 rounded-full flex justify-center items-center overflow-hidden border-2 border-purple-200 shadow-xs">
+          <div className="flex flex-col items-center gap-3.5 shrink-0 md:border-l md:border-gray-100 md:pl-8 justify-center">
+            <div className="w-24 h-24 sm:w-[120px] sm:h-[120px] bg-purple-50 rounded-full flex justify-center items-center overflow-hidden border-2 border-purple-200 shadow-xs">
               {avatar ? (
                 <img src={avatar} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
-                <UserCircle2 size={90} className="text-purple-400" />
+                <UserCircle2 size={80} className="text-purple-400 sm:w-[90px] sm:h-[90px]" />
               )}
             </div>
             <label className="px-5 py-2.5 bg-gradient-to-r from-[#bd00ff] to-[#4B0082] text-white font-bold rounded-xl cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all text-xs flex items-center gap-1.5 shadow-sm">
