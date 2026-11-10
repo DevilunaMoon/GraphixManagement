@@ -5,7 +5,12 @@ import { getSemaphoreStatus } from '../../../../../lib/sms';
 export async function GET() {
   try {
     const session = await getSession();
-    if (!session || (session.role !== 'ADMIN' && session.role !== 'SUPERADMIN')) {
+    const isAuthorized = session && (
+      session.role === 'ADMIN' || 
+      session.role === 'SUPER_ADMIN' || 
+      session.role === 'SUPERADMIN'
+    );
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

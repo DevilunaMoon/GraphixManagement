@@ -6,7 +6,7 @@ import { ensureSmsHistoryTableExists } from '../../../../lib/sms';
 export async function GET(req: Request) {
   try {
     const session = await getSession();
-    if (!session || !['SUPERADMIN', 'ADMIN', 'TECHNICIAN'].includes(session.role)) {
+    if (!session || !['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'TECHNICIAN'].includes(session.role)) {
       return NextResponse.json({ error: 'Unauthorized: internal access only' }, { status: 401 });
     }
 
@@ -30,7 +30,8 @@ export async function GET(req: Request) {
     }
 
     // Role-based branch enforcement
-    if (session.role === 'SUPERADMIN') {
+    const isSuperAdmin = session.role === 'SUPER_ADMIN' || session.role === 'SUPERADMIN';
+    if (isSuperAdmin) {
       if (branchParam && branchParam !== 'All') {
         where.branch = { equals: branchParam, mode: 'insensitive' };
       }

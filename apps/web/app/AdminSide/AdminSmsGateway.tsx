@@ -245,7 +245,11 @@ export default function AdminSmsGateway() {
                   {loadingStatus ? 'Checking...' : status?.configured ? 'Connected' : 'Not Configured'}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {status?.configured ? `Account: ${status.accountName || 'Graphix Store'}` : 'Requires SEMAPHORE_API_KEY'}
+                  {status?.configured 
+                    ? `Account: ${status.accountName || 'Graphix Store'}` 
+                    : (status?.error && status.error !== 'SEMAPHORE_API_KEY is not defined in environment variables.'
+                        ? status.error
+                        : 'Requires SEMAPHORE_API_KEY')}
                 </p>
               </div>
             </div>
@@ -299,15 +303,25 @@ export default function AdminSmsGateway() {
             </div>
           </div>
 
-          {/* Configuration Warning Alert if API Key is Missing */}
+          {/* Configuration Warning Alert if API Key is Missing or Error */}
           {!loadingStatus && !status?.configured && (
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 flex items-start gap-3">
               <AlertCircle size={20} className="text-rose-600 mt-0.5 shrink-0" />
               <div className="text-xs space-y-1">
-                <span className="font-bold text-sm block">Semaphore API Key Not Detected</span>
+                <span className="font-bold text-sm block">
+                  {status?.error?.toLowerCase().includes('unauthorized')
+                    ? 'Unauthorized Access'
+                    : 'Semaphore API Key Not Detected'}
+                </span>
                 <p className="m-0 leading-relaxed text-rose-800">
-                  The system requires <code className="bg-rose-100 px-1 py-0.5 rounded font-mono text-rose-900">SEMAPHORE_API_KEY</code> in your environment variables.
-                  Add this variable in Coolify or your server environment to activate live SMS delivery.
+                  {status?.error?.toLowerCase().includes('unauthorized') ? (
+                    'Your current user account does not have permission to view or manage SMS Gateway settings. Please ensure you are logged in as an Admin or Super Admin.'
+                  ) : (
+                    <>
+                      The system requires <code className="bg-rose-100 px-1 py-0.5 rounded font-mono text-rose-900">SEMAPHORE_API_KEY</code> in your environment variables.
+                      Add this variable in Coolify or your server environment to activate live SMS delivery.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
