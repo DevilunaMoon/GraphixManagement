@@ -1290,7 +1290,7 @@ export default function AdminInventory() {
   // Add Product Handlers
   const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newDeviceName || !newDeviceCost || !newDevicePrice || !newDeviceCategory) {
+    if (!newDeviceName || !newDevicePrice || !newDeviceCategory) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -1303,7 +1303,7 @@ export default function AdminInventory() {
     setIsAdding(true);
     const formData = new FormData();
     formData.append('deviceName', newDeviceName);
-    formData.append('deviceCost', newDeviceCost);
+    formData.append('deviceCost', newDeviceCost || newDevicePrice || '0');
     formData.append('devicePrice', newDevicePrice);
     formData.append('deviceDiscount', newDeviceDiscount || '0');
     formData.append('discountStartDate', newDeviceDiscountStartDate ? new Date(`${newDeviceDiscountStartDate}T00:00:00`).toISOString() : '');
@@ -1978,7 +1978,7 @@ export default function AdminInventory() {
               className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
             >
               <option value="all">All Conditions</option>
-              <option value="new">New</option>
+              <option value="new">Brand New</option>
               <option value="pre-owned">Pre-Owned</option>
             </select>
 
@@ -3635,7 +3635,7 @@ export default function AdminInventory() {
                     onChange={(e) => setNewDeviceIsPreOwned(e.target.value === 'pre-owned')}
                     className="w-full border border-purple-300 bg-white text-[#5c0099] rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                   >
-                    <option value="new">New</option>
+                    <option value="new">Brand New</option>
                     <option value="pre-owned">Pre-Owned</option>
                   </select>
                 </div>
@@ -3664,7 +3664,7 @@ export default function AdminInventory() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Origin / Branch *</label>
                   {isSuperAdmin ? (
@@ -3684,25 +3684,16 @@ export default function AdminInventory() {
                   )}
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Cost (₱) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="4500"
-                    value={newDeviceCost}
-                    onChange={(e) => setNewDeviceCost(e.target.value)}
-                    className="w-full bg-white text-gray-900 border border-gray-300 rounded-xl p-2.5 text-sm font-semibold outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Price (₱) *</label>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Price Unit (₱) *</label>
                   <input
                     type="number"
                     min="0"
                     placeholder="5999"
                     value={newDevicePrice}
-                    onChange={(e) => setNewDevicePrice(e.target.value)}
+                    onChange={(e) => {
+                      setNewDevicePrice(e.target.value);
+                      setNewDeviceCost(e.target.value);
+                    }}
                     className="w-full bg-white border border-purple-300 rounded-xl p-2.5 text-sm font-bold text-[#5c0099] outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400"
                     required
                   />
@@ -3774,52 +3765,21 @@ export default function AdminInventory() {
                         </button>
                       </div>
 
-                      {/* Row 1: Unit Name & Storage */}
+                      {/* Row 1: Unit & Color */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit Name</label>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit</label>
                           <input
                             type="text"
                             value={v.name}
                             onChange={(e) => {
                               const updated = [...addVariants];
                               updated[idx]!.name = e.target.value;
+                              updated[idx]!.storage = e.target.value;
                               setAddVariants(updated);
                             }}
                             className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
                             placeholder="32 GB"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Storage</label>
-                          <input
-                            type="text"
-                            value={v.storage || ''}
-                            onChange={(e) => {
-                              const updated = [...addVariants];
-                              updated[idx]!.storage = e.target.value;
-                              setAddVariants(updated);
-                            }}
-                            className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="32 GB"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Row 2: Product ID & Color */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
-                          <input
-                            type="text"
-                            value={v.productId || ''}
-                            onChange={(e) => {
-                              const updated = [...addVariants];
-                              updated[idx]!.productId = e.target.value;
-                              setAddVariants(updated);
-                            }}
-                            className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
-                            placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                           />
                         </div>
                         <div>
@@ -3838,21 +3798,35 @@ export default function AdminInventory() {
                         </div>
                       </div>
 
-                      {/* Row 3: Price */}
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Price (₱)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder={newDevicePrice || "5999"}
-                          value={v.price}
-                          onChange={(e) => {
-                            const updated = [...addVariants];
-                            updated[idx]!.price = e.target.value;
-                            setAddVariants(updated);
-                          }}
-                          className="w-full bg-white text-[#5c0099] border border-purple-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                      {/* Row 2: Product ID & Price */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
+                          <input
+                            type="text"
+                            readOnly
+                            disabled
+                            tabIndex={-1}
+                            value={v.productId || generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                            className="w-full bg-gray-100 text-gray-500 border border-gray-200 rounded-lg p-2 text-xs font-mono font-bold outline-none uppercase cursor-not-allowed select-none pointer-events-none"
+                            title="Auto-generated Product ID"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Price (₱)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder={newDevicePrice || "5999"}
+                            value={v.price}
+                            onChange={(e) => {
+                              const updated = [...addVariants];
+                              updated[idx]!.price = e.target.value;
+                              setAddVariants(updated);
+                            }}
+                            className="w-full bg-white text-[#5c0099] border border-purple-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
                       </div>
 
                       {/* Row 4: Initial Branch Stocks */}
@@ -3950,7 +3924,6 @@ export default function AdminInventory() {
                         <th className="py-2.5 px-3">Unit</th>
                         <th className="py-2.5 px-3">Product ID</th>
                         <th className="py-2.5 px-3">Color</th>
-                        <th className="py-2.5 px-3">Internal Storage</th>
                         {isSuperAdmin ? (
                           <>
                             <th className="py-2.5 px-3 text-center">Tagoloan Stock</th>
@@ -3979,6 +3952,7 @@ export default function AdminInventory() {
                                   onChange={(e) => {
                                     const updated = [...addVariants];
                                     updated[idx]!.name = e.target.value;
+                                    updated[idx]!.storage = e.target.value;
                                     setAddVariants(updated);
                                   }}
                                   className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
@@ -3988,14 +3962,12 @@ export default function AdminInventory() {
                               <td className="py-2 px-3">
                                 <input
                                   type="text"
-                                  value={v.productId || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.productId = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
-                                  placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                  readOnly
+                                  disabled
+                                  tabIndex={-1}
+                                  value={v.productId || generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                  className="border border-gray-200 bg-gray-100 rounded-lg p-1.5 text-xs font-mono font-bold text-gray-500 w-28 outline-none uppercase cursor-not-allowed select-none pointer-events-none"
+                                  title="Auto-generated Product ID"
                                 />
                               </td>
                               <td className="py-2 px-3">
@@ -4009,19 +3981,6 @@ export default function AdminInventory() {
                                   }}
                                   className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
                                   placeholder="Red"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.storage || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.storage = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-2 focus:ring-purple-500"
-                                  placeholder="32 GB"
                                 />
                               </td>
                               {isSuperAdmin ? (
@@ -4365,12 +4324,12 @@ export default function AdminInventory() {
                     onChange={(e) => setEditDeviceIsPreOwned(e.target.value === 'pre-owned')}
                     className="w-full border border-purple-300 bg-white text-[#5c0099] rounded-xl p-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
                   >
-                    <option value="new">New</option>
+                    <option value="new">Brand New</option>
                     <option value="pre-owned">Pre-Owned</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Base Price (₱)</label>
+                  <label className="text-xs font-bold text-gray-700 uppercase tracking-wide block mb-1">Price Unit (₱)</label>
                   <input
                     type="number"
                     min="0"
@@ -4382,13 +4341,13 @@ export default function AdminInventory() {
                 </div>
               </div>
 
-              {/* Units & Internal Storage Section */}
+              {/* Units & Stock Section */}
               <div className="bg-purple-50/50 p-4 rounded-2xl border border-purple-200 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Layers size={18} className="text-[#5c0099]" />
                     <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">
-                      Units & Internal Storage
+                      Units, Color & Branch Stock
                     </h4>
                   </div>
                   <button
@@ -4447,52 +4406,21 @@ export default function AdminInventory() {
                             </button>
                           </div>
 
-                          {/* Row 1: Unit Name & Storage */}
+                          {/* Row 1: Unit & Color */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit Name</label>
+                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit</label>
                               <input
                                 type="text"
                                 value={v.name}
                                 onChange={(e) => {
                                   const updated = [...editVariants];
                                   updated[idx]!.name = e.target.value;
+                                  updated[idx]!.storage = e.target.value;
                                   setEditVariants(updated);
                                 }}
                                 className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
                                 placeholder="e.g. 32 GB"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Storage</label>
-                              <input
-                                type="text"
-                                value={v.storage || ''}
-                                onChange={(e) => {
-                                  const updated = [...editVariants];
-                                  updated[idx]!.storage = e.target.value;
-                                  setEditVariants(updated);
-                                }}
-                                className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
-                                placeholder="32 GB"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Row 2: Product ID & Color */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
-                              <input
-                                type="text"
-                                value={v.productId || ''}
-                                onChange={(e) => {
-                                  const updated = [...editVariants];
-                                  updated[idx]!.productId = e.target.value;
-                                  setEditVariants(updated);
-                                }}
-                                className="w-full bg-purple-50/50 text-[#5c0099] border border-purple-200 rounded-lg p-2 text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-purple-500 uppercase"
-                                placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
                               />
                             </div>
                             <div>
@@ -4509,6 +4437,20 @@ export default function AdminInventory() {
                                 placeholder="e.g. Space Gray"
                               />
                             </div>
+                          </div>
+
+                          {/* Row 2: Product ID (Read-only) */}
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
+                            <input
+                              type="text"
+                              readOnly
+                              disabled
+                              tabIndex={-1}
+                              value={v.productId || generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                              className="w-full bg-gray-100 text-gray-500 border border-gray-200 rounded-lg p-2 text-xs font-mono font-bold outline-none uppercase cursor-not-allowed select-none pointer-events-none"
+                              title="Auto-generated Product ID"
+                            />
                           </div>
 
                           {/* Row 3: Price & Branch Stocks */}
@@ -4654,7 +4596,6 @@ export default function AdminInventory() {
                             <th className="py-2.5 px-3">Unit</th>
                             <th className="py-2.5 px-3">Product ID</th>
                             <th className="py-2.5 px-3">Color</th>
-                            <th className="py-2.5 px-3">Internal Storage</th>
                             {isSuperAdmin ? (
                               <>
                                 <th className="py-2.5 px-3 text-center">Tagoloan</th>
@@ -4679,6 +4620,7 @@ export default function AdminInventory() {
                                     onChange={(e) => {
                                       const updated = [...editVariants];
                                       updated[idx]!.name = e.target.value;
+                                      updated[idx]!.storage = e.target.value;
                                       setEditVariants(updated);
                                     }}
                                     className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
@@ -4688,14 +4630,12 @@ export default function AdminInventory() {
                                 <td className="py-2 px-3">
                                   <input
                                     type="text"
-                                    value={v.productId || ''}
-                                    onChange={(e) => {
-                                      const updated = [...editVariants];
-                                      updated[idx]!.productId = e.target.value;
-                                      setEditVariants(updated);
-                                    }}
-                                    className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-2 focus:ring-purple-500"
-                                    placeholder={generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                    readOnly
+                                    disabled
+                                    tabIndex={-1}
+                                    value={v.productId || generateAutoProductId(editDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
+                                    className="border border-gray-200 bg-gray-100 rounded-lg p-1.5 text-xs font-mono font-bold text-gray-500 w-28 outline-none uppercase cursor-not-allowed select-none pointer-events-none"
+                                    title="Auto-generated Product ID"
                                   />
                                 </td>
                                 <td className="py-2 px-3">
@@ -4709,19 +4649,6 @@ export default function AdminInventory() {
                                     }}
                                     className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
                                     placeholder="Red"
-                                  />
-                                </td>
-                                <td className="py-2 px-3">
-                                  <input
-                                    type="text"
-                                    value={v.storage || ''}
-                                    onChange={(e) => {
-                                      const updated = [...editVariants];
-                                      updated[idx]!.storage = e.target.value;
-                                      setEditVariants(updated);
-                                    }}
-                                    className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-2 focus:ring-purple-500"
-                                    placeholder="32 GB"
                                   />
                                 </td>
                                 {isSuperAdmin ? (

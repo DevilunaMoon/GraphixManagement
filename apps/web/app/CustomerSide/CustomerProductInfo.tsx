@@ -672,7 +672,7 @@ function CustomerProductInfoContent() {
                       }`} />
                       {product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
                         ? 'Pre-Owned'
-                        : 'New'}
+                        : 'Brand New'}
                     </span>
                   </div>
 
