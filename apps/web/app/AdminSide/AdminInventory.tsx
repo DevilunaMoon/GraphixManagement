@@ -186,6 +186,10 @@ export default function AdminInventory() {
   const [installmentProviderFilter, setInstallmentProviderFilter] = useState('all');
   const [installmentBranchFilter, setInstallmentBranchFilter] = useState('all');
   const [installmentPendingCount, setInstallmentPendingCount] = useState(0);
+  const [installmentCurrentPage, setInstallmentCurrentPage] = useState(1);
+  const [installmentTotalPages, setInstallmentTotalPages] = useState(1);
+  const [installmentTotalCount, setInstallmentTotalCount] = useState(0);
+  const installmentItemsPerPage = 6;
   const [viewingValidIdUrl, setViewingValidIdUrl] = useState<string | null>(null);
   const [viewingValidIdTitle, setViewingValidIdTitle] = useState<string>('Verified Customer Valid ID');
   const [updatingAppId, setUpdatingAppId] = useState<string | null>(null);
@@ -851,11 +855,13 @@ export default function AdminInventory() {
       .finally(() => setIsLoading(false));
   };
 
-  const fetchInstallmentApplications = async () => {
+  const fetchInstallmentApplications = async (targetPage: number = installmentCurrentPage) => {
     setIsInstallmentLoading(true);
     try {
       const params = new URLSearchParams();
-      if (installmentSearch) params.set('search', installmentSearch);
+      params.set('page', String(targetPage));
+      params.set('limit', String(installmentItemsPerPage));
+      if (installmentSearch.trim()) params.set('search', installmentSearch.trim());
       if (installmentStatusFilter !== 'all') params.set('status', installmentStatusFilter);
       if (installmentProviderFilter !== 'all') params.set('provider', installmentProviderFilter);
       if (isSuperAdmin && installmentBranchFilter !== 'all') {
@@ -868,6 +874,9 @@ export default function AdminInventory() {
       if (res.ok) {
         const data = await res.json();
         setInstallmentApplications(data.applications || []);
+        setInstallmentTotalCount(data.totalCount || 0);
+        setInstallmentTotalPages(data.totalPages || 1);
+        setInstallmentCurrentPage(data.page || targetPage);
         setInstallmentPendingCount(data.pendingCount || 0);
       }
     } catch (err) {
@@ -875,6 +884,49 @@ export default function AdminInventory() {
     } finally {
       setIsInstallmentLoading(false);
     }
+  };
+
+  const prevInstallmentPage = () => {
+    if (installmentCurrentPage > 1) {
+      const p = installmentCurrentPage - 1;
+      setInstallmentCurrentPage(p);
+      fetchInstallmentApplications(p);
+    }
+  };
+
+  const nextInstallmentPage = () => {
+    if (installmentCurrentPage < installmentTotalPages) {
+      const p = installmentCurrentPage + 1;
+      setInstallmentCurrentPage(p);
+      fetchInstallmentApplications(p);
+    }
+  };
+
+  const goToInstallmentPage = (p: number) => {
+    setInstallmentCurrentPage(p);
+    fetchInstallmentApplications(p);
+  };
+
+  const getInstallmentPageNumbers = () => {
+    const total = Math.max(1, installmentTotalPages);
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (installmentCurrentPage <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (installmentCurrentPage >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', installmentCurrentPage - 1, installmentCurrentPage, installmentCurrentPage + 1, '...', total];
+  };
+
+  const startInstallmentItem = installmentTotalCount === 0 ? 0 : (installmentCurrentPage - 1) * installmentItemsPerPage + 1;
+  const endInstallmentItem = Math.min(installmentCurrentPage * installmentItemsPerPage, installmentTotalCount);
+
+  const handleApplyInstallmentFilters = () => {
+    setInstallmentCurrentPage(1);
+    fetchInstallmentApplications(1);
   };
 
   // Auto-fetch installment counts and auto-open modal if navigated from notification
@@ -1747,7 +1799,8 @@ export default function AdminInventory() {
             <button
               onClick={() => {
                 setInstallmentModalOpen(true);
-                fetchInstallmentApplications();
+                setInstallmentCurrentPage(1);
+                fetchInstallmentApplications(1);
               }}
               className="flex items-center justify-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-[#5c0099] border border-purple-200 px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm cursor-pointer whitespace-nowrap shadow-xs"
               title={isSuperAdmin ? "Monitor customer installment requirements across all branches" : `View customer installment requirements for ${userBranch} branch`}
@@ -5899,7 +5952,7 @@ export default function AdminInventory() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={fetchInstallmentApplications}
+                  onClick={() => fetchInstallmentApplications(installmentCurrentPage)}
                   className="p-2 text-gray-500 hover:text-[#5c0099] hover:bg-purple-50 rounded-xl transition-colors cursor-pointer border-none bg-transparent"
                   title="Refresh list"
                 >
@@ -5926,12 +5979,19 @@ export default function AdminInventory() {
                     type="text"
                     value={installmentSearch}
                     onChange={(e) => setInstallmentSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && fetchInstallmentApplications()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyInstallmentFilters()}
                     placeholder="Search applicant, phone, device..."
                     className="border-none outline-none w-full text-xs font-semibold text-gray-800 bg-transparent placeholder-gray-400"
                   />
                   {installmentSearch && (
-                    <button onClick={() => { setInstallmentSearch(''); }} className="text-gray-400 hover:text-black cursor-pointer bg-transparent border-none">
+                    <button 
+                      onClick={() => { 
+                        setInstallmentSearch(''); 
+                        setInstallmentCurrentPage(1); 
+                        fetchInstallmentApplications(1); 
+                      }} 
+                      className="text-gray-400 hover:text-black cursor-pointer bg-transparent border-none"
+                    >
                       <X size={13} />
                     </button>
                   )}
@@ -5989,7 +6049,7 @@ export default function AdminInventory() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={fetchInstallmentApplications}
+                  onClick={handleApplyInstallmentFilters}
                   className="px-3 py-1.5 rounded-xl bg-[#5c0099] hover:bg-[#4a007a] text-white font-bold text-xs shadow-xs cursor-pointer border-none transition-colors"
                 >
                   Apply Filters
@@ -6235,15 +6295,76 @@ export default function AdminInventory() {
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 sm:p-5 border-t border-gray-100 bg-gray-50/60 flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500">
-                Total: <strong>{installmentApplications.length}</strong> applications
+            {/* Modal Footer with Pagination */}
+            <div className="p-3.5 sm:p-4 border-t border-gray-100 bg-gray-50/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-xs font-medium text-gray-500 order-2 sm:order-1 text-center sm:text-left">
+                {installmentTotalCount > 0 ? (
+                  <>
+                    Showing <strong className="text-gray-900">{startInstallmentItem}</strong> to <strong className="text-gray-900">{endInstallmentItem}</strong> of <strong className="text-gray-900">{installmentTotalCount}</strong> applications (6 / page)
+                  </>
+                ) : (
+                  <>Total: <strong className="text-gray-900">0</strong> applications</>
+                )}
               </span>
+
+              {/* Pagination Controls */}
+              {installmentTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-1.5 order-1 sm:order-2">
+                  <button 
+                    type="button"
+                    onClick={prevInstallmentPage}
+                    disabled={installmentCurrentPage <= 1}
+                    className="h-8 px-2.5 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center justify-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                    title="Previous Page"
+                  >
+                    <ChevronLeft size={14} />
+                    <span className="hidden sm:inline">Prev</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {getInstallmentPageNumbers().map((p, idx) => {
+                      if (p === '...') {
+                        return (
+                          <span key={`inst-dots-${idx}`} className="w-6 h-8 flex items-center justify-center text-xs text-gray-400 font-bold select-none">
+                            ...
+                          </span>
+                        );
+                      }
+                      const isCurrent = p === installmentCurrentPage;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => goToInstallmentPage(p as number)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                            isCurrent
+                              ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-xs ring-2 ring-purple-400/30'
+                              : 'bg-white hover:bg-purple-50 text-gray-700 hover:text-purple-700 border border-gray-200 hover:border-purple-200'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button 
+                    type="button"
+                    onClick={nextInstallmentPage}
+                    disabled={installmentCurrentPage >= installmentTotalPages}
+                    className="h-8 px-2.5 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center justify-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+                    title="Next Page"
+                  >
+                    <span className="hidden sm:inline">Next</span>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => setInstallmentModalOpen(false)}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors shadow-2xs"
+                className="px-5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 cursor-pointer transition-colors shadow-2xs order-3"
               >
                 Close
               </button>
