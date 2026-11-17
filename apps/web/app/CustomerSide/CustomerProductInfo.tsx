@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, ShoppingCart, 
   CheckCircle, Star, ChevronDown, MapPin, Clock, Lock, FileText, 
-  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar
+  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar, Briefcase
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CountdownTimer from '../../components/Common/CountdownTimer';
@@ -107,6 +107,7 @@ function CustomerProductInfoContent() {
   const [reqName, setReqName] = useState('');
   const [reqAge, setReqAge] = useState('');
   const [reqPhone, setReqPhone] = useState('');
+  const [reqIncomeSource, setReqIncomeSource] = useState<string>('');
   const [reqSelectedIdType, setReqSelectedIdType] = useState<string>('');
   const [reqIdFile, setReqIdFile] = useState<File | null>(null);
   const [reqIdPreview, setReqIdPreview] = useState<string | null>(null);
@@ -265,6 +266,7 @@ function CustomerProductInfoContent() {
       setReqIdPreview(null);
     }
     setReqSelectedIdType('');
+    setReqIncomeSource('');
     setReqSuccess(false);
     setReqError(null);
     setIsRequirementsModalOpen(false);
@@ -289,6 +291,10 @@ function CustomerProductInfoContent() {
     }
     if (!reqPhone.trim()) {
       setReqError('Please provide your active phone number.');
+      return;
+    }
+    if (!reqIncomeSource) {
+      setReqError('Please select your source of income (Business or Salary).');
       return;
     }
 
@@ -338,6 +344,7 @@ function CustomerProductInfoContent() {
           deviceName: product?.name || 'Selected Device',
           branch: selectedBranch,
           idType: reqSelectedIdType || undefined,
+          incomeSource: reqIncomeSource,
         }),
       });
 
@@ -1135,6 +1142,29 @@ function CustomerProductInfoContent() {
                           placeholder="e.g. 09123456789"
                           className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
                         />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. Source of Income */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                      5. Source of Income <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <select 
+                        required
+                        value={reqIncomeSource}
+                        onChange={(e) => setReqIncomeSource(e.target.value)}
+                        className="w-full h-11 pl-10 pr-9 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled className="text-gray-400">Select Source of Income</option>
+                        <option value="Business" className="text-gray-900">Business</option>
+                        <option value="Salary" className="text-gray-900">Salary</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                        <ChevronDown size={14} strokeWidth={2.5} />
                       </div>
                     </div>
                   </div>

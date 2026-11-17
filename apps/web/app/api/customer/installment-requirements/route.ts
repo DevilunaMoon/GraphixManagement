@@ -20,7 +20,8 @@ export async function POST(req: Request) {
       deviceId,
       deviceName,
       branch,
-      idType
+      idType,
+      incomeSource
     } = body;
 
     // Validation
@@ -40,9 +41,14 @@ export async function POST(req: Request) {
     const cleanProvider = (provider === 'Home Credit' || provider === 'Skyro') ? provider : 'Skyro';
     const targetBranch = branch || 'Tagoloan';
     const targetDeviceName = deviceName || 'Selected Device';
+    const cleanIncomeSource = (incomeSource === 'Business' || incomeSource === 'Salary') ? incomeSource : null;
 
     const customerId = session?.userId || null;
-    const cleanNotes = idType ? `ID Type: ${idType}` : null;
+    
+    const notesParts: string[] = [];
+    if (idType) notesParts.push(`ID: ${idType}`);
+    if (cleanIncomeSource) notesParts.push(`Income: ${cleanIncomeSource}`);
+    const cleanNotes = notesParts.length > 0 ? notesParts.join(' • ') : null;
 
     // Save installment application
     const application = await (prisma as any).installmentApplication.create({
@@ -75,11 +81,16 @@ export async function POST(req: Request) {
       });
 
       if (staffMembers.length > 0) {
+        const detailParts: string[] = [];
+        if (idType) detailParts.push(`ID: ${idType}`);
+        if (cleanIncomeSource) detailParts.push(`Income: ${cleanIncomeSource}`);
+        const detailStr = detailParts.length > 0 ? `, ${detailParts.join(', ')}` : '';
+
         await prisma.notification.createMany({
           data: staffMembers.map(staff => ({
             userId: staff.id,
             title: `New ${cleanProvider} Installment Request`,
-            message: `${name.trim()} (Age: ${parsedAge}, Phone: ${phone.trim()}${idType ? `, ID: ${idType}` : ''}) submitted requirements for ${targetDeviceName} at ${targetBranch} branch.`,
+            message: `${name.trim()} (Age: ${parsedAge}, Phone: ${phone.trim()}${detailStr}) submitted requirements for ${targetDeviceName} at ${targetBranch} branch.`,
             branch: targetBranch,
             type: 'INSTALLMENT_APPLICATION',
             isRead: false

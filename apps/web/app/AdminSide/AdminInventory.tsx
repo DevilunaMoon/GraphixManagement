@@ -6092,8 +6092,8 @@ export default function AdminInventory() {
                                   </div>
                                 </button>
                                 {app.notes && (
-                                  <span className="text-[10px] font-bold text-gray-500 max-w-[120px] truncate" title={app.notes}>
-                                    {app.notes.replace('ID Type: ', '')}
+                                  <span className="text-[10px] font-bold text-gray-500 max-w-[150px] truncate" title={app.notes}>
+                                    {app.notes}
                                   </span>
                                 )}
                               </div>
@@ -6161,8 +6161,8 @@ export default function AdminInventory() {
                           </div>
                           {app.notes && (
                             <div className="flex justify-between items-center">
-                              <span className="text-gray-500 font-semibold text-[11px]">Valid ID Type:</span>
-                              <span className="font-bold text-purple-900">{app.notes.replace('ID Type: ', '')}</span>
+                              <span className="text-gray-500 font-semibold text-[11px]">Requirements:</span>
+                              <span className="font-bold text-purple-900 text-right">{app.notes}</span>
                             </div>
                           )}
                         </div>
