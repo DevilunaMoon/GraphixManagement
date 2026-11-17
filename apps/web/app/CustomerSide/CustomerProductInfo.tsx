@@ -936,11 +936,11 @@ function CustomerProductInfoContent() {
       {/* Send Requirements Modal */}
       {isRequirementsModalOpen && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain overflow-y-auto"
           onWheel={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 border border-purple-100 my-8 relative"
+            className={`bg-white rounded-3xl p-6 sm:p-8 ${reqSuccess ? 'max-w-lg' : 'max-w-4xl'} w-full shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 duration-200 border border-purple-100 my-auto relative max-h-[92vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -1000,273 +1000,285 @@ function CustomerProductInfoContent() {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmitRequirements} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmitRequirements} className="flex flex-col gap-5">
                   {/* Error Alert */}
                   {reqError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
                       <AlertCircle size={16} className="shrink-0 text-rose-500" />
                       <span>{reqError}</span>
                     </div>
                   )}
 
-                  {/* 1. Upload Valid ID */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        1. Upload Image of your Valid ID <span className="text-rose-500">*</span>
-                      </label>
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                        Accepted by {activeInstallmentConfig.name}
-                      </span>
-                    </div>
-
-                    {/* Words showing accepted valid IDs */}
-                    <div className="bg-gray-50/90 rounded-2xl p-3 border border-gray-200/90 flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                          <CheckCircle size={13} className={activeInstallmentConfig.headerAccent} />
-                          Accepted Valid IDs:
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-semibold">
-                          Click to tag ID (optional)
+                  {/* 2-Column Responsive Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Left Column: Valid ID Upload & Guidelines (5 cols) */}
+                    <div className="lg:col-span-5 flex flex-col gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                          1. Valid ID Photo <span className="text-rose-500">*</span>
+                        </label>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                          {activeInstallmentConfig.name} Accepted
                         </span>
                       </div>
 
-                      {/* Pill badges */}
-                      <div className="flex flex-wrap gap-1.5">
-                        {activeInstallmentConfig.acceptedIds.map((item, idx) => {
-                          const isSelected = reqSelectedIdType === item.label;
-                          return (
+                      {/* Accepted Valid IDs Box */}
+                      <div className="bg-gray-50/90 rounded-2xl p-3 border border-gray-200/90 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <CheckCircle size={13} className={activeInstallmentConfig.headerAccent} />
+                            Accepted Valid IDs:
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-semibold">
+                            Click to tag ID
+                          </span>
+                        </div>
+
+                        {/* Pill badges */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeInstallmentConfig.acceptedIds.map((item, idx) => {
+                            const isSelected = reqSelectedIdType === item.label;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setReqSelectedIdType(isSelected ? '' : item.label)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                                  isSelected
+                                    ? `${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder} ring-2 ring-purple-300 shadow-2xs`
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                                }`}
+                              >
+                                <span className={`text-[10px] ${isSelected ? 'font-black' : 'text-gray-400'}`}>
+                                  {isSelected ? '✓' : '•'}
+                                </span>
+                                <span>{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Special Notice (e.g. Home Credit PRC Address requirement) */}
+                        {activeInstallmentConfig.helperNotice && (
+                          <div className="pt-2 border-t border-gray-200/70 flex items-start gap-1.5 text-[11px] text-amber-800 font-semibold">
+                            <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                            <span>{activeInstallmentConfig.helperNotice}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={handleIdFileChange}
+                        className="hidden" 
+                      />
+
+                      {reqIdPreview ? (
+                        <div className="flex flex-col gap-2.5 p-3 rounded-2xl bg-purple-50/40 border-2 border-purple-200 relative group">
+                          <div className="w-full h-40 rounded-xl overflow-hidden bg-white border border-purple-100 flex items-center justify-center">
+                            <img src={reqIdPreview} alt="Valid ID Preview" className="w-full h-full object-contain" />
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black text-gray-900 truncate m-0">{reqIdFile?.name}</p>
+                              <p className="text-[11px] text-gray-500 font-semibold m-0 mt-0.5">
+                                {reqIdFile ? `${(reqIdFile.size / 1024).toFixed(1)} KB` : ''} • Image Attached
+                              </p>
+                              {reqSelectedIdType && (
+                                <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
+                                  Tagged ID: {reqSelectedIdType}
+                                </span>
+                              )}
+                            </div>
                             <button
-                              key={idx}
                               type="button"
-                              onClick={() => setReqSelectedIdType(isSelected ? '' : item.label)}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
-                                isSelected
-                                  ? `${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder} ring-2 ring-purple-300 shadow-2xs`
-                                  : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
-                              }`}
+                              onClick={() => fileInputRef.current?.click()}
+                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-[#8b00cc] font-bold text-xs border border-purple-200 transition-colors cursor-pointer shrink-0"
                             >
-                              <span className={`text-[10px] ${isSelected ? 'font-black' : 'text-gray-400'}`}>
-                                {isSelected ? '✓' : '•'}
-                              </span>
-                              <span>{item.label}</span>
+                              Change ID
                             </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Special Notice (e.g. Home Credit PRC Address requirement) */}
-                      {activeInstallmentConfig.helperNotice && (
-                        <div className="pt-2 border-t border-gray-200/70 flex items-start gap-1.5 text-[11px] text-amber-800 font-semibold">
-                          <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-                          <span>{activeInstallmentConfig.helperNotice}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group min-h-[140px] ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
+                        >
+                          <div className={`w-11 h-11 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
+                            <UploadCloud size={22} />
+                          </div>
+                          <div>
+                            <p className="text-xs font-extrabold text-gray-900 m-0">Click or Drag to Upload Valid ID</p>
+                            <p className="text-[11px] text-gray-500 font-medium m-0 mt-0.5">PNG, JPG, or WEBP up to 5MB</p>
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    <input 
-                      type="file" 
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleIdFileChange}
-                      className="hidden" 
-                    />
-
-                    {reqIdPreview ? (
-                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/50 border-2 border-purple-200 relative group">
-                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-purple-100 shrink-0">
-                          <img src={reqIdPreview} alt="Valid ID Preview" className="w-full h-full object-cover" />
+                    {/* Right Column: Applicant Personal & Contact Details (7 cols) */}
+                    <div className="lg:col-span-7 flex flex-col gap-3.5">
+                      {/* 2. Your Name */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                          2. Your Full Legal Name <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input 
+                            type="text"
+                            required
+                            value={reqName}
+                            onChange={(e) => setReqName(e.target.value)}
+                            placeholder="e.g. Juan Dela Cruz"
+                            className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                          />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black text-gray-900 truncate m-0">{reqIdFile?.name}</p>
-                          <p className="text-[11px] text-gray-500 font-semibold m-0 mt-0.5">
-                            {reqIdFile ? `${(reqIdFile.size / 1024).toFixed(1)} KB` : ''} • Image Attached
-                          </p>
-                          {reqSelectedIdType && (
-                            <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
-                              Tagged ID: {reqSelectedIdType}
+                      </div>
+
+                      {/* 3. Home Address */}
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                            3. Home Address <span className="text-rose-500">*</span>
+                          </label>
+                          <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+                            <AlertCircle size={11} className="shrink-0" />
+                            Must match address on Valid ID
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          <input 
+                            type="text"
+                            required
+                            value={reqAddress}
+                            onChange={(e) => setReqAddress(e.target.value)}
+                            placeholder="e.g. House No., Street, Barangay, City, Province"
+                            className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                          />
+                        </div>
+                        <p className="text-[11px] text-amber-900 font-medium m-0 flex items-center gap-1.5 bg-amber-50/90 px-2.5 py-1.5 rounded-lg border border-amber-200/80">
+                          <span>⚠️ <strong>Warning:</strong> Please enter your Home Address based on the address shown on your submitted Valid ID.</span>
+                        </p>
+                      </div>
+
+                      {/* Age Warning Notice Banner */}
+                      <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200 text-purple-950 text-[11px] font-semibold flex items-center gap-2">
+                        <AlertCircle size={15} className={`shrink-0 ${activeInstallmentConfig.headerAccent}`} />
+                        <span>⚠️ <strong>Notice:</strong> {activeInstallmentConfig.ageNotice}</span>
+                      </div>
+
+                      {/* 4. Age & 5. Phone Number (2 cols) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* 4. Your Age */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                              4. Your Age <span className="text-rose-500">*</span>
+                            </label>
+                            <span className="text-[10px] text-gray-400 font-bold">
+                              {activeInstallmentConfig.minAge}–{activeInstallmentConfig.maxAge} yrs
                             </span>
+                          </div>
+                          <div className="relative">
+                            <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
+                              type="number"
+                              required
+                              min={activeInstallmentConfig.minAge}
+                              max={activeInstallmentConfig.maxAge}
+                              value={reqAge}
+                              onChange={(e) => setReqAge(e.target.value)}
+                              placeholder={`e.g. 25 (${activeInstallmentConfig.minAge}–${activeInstallmentConfig.maxAge})`}
+                              className={`w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors ${
+                                isAgeOutOfRange 
+                                  ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30' 
+                                  : 'border-gray-200 focus:border-[#8b00cc]'
+                              }`}
+                            />
+                          </div>
+                          {isAgeOutOfRange && (
+                            <p className="text-[10.5px] text-rose-600 font-bold m-0 flex items-center gap-1">
+                              <AlertCircle size={12} className="shrink-0" />
+                              Age must be between {activeInstallmentConfig.minAge} and {activeInstallmentConfig.maxAge} for {activeInstallmentConfig.name}.
+                            </p>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-[#8b00cc] font-bold text-xs border border-purple-200 transition-colors cursor-pointer shrink-0"
-                        >
-                          Change ID
-                        </button>
-                      </div>
-                    ) : (
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
-                      >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
-                          <UploadCloud size={20} />
-                        </div>
-                        <div>
-                          <p className="text-xs font-extrabold text-gray-900 m-0">Click or Drag to Upload Valid ID</p>
-                          <p className="text-[11px] text-gray-500 font-medium m-0 mt-0.5">PNG, JPG, or WEBP up to 5MB</p>
+
+                        {/* 5. Your Phone Number */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                            5. Phone Number <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
+                              type="tel"
+                              required
+                              value={reqPhone}
+                              onChange={(e) => setReqPhone(e.target.value)}
+                              placeholder="e.g. 09123456789"
+                              className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                            />
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* 2. Your Name */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                      2. Your Full Legal Name <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input 
-                        type="text"
-                        required
-                        value={reqName}
-                        onChange={(e) => setReqName(e.target.value)}
-                        placeholder="e.g. Juan Dela Cruz"
-                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
+                      {/* 6. Source of Income & 7. Reference No. (2 cols) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* 6. Source of Income */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                            6. Source of Income <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <select 
+                              required
+                              value={reqIncomeSource}
+                              onChange={(e) => setReqIncomeSource(e.target.value)}
+                              className="w-full h-11 pl-10 pr-9 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors appearance-none cursor-pointer"
+                            >
+                              <option value="" disabled className="text-gray-400">Select Income</option>
+                              <option value="Business" className="text-gray-900">Business</option>
+                              <option value="Salary" className="text-gray-900">Salary</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                              <ChevronDown size={14} strokeWidth={2.5} />
+                            </div>
+                          </div>
+                        </div>
 
-                  {/* 3. Home Address */}
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
-                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        3. Home Address <span className="text-rose-500">*</span>
-                      </label>
-                      <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
-                        <AlertCircle size={11} className="shrink-0" />
-                        Must match address on Valid ID
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input 
-                        type="text"
-                        required
-                        value={reqAddress}
-                        onChange={(e) => setReqAddress(e.target.value)}
-                        placeholder="e.g. House No., Street, Barangay, City, Province"
-                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
-                      />
-                    </div>
-                    <p className="text-[11px] text-amber-900 font-medium m-0 flex items-center gap-1.5 bg-amber-50/90 p-2 rounded-lg border border-amber-200/80">
-                      <span>⚠️ <strong>Warning:</strong> Please enter your Home Address based on the address shown on your submitted Valid ID.</span>
-                    </p>
-                  </div>
-
-                  {/* Age Warning Notice Banner */}
-                  <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200 text-purple-950 text-[11px] font-semibold flex items-center gap-2">
-                    <AlertCircle size={15} className={`shrink-0 ${activeInstallmentConfig.headerAccent}`} />
-                    <span>⚠️ <strong>Notice:</strong> {activeInstallmentConfig.ageNotice}</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* 4. Your Age */}
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                          4. Your Age <span className="text-rose-500">*</span>
-                        </label>
-                        <span className="text-[10px] text-gray-400 font-bold">
-                          {activeInstallmentConfig.minAge}–{activeInstallmentConfig.maxAge} yrs
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input 
-                          type="number"
-                          required
-                          min={activeInstallmentConfig.minAge}
-                          max={activeInstallmentConfig.maxAge}
-                          value={reqAge}
-                          onChange={(e) => setReqAge(e.target.value)}
-                          placeholder={`e.g. 25 (${activeInstallmentConfig.minAge}–${activeInstallmentConfig.maxAge})`}
-                          className={`w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors ${
-                            isAgeOutOfRange 
-                              ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30' 
-                              : 'border-gray-200 focus:border-[#8b00cc]'
-                          }`}
-                        />
-                      </div>
-                      {isAgeOutOfRange && (
-                        <p className="text-[10.5px] text-rose-600 font-bold m-0 flex items-center gap-1">
-                          <AlertCircle size={12} className="shrink-0" />
-                          Age must be between {activeInstallmentConfig.minAge} and {activeInstallmentConfig.maxAge} for {activeInstallmentConfig.name}.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* 5. Your Phone Number */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        5. Phone Number <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input 
-                          type="tel"
-                          required
-                          value={reqPhone}
-                          onChange={(e) => setReqPhone(e.target.value)}
-                          placeholder="e.g. 09123456789"
-                          className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
-                        />
+                        {/* 7. Reference No. */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                            <span>7. Reference No.</span>
+                            <span className="text-[10px] text-gray-400 font-semibold">Optional</span>
+                          </label>
+                          <div className="relative">
+                            <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input 
+                              type="text"
+                              value={reqReferenceNo}
+                              onChange={(e) => setReqReferenceNo(e.target.value)}
+                              placeholder="e.g. REF-2026-0012"
+                              className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* 6. Source of Income */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                      6. Source of Income <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <select 
-                        required
-                        value={reqIncomeSource}
-                        onChange={(e) => setReqIncomeSource(e.target.value)}
-                        className="w-full h-11 pl-10 pr-9 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors appearance-none cursor-pointer"
-                      >
-                        <option value="" disabled className="text-gray-400">Select Source of Income</option>
-                        <option value="Business" className="text-gray-900">Business</option>
-                        <option value="Salary" className="text-gray-900">Salary</option>
-                      </select>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                        <ChevronDown size={14} strokeWidth={2.5} />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 7. Reference No. (Placed below Source of Income) */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
-                      <span>7. Reference No.</span>
-                      <span className="text-[10px] text-gray-400 font-semibold">Optional</span>
-                    </label>
-                    <div className="relative">
-                      <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input 
-                        type="text"
-                        value={reqReferenceNo}
-                        onChange={(e) => setReqReferenceNo(e.target.value)}
-                        placeholder="e.g. REF-2026-0012 or Agent Reference Code"
-                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5 mt-2">
+                  {/* Actions Bar */}
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 mt-1">
                     <button
                       type="button"
                       onClick={handleResetReqForm}
                       disabled={isSubmittingReq}
-                      className="px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                      className="px-6 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
                     >
                       Cancel
                     </button>
@@ -1274,7 +1286,7 @@ function CustomerProductInfoContent() {
                       type="submit"
                       disabled={isSubmittingReq || isAgeOutOfRange}
                       title={isAgeOutOfRange ? `Applicant age must be between ${activeInstallmentConfig.minAge} and ${activeInstallmentConfig.maxAge}` : undefined}
-                      className={`px-6 py-2.5 rounded-xl bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-95 border-none`}
+                      className={`px-7 py-2.5 rounded-xl bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-95 border-none`}
                     >
                       {isSubmittingReq ? (
                         <>
