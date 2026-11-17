@@ -6160,9 +6160,9 @@ export default function AdminInventory() {
                             </a>
                           </div>
                           {app.notes && (
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-500 font-semibold text-[11px]">Requirements:</span>
-                              <span className="font-bold text-purple-900 text-right">{app.notes}</span>
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="text-gray-500 font-semibold text-[11px] shrink-0">Details:</span>
+                              <span className="font-bold text-purple-900 text-right text-[11px]">{app.notes}</span>
                             </div>
                           )}
                         </div>

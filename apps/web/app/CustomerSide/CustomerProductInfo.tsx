@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, ShoppingCart, 
   CheckCircle, Star, ChevronDown, MapPin, Clock, Lock, FileText, 
-  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar, Briefcase
+  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar, Briefcase, Hash
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CountdownTimer from '../../components/Common/CountdownTimer';
@@ -31,6 +31,9 @@ interface InstallmentConfig {
   dropzoneBg: string;
   iconBg: string;
   iconText: string;
+  minAge: number;
+  maxAge: number;
+  ageNotice: string;
   acceptedIds: { label: string; note?: string }[];
   helperNotice?: string;
 }
@@ -46,6 +49,9 @@ const DEFAULT_INSTALLMENT_CONFIG: InstallmentConfig = {
   dropzoneBg: 'bg-blue-50/20 hover:bg-blue-50/50',
   iconBg: 'bg-blue-100',
   iconText: 'text-blue-600',
+  minAge: 18,
+  maxAge: 70,
+  ageNotice: 'Skyro accepts installment applications for applicants aged 18 to 70.',
   acceptedIds: [
     { label: 'PhilSys ID (National ID)' },
     { label: 'UMID' },
@@ -71,6 +77,9 @@ const INSTALLMENT_CONFIGS: Record<string, InstallmentConfig> = {
     dropzoneBg: 'bg-rose-50/20 hover:bg-rose-50/50',
     iconBg: 'bg-rose-100',
     iconText: 'text-rose-600',
+    minAge: 18,
+    maxAge: 68,
+    ageNotice: 'Home Credit accepts installment applications for applicants aged 18 to 68.',
     acceptedIds: [
       { label: 'National ID' },
       { label: "Driver's License" },
@@ -107,6 +116,8 @@ function CustomerProductInfoContent() {
   const [reqName, setReqName] = useState('');
   const [reqAge, setReqAge] = useState('');
   const [reqPhone, setReqPhone] = useState('');
+  const [reqAddress, setReqAddress] = useState('');
+  const [reqReferenceNo, setReqReferenceNo] = useState('');
   const [reqIncomeSource, setReqIncomeSource] = useState<string>('');
   const [reqSelectedIdType, setReqSelectedIdType] = useState<string>('');
   const [reqIdFile, setReqIdFile] = useState<File | null>(null);
@@ -120,6 +131,12 @@ function CustomerProductInfoContent() {
   const activeInstallmentConfig: InstallmentConfig = (installmentProvider && INSTALLMENT_CONFIGS[installmentProvider]) 
     ? INSTALLMENT_CONFIGS[installmentProvider]! 
     : DEFAULT_INSTALLMENT_CONFIG;
+
+  const isAgeOutOfRange = useMemo(() => {
+    if (!reqAge) return false;
+    const a = parseInt(reqAge, 10);
+    return isNaN(a) || a < activeInstallmentConfig.minAge || a > activeInstallmentConfig.maxAge;
+  }, [reqAge, activeInstallmentConfig]);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -267,6 +284,8 @@ function CustomerProductInfoContent() {
     }
     setReqSelectedIdType('');
     setReqIncomeSource('');
+    setReqAddress('');
+    setReqReferenceNo('');
     setReqSuccess(false);
     setReqError(null);
     setIsRequirementsModalOpen(false);
@@ -284,9 +303,13 @@ function CustomerProductInfoContent() {
       setReqError('Please enter your full legal name.');
       return;
     }
+    if (!reqAddress.trim()) {
+      setReqError('Please enter your Home Address based on your submitted valid ID.');
+      return;
+    }
     const ageNum = parseInt(reqAge, 10);
-    if (!ageNum || ageNum < 18) {
-      setReqError('You must be at least 18 years old to apply for installment.');
+    if (!ageNum || ageNum < activeInstallmentConfig.minAge || ageNum > activeInstallmentConfig.maxAge) {
+      setReqError(`${activeInstallmentConfig.name} installment requires applicant age to be between ${activeInstallmentConfig.minAge} and ${activeInstallmentConfig.maxAge} years old.`);
       return;
     }
     if (!reqPhone.trim()) {
@@ -338,6 +361,8 @@ function CustomerProductInfoContent() {
           name: reqName.trim(),
           age: ageNum,
           phone: reqPhone.trim(),
+          address: reqAddress.trim(),
+          referenceNo: reqReferenceNo.trim() || undefined,
           validIdUrl,
           provider: installmentProvider,
           deviceId: targetDeviceId,
@@ -1106,31 +1131,79 @@ function CustomerProductInfoContent() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* 3. Your Age */}
-                    <div className="flex flex-col gap-1.5">
+                  {/* 3. Home Address */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
                       <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        3. Your Age <span className="text-rose-500">*</span>
+                        3. Home Address <span className="text-rose-500">*</span>
                       </label>
+                      <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+                        <AlertCircle size={11} className="shrink-0" />
+                        Must match address on Valid ID
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input 
+                        type="text"
+                        required
+                        value={reqAddress}
+                        onChange={(e) => setReqAddress(e.target.value)}
+                        placeholder="e.g. House No., Street, Barangay, City, Province"
+                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                      />
+                    </div>
+                    <p className="text-[11px] text-amber-900 font-medium m-0 flex items-center gap-1.5 bg-amber-50/90 p-2 rounded-lg border border-amber-200/80">
+                      <span>⚠️ <strong>Warning:</strong> Please enter your Home Address based on the address shown on your submitted Valid ID.</span>
+                    </p>
+                  </div>
+
+                  {/* Age Warning Notice Banner */}
+                  <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200 text-purple-950 text-[11px] font-semibold flex items-center gap-2">
+                    <AlertCircle size={15} className={`shrink-0 ${activeInstallmentConfig.headerAccent}`} />
+                    <span>⚠️ <strong>Notice:</strong> {activeInstallmentConfig.ageNotice}</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* 4. Your Age */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                          4. Your Age <span className="text-rose-500">*</span>
+                        </label>
+                        <span className="text-[10px] text-gray-400 font-bold">
+                          {activeInstallmentConfig.minAge}–{activeInstallmentConfig.maxAge} yrs
+                        </span>
+                      </div>
                       <div className="relative">
                         <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input 
                           type="number"
                           required
-                          min="18"
-                          max="100"
+                          min={activeInstallmentConfig.minAge}
+                          max={activeInstallmentConfig.maxAge}
                           value={reqAge}
                           onChange={(e) => setReqAge(e.target.value)}
-                          placeholder="e.g. 25"
-                          className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                          placeholder={`e.g. 25 (${activeInstallmentConfig.minAge}–${activeInstallmentConfig.maxAge})`}
+                          className={`w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors ${
+                            isAgeOutOfRange 
+                              ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30' 
+                              : 'border-gray-200 focus:border-[#8b00cc]'
+                          }`}
                         />
                       </div>
+                      {isAgeOutOfRange && (
+                        <p className="text-[10.5px] text-rose-600 font-bold m-0 flex items-center gap-1">
+                          <AlertCircle size={12} className="shrink-0" />
+                          Age must be between {activeInstallmentConfig.minAge} and {activeInstallmentConfig.maxAge} for {activeInstallmentConfig.name}.
+                        </p>
+                      )}
                     </div>
 
-                    {/* 4. Your Phone Number */}
+                    {/* 5. Your Phone Number */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        4. Phone Number <span className="text-rose-500">*</span>
+                        5. Phone Number <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
                         <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1146,10 +1219,10 @@ function CustomerProductInfoContent() {
                     </div>
                   </div>
 
-                  {/* 5. Source of Income */}
+                  {/* 6. Source of Income */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                      5. Source of Income <span className="text-rose-500">*</span>
+                      6. Source of Income <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -1169,6 +1242,24 @@ function CustomerProductInfoContent() {
                     </div>
                   </div>
 
+                  {/* 7. Reference No. (Placed below Source of Income) */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                      <span>7. Reference No.</span>
+                      <span className="text-[10px] text-gray-400 font-semibold">Optional</span>
+                    </label>
+                    <div className="relative">
+                      <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input 
+                        type="text"
+                        value={reqReferenceNo}
+                        onChange={(e) => setReqReferenceNo(e.target.value)}
+                        placeholder="e.g. REF-2026-0012 or Agent Reference Code"
+                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
                   {/* Actions */}
                   <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5 mt-2">
                     <button
@@ -1181,8 +1272,9 @@ function CustomerProductInfoContent() {
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmittingReq}
-                      className={`px-6 py-2.5 rounded-xl bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-60 flex items-center gap-1.5 active:scale-95 border-none`}
+                      disabled={isSubmittingReq || isAgeOutOfRange}
+                      title={isAgeOutOfRange ? `Applicant age must be between ${activeInstallmentConfig.minAge} and ${activeInstallmentConfig.maxAge}` : undefined}
+                      className={`px-6 py-2.5 rounded-xl bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-95 border-none`}
                     >
                       {isSubmittingReq ? (
                         <>

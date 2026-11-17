@@ -15,6 +15,8 @@ export async function POST(req: Request) {
       name,
       age,
       phone,
+      address,
+      referenceNo,
       validIdUrl,
       provider,
       deviceId,
@@ -28,9 +30,16 @@ export async function POST(req: Request) {
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Customer name is required" }, { status: 400 });
     }
+    if (!address || !address.trim()) {
+      return NextResponse.json({ error: "Home Address based on your valid ID is required" }, { status: 400 });
+    }
+    const cleanProvider = (provider === 'Home Credit' || provider === 'Skyro') ? provider : 'Skyro';
+    const maxAllowedAge = cleanProvider === 'Home Credit' ? 68 : 70;
     const parsedAge = parseInt(age, 10);
-    if (!parsedAge || parsedAge < 18) {
-      return NextResponse.json({ error: "Applicant must be at least 18 years of age" }, { status: 400 });
+    if (!parsedAge || parsedAge < 18 || parsedAge > maxAllowedAge) {
+      return NextResponse.json({ 
+        error: `${cleanProvider} installment requires applicant age to be between 18 and ${maxAllowedAge} years old.` 
+      }, { status: 400 });
     }
     if (!phone || !phone.trim()) {
       return NextResponse.json({ error: "Active phone number is required" }, { status: 400 });
@@ -38,7 +47,6 @@ export async function POST(req: Request) {
     if (!validIdUrl) {
       return NextResponse.json({ error: "Valid ID image is required" }, { status: 400 });
     }
-    const cleanProvider = (provider === 'Home Credit' || provider === 'Skyro') ? provider : 'Skyro';
     const targetBranch = branch || 'Tagoloan';
     const targetDeviceName = deviceName || 'Selected Device';
     const cleanIncomeSource = (incomeSource === 'Business' || incomeSource === 'Salary') ? incomeSource : null;
@@ -48,6 +56,8 @@ export async function POST(req: Request) {
     const notesParts: string[] = [];
     if (idType) notesParts.push(`ID: ${idType}`);
     if (cleanIncomeSource) notesParts.push(`Income: ${cleanIncomeSource}`);
+    if (address && address.trim()) notesParts.push(`Address: ${address.trim()}`);
+    if (referenceNo && referenceNo.trim()) notesParts.push(`Ref: ${referenceNo.trim()}`);
     const cleanNotes = notesParts.length > 0 ? notesParts.join(' • ') : null;
 
     // Save installment application
@@ -84,6 +94,7 @@ export async function POST(req: Request) {
         const detailParts: string[] = [];
         if (idType) detailParts.push(`ID: ${idType}`);
         if (cleanIncomeSource) detailParts.push(`Income: ${cleanIncomeSource}`);
+        if (referenceNo && referenceNo.trim()) detailParts.push(`Ref: ${referenceNo.trim()}`);
         const detailStr = detailParts.length > 0 ? `, ${detailParts.join(', ')}` : '';
 
         await prisma.notification.createMany({
