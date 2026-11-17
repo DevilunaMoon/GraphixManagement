@@ -18,6 +18,7 @@ export async function POST(req: Request) {
       address,
       referenceNo,
       validIdUrl,
+      validIdBackUrl,
       provider,
       deviceId,
       deviceName,
@@ -45,7 +46,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Active phone number is required" }, { status: 400 });
     }
     if (!validIdUrl) {
-      return NextResponse.json({ error: "Valid ID image is required" }, { status: 400 });
+      return NextResponse.json({ error: "Front image of your valid ID is required" }, { status: 400 });
+    }
+    if (!validIdBackUrl) {
+      return NextResponse.json({ error: "Back image of your valid ID is required" }, { status: 400 });
     }
     const targetBranch = branch || 'Tagoloan';
     const targetDeviceName = deviceName || 'Selected Device';
@@ -68,6 +72,7 @@ export async function POST(req: Request) {
         customerAge: parsedAge,
         customerPhone: phone.trim(),
         validIdUrl,
+        validIdBackUrl: validIdBackUrl || null,
         provider: cleanProvider,
         deviceId: deviceId || null,
         deviceName: targetDeviceName,

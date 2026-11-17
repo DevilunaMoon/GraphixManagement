@@ -18,6 +18,7 @@ export async function ensureInstallmentTableExists(): Promise<void> {
         "customerAge" INTEGER NOT NULL,
         "customerPhone" TEXT NOT NULL,
         "validIdUrl" TEXT NOT NULL,
+        "validIdBackUrl" TEXT,
         "provider" TEXT NOT NULL,
         "deviceId" TEXT,
         "deviceName" TEXT NOT NULL,
@@ -36,6 +37,8 @@ export async function ensureInstallmentTableExists(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "InstallmentApp_provider_idx" ON "InstallmentApplication"("provider");
       CREATE INDEX IF NOT EXISTS "InstallmentApp_status_idx" ON "InstallmentApplication"("status");
       CREATE INDEX IF NOT EXISTS "InstallmentApp_createdAt_idx" ON "InstallmentApplication"("createdAt");
+
+      ALTER TABLE "InstallmentApplication" ADD COLUMN IF NOT EXISTS "validIdBackUrl" TEXT;
     `);
     isTableInitialized = true;
   } catch (err: any) {

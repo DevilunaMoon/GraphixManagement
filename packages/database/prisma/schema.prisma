@@ -496,6 +496,7 @@ model InstallmentApplication {
   customerAge   Int
   customerPhone String
   validIdUrl    String
+  validIdBackUrl String?
   provider      String   // "Skyro" | "Home Credit"
   deviceId      String?
   deviceName    String

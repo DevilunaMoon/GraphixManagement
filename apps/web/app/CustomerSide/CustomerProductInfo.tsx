@@ -120,13 +120,16 @@ function CustomerProductInfoContent() {
   const [reqReferenceNo, setReqReferenceNo] = useState('');
   const [reqIncomeSource, setReqIncomeSource] = useState<string>('');
   const [reqSelectedIdType, setReqSelectedIdType] = useState<string>('');
-  const [reqIdFile, setReqIdFile] = useState<File | null>(null);
-  const [reqIdPreview, setReqIdPreview] = useState<string | null>(null);
+  const [reqIdFrontFile, setReqIdFrontFile] = useState<File | null>(null);
+  const [reqIdFrontPreview, setReqIdFrontPreview] = useState<string | null>(null);
+  const [reqIdBackFile, setReqIdBackFile] = useState<File | null>(null);
+  const [reqIdBackPreview, setReqIdBackPreview] = useState<string | null>(null);
   const [isSubmittingReq, setIsSubmittingReq] = useState(false);
   const [reqSuccess, setReqSuccess] = useState(false);
   const [reqError, setReqError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const frontFileInputRef = useRef<HTMLInputElement>(null);
+  const backFileInputRef = useRef<HTMLInputElement>(null);
 
   const activeInstallmentConfig: InstallmentConfig = (installmentProvider && INSTALLMENT_CONFIGS[installmentProvider]) 
     ? INSTALLMENT_CONFIGS[installmentProvider]! 
@@ -266,21 +269,40 @@ function CustomerProductInfoContent() {
     }
   };
 
-  const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setReqIdFile(file);
-      const url = URL.createObjectURL(file);
-      setReqIdPreview(url);
+      setReqIdFrontFile(file);
+      if (reqIdFrontPreview) {
+        URL.revokeObjectURL(reqIdFrontPreview);
+      }
+      setReqIdFrontPreview(URL.createObjectURL(file));
+      setReqError(null);
+    }
+  };
+
+  const handleBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setReqIdBackFile(file);
+      if (reqIdBackPreview) {
+        URL.revokeObjectURL(reqIdBackPreview);
+      }
+      setReqIdBackPreview(URL.createObjectURL(file));
       setReqError(null);
     }
   };
 
   const handleResetReqForm = () => {
-    setReqIdFile(null);
-    if (reqIdPreview) {
-      URL.revokeObjectURL(reqIdPreview);
-      setReqIdPreview(null);
+    setReqIdFrontFile(null);
+    if (reqIdFrontPreview) {
+      URL.revokeObjectURL(reqIdFrontPreview);
+      setReqIdFrontPreview(null);
+    }
+    setReqIdBackFile(null);
+    if (reqIdBackPreview) {
+      URL.revokeObjectURL(reqIdBackPreview);
+      setReqIdBackPreview(null);
     }
     setReqSelectedIdType('');
     setReqIncomeSource('');
@@ -295,8 +317,12 @@ function CustomerProductInfoContent() {
     e.preventDefault();
     setReqError(null);
 
-    if (!reqIdFile) {
-      setReqError('Please upload an image of your valid ID.');
+    if (!reqIdFrontFile) {
+      setReqError('Please upload the FRONT side of your valid ID.');
+      return;
+    }
+    if (!reqIdBackFile) {
+      setReqError('Please upload the BACK side of your valid ID.');
       return;
     }
     if (!reqName.trim()) {
@@ -323,11 +349,14 @@ function CustomerProductInfoContent() {
 
     setIsSubmittingReq(true);
     try {
-      // 1. Upload ID Image (with resilient Base64 fallback if server upload endpoint fails)
+      // 1. Upload ID Images (Front & Back) with resilient Base64 fallback if server upload endpoint fails
       let validIdUrl = '';
+      let validIdBackUrl = '';
+
+      // Upload Front
       try {
         const formData = new FormData();
-        formData.append('file', reqIdFile);
+        formData.append('file', reqIdFrontFile);
         formData.append('folder', 'installment-ids');
 
         const uploadRes = await fetch('/api/upload', {
@@ -340,16 +369,43 @@ function CustomerProductInfoContent() {
           validIdUrl = uploadData.url;
         }
       } catch (uploadFetchErr) {
-        console.warn("Server upload attempt failed, falling back to local encoding:", uploadFetchErr);
+        console.warn("Front upload attempt failed, falling back to local encoding:", uploadFetchErr);
       }
 
-      // If server upload didn't return a URL, convert file directly to Base64 Data URL
       if (!validIdUrl) {
         validIdUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Failed to process Valid ID image.'));
-          reader.readAsDataURL(reqIdFile);
+          reader.onerror = () => reject(new Error('Failed to process Front Valid ID image.'));
+          reader.readAsDataURL(reqIdFrontFile);
+        });
+      }
+
+      // Upload Back
+      try {
+        const formData = new FormData();
+        formData.append('file', reqIdBackFile);
+        formData.append('folder', 'installment-ids');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          validIdBackUrl = uploadData.url;
+        }
+      } catch (uploadFetchErr) {
+        console.warn("Back upload attempt failed, falling back to local encoding:", uploadFetchErr);
+      }
+
+      if (!validIdBackUrl) {
+        validIdBackUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to process Back Valid ID image.'));
+          reader.readAsDataURL(reqIdBackFile);
         });
       }
 
@@ -364,6 +420,7 @@ function CustomerProductInfoContent() {
           address: reqAddress.trim(),
           referenceNo: reqReferenceNo.trim() || undefined,
           validIdUrl,
+          validIdBackUrl,
           provider: installmentProvider,
           deviceId: targetDeviceId,
           deviceName: product?.name || 'Selected Device',
@@ -1011,11 +1068,11 @@ function CustomerProductInfoContent() {
 
                   {/* 2-Column Responsive Layout */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* Left Column: Valid ID Upload & Guidelines (5 cols) */}
-                    <div className="lg:col-span-5 flex flex-col gap-3">
+                    {/* Left Column: Valid ID Upload & Guidelines (6 cols) */}
+                    <div className="lg:col-span-6 flex flex-col gap-3">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                          1. Valid ID Photo <span className="text-rose-500">*</span>
+                          1. Valid ID Photos (Front & Back) <span className="text-rose-500">*</span>
                         </label>
                         <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                           {activeInstallmentConfig.name} Accepted
@@ -1067,58 +1124,120 @@ function CustomerProductInfoContent() {
                         )}
                       </div>
 
+                      {/* Front & Back ID Warning Banner */}
+                      <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-900 flex items-start gap-2 shadow-2xs">
+                        <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div className="text-[11px] leading-relaxed font-semibold">
+                          <span className="font-black text-amber-950">⚠️ Warning:</span> Please upload <strong className="underline decoration-amber-400 font-black">BOTH</strong> the <strong className="text-gray-900">FRONT</strong> and <strong className="text-gray-900">BACK</strong> sides of your selected Valid ID. Ensure all text and details are clear and legible.
+                        </div>
+                      </div>
+
+                      {/* Hidden File Inputs */}
                       <input 
                         type="file" 
-                        ref={fileInputRef}
+                        ref={frontFileInputRef}
                         accept="image/*"
-                        onChange={handleIdFileChange}
+                        onChange={handleFrontFileChange}
+                        className="hidden" 
+                      />
+                      <input 
+                        type="file" 
+                        ref={backFileInputRef}
+                        accept="image/*"
+                        onChange={handleBackFileChange}
                         className="hidden" 
                       />
 
-                      {reqIdPreview ? (
-                        <div className="flex flex-col gap-2.5 p-3 rounded-2xl bg-purple-50/40 border-2 border-purple-200 relative group">
-                          <div className="w-full h-40 rounded-xl overflow-hidden bg-white border border-purple-100 flex items-center justify-center">
-                            <img src={reqIdPreview} alt="Valid ID Preview" className="w-full h-full object-contain" />
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-black text-gray-900 truncate m-0">{reqIdFile?.name}</p>
-                              <p className="text-[11px] text-gray-500 font-semibold m-0 mt-0.5">
-                                {reqIdFile ? `${(reqIdFile.size / 1024).toFixed(1)} KB` : ''} • Image Attached
-                              </p>
-                              {reqSelectedIdType && (
-                                <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
-                                  Tagged ID: {reqSelectedIdType}
-                                </span>
-                              )}
+                      {/* 2 Upload Slots: Front & Back */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* Front Side Upload Slot */}
+                        {reqIdFrontPreview ? (
+                          <div className="flex flex-col gap-1.5 p-2.5 rounded-2xl bg-purple-50/40 border-2 border-purple-200 relative group">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-gray-700 px-0.5">
+                              <span className="flex items-center gap-1 text-emerald-700 font-black">
+                                <CheckCircle size={12} className="text-emerald-600" /> Front Side
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => frontFileInputRef.current?.click()}
+                                className="text-[10px] font-bold text-[#8b00cc] hover:underline cursor-pointer bg-transparent border-none p-0"
+                              >
+                                Change
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-[#8b00cc] font-bold text-xs border border-purple-200 transition-colors cursor-pointer shrink-0"
-                            >
-                              Change ID
-                            </button>
+                            <div className="w-full h-28 rounded-xl overflow-hidden bg-white border border-purple-100 flex items-center justify-center">
+                              <img src={reqIdFrontPreview} alt="Valid ID Front Preview" className="w-full h-full object-contain" />
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-semibold truncate m-0 px-0.5" title={reqIdFrontFile?.name}>
+                              {reqIdFrontFile?.name}
+                            </p>
                           </div>
-                        </div>
-                      ) : (
-                        <div 
-                          onClick={() => fileInputRef.current?.click()}
-                          className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group min-h-[140px] ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
-                        >
-                          <div className={`w-11 h-11 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
-                            <UploadCloud size={22} />
+                        ) : (
+                          <div 
+                            onClick={() => frontFileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all text-center group min-h-[140px] ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
+                              <UploadCloud size={18} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-gray-900 m-0">Upload Front Side <span className="text-rose-500">*</span></p>
+                              <p className="text-[10px] text-gray-500 font-medium m-0 mt-0.5">Click or drag image</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs font-extrabold text-gray-900 m-0">Click or Drag to Upload Valid ID</p>
-                            <p className="text-[11px] text-gray-500 font-medium m-0 mt-0.5">PNG, JPG, or WEBP up to 5MB</p>
+                        )}
+
+                        {/* Back Side Upload Slot */}
+                        {reqIdBackPreview ? (
+                          <div className="flex flex-col gap-1.5 p-2.5 rounded-2xl bg-purple-50/40 border-2 border-purple-200 relative group">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-gray-700 px-0.5">
+                              <span className="flex items-center gap-1 text-emerald-700 font-black">
+                                <CheckCircle size={12} className="text-emerald-600" /> Back Side
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => backFileInputRef.current?.click()}
+                                className="text-[10px] font-bold text-[#8b00cc] hover:underline cursor-pointer bg-transparent border-none p-0"
+                              >
+                                Change
+                              </button>
+                            </div>
+                            <div className="w-full h-28 rounded-xl overflow-hidden bg-white border border-purple-100 flex items-center justify-center">
+                              <img src={reqIdBackPreview} alt="Valid ID Back Preview" className="w-full h-full object-contain" />
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-semibold truncate m-0 px-0.5" title={reqIdBackFile?.name}>
+                              {reqIdBackFile?.name}
+                            </p>
                           </div>
+                        ) : (
+                          <div 
+                            onClick={() => backFileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all text-center group min-h-[140px] ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
+                              <UploadCloud size={18} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-gray-900 m-0">Upload Back Side <span className="text-rose-500">*</span></p>
+                              <p className="text-[10px] text-gray-500 font-medium m-0 mt-0.5">Click or drag image</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tagged ID Pill Display */}
+                      {reqSelectedIdType && (
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-purple-50/60 border border-purple-200">
+                          <span className="text-[11px] text-gray-600 font-semibold">Selected Valid ID:</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
+                            ✓ {reqSelectedIdType}
+                          </span>
                         </div>
                       )}
                     </div>
 
-                    {/* Right Column: Applicant Personal & Contact Details (7 cols) */}
-                    <div className="lg:col-span-7 flex flex-col gap-3.5">
+                    {/* Right Column: Applicant Personal & Contact Details (6 cols) */}
+                    <div className="lg:col-span-6 flex flex-col gap-3.5">
                       {/* 2. Your Name */}
                       <div className="flex flex-col gap-1.5">
                         <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">

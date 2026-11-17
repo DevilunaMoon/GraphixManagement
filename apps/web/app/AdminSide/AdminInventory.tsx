@@ -187,7 +187,13 @@ export default function AdminInventory() {
   const [installmentBranchFilter, setInstallmentBranchFilter] = useState('all');
   const [installmentPendingCount, setInstallmentPendingCount] = useState(0);
   const [viewingValidIdUrl, setViewingValidIdUrl] = useState<string | null>(null);
+  const [viewingValidIdTitle, setViewingValidIdTitle] = useState<string>('Verified Customer Valid ID');
   const [updatingAppId, setUpdatingAppId] = useState<string | null>(null);
+
+  const openValidIdViewer = (url: string, title: string = 'Verified Customer Valid ID') => {
+    setViewingValidIdUrl(url);
+    setViewingValidIdTitle(title);
+  };
 
   // Add Product State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -6077,20 +6083,38 @@ export default function AdminInventory() {
                               </span>
                             </td>
 
-                            {/* Valid ID Image Preview */}
+                            {/* Valid ID Image Preview (Front & Back) */}
                             <td className="py-3.5 px-4 text-center">
-                              <div className="flex flex-col items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setViewingValidIdUrl(app.validIdUrl)}
-                                  className="group relative w-12 h-12 rounded-xl overflow-hidden border border-purple-200 bg-gray-50 inline-flex items-center justify-center cursor-pointer hover:shadow-md transition-all"
-                                  title="Click to view full Valid ID image"
-                                >
-                                  <img src={app.validIdUrl} alt="Valid ID" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                                    <Eye size={16} />
-                                  </div>
-                                </button>
+                              <div className="flex flex-col items-center gap-1.5">
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => openValidIdViewer(app.validIdUrl, `${app.customerName}'s Valid ID (Front)`)}
+                                    className="group relative w-11 h-11 rounded-xl overflow-hidden border border-purple-200 bg-gray-50 inline-flex items-center justify-center cursor-pointer hover:shadow-md transition-all"
+                                    title="View Front of Valid ID"
+                                  >
+                                    <img src={app.validIdUrl} alt="Front ID" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white py-0.5 leading-none">FRONT</span>
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                      <Eye size={14} />
+                                    </div>
+                                  </button>
+
+                                  {app.validIdBackUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => openValidIdViewer(app.validIdBackUrl, `${app.customerName}'s Valid ID (Back)`)}
+                                      className="group relative w-11 h-11 rounded-xl overflow-hidden border border-purple-200 bg-gray-50 inline-flex items-center justify-center cursor-pointer hover:shadow-md transition-all"
+                                      title="View Back of Valid ID"
+                                    >
+                                      <img src={app.validIdBackUrl} alt="Back ID" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] font-black text-white py-0.5 leading-none">BACK</span>
+                                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                        <Eye size={14} />
+                                      </div>
+                                    </button>
+                                  )}
+                                </div>
                                 {app.notes && (
                                   <span className="text-[10px] font-bold text-gray-500 max-w-[150px] truncate" title={app.notes}>
                                     {app.notes}
@@ -6168,14 +6192,29 @@ export default function AdminInventory() {
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-                          <button
-                            type="button"
-                            onClick={() => setViewingValidIdUrl(app.validIdUrl)}
-                            className="flex items-center gap-1.5 text-xs font-bold text-[#5c0099] hover:underline cursor-pointer bg-transparent border-none p-0"
-                          >
-                            <Eye size={14} />
-                            <span>View Valid ID</span>
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openValidIdViewer(app.validIdUrl, `${app.customerName}'s Valid ID (Front)`)}
+                              className="flex items-center gap-1 text-xs font-bold text-[#5c0099] hover:underline cursor-pointer bg-transparent border-none p-0"
+                            >
+                              <Eye size={14} />
+                              <span>Front ID</span>
+                            </button>
+                            {app.validIdBackUrl && (
+                              <>
+                                <span className="text-gray-300">•</span>
+                                <button
+                                  type="button"
+                                  onClick={() => openValidIdViewer(app.validIdBackUrl, `${app.customerName}'s Valid ID (Back)`)}
+                                  className="flex items-center gap-1 text-xs font-bold text-[#5c0099] hover:underline cursor-pointer bg-transparent border-none p-0"
+                                >
+                                  <Eye size={14} />
+                                  <span>Back ID</span>
+                                </button>
+                              </>
+                            )}
+                          </div>
 
                           <select
                             value={app.status}
@@ -6226,7 +6265,7 @@ export default function AdminInventory() {
             <div className="flex items-center justify-between pb-2 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={18} className="text-[#5c0099]" />
-                <h4 className="text-base font-black text-gray-900 m-0">Verified Customer Valid ID</h4>
+                <h4 className="text-base font-black text-gray-900 m-0">{viewingValidIdTitle}</h4>
               </div>
               <div className="flex items-center gap-2">
                 <a
