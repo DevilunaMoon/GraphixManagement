@@ -6079,17 +6079,24 @@ export default function AdminInventory() {
 
                             {/* Valid ID Image Preview */}
                             <td className="py-3.5 px-4 text-center">
-                              <button
-                                type="button"
-                                onClick={() => setViewingValidIdUrl(app.validIdUrl)}
-                                className="group relative w-12 h-12 rounded-xl overflow-hidden border border-purple-200 bg-gray-50 inline-flex items-center justify-center cursor-pointer hover:shadow-md transition-all"
-                                title="Click to view full Valid ID image"
-                              >
-                                <img src={app.validIdUrl} alt="Valid ID" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
-                                  <Eye size={16} />
-                                </div>
-                              </button>
+                              <div className="flex flex-col items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewingValidIdUrl(app.validIdUrl)}
+                                  className="group relative w-12 h-12 rounded-xl overflow-hidden border border-purple-200 bg-gray-50 inline-flex items-center justify-center cursor-pointer hover:shadow-md transition-all"
+                                  title="Click to view full Valid ID image"
+                                >
+                                  <img src={app.validIdUrl} alt="Valid ID" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                    <Eye size={16} />
+                                  </div>
+                                </button>
+                                {app.notes && (
+                                  <span className="text-[10px] font-bold text-gray-500 max-w-[120px] truncate" title={app.notes}>
+                                    {app.notes.replace('ID Type: ', '')}
+                                  </span>
+                                )}
+                              </div>
                             </td>
 
                             {/* Status Selector */}
@@ -6152,6 +6159,12 @@ export default function AdminInventory() {
                               {app.customerPhone}
                             </a>
                           </div>
+                          {app.notes && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 font-semibold text-[11px]">Valid ID Type:</span>
+                              <span className="font-bold text-purple-900">{app.notes.replace('ID Type: ', '')}</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">

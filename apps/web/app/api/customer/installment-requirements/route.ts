@@ -19,7 +19,8 @@ export async function POST(req: Request) {
       provider,
       deviceId,
       deviceName,
-      branch
+      branch,
+      idType
     } = body;
 
     // Validation
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
     const targetDeviceName = deviceName || 'Selected Device';
 
     const customerId = session?.userId || null;
+    const cleanNotes = idType ? `ID Type: ${idType}` : null;
 
     // Save installment application
     const application = await (prisma as any).installmentApplication.create({
@@ -55,6 +57,7 @@ export async function POST(req: Request) {
         deviceName: targetDeviceName,
         branch: targetBranch,
         status: 'Pending',
+        notes: cleanNotes,
       }
     });
 
@@ -76,7 +79,7 @@ export async function POST(req: Request) {
           data: staffMembers.map(staff => ({
             userId: staff.id,
             title: `New ${cleanProvider} Installment Request`,
-            message: `${name.trim()} (Age: ${parsedAge}, Phone: ${phone.trim()}) submitted requirements for ${targetDeviceName} at ${targetBranch} branch.`,
+            message: `${name.trim()} (Age: ${parsedAge}, Phone: ${phone.trim()}${idType ? `, ID: ${idType}` : ''}) submitted requirements for ${targetDeviceName} at ${targetBranch} branch.`,
             branch: targetBranch,
             type: 'INSTALLMENT_APPLICATION',
             isRead: false

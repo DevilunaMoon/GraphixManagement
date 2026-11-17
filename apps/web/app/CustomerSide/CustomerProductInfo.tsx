@@ -20,6 +20,69 @@ interface Comment {
   adminReplyDate?: string | null;
 }
 
+interface InstallmentConfig {
+  name: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  headerAccent: string;
+  btnGradient: string;
+  dropzoneBorder: string;
+  dropzoneBg: string;
+  iconBg: string;
+  iconText: string;
+  acceptedIds: { label: string; note?: string }[];
+  helperNotice?: string;
+}
+
+const DEFAULT_INSTALLMENT_CONFIG: InstallmentConfig = {
+  name: 'Skyro',
+  badgeBg: 'bg-blue-50',
+  badgeText: 'text-blue-700',
+  badgeBorder: 'border-blue-200',
+  headerAccent: 'text-blue-600',
+  btnGradient: 'from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-500/25',
+  dropzoneBorder: 'border-blue-200 hover:border-blue-500',
+  dropzoneBg: 'bg-blue-50/20 hover:bg-blue-50/50',
+  iconBg: 'bg-blue-100',
+  iconText: 'text-blue-600',
+  acceptedIds: [
+    { label: 'PhilSys ID (National ID)' },
+    { label: 'UMID' },
+    { label: 'PRC ID' },
+    { label: 'SSS ID' },
+    { label: "Driver's License" },
+    { label: 'Passport' },
+    { label: 'Postal ID' },
+  ],
+  helperNotice: undefined,
+};
+
+const INSTALLMENT_CONFIGS: Record<string, InstallmentConfig> = {
+  Skyro: DEFAULT_INSTALLMENT_CONFIG,
+  'Home Credit': {
+    name: 'Home Credit',
+    badgeBg: 'bg-rose-50',
+    badgeText: 'text-rose-700',
+    badgeBorder: 'border-rose-200',
+    headerAccent: 'text-rose-600',
+    btnGradient: 'from-rose-600 via-red-600 to-red-700 hover:from-rose-700 hover:to-red-800 shadow-rose-500/25',
+    dropzoneBorder: 'border-rose-200 hover:border-rose-500',
+    dropzoneBg: 'bg-rose-50/20 hover:bg-rose-50/50',
+    iconBg: 'bg-rose-100',
+    iconText: 'text-rose-600',
+    acceptedIds: [
+      { label: 'National ID' },
+      { label: "Driver's License" },
+      { label: 'PRC ID', note: 'with supporting details like brgy address' },
+      { label: 'UMID ID' },
+      { label: 'Postal ID' },
+      { label: "Voter's ID" },
+    ],
+    helperNotice: 'For PRC ID, supporting details like Barangay address or proof of billing are required.',
+  },
+};
+
 import { Suspense } from 'react';
 
 function CustomerProductInfoContent() {
@@ -44,6 +107,7 @@ function CustomerProductInfoContent() {
   const [reqName, setReqName] = useState('');
   const [reqAge, setReqAge] = useState('');
   const [reqPhone, setReqPhone] = useState('');
+  const [reqSelectedIdType, setReqSelectedIdType] = useState<string>('');
   const [reqIdFile, setReqIdFile] = useState<File | null>(null);
   const [reqIdPreview, setReqIdPreview] = useState<string | null>(null);
   const [isSubmittingReq, setIsSubmittingReq] = useState(false);
@@ -51,6 +115,10 @@ function CustomerProductInfoContent() {
   const [reqError, setReqError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const activeInstallmentConfig: InstallmentConfig = (installmentProvider && INSTALLMENT_CONFIGS[installmentProvider]) 
+    ? INSTALLMENT_CONFIGS[installmentProvider]! 
+    : DEFAULT_INSTALLMENT_CONFIG;
 
   useEffect(() => {
     fetch('/api/profile')
@@ -196,6 +264,7 @@ function CustomerProductInfoContent() {
       URL.revokeObjectURL(reqIdPreview);
       setReqIdPreview(null);
     }
+    setReqSelectedIdType('');
     setReqSuccess(false);
     setReqError(null);
     setIsRequirementsModalOpen(false);
@@ -268,6 +337,7 @@ function CustomerProductInfoContent() {
           deviceId: targetDeviceId,
           deviceName: product?.name || 'Selected Device',
           branch: selectedBranch,
+          idType: reqSelectedIdType || undefined,
         }),
       });
 
@@ -527,7 +597,10 @@ function CustomerProductInfoContent() {
                     <select
                       id="installmentProviderSelect"
                       value={installmentProvider}
-                      onChange={(e) => setInstallmentProvider(e.target.value)}
+                      onChange={(e) => {
+                        setInstallmentProvider(e.target.value);
+                        setReqSelectedIdType('');
+                      }}
                       className="bg-purple-50/70 border border-purple-200 hover:border-[#8b00cc] text-[#8b00cc] font-black text-xs rounded-xl px-3 py-1 pr-7 appearance-none outline-none transition-all cursor-pointer shadow-2xs focus:ring-2 focus:ring-[#8b00cc]/20"
                     >
                       <option value="" className="text-gray-500 font-semibold">Installment Option</option>
@@ -550,15 +623,17 @@ function CustomerProductInfoContent() {
                       }
                     }}
                     disabled={!installmentProvider}
-                    title={!installmentProvider ? "Select Skyro or Home Credit to unlock" : "Submit installment requirements"}
+                    title={!installmentProvider ? "Select Skyro or Home Credit to unlock" : `Submit ${installmentProvider} installment requirements`}
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
                       installmentProvider
-                        ? 'bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
+                        ? installmentProvider === 'Skyro'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
+                          : 'bg-gradient-to-r from-rose-600 to-red-600 text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
                         : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60'
                     }`}
                   >
                     {installmentProvider ? <FileText size={13} strokeWidth={2.5} /> : <Lock size={12} />}
-                    <span>Send Requirements</span>
+                    <span>Send {installmentProvider ? `${installmentProvider} Req.` : 'Requirements'}</span>
                   </button>
                 </div>
               </div>
@@ -852,22 +927,22 @@ function CustomerProductInfoContent() {
                   <CheckCircle size={44} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-50 text-[#8b00cc] border border-purple-200 mb-2">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder} border mb-2`}>
                     <Sparkles size={13} />
-                    {installmentProvider} Installment Application
+                    {activeInstallmentConfig.name} Installment Application
                   </span>
                   <h3 className="text-2xl font-black text-gray-900 m-0 tracking-tight">Requirements Submitted!</h3>
                   <p className="text-gray-600 font-medium text-sm mt-2 leading-relaxed">
-                    Thank you, <strong className="text-gray-900">{reqName}</strong>! Your requirements for <strong className="text-purple-900">{product?.name}</strong> have been forwarded to the <strong className="text-gray-900">{selectedBranch} Branch</strong> team.
+                    Thank you, <strong className="text-gray-900">{reqName}</strong>! Your {activeInstallmentConfig.name} requirements for <strong className="text-purple-900">{product?.name}</strong> have been forwarded to the <strong className="text-gray-900">{selectedBranch} Branch</strong> team.
                   </p>
                   <p className="text-xs text-gray-500 font-semibold mt-2">
-                    Our installment officer will review your Valid ID and contact you at <strong className="text-black">{reqPhone}</strong> within 24 hours.
+                    Our installment officer will review your Valid ID {reqSelectedIdType ? `(${reqSelectedIdType}) ` : ''}and contact you at <strong className="text-black">{reqPhone}</strong> within 24 hours.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleResetReqForm}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-extrabold rounded-xl shadow-md cursor-pointer border-none transition-all active:scale-95"
+                  className={`w-full mt-2 py-3 bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold rounded-xl shadow-md cursor-pointer border-none transition-all active:scale-95`}
                 >
                   Done
                 </button>
@@ -877,15 +952,15 @@ function CustomerProductInfoContent() {
                 {/* Header */}
                 <div className="border-b border-gray-100 pb-4 pr-8">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider bg-purple-100 text-[#8b00cc] border border-purple-200">
-                      {installmentProvider}
+                    <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
+                      {activeInstallmentConfig.name}
                     </span>
                     <span className="text-xs font-bold text-gray-500">
                       • {selectedBranch} Branch
                     </span>
                   </div>
                   <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0 mt-1.5 tracking-tight">
-                    Send Installment Requirements
+                    Send {activeInstallmentConfig.name} Requirements
                   </h3>
                   <p className="text-xs text-gray-500 font-medium m-0 mt-0.5">
                     Submit required details for <strong className="text-gray-800">{product?.name}</strong> pre-approval.
@@ -903,11 +978,60 @@ function CustomerProductInfoContent() {
                   )}
 
                   {/* 1. Upload Valid ID */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
-                      <span>1. Upload Image of your Valid ID <span className="text-rose-500">*</span></span>
-                      <span className="text-[10px] text-gray-400 font-normal">Passport, Driver's License, UMID, etc.</span>
-                    </label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                        1. Upload Image of your Valid ID <span className="text-rose-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                        Accepted by {activeInstallmentConfig.name}
+                      </span>
+                    </div>
+
+                    {/* Words showing accepted valid IDs */}
+                    <div className="bg-gray-50/90 rounded-2xl p-3 border border-gray-200/90 flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <CheckCircle size={13} className={activeInstallmentConfig.headerAccent} />
+                          Accepted Valid IDs:
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-semibold">
+                          Click to tag ID (optional)
+                        </span>
+                      </div>
+
+                      {/* Pill badges */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeInstallmentConfig.acceptedIds.map((item, idx) => {
+                          const isSelected = reqSelectedIdType === item.label;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setReqSelectedIdType(isSelected ? '' : item.label)}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                                isSelected
+                                  ? `${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder} ring-2 ring-purple-300 shadow-2xs`
+                                  : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                              }`}
+                            >
+                              <span className={`text-[10px] ${isSelected ? 'font-black' : 'text-gray-400'}`}>
+                                {isSelected ? '✓' : '•'}
+                              </span>
+                              <span>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Special Notice (e.g. Home Credit PRC Address requirement) */}
+                      {activeInstallmentConfig.helperNotice && (
+                        <div className="pt-2 border-t border-gray-200/70 flex items-start gap-1.5 text-[11px] text-amber-800 font-semibold">
+                          <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                          <span>{activeInstallmentConfig.helperNotice}</span>
+                        </div>
+                      )}
+                    </div>
 
                     <input 
                       type="file" 
@@ -927,6 +1051,11 @@ function CustomerProductInfoContent() {
                           <p className="text-[11px] text-gray-500 font-semibold m-0 mt-0.5">
                             {reqIdFile ? `${(reqIdFile.size / 1024).toFixed(1)} KB` : ''} • Image Attached
                           </p>
+                          {reqSelectedIdType && (
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-black border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
+                              Tagged ID: {reqSelectedIdType}
+                            </span>
+                          )}
                         </div>
                         <button
                           type="button"
@@ -939,9 +1068,9 @@ function CustomerProductInfoContent() {
                     ) : (
                       <div 
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-purple-200 hover:border-[#8b00cc] bg-purple-50/30 hover:bg-purple-50/60 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group"
+                        className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
                       >
-                        <div className="w-10 h-10 rounded-full bg-purple-100 text-[#8b00cc] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
                           <UploadCloud size={20} />
                         </div>
                         <div>
@@ -1023,7 +1152,7 @@ function CustomerProductInfoContent() {
                     <button
                       type="submit"
                       disabled={isSubmittingReq}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-extrabold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-1.5 active:scale-95 border-none"
+                      className={`px-6 py-2.5 rounded-xl bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-60 flex items-center gap-1.5 active:scale-95 border-none`}
                     >
                       {isSubmittingReq ? (
                         <>
