@@ -89,6 +89,14 @@ export default function AdminInventory() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedModelId, setExpandedModelId] = useState<string | null>(null);
 
+  // Variant Physical Units Dropdown State
+  const [expandedVariantIds, setExpandedVariantIds] = useState<string[]>([]);
+  const [variantUnitsMap, setVariantUnitsMap] = useState<Record<string, any[]>>({});
+  const [loadingVariantUnits, setLoadingVariantUnits] = useState<Record<string, boolean>>({});
+  const [variantUnitsImeiInput, setVariantUnitsImeiInput] = useState<Record<string, string>>({});
+  const [savingUnitStatus, setSavingUnitStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [unitErrorMessage, setUnitErrorMessage] = useState<Record<string, string>>({});
+
   // Categories
   const [categories, setCategories] = useState<{ id: string, name: string, logoUrl?: string }[]>([]);
   const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
@@ -1149,6 +1157,87 @@ export default function AdminInventory() {
       })
       .catch(err => console.error("Failed to load device units:", err))
       .finally(() => setIsUnitsLoading(false));
+  };
+
+  const toggleVariantDropdown = (variantId: string, deviceId: string) => {
+    if (expandedVariantIds.includes(variantId)) {
+      setExpandedVariantIds(prev => prev.filter(id => id !== variantId));
+    } else {
+      setExpandedVariantIds(prev => [...prev, variantId]);
+      fetchVariantUnits(variantId, deviceId);
+    }
+  };
+
+  const fetchVariantUnits = async (variantId: string, deviceId: string) => {
+    setLoadingVariantUnits(prev => ({ ...prev, [variantId]: true }));
+    try {
+      const targetBranch = isSuperAdmin ? selectedBranch : userBranch;
+      const branchQuery = targetBranch && targetBranch !== 'all' ? `&branch=${encodeURIComponent(targetBranch)}` : (userBranch ? `&branch=${encodeURIComponent(userBranch)}` : '');
+      const res = await fetch(`/api/inventory/units?deviceId=${encodeURIComponent(deviceId)}&variationId=${encodeURIComponent(variantId)}${branchQuery}&limit=100&autoCreateSlots=true`);
+      const data = await res.json();
+      if (res.ok && data.units) {
+        setVariantUnitsMap(prev => ({ ...prev, [variantId]: data.units }));
+        const inputs: Record<string, string> = {};
+        data.units.forEach((u: any) => {
+          inputs[u.id] = u.realImei || (/^\d{14,16}$/.test(u.imei) ? u.imei : '');
+        });
+        setVariantUnitsImeiInput(prev => ({ ...prev, ...inputs }));
+      }
+    } catch (err) {
+      console.error('Failed to load variant units:', err);
+    } finally {
+      setLoadingVariantUnits(prev => ({ ...prev, [variantId]: false }));
+    }
+  };
+
+  const handleSaveSingleUnitImei = async (unit: any, variantKey: string) => {
+    const currentVal = (variantUnitsImeiInput[unit.id] ?? '').trim();
+    if (!currentVal) {
+      setUnitErrorMessage(prev => ({ ...prev, [unit.id]: 'Please enter a valid 14-16 digit IMEI.' }));
+      return;
+    }
+    if (!/^\d{14,16}$/.test(currentVal)) {
+      setUnitErrorMessage(prev => ({ ...prev, [unit.id]: 'IMEI must be 14-16 numeric digits.' }));
+      return;
+    }
+
+    setUnitErrorMessage(prev => ({ ...prev, [unit.id]: '' }));
+    setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'saving' }));
+
+    try {
+      const res = await fetch('/api/inventory/units', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          unitId: unit.id,
+          imei: currentVal,
+          uniqueId: unit.uniqueId
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'error' }));
+        setUnitErrorMessage(prev => ({ ...prev, [unit.id]: data.error || 'Failed to save IMEI.' }));
+        return;
+      }
+
+      setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'saved' }));
+      setVariantUnitsMap(prev => {
+        const currentList = prev[variantKey] || [];
+        return {
+          ...prev,
+          [variantKey]: currentList.map(u => u.id === unit.id ? data.unit : u)
+        };
+      });
+
+      setTimeout(() => {
+        setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'idle' }));
+      }, 2500);
+    } catch (err: any) {
+      setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'error' }));
+      setUnitErrorMessage(prev => ({ ...prev, [unit.id]: err.message || 'Error saving IMEI.' }));
+    }
   };
 
   useEffect(() => {
@@ -2431,12 +2520,31 @@ export default function AdminInventory() {
                                           ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
                                           : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
                                         const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
+                                        const varKey = v.id || `${prod.id}-${v.name}`;
+                                        const isVarExpanded = expandedVariantIds.includes(varKey);
+                                        const units = variantUnitsMap[varKey] || [];
+                                        const isLoadingUnits = loadingVariantUnits[varKey] || false;
 
                                         return (
-                                          <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
-                                            <td className="py-3 px-3 font-bold text-gray-900">
-                                              {prod.name} – {v.name}
-                                            </td>
+                                          <React.Fragment key={varKey}>
+                                            <tr className="hover:bg-purple-50/50 transition-colors">
+                                              <td className="py-3 px-3 font-bold text-gray-900">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleVariantDropdown(varKey, prod.id)}
+                                                  className="flex items-center gap-2 text-left group hover:text-[#5c0099] transition-colors cursor-pointer"
+                                                  title={isVarExpanded ? "Collapse IMEI units" : "Click to view Unique IDs & IMEIs"}
+                                                >
+                                                  <span className={`p-1 rounded-md transition-colors ${isVarExpanded ? 'bg-purple-100 text-[#5c0099]' : 'bg-gray-100 text-gray-500 group-hover:bg-purple-50 group-hover:text-[#5c0099]'}`}>
+                                                    {isVarExpanded ? <ChevronDown size={14} className="stroke-[2.5]" /> : <ChevronRight size={14} className="stroke-[2.5]" />}
+                                                  </span>
+                                                  <span className="font-bold">{prod.name} – {v.name}</span>
+                                                  <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200/80 px-2 py-0.5 rounded-full flex items-center gap-1 group-hover:border-purple-300">
+                                                    <Smartphone size={10} />
+                                                    IMEI / Units
+                                                  </span>
+                                                </button>
+                                              </td>
                                             <td className="py-3 px-3 font-mono font-bold text-[#5c0099]">
                                               <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px]">
                                                 {displayProdId}
@@ -2515,8 +2623,186 @@ export default function AdminInventory() {
                                               </div>
                                             </td>
                                           </tr>
-                                        );
-                                      })}
+
+                                          {/* Collapsible Nested Units & IMEI Management Drawer */}
+                                          {isVarExpanded && (
+                                            <tr className="bg-purple-50/40 border-b-2 border-purple-200/50">
+                                              <td colSpan={isSuperAdmin ? 9 : 7} className="p-3 sm:p-4">
+                                                <div className="bg-white rounded-xl border border-purple-200 shadow-2xs p-4 flex flex-col gap-3">
+                                                  {/* Drawer Header */}
+                                                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                      <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#5c0099] flex items-center justify-center shrink-0">
+                                                        <Smartphone size={16} />
+                                                      </div>
+                                                      <div>
+                                                        <h5 className="font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-2">
+                                                          <span>{prod.name} ({v.name}) – Physical Phone Units</span>
+                                                          <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">
+                                                            {units.length} registered
+                                                          </span>
+                                                        </h5>
+                                                        <p className="text-[11px] text-gray-500">
+                                                          View Unique IDs and assign hardware IMEIs for {isSuperAdmin ? 'all branches' : `${userBranch} Branch`}.
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => fetchVariantUnits(varKey, prod.id)}
+                                                        disabled={isLoadingUnits}
+                                                        className="text-xs text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                                                        title="Refresh units"
+                                                      >
+                                                        <RefreshCw size={12} className={isLoadingUnits ? 'animate-spin' : ''} />
+                                                        Refresh
+                                                      </button>
+                                                    </div>
+                                                  </div>
+
+                                                  {/* Units Table */}
+                                                  {isLoadingUnits ? (
+                                                    <div className="py-8 text-center text-xs font-semibold text-gray-500 flex items-center justify-center gap-2">
+                                                      <RefreshCw size={14} className="animate-spin text-[#5c0099]" />
+                                                      Loading phone units & IMEIs...
+                                                    </div>
+                                                  ) : units.length > 0 ? (
+                                                    <div className="overflow-x-auto">
+                                                      <table className="w-full text-xs text-left">
+                                                        <thead>
+                                                          <tr className="bg-gray-50/90 text-gray-600 font-bold border-b border-gray-200">
+                                                            <th className="py-2 px-3 w-12 text-center">#</th>
+                                                            <th className="py-2 px-3">Unique ID</th>
+                                                            <th className="py-2 px-3 text-center">Status</th>
+                                                            <th className="py-2 px-3">Branch</th>
+                                                            <th className="py-2 px-3 min-w-[260px]">Hardware IMEI (14-16 Digits)</th>
+                                                            <th className="py-2 px-3 text-center w-28">Action</th>
+                                                          </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-gray-100">
+                                                          {units.map((u: any, uIdx: number) => {
+                                                            const inputVal = variantUnitsImeiInput[u.id] ?? '';
+                                                            const status = savingUnitStatus[u.id] || 'idle';
+                                                            const errMsg = unitErrorMessage[u.id] || '';
+                                                            const isSold = u.status === 'Sold';
+                                                            const isSavedReal = u.hasRealImei;
+
+                                                            return (
+                                                              <tr key={u.id || uIdx} className="hover:bg-purple-50/20 transition-colors">
+                                                                <td className="py-2.5 px-3 text-center font-bold text-gray-400">
+                                                                  #{uIdx + 1}
+                                                                </td>
+                                                                <td className="py-2.5 px-3">
+                                                                  <span className="font-mono font-bold text-xs bg-purple-50 text-[#5c0099] border border-purple-200 px-2.5 py-1 rounded-md tracking-wider">
+                                                                    {u.uniqueId || `UNIT-${uIdx + 1}`}
+                                                                  </span>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 text-center">
+                                                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                                                    u.status === 'Available'
+                                                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                                                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                                                  }`}>
+                                                                    {u.status || 'Available'}
+                                                                  </span>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 font-semibold text-gray-700">
+                                                                  {u.branch}
+                                                                </td>
+                                                                <td className="py-2.5 px-3">
+                                                                  <div className="flex flex-col gap-1 max-w-xs">
+                                                                    <div className="relative">
+                                                                      <input
+                                                                        id={`imei-input-${v.id}-${uIdx}`}
+                                                                        type="text"
+                                                                        disabled={isSold || status === 'saving'}
+                                                                        placeholder="Enter 14-16 digit IMEI..."
+                                                                        value={inputVal}
+                                                                        onChange={(e) => {
+                                                                          const val = e.target.value.replace(/\s+/g, '');
+                                                                          setVariantUnitsImeiInput(prev => ({ ...prev, [u.id]: val }));
+                                                                          if (unitErrorMessage[u.id]) {
+                                                                            setUnitErrorMessage(prev => ({ ...prev, [u.id]: '' }));
+                                                                          }
+                                                                        }}
+                                                                        onKeyDown={(e) => {
+                                                                          if (e.key === 'Enter') {
+                                                                            e.preventDefault();
+                                                                            handleSaveSingleUnitImei(u, varKey);
+                                                                            const nextEl = document.getElementById(`imei-input-${v.id}-${uIdx + 1}`);
+                                                                            if (nextEl) nextEl.focus();
+                                                                          }
+                                                                        }}
+                                                                        className={`w-full font-mono text-xs px-2.5 py-1.5 rounded-lg border outline-none transition-all ${
+                                                                          errMsg
+                                                                            ? 'border-rose-400 bg-rose-50/50 focus:ring-1 focus:ring-rose-400'
+                                                                            : isSavedReal && !errMsg
+                                                                            ? 'border-emerald-300 bg-emerald-50/20 text-gray-900 focus:border-[#5c0099] focus:ring-1 focus:ring-[#5c0099]'
+                                                                            : 'border-gray-300 bg-white text-gray-900 focus:border-[#5c0099] focus:ring-1 focus:ring-[#5c0099]'
+                                                                        } ${isSold ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
+                                                                      />
+                                                                      {isSavedReal && !errMsg && (
+                                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-600 text-[10px] font-bold flex items-center gap-0.5 pointer-events-none">
+                                                                          <CheckCircle2 size={12} />
+                                                                        </span>
+                                                                      )}
+                                                                    </div>
+                                                                    {errMsg && (
+                                                                      <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1">
+                                                                        <AlertCircle size={10} /> {errMsg}
+                                                                      </span>
+                                                                    )}
+                                                                  </div>
+                                                                </td>
+                                                                <td className="py-2.5 px-3 text-center">
+                                                                  <button
+                                                                    type="button"
+                                                                    disabled={isSold || status === 'saving'}
+                                                                    onClick={() => handleSaveSingleUnitImei(u, varKey)}
+                                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 w-full cursor-pointer ${
+                                                                      status === 'saved'
+                                                                        ? 'bg-emerald-600 text-white'
+                                                                        : status === 'saving'
+                                                                        ? 'bg-purple-300 text-white cursor-wait'
+                                                                        : isSold
+                                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                        : 'bg-[#5c0099] hover:bg-[#470077] text-white shadow-2xs'
+                                                                    }`}
+                                                                  >
+                                                                    {status === 'saving' ? (
+                                                                      <>
+                                                                        <RefreshCw size={12} className="animate-spin" />
+                                                                        Saving...
+                                                                      </>
+                                                                    ) : status === 'saved' ? (
+                                                                      <>
+                                                                        <CheckCircle2 size={12} />
+                                                                        Saved!
+                                                                      </>
+                                                                    ) : (
+                                                                      'Save'
+                                                                    )}
+                                                                  </button>
+                                                                </td>
+                                                              </tr>
+                                                            );
+                                                          })}
+                                                        </tbody>
+                                                      </table>
+                                                    </div>
+                                                  ) : (
+                                                    <div className="py-6 text-center text-xs text-gray-500 italic bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                                                      No physical units registered for this variant yet. Units are generated automatically when stock is adjusted or added.
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </React.Fragment>
+                                      );
+                                    })}
                                     </tbody>
                                   </table>
                                 </div>
@@ -2787,6 +3073,10 @@ export default function AdminInventory() {
                           ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
                           : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
                         const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
+                        const varKey = v.id || `${prod.id}-${v.name}`;
+                        const isVarExpanded = expandedVariantIds.includes(varKey);
+                        const units = variantUnitsMap[varKey] || [];
+                        const isLoadingUnits = loadingVariantUnits[varKey] || false;
 
                         return (
                           <div key={v.id || vIdx} className="p-3 bg-purple-50/30 rounded-xl border border-purple-200/60 flex flex-col gap-2">
@@ -2849,6 +3139,97 @@ export default function AdminInventory() {
                                 )}
                               </div>
                             </div>
+
+                            {/* Mobile Toggle IMEI Units Button */}
+                            <button
+                              type="button"
+                              onClick={() => toggleVariantDropdown(varKey, prod.id)}
+                              className="w-full mt-1 py-1.5 px-2.5 rounded-lg bg-white hover:bg-purple-50 border border-purple-200 text-[#5c0099] font-bold text-[10px] flex items-center justify-between transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <Smartphone size={12} className="text-purple-600" />
+                                <span>Unique IDs & IMEIs</span>
+                                <span className="bg-purple-100 text-purple-800 px-1.5 py-0.2 rounded-full text-[9px] font-bold">
+                                  {units.length} units
+                                </span>
+                              </div>
+                              {isVarExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            </button>
+
+                            {/* Mobile Units Drawer */}
+                            {isVarExpanded && (
+                              <div className="mt-1 p-2 bg-white rounded-lg border border-purple-200 flex flex-col gap-2">
+                                <div className="flex items-center justify-between pb-1.5 border-b border-gray-100">
+                                  <span className="text-[10px] font-bold text-gray-700">Phone Units ({units.length})</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => fetchVariantUnits(varKey, prod.id)}
+                                    disabled={isLoadingUnits}
+                                    className="text-[10px] text-purple-700 font-semibold flex items-center gap-1"
+                                  >
+                                    <RefreshCw size={10} className={isLoadingUnits ? 'animate-spin' : ''} /> Refresh
+                                  </button>
+                                </div>
+
+                                {isLoadingUnits ? (
+                                  <div className="py-4 text-center text-[11px] text-gray-500 font-semibold flex items-center justify-center gap-1.5">
+                                    <RefreshCw size={12} className="animate-spin text-[#5c0099]" /> Loading units...
+                                  </div>
+                                ) : units.length > 0 ? (
+                                  <div className="flex flex-col gap-2">
+                                    {units.map((u: any, uIdx: number) => {
+                                      const inputVal = variantUnitsImeiInput[u.id] ?? '';
+                                      const status = savingUnitStatus[u.id] || 'idle';
+                                      const errMsg = unitErrorMessage[u.id] || '';
+                                      const isSold = u.status === 'Sold';
+                                      const isSavedReal = u.hasRealImei;
+
+                                      return (
+                                        <div key={u.id || uIdx} className="p-2 rounded-lg bg-purple-50/30 border border-purple-100 flex flex-col gap-1.5">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-mono font-bold text-[11px] text-[#5c0099]">
+                                              #{uIdx + 1} {u.uniqueId || `UNIT-${uIdx + 1}`}
+                                            </span>
+                                            <span className={`text-[9px] font-black uppercase px-2 py-0.2 rounded-full ${u.status === 'Available' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                              {u.status || 'Available'}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <input
+                                              type="text"
+                                              disabled={isSold || status === 'saving'}
+                                              placeholder="Enter IMEI..."
+                                              value={inputVal}
+                                              onChange={(e) => {
+                                                const val = e.target.value.replace(/\s+/g, '');
+                                                setVariantUnitsImeiInput(prev => ({ ...prev, [u.id]: val }));
+                                                if (unitErrorMessage[u.id]) {
+                                                  setUnitErrorMessage(prev => ({ ...prev, [u.id]: '' }));
+                                                }
+                                              }}
+                                              className="flex-1 font-mono text-[11px] px-2 py-1 rounded border border-gray-300 bg-white outline-none focus:border-[#5c0099]"
+                                            />
+                                            <button
+                                              type="button"
+                                              disabled={isSold || status === 'saving'}
+                                              onClick={() => handleSaveSingleUnitImei(u, varKey)}
+                                              className="bg-[#5c0099] text-white px-2.5 py-1 rounded font-bold text-[10px] disabled:opacity-50"
+                                            >
+                                              {status === 'saving' ? '...' : status === 'saved' ? 'Saved' : 'Save'}
+                                            </button>
+                                          </div>
+                                          {errMsg && (
+                                            <span className="text-[10px] text-rose-600 font-semibold">{errMsg}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <span className="text-[11px] text-gray-400 italic text-center py-2">No units registered</span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
