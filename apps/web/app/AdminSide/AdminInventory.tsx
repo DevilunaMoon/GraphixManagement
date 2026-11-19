@@ -13,6 +13,7 @@ import imageCompression from 'browser-image-compression';
 import CountdownTimer from '../../components/Common/CountdownTimer';
 import { generateProductInventoryPDF } from '../../lib/inventory-pdf';
 import { generateUniqueDeviceId } from '../../lib/unique-id';
+import InstallmentApplicantDetailsModal from '../../components/AdminSide/InstallmentApplicantDetailsModal';
 
 type VariantData = {
   id?: string;
@@ -201,6 +202,7 @@ export default function AdminInventory() {
   const [viewingValidIdUrl, setViewingValidIdUrl] = useState<string | null>(null);
   const [viewingValidIdTitle, setViewingValidIdTitle] = useState<string>('Verified Customer Valid ID');
   const [updatingAppId, setUpdatingAppId] = useState<string | null>(null);
+  const [selectedApplicantDetails, setSelectedApplicantDetails] = useState<any | null>(null);
 
   const openValidIdViewer = (url: string, title: string = 'Verified Customer Valid ID') => {
     setViewingValidIdUrl(url);
@@ -6405,9 +6407,16 @@ export default function AdminInventory() {
                         {installmentApplications.map((app) => (
                           <tr key={app.id} className="hover:bg-purple-50/30 transition-colors">
                             {/* Applicant */}
-                            <td className="py-3.5 px-4 font-bold text-gray-950">
-                              <div className="flex flex-col">
-                                <span>{app.customerName}</span>
+                            <td 
+                              className="py-3.5 px-4 font-bold text-gray-950 cursor-pointer group"
+                              onClick={() => setSelectedApplicantDetails(app)}
+                              title="Click to view full customer submission details"
+                            >
+                              <div className="flex flex-col group-hover:text-[#5c0099] transition-colors">
+                                <span className="flex items-center gap-1.5 underline decoration-purple-300 underline-offset-2 group-hover:decoration-[#5c0099]">
+                                  <span>{app.customerName}</span>
+                                  <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 text-[#5c0099] transition-opacity shrink-0" />
+                                </span>
                                 <span className="text-[11px] font-semibold text-gray-400">
                                   Age: {app.customerAge}
                                 </span>
@@ -6529,8 +6538,15 @@ export default function AdminInventory() {
                     {installmentApplications.map((app) => (
                       <div key={app.id} className="p-4 rounded-2xl bg-white border border-purple-100 shadow-xs flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="font-black text-sm text-gray-950">{app.customerName}</span>
+                          <div 
+                            className="cursor-pointer group flex-1"
+                            onClick={() => setSelectedApplicantDetails(app)}
+                            title="Click to view full customer submission details"
+                          >
+                            <span className="font-black text-sm text-gray-950 group-hover:text-[#5c0099] flex items-center gap-1.5 underline decoration-purple-200">
+                              <span>{app.customerName}</span>
+                              <ExternalLink size={12} className="text-[#5c0099] shrink-0" />
+                            </span>
                             <span className="text-xs text-gray-400 font-semibold block">Age: {app.customerAge} • 📍 {app.branch}</span>
                           </div>
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 ${
@@ -6563,10 +6579,19 @@ export default function AdminInventory() {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => openValidIdViewer(app.validIdUrl, `${app.customerName}'s Valid ID (Front)`)}
+                              onClick={() => setSelectedApplicantDetails(app)}
                               className="flex items-center gap-1 text-xs font-bold text-[#5c0099] hover:underline cursor-pointer bg-transparent border-none p-0"
                             >
-                              <Eye size={14} />
+                              <FileText size={13} />
+                              <span>View Form</span>
+                            </button>
+                            <span className="text-gray-300">•</span>
+                            <button
+                              type="button"
+                              onClick={() => openValidIdViewer(app.validIdUrl, `${app.customerName}'s Valid ID (Front)`)}
+                              className="flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-[#5c0099] hover:underline cursor-pointer bg-transparent border-none p-0"
+                            >
+                              <Eye size={13} />
                               <span>Front ID</span>
                             </button>
                             {app.validIdBackUrl && (
@@ -6727,6 +6752,18 @@ export default function AdminInventory() {
           </div>
         </div>
       )}
+
+      {/* Custom Read-Only Applicant Submission Details Modal */}
+      <InstallmentApplicantDetailsModal
+        isOpen={!!selectedApplicantDetails}
+        applicant={selectedApplicantDetails}
+        onClose={() => setSelectedApplicantDetails(null)}
+        onStatusChange={(appId, newStatus) => {
+          handleUpdateAppStatus(appId, newStatus);
+          setSelectedApplicantDetails((prev: any) => prev ? { ...prev, status: newStatus } : null);
+        }}
+        isUpdatingStatus={updatingAppId === selectedApplicantDetails?.id}
+      />
     </div>
   );
 }
