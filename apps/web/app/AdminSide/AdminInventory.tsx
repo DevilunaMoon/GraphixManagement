@@ -2490,28 +2490,28 @@ export default function AdminInventory() {
                               </div>
 
                               {variants.length > 0 ? (
-                                <div className="overflow-x-auto -mx-1 sm:mx-0">
-                                  <table className="w-full text-xs text-left min-w-[860px]">
+                                <div className="w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                  <table className="w-full text-xs text-left">
                                     <thead>
-                                      <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
-                                        <th className="py-3 px-4 whitespace-nowrap min-w-[280px]">Unit</th>
-                                        <th className="py-3 px-3 whitespace-nowrap min-w-[140px]">Product ID</th>
-                                        <th className="py-3 px-3 whitespace-nowrap min-w-[110px]">Internal Storage</th>
+                                      <tr className="bg-gray-50/90 text-gray-600 font-bold border-b border-gray-200">
+                                        <th className="py-2.5 px-3">Unit</th>
+                                        <th className="py-2.5 px-2.5">Product ID</th>
+                                        <th className="py-2.5 px-2.5">Internal Storage</th>
                                         {isSuperAdmin ? (
                                           <>
-                                            <th className="py-3 px-3 text-center whitespace-nowrap min-w-[85px]">Tagoloan</th>
-                                            <th className="py-3 px-3 text-center whitespace-nowrap min-w-[85px]">Villanueva</th>
-                                            <th className="py-3 px-3 text-center whitespace-nowrap min-w-[85px]">Jasaan</th>
-                                            <th className="py-3 px-3 text-center whitespace-nowrap min-w-[95px]">Total Stock</th>
+                                            <th className="py-2.5 px-2 text-center">Tagoloan</th>
+                                            <th className="py-2.5 px-2 text-center">Villanueva</th>
+                                            <th className="py-2.5 px-2 text-center">Jasaan</th>
+                                            <th className="py-2.5 px-2 text-center">Total</th>
                                           </>
                                         ) : (
                                           <>
-                                            <th className="py-3 px-3 text-center whitespace-nowrap min-w-[110px]">{userBranch} Stock</th>
-                                            <th className="py-3 px-3 text-center whitespace-nowrap min-w-[120px]">Active Branch Stock</th>
+                                            <th className="py-2.5 px-2.5 text-center">{userBranch} Stock</th>
+                                            <th className="py-2.5 px-2.5 text-center">Active Branch Stock</th>
                                           </>
                                         )}
-                                        <th className="py-3 px-4 text-right whitespace-nowrap min-w-[120px]">Price</th>
-                                        <th className="py-3 px-4 text-right whitespace-nowrap min-w-[120px]">Actions</th>
+                                        <th className="py-2.5 px-3 text-right whitespace-nowrap">Price</th>
+                                        <th className="py-2.5 px-3 text-right whitespace-nowrap">Actions</th>
                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 font-medium">
@@ -2530,72 +2530,72 @@ export default function AdminInventory() {
                                         return (
                                           <React.Fragment key={varKey}>
                                             <tr className="hover:bg-purple-50/50 transition-colors">
-                                              <td className="py-3.5 px-4 font-bold text-gray-900 whitespace-nowrap min-w-[280px]">
+                                              <td className="py-2.5 px-3 font-bold text-gray-900">
                                                 <button
                                                   type="button"
                                                   onClick={() => toggleVariantDropdown(varKey, prod.id)}
-                                                  className="inline-flex items-center gap-2.5 text-left group hover:text-[#5c0099] transition-colors cursor-pointer select-none"
+                                                  className="inline-flex items-center gap-2 text-left group hover:text-[#5c0099] transition-colors cursor-pointer select-none"
                                                   title={isVarExpanded ? "Collapse IMEI units" : "Click to view Unique IDs & IMEIs"}
                                                 >
                                                   <span className={`p-1 rounded-md shrink-0 transition-colors ${isVarExpanded ? 'bg-purple-100 text-[#5c0099]' : 'bg-gray-100 text-gray-500 group-hover:bg-purple-50 group-hover:text-[#5c0099]'}`}>
                                                     {isVarExpanded ? <ChevronDown size={14} className="stroke-[2.5]" /> : <ChevronRight size={14} className="stroke-[2.5]" />}
                                                   </span>
-                                                  <span className="font-bold text-gray-900 whitespace-nowrap">{prod.name} – {v.name}</span>
-                                                  <span className="shrink-0 whitespace-nowrap text-[10.5px] font-bold bg-purple-50 text-[#5c0099] border border-purple-200 px-2.5 py-0.5 rounded-md flex items-center gap-1.5 group-hover:bg-purple-100 group-hover:border-purple-300 transition-colors shadow-2xs">
-                                                    <Smartphone size={11} className="text-purple-600 shrink-0" />
+                                                  <span className="font-bold text-gray-900 whitespace-nowrap">{v.name}</span>
+                                                  <span className="shrink-0 whitespace-nowrap text-[10px] font-bold bg-purple-50 text-[#5c0099] border border-purple-200 px-2 py-0.5 rounded-md flex items-center gap-1 group-hover:bg-purple-100 group-hover:border-purple-300 transition-colors shadow-2xs">
+                                                    <Smartphone size={10} className="text-purple-600 shrink-0" />
                                                     <span>IMEI / Units</span>
                                                   </span>
                                                 </button>
                                               </td>
-                                            <td className="py-3.5 px-3 font-mono font-bold text-[#5c0099] whitespace-nowrap">
+                                            <td className="py-2.5 px-2.5 font-mono font-bold text-[#5c0099] whitespace-nowrap">
                                               <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px] whitespace-nowrap">
                                                 {displayProdId}
                                               </span>
                                             </td>
-                                            <td className="py-3.5 px-3 whitespace-nowrap">
+                                            <td className="py-2.5 px-2.5 whitespace-nowrap">
                                               <span className="font-semibold text-gray-800">
                                                 {v.name || 'Standard'}
                                               </span>
                                             </td>
                                             {isSuperAdmin ? (
                                               <>
-                                                <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                                                <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                                   <span className={`px-2 py-0.5 rounded font-bold ${v.tagoloanStock && v.tagoloanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
                                                     {v.tagoloanStock && v.tagoloanStock > 0 ? `${v.tagoloanStock} pcs` : 'Out of Stock'}
                                                   </span>
                                                 </td>
-                                                <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                                                <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                                   <span className={`px-2 py-0.5 rounded font-bold ${v.villanuevaStock && v.villanuevaStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
                                                     {v.villanuevaStock && v.villanuevaStock > 0 ? `${v.villanuevaStock} pcs` : 'Out of Stock'}
                                                   </span>
                                                 </td>
-                                                <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                                                <td className="py-2.5 px-2 text-center whitespace-nowrap">
                                                   <span className={`px-2 py-0.5 rounded font-bold ${v.jasaanStock && v.jasaanStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
                                                     {v.jasaanStock && v.jasaanStock > 0 ? `${v.jasaanStock} pcs` : 'Out of Stock'}
                                                   </span>
                                                 </td>
-                                                <td className="py-3.5 px-3 text-center font-bold text-gray-800 whitespace-nowrap">
+                                                <td className="py-2.5 px-2 text-center font-bold text-gray-800 whitespace-nowrap">
                                                   {v.totalStock || ((v.tagoloanStock || 0) + (v.villanuevaStock || 0) + (v.jasaanStock || 0))} pcs
                                                 </td>
                                               </>
                                             ) : (
                                               <>
-                                                <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                                                <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                                                   <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
                                                     {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
                                                   </span>
                                                 </td>
-                                                <td className="py-3.5 px-3 text-center font-bold text-gray-800 whitespace-nowrap">
+                                                <td className="py-2.5 px-2.5 text-center font-bold text-gray-800 whitespace-nowrap">
                                                   <span className={`px-2.5 py-0.5 rounded-full font-bold ${vBranchStock > 0 ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-700'}`}>
                                                     {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
                                                   </span>
                                                 </td>
                                               </>
                                             )}
-                                            <td className="py-3.5 px-4 text-right font-extrabold text-[#5c0099] whitespace-nowrap min-w-[120px]">
+                                            <td className="py-2.5 px-3 text-right font-extrabold text-[#5c0099] whitespace-nowrap">
                                               ₱{Number(v.price || prod.price).toLocaleString()}
                                             </td>
-                                            <td className="py-3.5 px-4 text-right whitespace-nowrap min-w-[120px]">
+                                            <td className="py-2.5 px-3 text-right whitespace-nowrap">
                                               <div className="flex items-center justify-end gap-1.5">
                                                 <button
                                                   onClick={() => {
@@ -2670,16 +2670,16 @@ export default function AdminInventory() {
                                                       Loading phone units & IMEIs...
                                                     </div>
                                                   ) : units.length > 0 ? (
-                                                    <div className="overflow-x-auto">
-                                                      <table className="w-full text-xs text-left min-w-[680px]">
+                                                    <div className="w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                                      <table className="w-full text-xs text-left">
                                                         <thead>
                                                           <tr className="bg-gray-50/90 text-gray-600 font-bold border-b border-gray-200">
-                                                            <th className="py-2.5 px-3 w-12 text-center whitespace-nowrap">#</th>
-                                                            <th className="py-2.5 px-3 whitespace-nowrap min-w-[150px]">Unique ID</th>
-                                                            <th className="py-2.5 px-3 text-center whitespace-nowrap min-w-[110px]">Status</th>
-                                                            <th className="py-2.5 px-3 whitespace-nowrap min-w-[120px]">Branch</th>
-                                                            <th className="py-2.5 px-3 min-w-[260px] whitespace-nowrap">Hardware IMEI (14-16 Digits)</th>
-                                                            <th className="py-2.5 px-3 text-center w-28 whitespace-nowrap">Action</th>
+                                                            <th className="py-2 px-2.5 w-10 text-center whitespace-nowrap">#</th>
+                                                            <th className="py-2 px-2.5 whitespace-nowrap">Unique ID</th>
+                                                            <th className="py-2 px-2 text-center whitespace-nowrap">Status</th>
+                                                            <th className="py-2 px-2.5 whitespace-nowrap">Branch</th>
+                                                            <th className="py-2 px-2.5 whitespace-nowrap">Hardware IMEI (14-16 Digits)</th>
+                                                            <th className="py-2 px-2.5 text-center w-24 whitespace-nowrap">Action</th>
                                                           </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-gray-100">
