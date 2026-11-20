@@ -317,7 +317,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
               {activeDiscountedProducts.slice(0, 5).map(product => {
                 const discountedPrice = Math.round(product.price * (1 - product.discount / 100));
                 const branchName = product.branch ? (product.branch.includes('Branch') ? product.branch : `${product.branch} Branch`) : 'Tagoloan Branch';
-                const conditionText = product.isPreOwned ? 'Pre-Owned' : 'New';
+                const conditionText = product.isPreOwned ? 'Pre-Owned' : 'Brand New';
 
                 return (
                   <div 

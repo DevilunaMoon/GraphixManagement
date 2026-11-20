@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const session = await getSession();
-    if (!session || !['SUPERADMIN', 'ADMIN', 'TECHNICIAN'].includes(session.role)) {
+    if (!session || !['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'TECHNICIAN'].includes(session.role)) {
       return NextResponse.json({ error: 'Unauthorized: insufficient permissions to retry SMS' }, { status: 401 });
     }
 
@@ -26,7 +26,8 @@ export async function POST(
     }
 
     // Role-based branch constraint
-    if (session.role !== 'SUPERADMIN') {
+    const isSuperAdmin = session.role === 'SUPER_ADMIN' || session.role === 'SUPERADMIN';
+    if (!isSuperAdmin) {
       const userBranch = (session.branch || 'Tagoloan').toLowerCase();
       const itemBranch = (historyItem.branch || 'Tagoloan').toLowerCase();
       if (userBranch !== itemBranch) {

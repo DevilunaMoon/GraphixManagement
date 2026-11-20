@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ChevronLeft, ChevronRight, Minus, Plus, UserCircle2, ShoppingCart, 
   CheckCircle, Star, ChevronDown, MapPin, Clock, Lock, FileText, 
-  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar
+  UploadCloud, X, ShieldCheck, AlertCircle, Sparkles, Phone, User, Calendar, Briefcase, Hash
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CountdownTimer from '../../components/Common/CountdownTimer';
@@ -19,6 +19,78 @@ interface Comment {
   adminReplyRole?: string | null;
   adminReplyDate?: string | null;
 }
+
+interface InstallmentConfig {
+  name: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  headerAccent: string;
+  btnGradient: string;
+  dropzoneBorder: string;
+  dropzoneBg: string;
+  iconBg: string;
+  iconText: string;
+  minAge: number;
+  maxAge: number;
+  ageNotice: string;
+  acceptedIds: { label: string; note?: string }[];
+  helperNotice?: string;
+}
+
+const DEFAULT_INSTALLMENT_CONFIG: InstallmentConfig = {
+  name: 'Skyro',
+  badgeBg: 'bg-blue-50',
+  badgeText: 'text-blue-700',
+  badgeBorder: 'border-blue-200',
+  headerAccent: 'text-blue-600',
+  btnGradient: 'from-blue-600 via-indigo-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 shadow-blue-500/25',
+  dropzoneBorder: 'border-blue-200 hover:border-blue-500',
+  dropzoneBg: 'bg-blue-50/20 hover:bg-blue-50/50',
+  iconBg: 'bg-blue-100',
+  iconText: 'text-blue-600',
+  minAge: 18,
+  maxAge: 70,
+  ageNotice: 'Skyro accepts installment applications for applicants aged 18 to 70.',
+  acceptedIds: [
+    { label: 'PhilSys ID (National ID)' },
+    { label: 'UMID' },
+    { label: 'PRC ID' },
+    { label: 'SSS ID' },
+    { label: "Driver's License" },
+    { label: 'Passport' },
+    { label: 'Postal ID' },
+  ],
+  helperNotice: undefined,
+};
+
+const INSTALLMENT_CONFIGS: Record<string, InstallmentConfig> = {
+  Skyro: DEFAULT_INSTALLMENT_CONFIG,
+  'Home Credit': {
+    name: 'Home Credit',
+    badgeBg: 'bg-rose-50',
+    badgeText: 'text-rose-700',
+    badgeBorder: 'border-rose-200',
+    headerAccent: 'text-rose-600',
+    btnGradient: 'from-rose-600 via-red-600 to-red-700 hover:from-rose-700 hover:to-red-800 shadow-rose-500/25',
+    dropzoneBorder: 'border-rose-200 hover:border-rose-500',
+    dropzoneBg: 'bg-rose-50/20 hover:bg-rose-50/50',
+    iconBg: 'bg-rose-100',
+    iconText: 'text-rose-600',
+    minAge: 18,
+    maxAge: 68,
+    ageNotice: 'Home Credit accepts installment applications for applicants aged 18 to 68.',
+    acceptedIds: [
+      { label: 'National ID' },
+      { label: "Driver's License" },
+      { label: 'PRC ID', note: 'with supporting details like brgy address' },
+      { label: 'UMID ID' },
+      { label: 'Postal ID' },
+      { label: "Voter's ID" },
+    ],
+    helperNotice: 'For PRC ID, supporting details like Barangay address or proof of billing are required.',
+  },
+};
 
 import { Suspense } from 'react';
 
@@ -44,13 +116,30 @@ function CustomerProductInfoContent() {
   const [reqName, setReqName] = useState('');
   const [reqAge, setReqAge] = useState('');
   const [reqPhone, setReqPhone] = useState('');
-  const [reqIdFile, setReqIdFile] = useState<File | null>(null);
-  const [reqIdPreview, setReqIdPreview] = useState<string | null>(null);
+  const [reqAddress, setReqAddress] = useState('');
+  const [reqReferenceNo, setReqReferenceNo] = useState('');
+  const [reqIncomeSource, setReqIncomeSource] = useState<string>('');
+  const [reqSelectedIdType, setReqSelectedIdType] = useState<string>('');
+  const [reqIdFrontFile, setReqIdFrontFile] = useState<File | null>(null);
+  const [reqIdFrontPreview, setReqIdFrontPreview] = useState<string | null>(null);
+  const [reqIdBackFile, setReqIdBackFile] = useState<File | null>(null);
+  const [reqIdBackPreview, setReqIdBackPreview] = useState<string | null>(null);
   const [isSubmittingReq, setIsSubmittingReq] = useState(false);
   const [reqSuccess, setReqSuccess] = useState(false);
   const [reqError, setReqError] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const frontFileInputRef = useRef<HTMLInputElement>(null);
+  const backFileInputRef = useRef<HTMLInputElement>(null);
+
+  const activeInstallmentConfig: InstallmentConfig = (installmentProvider && INSTALLMENT_CONFIGS[installmentProvider]) 
+    ? INSTALLMENT_CONFIGS[installmentProvider]! 
+    : DEFAULT_INSTALLMENT_CONFIG;
+
+  const isAgeOutOfRange = useMemo(() => {
+    if (!reqAge) return false;
+    const a = parseInt(reqAge, 10);
+    return isNaN(a) || a < activeInstallmentConfig.minAge || a > activeInstallmentConfig.maxAge;
+  }, [reqAge, activeInstallmentConfig]);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -180,22 +269,45 @@ function CustomerProductInfoContent() {
     }
   };
 
-  const handleIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFrontFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setReqIdFile(file);
-      const url = URL.createObjectURL(file);
-      setReqIdPreview(url);
+      setReqIdFrontFile(file);
+      if (reqIdFrontPreview) {
+        URL.revokeObjectURL(reqIdFrontPreview);
+      }
+      setReqIdFrontPreview(URL.createObjectURL(file));
+      setReqError(null);
+    }
+  };
+
+  const handleBackFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setReqIdBackFile(file);
+      if (reqIdBackPreview) {
+        URL.revokeObjectURL(reqIdBackPreview);
+      }
+      setReqIdBackPreview(URL.createObjectURL(file));
       setReqError(null);
     }
   };
 
   const handleResetReqForm = () => {
-    setReqIdFile(null);
-    if (reqIdPreview) {
-      URL.revokeObjectURL(reqIdPreview);
-      setReqIdPreview(null);
+    setReqIdFrontFile(null);
+    if (reqIdFrontPreview) {
+      URL.revokeObjectURL(reqIdFrontPreview);
+      setReqIdFrontPreview(null);
     }
+    setReqIdBackFile(null);
+    if (reqIdBackPreview) {
+      URL.revokeObjectURL(reqIdBackPreview);
+      setReqIdBackPreview(null);
+    }
+    setReqSelectedIdType('');
+    setReqIncomeSource('');
+    setReqAddress('');
+    setReqReferenceNo('');
     setReqSuccess(false);
     setReqError(null);
     setIsRequirementsModalOpen(false);
@@ -205,31 +317,46 @@ function CustomerProductInfoContent() {
     e.preventDefault();
     setReqError(null);
 
-    if (!reqIdFile) {
-      setReqError('Please upload an image of your valid ID.');
+    if (!reqIdFrontFile) {
+      setReqError('Please upload the FRONT side of your valid ID.');
+      return;
+    }
+    if (!reqIdBackFile) {
+      setReqError('Please upload the BACK side of your valid ID.');
       return;
     }
     if (!reqName.trim()) {
       setReqError('Please enter your full legal name.');
       return;
     }
+    if (!reqAddress.trim()) {
+      setReqError('Please enter your Home Address based on your submitted valid ID.');
+      return;
+    }
     const ageNum = parseInt(reqAge, 10);
-    if (!ageNum || ageNum < 18) {
-      setReqError('You must be at least 18 years old to apply for installment.');
+    if (!ageNum || ageNum < activeInstallmentConfig.minAge || ageNum > activeInstallmentConfig.maxAge) {
+      setReqError(`${activeInstallmentConfig.name} installment requires applicant age to be between ${activeInstallmentConfig.minAge} and ${activeInstallmentConfig.maxAge} years old.`);
       return;
     }
     if (!reqPhone.trim()) {
       setReqError('Please provide your active phone number.');
       return;
     }
+    if (!reqIncomeSource) {
+      setReqError('Please select your source of income (Business or Salary).');
+      return;
+    }
 
     setIsSubmittingReq(true);
     try {
-      // 1. Upload ID Image (with resilient Base64 fallback if server upload endpoint fails)
+      // 1. Upload ID Images (Front & Back) with resilient Base64 fallback if server upload endpoint fails
       let validIdUrl = '';
+      let validIdBackUrl = '';
+
+      // Upload Front
       try {
         const formData = new FormData();
-        formData.append('file', reqIdFile);
+        formData.append('file', reqIdFrontFile);
         formData.append('folder', 'installment-ids');
 
         const uploadRes = await fetch('/api/upload', {
@@ -242,16 +369,43 @@ function CustomerProductInfoContent() {
           validIdUrl = uploadData.url;
         }
       } catch (uploadFetchErr) {
-        console.warn("Server upload attempt failed, falling back to local encoding:", uploadFetchErr);
+        console.warn("Front upload attempt failed, falling back to local encoding:", uploadFetchErr);
       }
 
-      // If server upload didn't return a URL, convert file directly to Base64 Data URL
       if (!validIdUrl) {
         validIdUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Failed to process Valid ID image.'));
-          reader.readAsDataURL(reqIdFile);
+          reader.onerror = () => reject(new Error('Failed to process Front Valid ID image.'));
+          reader.readAsDataURL(reqIdFrontFile);
+        });
+      }
+
+      // Upload Back
+      try {
+        const formData = new FormData();
+        formData.append('file', reqIdBackFile);
+        formData.append('folder', 'installment-ids');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          validIdBackUrl = uploadData.url;
+        }
+      } catch (uploadFetchErr) {
+        console.warn("Back upload attempt failed, falling back to local encoding:", uploadFetchErr);
+      }
+
+      if (!validIdBackUrl) {
+        validIdBackUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to process Back Valid ID image.'));
+          reader.readAsDataURL(reqIdBackFile);
         });
       }
 
@@ -263,11 +417,16 @@ function CustomerProductInfoContent() {
           name: reqName.trim(),
           age: ageNum,
           phone: reqPhone.trim(),
+          address: reqAddress.trim(),
+          referenceNo: reqReferenceNo.trim() || undefined,
           validIdUrl,
+          validIdBackUrl,
           provider: installmentProvider,
           deviceId: targetDeviceId,
           deviceName: product?.name || 'Selected Device',
           branch: selectedBranch,
+          idType: reqSelectedIdType || undefined,
+          incomeSource: reqIncomeSource,
         }),
       });
 
@@ -513,7 +672,7 @@ function CustomerProductInfoContent() {
                       }`} />
                       {product.isPreOwned || (product.name || '').toLowerCase().includes('pre-owned') || (product.name || '').toLowerCase().includes('pre owned')
                         ? 'Pre-Owned'
-                        : 'New'}
+                        : 'Brand New'}
                     </span>
                   </div>
 
@@ -527,7 +686,10 @@ function CustomerProductInfoContent() {
                     <select
                       id="installmentProviderSelect"
                       value={installmentProvider}
-                      onChange={(e) => setInstallmentProvider(e.target.value)}
+                      onChange={(e) => {
+                        setInstallmentProvider(e.target.value);
+                        setReqSelectedIdType('');
+                      }}
                       className="bg-purple-50/70 border border-purple-200 hover:border-[#8b00cc] text-[#8b00cc] font-black text-xs rounded-xl px-3 py-1 pr-7 appearance-none outline-none transition-all cursor-pointer shadow-2xs focus:ring-2 focus:ring-[#8b00cc]/20"
                     >
                       <option value="" className="text-gray-500 font-semibold">Installment Option</option>
@@ -550,15 +712,17 @@ function CustomerProductInfoContent() {
                       }
                     }}
                     disabled={!installmentProvider}
-                    title={!installmentProvider ? "Select Skyro or Home Credit to unlock" : "Submit installment requirements"}
+                    title={!installmentProvider ? "Select Skyro or Home Credit to unlock" : `Submit ${installmentProvider} installment requirements`}
                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
                       installmentProvider
-                        ? 'bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
+                        ? installmentProvider === 'Skyro'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
+                          : 'bg-gradient-to-r from-rose-600 to-red-600 text-white border-transparent shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-95 cursor-pointer animate-in fade-in'
                         : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60'
                     }`}
                   >
                     {installmentProvider ? <FileText size={13} strokeWidth={2.5} /> : <Lock size={12} />}
-                    <span>Send Requirements</span>
+                    <span>Send {installmentProvider ? `${installmentProvider} Req.` : 'Requirements'}</span>
                   </button>
                 </div>
               </div>
@@ -829,11 +993,11 @@ function CustomerProductInfoContent() {
       {/* Send Requirements Modal */}
       {isRequirementsModalOpen && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain overflow-y-auto"
           onWheel={(e) => e.stopPropagation()}
         >
           <div 
-            className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl flex flex-col gap-5 animate-in zoom-in-95 duration-200 border border-purple-100 my-8 relative"
+            className={`bg-white rounded-3xl p-6 sm:p-8 ${reqSuccess ? 'max-w-lg' : 'max-w-4xl'} w-full shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 duration-200 border border-purple-100 my-auto relative max-h-[92vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -852,22 +1016,22 @@ function CustomerProductInfoContent() {
                   <CheckCircle size={44} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-purple-50 text-[#8b00cc] border border-purple-200 mb-2">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder} border mb-2`}>
                     <Sparkles size={13} />
-                    {installmentProvider} Installment Application
+                    {activeInstallmentConfig.name} Installment Application
                   </span>
                   <h3 className="text-2xl font-black text-gray-900 m-0 tracking-tight">Requirements Submitted!</h3>
                   <p className="text-gray-600 font-medium text-sm mt-2 leading-relaxed">
-                    Thank you, <strong className="text-gray-900">{reqName}</strong>! Your requirements for <strong className="text-purple-900">{product?.name}</strong> have been forwarded to the <strong className="text-gray-900">{selectedBranch} Branch</strong> team.
+                    Thank you, <strong className="text-gray-900">{reqName}</strong>! Your {activeInstallmentConfig.name} requirements for <strong className="text-purple-900">{product?.name}</strong> have been forwarded to the <strong className="text-gray-900">{selectedBranch} Branch</strong> team.
                   </p>
                   <p className="text-xs text-gray-500 font-semibold mt-2">
-                    Our installment officer will review your Valid ID and contact you at <strong className="text-black">{reqPhone}</strong> within 24 hours.
+                    Our installment officer will review your Valid ID {reqSelectedIdType ? `(${reqSelectedIdType}) ` : ''}and contact you at <strong className="text-black">{reqPhone}</strong> within 24 hours.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleResetReqForm}
-                  className="w-full mt-2 py-3 bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-extrabold rounded-xl shadow-md cursor-pointer border-none transition-all active:scale-95"
+                  className={`w-full mt-2 py-3 bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold rounded-xl shadow-md cursor-pointer border-none transition-all active:scale-95`}
                 >
                   Done
                 </button>
@@ -877,15 +1041,15 @@ function CustomerProductInfoContent() {
                 {/* Header */}
                 <div className="border-b border-gray-100 pb-4 pr-8">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider bg-purple-100 text-[#8b00cc] border border-purple-200">
-                      {installmentProvider}
+                    <span className={`px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase tracking-wider border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
+                      {activeInstallmentConfig.name}
                     </span>
                     <span className="text-xs font-bold text-gray-500">
                       • {selectedBranch} Branch
                     </span>
                   </div>
                   <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0 mt-1.5 tracking-tight">
-                    Send Installment Requirements
+                    Send {activeInstallmentConfig.name} Requirements
                   </h3>
                   <p className="text-xs text-gray-500 font-medium m-0 mt-0.5">
                     Submit required details for <strong className="text-gray-800">{product?.name}</strong> pre-approval.
@@ -893,137 +1057,355 @@ function CustomerProductInfoContent() {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmitRequirements} className="flex flex-col gap-4">
+                <form onSubmit={handleSubmitRequirements} className="flex flex-col gap-5">
                   {/* Error Alert */}
                   {reqError && (
-                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+                    <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
                       <AlertCircle size={16} className="shrink-0 text-rose-500" />
                       <span>{reqError}</span>
                     </div>
                   )}
 
-                  {/* 1. Upload Valid ID */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
-                      <span>1. Upload Image of your Valid ID <span className="text-rose-500">*</span></span>
-                      <span className="text-[10px] text-gray-400 font-normal">Passport, Driver's License, UMID, etc.</span>
-                    </label>
-
-                    <input 
-                      type="file" 
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleIdFileChange}
-                      className="hidden" 
-                    />
-
-                    {reqIdPreview ? (
-                      <div className="flex items-center gap-3 p-3 rounded-2xl bg-purple-50/50 border-2 border-purple-200 relative group">
-                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-white border border-purple-100 shrink-0">
-                          <img src={reqIdPreview} alt="Valid ID Preview" className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black text-gray-900 truncate m-0">{reqIdFile?.name}</p>
-                          <p className="text-[11px] text-gray-500 font-semibold m-0 mt-0.5">
-                            {reqIdFile ? `${(reqIdFile.size / 1024).toFixed(1)} KB` : ''} • Image Attached
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-purple-100 text-[#8b00cc] font-bold text-xs border border-purple-200 transition-colors cursor-pointer shrink-0"
-                        >
-                          Change ID
-                        </button>
+                  {/* 2-Column Responsive Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* Left Column: Valid ID Upload & Guidelines (6 cols) */}
+                    <div className="lg:col-span-6 flex flex-col gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                          1. Valid ID Photos (Front & Back) <span className="text-rose-500">*</span>
+                        </label>
+                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                          {activeInstallmentConfig.name} Accepted
+                        </span>
                       </div>
-                    ) : (
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-purple-200 hover:border-[#8b00cc] bg-purple-50/30 hover:bg-purple-50/60 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center group"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-purple-100 text-[#8b00cc] flex items-center justify-center group-hover:scale-105 transition-transform">
-                          <UploadCloud size={20} />
+
+                      {/* Accepted Valid IDs Box */}
+                      <div className="bg-gray-50/90 rounded-2xl p-3 border border-gray-200/90 flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-black text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <CheckCircle size={13} className={activeInstallmentConfig.headerAccent} />
+                            Accepted Valid IDs:
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-semibold">
+                            Click to tag ID
+                          </span>
                         </div>
-                        <div>
-                          <p className="text-xs font-extrabold text-gray-900 m-0">Click or Drag to Upload Valid ID</p>
-                          <p className="text-[11px] text-gray-500 font-medium m-0 mt-0.5">PNG, JPG, or WEBP up to 5MB</p>
+
+                        {/* Pill badges */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {activeInstallmentConfig.acceptedIds.map((item, idx) => {
+                            const isSelected = reqSelectedIdType === item.label;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setReqSelectedIdType(isSelected ? '' : item.label)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                                  isSelected
+                                    ? `${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder} ring-2 ring-purple-300 shadow-2xs`
+                                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                                }`}
+                              >
+                                <span className={`text-[10px] ${isSelected ? 'font-black' : 'text-gray-400'}`}>
+                                  {isSelected ? '✓' : '•'}
+                                </span>
+                                <span>{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Special Notice (e.g. Home Credit PRC Address requirement) */}
+                        {activeInstallmentConfig.helperNotice && (
+                          <div className="pt-2 border-t border-gray-200/70 flex items-start gap-1.5 text-[11px] text-amber-800 font-semibold">
+                            <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
+                            <span>{activeInstallmentConfig.helperNotice}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Front & Back ID Warning Banner */}
+                      <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-300 text-amber-900 flex items-start gap-2 shadow-2xs">
+                        <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div className="text-[11px] leading-relaxed font-semibold">
+                          <span className="font-black text-amber-950">⚠️ Warning:</span> Please upload <strong className="underline decoration-amber-400 font-black">BOTH</strong> the <strong className="text-gray-900">FRONT</strong> and <strong className="text-gray-900">BACK</strong> sides of your selected Valid ID. Ensure all text and details are clear and legible.
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* 2. Your Name */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                      2. Your Full Legal Name <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                      {/* Hidden File Inputs */}
                       <input 
-                        type="text"
-                        required
-                        value={reqName}
-                        onChange={(e) => setReqName(e.target.value)}
-                        placeholder="e.g. Juan Dela Cruz"
-                        className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                        type="file" 
+                        ref={frontFileInputRef}
+                        accept="image/*"
+                        onChange={handleFrontFileChange}
+                        className="hidden" 
                       />
+                      <input 
+                        type="file" 
+                        ref={backFileInputRef}
+                        accept="image/*"
+                        onChange={handleBackFileChange}
+                        className="hidden" 
+                      />
+
+                      {/* 2 Upload Slots: Front & Back */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {/* Front Side Upload Slot */}
+                        {reqIdFrontPreview ? (
+                          <div className="flex flex-col gap-1.5 p-2.5 rounded-2xl bg-purple-50/40 border-2 border-purple-200 relative group">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-gray-700 px-0.5">
+                              <span className="flex items-center gap-1 text-emerald-700 font-black">
+                                <CheckCircle size={12} className="text-emerald-600" /> Front Side
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => frontFileInputRef.current?.click()}
+                                className="text-[10px] font-bold text-[#8b00cc] hover:underline cursor-pointer bg-transparent border-none p-0"
+                              >
+                                Change
+                              </button>
+                            </div>
+                            <div className="w-full h-28 rounded-xl overflow-hidden bg-white border border-purple-100 flex items-center justify-center">
+                              <img src={reqIdFrontPreview} alt="Valid ID Front Preview" className="w-full h-full object-contain" />
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-semibold truncate m-0 px-0.5" title={reqIdFrontFile?.name}>
+                              {reqIdFrontFile?.name}
+                            </p>
+                          </div>
+                        ) : (
+                          <div 
+                            onClick={() => frontFileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all text-center group min-h-[140px] ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
+                              <UploadCloud size={18} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-gray-900 m-0">Upload Front Side <span className="text-rose-500">*</span></p>
+                              <p className="text-[10px] text-gray-500 font-medium m-0 mt-0.5">Click or drag image</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Back Side Upload Slot */}
+                        {reqIdBackPreview ? (
+                          <div className="flex flex-col gap-1.5 p-2.5 rounded-2xl bg-purple-50/40 border-2 border-purple-200 relative group">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-gray-700 px-0.5">
+                              <span className="flex items-center gap-1 text-emerald-700 font-black">
+                                <CheckCircle size={12} className="text-emerald-600" /> Back Side
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => backFileInputRef.current?.click()}
+                                className="text-[10px] font-bold text-[#8b00cc] hover:underline cursor-pointer bg-transparent border-none p-0"
+                              >
+                                Change
+                              </button>
+                            </div>
+                            <div className="w-full h-28 rounded-xl overflow-hidden bg-white border border-purple-100 flex items-center justify-center">
+                              <img src={reqIdBackPreview} alt="Valid ID Back Preview" className="w-full h-full object-contain" />
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-semibold truncate m-0 px-0.5" title={reqIdBackFile?.name}>
+                              {reqIdBackFile?.name}
+                            </p>
+                          </div>
+                        ) : (
+                          <div 
+                            onClick={() => backFileInputRef.current?.click()}
+                            className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all text-center group min-h-[140px] ${activeInstallmentConfig.dropzoneBorder} ${activeInstallmentConfig.dropzoneBg}`}
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform ${activeInstallmentConfig.iconBg} ${activeInstallmentConfig.iconText}`}>
+                              <UploadCloud size={18} />
+                            </div>
+                            <div>
+                              <p className="text-xs font-black text-gray-900 m-0">Upload Back Side <span className="text-rose-500">*</span></p>
+                              <p className="text-[10px] text-gray-500 font-medium m-0 mt-0.5">Click or drag image</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tagged ID Pill Display */}
+                      {reqSelectedIdType && (
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-purple-50/60 border border-purple-200">
+                          <span className="text-[11px] text-gray-600 font-semibold">Selected Valid ID:</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${activeInstallmentConfig.badgeBg} ${activeInstallmentConfig.badgeText} ${activeInstallmentConfig.badgeBorder}`}>
+                            ✓ {reqSelectedIdType}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Column: Applicant Personal & Contact Details (6 cols) */}
+                    <div className="lg:col-span-6 flex flex-col gap-3.5">
+                      {/* 2. Your Name */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                          2. Your Full Legal Name <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input 
+                            type="text"
+                            required
+                            value={reqName}
+                            onChange={(e) => setReqName(e.target.value)}
+                            placeholder="e.g. Juan Dela Cruz"
+                            className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      {/* 3. Home Address */}
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-0.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                            3. Home Address <span className="text-rose-500">*</span>
+                          </label>
+                          <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+                            <AlertCircle size={11} className="shrink-0" />
+                            Must match address on Valid ID
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          <input 
+                            type="text"
+                            required
+                            value={reqAddress}
+                            onChange={(e) => setReqAddress(e.target.value)}
+                            placeholder="e.g. House No., Street, Barangay, City, Province"
+                            className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                          />
+                        </div>
+                        <p className="text-[11px] text-amber-900 font-medium m-0 flex items-center gap-1.5 bg-amber-50/90 px-2.5 py-1.5 rounded-lg border border-amber-200/80">
+                          <span>⚠️ <strong>Warning:</strong> Please enter your Home Address based on the address shown on your submitted Valid ID.</span>
+                        </p>
+                      </div>
+
+                      {/* Age Warning Notice Banner */}
+                      <div className="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200 text-purple-950 text-[11px] font-semibold flex items-center gap-2">
+                        <AlertCircle size={15} className={`shrink-0 ${activeInstallmentConfig.headerAccent}`} />
+                        <span>⚠️ <strong>Notice:</strong> {activeInstallmentConfig.ageNotice}</span>
+                      </div>
+
+                      {/* 4. Age & 5. Phone Number (2 cols) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* 4. Your Age */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                              4. Your Age <span className="text-rose-500">*</span>
+                            </label>
+                            <span className="text-[10px] text-gray-400 font-bold">
+                              {activeInstallmentConfig.minAge}–{activeInstallmentConfig.maxAge} yrs
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
+                              type="number"
+                              required
+                              min={activeInstallmentConfig.minAge}
+                              max={activeInstallmentConfig.maxAge}
+                              value={reqAge}
+                              onChange={(e) => setReqAge(e.target.value)}
+                              placeholder={`e.g. 25 (${activeInstallmentConfig.minAge}–${activeInstallmentConfig.maxAge})`}
+                              className={`w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors ${
+                                isAgeOutOfRange 
+                                  ? 'border-rose-400 focus:border-rose-500 bg-rose-50/30' 
+                                  : 'border-gray-200 focus:border-[#8b00cc]'
+                              }`}
+                            />
+                          </div>
+                          {isAgeOutOfRange && (
+                            <p className="text-[10.5px] text-rose-600 font-bold m-0 flex items-center gap-1">
+                              <AlertCircle size={12} className="shrink-0" />
+                              Age must be between {activeInstallmentConfig.minAge} and {activeInstallmentConfig.maxAge} for {activeInstallmentConfig.name}.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* 5. Your Phone Number */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                            5. Phone Number <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
+                              type="tel"
+                              required
+                              value={reqPhone}
+                              onChange={(e) => setReqPhone(e.target.value)}
+                              placeholder="e.g. 09123456789"
+                              className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6. Source of Income & 7. Reference No. (2 cols) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* 6. Source of Income */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
+                            6. Source of Income <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <select 
+                              required
+                              value={reqIncomeSource}
+                              onChange={(e) => setReqIncomeSource(e.target.value)}
+                              className="w-full h-11 pl-10 pr-9 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors appearance-none cursor-pointer"
+                            >
+                              <option value="" disabled className="text-gray-400">Select Income</option>
+                              <option value="Business" className="text-gray-900">Business</option>
+                              <option value="Salary" className="text-gray-900">Salary</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                              <ChevronDown size={14} strokeWidth={2.5} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 7. Reference No. */}
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                            <span>7. Reference No.</span>
+                            <span className="text-[10px] text-gray-400 font-semibold">Optional</span>
+                          </label>
+                          <div className="relative">
+                            <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input 
+                              type="text"
+                              value={reqReferenceNo}
+                              onChange={(e) => setReqReferenceNo(e.target.value)}
+                              placeholder="e.g. REF-2026-0012"
+                              className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* 3. Your Age */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        3. Your Age <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Calendar size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input 
-                          type="number"
-                          required
-                          min="18"
-                          max="100"
-                          value={reqAge}
-                          onChange={(e) => setReqAge(e.target.value)}
-                          placeholder="e.g. 25"
-                          className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
-                        />
-                      </div>
-                    </div>
-
-                    {/* 4. Your Phone Number */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-extrabold text-gray-700 uppercase tracking-wider">
-                        4. Phone Number <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input 
-                          type="tel"
-                          required
-                          value={reqPhone}
-                          onChange={(e) => setReqPhone(e.target.value)}
-                          placeholder="e.g. 09123456789"
-                          className="w-full h-11 pl-10 pr-4 bg-gray-50/60 focus:bg-white border-2 border-gray-200 focus:border-[#8b00cc] rounded-xl text-sm font-semibold text-gray-900 outline-none transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5 mt-2">
+                  {/* Actions Bar */}
+                  <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 mt-1">
                     <button
                       type="button"
                       onClick={handleResetReqForm}
                       disabled={isSubmittingReq}
-                      className="px-5 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+                      className="px-6 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      disabled={isSubmittingReq}
-                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white font-extrabold text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer disabled:opacity-60 flex items-center gap-1.5 active:scale-95 border-none"
+                      disabled={isSubmittingReq || isAgeOutOfRange}
+                      title={isAgeOutOfRange ? `Applicant age must be between ${activeInstallmentConfig.minAge} and ${activeInstallmentConfig.maxAge}` : undefined}
+                      className={`px-7 py-2.5 rounded-xl bg-gradient-to-r ${activeInstallmentConfig.btnGradient} text-white font-extrabold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 active:scale-95 border-none`}
                     >
                       {isSubmittingReq ? (
                         <>

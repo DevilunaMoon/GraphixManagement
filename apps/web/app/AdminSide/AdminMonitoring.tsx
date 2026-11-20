@@ -858,7 +858,7 @@ export default function AdminMonitoring() {
     setIsSavingEdit(true);
 
     // Diagnostic Completion Gate Enforcement
-    if ((editProgress === 'Repairing' || editProgress === 'Completed') && initialProgressIndex <= 1 && !isDiagnosticReadyForRepair) {
+    if ((editProgress === 'Repairing' || editProgress === 'Completed') && !isDiagnosticReadyForRepair && editProgress !== initialEditProgress) {
       alert('Cannot advance progress: Please complete Step 1 (Describe the Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Replacement Parts & Materials) first.');
       setIsSavingEdit(false);
       return;
@@ -1579,10 +1579,10 @@ export default function AdminMonitoring() {
                   <div className="flex flex-col gap-1.5 md:col-span-2">
                     <label className="font-semibold text-xs text-gray-700 flex items-center justify-between">
                       <span>Repair Progress</span>
-                      {!isDiagnosticReadyForRepair && initialProgressIndex <= 1 && (
+                      {!isDiagnosticReadyForRepair && (
                         <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
                           <Lock size={10} />
-                          Steps 1, 2, 3 Required for Repair
+                          Steps 1, 2, 3 Required to Unlock Forward Progress
                         </span>
                       )}
                     </label>
@@ -1595,8 +1595,8 @@ export default function AdminMonitoring() {
                             handleCancelDevice();
                             return;
                           }
-                          if ((val === 'Repairing' || val === 'Completed') && initialProgressIndex <= 1 && !isDiagnosticReadyForRepair) {
-                            alert('Cannot advance to Repairing: Please complete Step 1 (Describe the Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Replacement Parts & Materials) first.');
+                          if ((val === 'Repairing' || val === 'Completed') && !isDiagnosticReadyForRepair && val !== initialEditProgress) {
+                            alert('Cannot advance to ' + val + ': Please complete Step 1 (Describe the Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Replacement Parts & Materials) first.');
                             return;
                           }
                           setEditProgress(val);
@@ -1606,17 +1606,17 @@ export default function AdminMonitoring() {
                         <option value="Diagnostic" disabled={progressLevels.indexOf('Diagnostic') < initialProgressIndex} className="text-blue-500 font-semibold">Diagnostic</option>
                         <option 
                           value="Repairing" 
-                          disabled={(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) || progressLevels.indexOf('Repairing') < initialProgressIndex} 
+                          disabled={(!isDiagnosticReadyForRepair && initialEditProgress !== 'Repairing' && initialEditProgress !== 'Completed') || progressLevels.indexOf('Repairing') < initialProgressIndex} 
                           className="text-yellow-600 font-semibold"
                         >
-                          Repairing {(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) ? '🔒 (Complete Steps 1, 2, 3 first)' : ''}
+                          Repairing {!isDiagnosticReadyForRepair && initialEditProgress !== 'Repairing' ? '🔒 (Complete Steps 1, 2, 3 first)' : ''}
                         </option>
                         <option 
                           value="Completed" 
-                          disabled={(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) || progressLevels.indexOf('Completed') < initialProgressIndex} 
+                          disabled={!isDiagnosticReadyForRepair} 
                           className="text-green-600 font-semibold"
                         >
-                          Completed {(!isDiagnosticReadyForRepair && initialProgressIndex <= 1) ? '🔒 (Locked)' : ''}
+                          Completed {!isDiagnosticReadyForRepair ? '🔒 (Locked - Complete Steps 1, 2, 3 first)' : ''}
                         </option>
                         <option value="Cancelled" className="text-red-500 font-semibold">Cancelled</option>
                       </select>
@@ -1683,12 +1683,12 @@ export default function AdminMonitoring() {
                       {!isDiagnosticReadyForRepair ? (
                         <p className="text-[11px] text-amber-800 font-medium m-0 flex items-center gap-1.5 pt-0.5">
                           <AlertCircle size={13} className="shrink-0 text-amber-600" />
-                          <span>Fill in Step 1 (Describe Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Parts) to unlock &quot;Repairing&quot;.</span>
+                          <span>Fill in Step 1 (Describe Problem), Step 2 (Suggested Repair), and Step 3 (Itemized Parts) to automatically unlock &quot;Repairing&quot; and &quot;Completed&quot;.</span>
                         </p>
                       ) : (
                         <p className="text-[11px] text-emerald-700 font-medium m-0 flex items-center gap-1.5 pt-0.5">
                           <CheckCircle2 size={13} className="shrink-0 text-emerald-600" />
-                          <span>All 3 diagnostic steps completed! &quot;Repairing&quot; is now unlocked.</span>
+                          <span>All 3 diagnostic steps completed! &quot;Repairing&quot; and &quot;Completed&quot; are unlocked.</span>
                         </p>
                       )}
                     </div>
@@ -1760,19 +1760,11 @@ export default function AdminMonitoring() {
                   <textarea 
                     rows={3}
                     value={editSuggestedRepair}
-                    onChange={(e) => setEditSuggestedRepair(e.target.value)}
+                    onChange={(e) => {
+                      setEditSuggestedRepair(e.target.value);
+                      setEditSuggestionForRepair(e.target.value);
+                    }}
                     placeholder="e.g. Replace the damaged LCD/screen with a compatible replacement part."
-                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-xs text-gray-700">Suggestion for Repair</label>
-                  <textarea 
-                    rows={3}
-                    value={editSuggestionForRepair}
-                    onChange={(e) => setEditSuggestionForRepair(e.target.value)}
-                    placeholder="e.g. Replace the damaged part and test the device after repair to ensure it is functioning properly."
                     className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none"
                   />
                 </div>
@@ -2277,7 +2269,7 @@ export default function AdminMonitoring() {
 
                   {/* Initial Progress */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="font-semibold text-xs text-gray-700">Initial Progress</label>
+                    <label className="font-semibold text-xs text-gray-700">Repair Progress</label>
                     <div className="relative">
                       <select 
                         value={addProgress}
@@ -2447,19 +2439,11 @@ export default function AdminMonitoring() {
                   <textarea 
                     rows={3}
                     value={addSuggestedRepair} 
-                    onChange={(e) => setAddSuggestedRepair(e.target.value)} 
+                    onChange={(e) => {
+                      setAddSuggestedRepair(e.target.value);
+                      setAddSuggestionForRepair(e.target.value);
+                    }} 
                     placeholder="e.g. Replace the damaged LCD/screen with a compatible replacement part." 
-                    className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none" 
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-xs text-gray-700">Suggestion for Repair</label>
-                  <textarea 
-                    rows={3}
-                    value={addSuggestionForRepair} 
-                    onChange={(e) => setAddSuggestionForRepair(e.target.value)} 
-                    placeholder="e.g. Replace the damaged part and test the device after repair to ensure it is functioning properly." 
                     className="border-2 border-gray-200 focus:border-[#bd00ff] bg-white rounded-xl p-3 text-black text-sm outline-none transition-colors resize-none" 
                   />
                 </div>

@@ -28,6 +28,9 @@ export async function GET(req: Request) {
     const status = searchParams.get('status')?.trim() || 'all';
     const provider = searchParams.get('provider')?.trim() || 'all';
     const requestedBranch = searchParams.get('branch')?.trim() || 'all';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '6', 10));
+    const skip = (page - 1) * limit;
 
     const where: any = {};
 
@@ -66,7 +69,8 @@ export async function GET(req: Request) {
       (prisma as any).installmentApplication.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        take: 100
+        skip,
+        take: limit
       }),
       (prisma as any).installmentApplication.count({ where }),
       (prisma as any).installmentApplication.count({
@@ -77,9 +81,14 @@ export async function GET(req: Request) {
       })
     ]);
 
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+
     return NextResponse.json({
       applications,
       totalCount,
+      totalPages,
+      page,
+      limit,
       pendingCount,
       userRole: user.role,
       userBranch: user.branch || 'Tagoloan',
