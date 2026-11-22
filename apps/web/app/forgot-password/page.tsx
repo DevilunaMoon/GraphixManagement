@@ -84,9 +84,9 @@ export default function ForgotPasswordPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
-                <Mail size={22} />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <Mail size={22} strokeWidth={2.2} />
               </div>
               <input 
                 type="email" 

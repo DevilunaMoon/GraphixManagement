@@ -232,9 +232,9 @@ function LoginContent() {
 
           <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
             {/* Email or Username Input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                <User size={18} />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <User size={18} strokeWidth={2.2} />
               </div>
               <input 
                 type="text" 
@@ -246,9 +246,9 @@ function LoginContent() {
             </div>
 
             {/* Password Input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                <Lock size={18} />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <Lock size={18} strokeWidth={2.2} />
               </div>
               <input 
                 type={showPassword ? "text" : "password"} 
@@ -257,14 +257,14 @@ function LoginContent() {
                 placeholder="Password" 
                 className="w-full pl-10 pr-10 py-2.5 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-sm outline-none" 
               />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center z-10">
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)} 
-                  className="text-gray-500 hover:text-gray-800 focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
+                  className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
                   title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
                 </button>
               </div>
             </div>
@@ -358,52 +358,52 @@ function LoginContent() {
 
           <form onSubmit={handleRegister} className="flex flex-col gap-2">
             {/* 1. Name */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                <User size={16} />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <User size={18} strokeWidth={2.2} />
               </div>
               <input 
                 type="text" 
                 name="name" 
                 required 
                 placeholder="Full Name" 
-                className="w-full pl-9 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                className="w-full pl-10 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
               />
             </div>
 
             {/* 2. Email */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                <Mail size={16} />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <Mail size={18} strokeWidth={2.2} />
               </div>
               <input 
                 type="email" 
                 name="email" 
                 required 
                 placeholder="Email Address" 
-                className="w-full pl-9 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                className="w-full pl-10 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
               />
             </div>
 
             {/* 3. Phone */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                <Phone size={16} />
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <Phone size={18} strokeWidth={2.2} />
               </div>
               <input 
                 type="tel" 
                 name="phone" 
                 required 
                 placeholder="Phone Number" 
-                className="w-full pl-9 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                className="w-full pl-10 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
               />
             </div>
 
             {/* 4. Password */}
             <div className="flex flex-col gap-0.5">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                  <Lock size={16} />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                  <Lock size={18} strokeWidth={2.2} />
                 </div>
                 <input 
                   type={showSignUpPassword ? "text" : "password"} 
@@ -417,15 +417,15 @@ function LoginContent() {
                   onFocus={() => setIsSignUpPasswordFocused(true)}
                   onBlur={() => setIsSignUpPasswordFocused(false)}
                   placeholder="Password" 
-                  className="w-full pl-9 pr-9 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                  className="w-full pl-10 pr-10 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
                 />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center z-10">
                   <button 
                     type="button" 
                     onClick={() => setShowSignUpPassword(!showSignUpPassword)} 
-                    className="text-gray-500 hover:text-gray-800 focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
+                    className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
                   >
-                    {showSignUpPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showSignUpPassword ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
                   </button>
                 </div>
               </div>
@@ -440,9 +440,9 @@ function LoginContent() {
 
             {/* 5. Confirm Password */}
             <div className="flex flex-col gap-0.5">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-600">
-                  <Lock size={16} />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                  <Lock size={18} strokeWidth={2.2} />
                 </div>
                 <input 
                   type={showSignUpConfirmPassword ? "text" : "password"} 
@@ -456,19 +456,19 @@ function LoginContent() {
                   onFocus={() => setIsSignUpConfirmFocused(true)}
                   onBlur={() => setIsSignUpConfirmFocused(false)}
                   placeholder="Confirm Password" 
-                  className={`w-full pl-9 pr-9 py-2 bg-white/50 backdrop-blur-md border shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none ${
+                  className={`w-full pl-10 pr-10 py-2 bg-white/50 backdrop-blur-md border shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none ${
                     signUpConfirmPassword && signUpPassword !== signUpConfirmPassword
                       ? 'border-rose-400 focus:ring-rose-400'
                       : 'border-white/60'
                   }`}
                 />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center z-10">
                   <button 
                     type="button" 
                     onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)} 
-                    className="text-gray-500 hover:text-gray-800 focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
+                    className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
                   >
-                    {showSignUpConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showSignUpConfirmPassword ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
                   </button>
                 </div>
               </div>

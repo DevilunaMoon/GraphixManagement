@@ -118,9 +118,9 @@ function ResetPasswordForm() {
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
-                  <Lock size={22} />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                  <Lock size={22} strokeWidth={2.2} />
                 </div>
                 <input 
                   type={showPassword ? "text" : "password"} 
@@ -135,9 +135,9 @@ function ResetPasswordForm() {
                   onBlur={() => setIsPasswordFocused(false)}
                   className="w-full pl-12 pr-12 py-3 bg-white/40 border border-white/50 shadow-sm rounded-[1rem] focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/60 transition-all text-gray-900 font-bold placeholder-gray-600" 
                 />
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
-                    {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center z-10">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors">
+                    {showPassword ? <EyeOff size={22} strokeWidth={2.2} /> : <Eye size={22} strokeWidth={2.2} />}
                   </button>
                 </div>
               </div>
@@ -151,9 +151,9 @@ function ResetPasswordForm() {
             </div>
 
             <div className="flex flex-col gap-1">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-600">
-                  <Lock size={22} />
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                  <Lock size={22} strokeWidth={2.2} />
                 </div>
                 <input 
                   type={showConfirmPassword ? "text" : "password"} 
@@ -170,9 +170,9 @@ function ResetPasswordForm() {
                     confirmPassword && password !== confirmPassword ? "border-rose-400" : "border-white/50"
                   }`} 
                 />
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-500 hover:text-gray-700 focus:outline-none transition-colors">
-                    {showConfirmPassword ? <EyeOff size={22} /> : <Eye size={22} />}
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center z-10">
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors">
+                    {showConfirmPassword ? <EyeOff size={22} strokeWidth={2.2} /> : <Eye size={22} strokeWidth={2.2} />}
                   </button>
                 </div>
               </div>
