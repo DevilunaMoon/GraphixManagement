@@ -13,6 +13,27 @@ export async function GET(req: Request) {
     const query = searchParams.get('query')?.trim() || '';
     const branchParam = searchParams.get('branch')?.trim() || session.branch || 'Tagoloan';
     const cleanBranch = branchParam.replace(/\s*Branch$/i, '').trim();
+    const dateParam = searchParams.get('date')?.trim() || '';
+
+    let dateFilter: any = undefined;
+    if (dateParam) {
+      const [year, month, day] = dateParam.split('-').map(Number);
+      if (year && month && day) {
+        // Wide window covering day across UTC and UTC+8
+        const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+        start.setUTCHours(start.getUTCHours() - 14);
+        const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+        end.setUTCHours(end.getUTCHours() + 14);
+        dateFilter = {
+          gte: start,
+          lte: end
+        };
+      }
+    }
+
+    const branchCondition = cleanBranch && cleanBranch.toLowerCase() !== 'all'
+      ? { branch: { contains: cleanBranch, mode: 'insensitive' as const } }
+      : {};
 
     let purchases: any[] = [];
 
@@ -21,32 +42,33 @@ export async function GET(req: Request) {
       const codeSuffix = cleanRef.replace(/^CMTPQ/i, '').trim();
 
       const orConditions: any[] = [
-        { referenceId: { contains: query, mode: 'insensitive' } },
-        { referenceId: { contains: cleanRef, mode: 'insensitive' } },
-        { id: { contains: query, mode: 'insensitive' } },
-        { id: { contains: cleanRef, mode: 'insensitive' } },
-        { imei: { contains: query, mode: 'insensitive' } },
-        { user: { name: { contains: query, mode: 'insensitive' } } },
-        { user: { phone: { contains: query, mode: 'insensitive' } } },
-        { user: { email: { contains: query, mode: 'insensitive' } } },
-        { device: { name: { contains: query, mode: 'insensitive' } } }
+        { referenceId: { contains: query, mode: 'insensitive' as const } },
+        { referenceId: { contains: cleanRef, mode: 'insensitive' as const } },
+        { id: { contains: query, mode: 'insensitive' as const } },
+        { id: { contains: cleanRef, mode: 'insensitive' as const } },
+        { imei: { contains: query, mode: 'insensitive' as const } },
+        { user: { name: { contains: query, mode: 'insensitive' as const } } },
+        { user: { phone: { contains: query, mode: 'insensitive' as const } } },
+        { user: { email: { contains: query, mode: 'insensitive' as const } } },
+        { device: { name: { contains: query, mode: 'insensitive' as const } } }
       ];
 
       // If search query contains or looks like a claim code (e.g. #CMTPQHH38G or HH38G)
       if (codeSuffix.length >= 2) {
-        orConditions.push({ id: { endsWith: codeSuffix, mode: 'insensitive' } });
-        orConditions.push({ id: { contains: codeSuffix, mode: 'insensitive' } });
-        orConditions.push({ referenceId: { contains: codeSuffix, mode: 'insensitive' } });
+        orConditions.push({ id: { endsWith: codeSuffix, mode: 'insensitive' as const } });
+        orConditions.push({ id: { contains: codeSuffix, mode: 'insensitive' as const } });
+        orConditions.push({ referenceId: { contains: codeSuffix, mode: 'insensitive' as const } });
       }
 
-      // 1. Search within the cashier's branch first
+      // Strictly search within the cashier's active branch
       purchases = await prisma.purchase.findMany({
         where: {
-          branch: { contains: cleanBranch, mode: 'insensitive' },
+          ...branchCondition,
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
           status: { not: 'Rejected' },
           OR: orConditions
         },
-        take: 20,
+        take: 50,
         orderBy: { createdAt: 'desc' },
         include: {
           device: {
@@ -57,36 +79,16 @@ export async function GET(req: Request) {
           }
         }
       });
-
-      // 2. If nothing found in this branch, fallback across all branches
-      if (purchases.length === 0) {
-        purchases = await prisma.purchase.findMany({
-          where: {
-            status: { not: 'Rejected' },
-            OR: orConditions
-          },
-          take: 20,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            device: {
-              select: { name: true, price: true, image: true, stock: true }
-            },
-            user: {
-              select: { id: true, name: true, email: true, phone: true }
-            }
-          }
-        });
-      }
     } else {
-      // Default: show reservations pending pickup or active from the last 48 hours for this branch
+      // Default or date-filtered view
       const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
       purchases = await prisma.purchase.findMany({
         where: {
-          branch: { contains: cleanBranch, mode: 'insensitive' },
-          createdAt: { gte: twoDaysAgo },
+          ...branchCondition,
+          ...(dateFilter ? { createdAt: dateFilter } : { createdAt: { gte: twoDaysAgo } }),
           status: { not: 'Rejected' }
         },
-        take: 20,
+        take: 50,
         orderBy: { createdAt: 'desc' },
         include: {
           device: {

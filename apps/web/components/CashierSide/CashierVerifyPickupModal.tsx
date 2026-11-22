@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight, Smartphone, Eye, ZoomIn, XCircle, FileText, Check } from 'lucide-react';
+import { X, Search, CheckCircle2, Clock, AlertCircle, Phone, User, Package, ShieldCheck, Loader2, ChevronLeft, ChevronRight, Smartphone, Eye, ZoomIn, XCircle, FileText, Check, Calendar, Building2, CalendarDays } from 'lucide-react';
 import CashierImeiPromptModal from './CashierImeiPromptModal';
 import { isIPhoneProduct } from '../../lib/imei';
+import { useBranch } from '../../context/BranchContext';
 
 interface PickupReservation {
   id: string;
@@ -39,6 +40,7 @@ interface PickupReservation {
 interface CashierVerifyPickupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  branch?: string;
   initialQuery?: string;
   onSuccess?: () => void;
 }
@@ -87,9 +89,13 @@ function formatVariations(variationsStr: string | null | undefined): string {
 export default function CashierVerifyPickupModal({
   isOpen,
   onClose,
+  branch,
   initialQuery = '',
   onSuccess
 }: CashierVerifyPickupModalProps) {
+  const { userBranch } = useBranch();
+  const activeBranch = branch || userBranch || 'Tagoloan';
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [filterTab, setFilterTab] = useState<'all' | 'gcash' | 'cash'>('all');
   const [reservations, setReservations] = useState<PickupReservation[]>([]);
@@ -119,11 +125,16 @@ export default function CashierVerifyPickupModal({
     initialImei?: string | null;
   } | null>(null);
 
-  const fetchOrders = async (query = searchQuery) => {
+  const fetchOrders = async (query = searchQuery, date = selectedDate) => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch(`/api/purchases/lookup?query=${encodeURIComponent(query)}`);
+      const params = new URLSearchParams();
+      if (query.trim()) params.set('query', query.trim());
+      if (activeBranch) params.set('branch', activeBranch);
+      if (date) params.set('date', date);
+
+      const res = await fetch(`/api/purchases/lookup?${params.toString()}`);
       const data = await res.json();
       if (res.ok && data && Array.isArray(data.purchases)) {
         setReservations(data.purchases);
@@ -150,7 +161,7 @@ export default function CashierVerifyPickupModal({
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       const timer = setTimeout(() => {
-        fetchOrders(searchQuery);
+        fetchOrders(searchQuery, selectedDate);
       }, 250);
       return () => {
         clearTimeout(timer);
@@ -168,8 +179,9 @@ export default function CashierVerifyPickupModal({
       setShowRejectDialog(false);
       setShowReceiptImageModal(false);
       setRejectionReasonInput('');
+      setSelectedDate('');
     }
-  }, [isOpen, searchQuery]);
+  }, [isOpen, searchQuery, selectedDate, activeBranch]);
 
   const handleSelectOrder = (order: PickupReservation) => {
     setSelectedOrder(order);
@@ -283,13 +295,25 @@ export default function CashierVerifyPickupModal({
     if (onSuccess) onSuccess();
   };
 
-  // Tab filtering
+  // Date presets for quick filter
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const yesterdayObj = new Date();
+  yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+  const yesterdayStr = yesterdayObj.toLocaleDateString('en-CA');
+
+  // Tab & Date filtering
   const filteredReservations = reservations.filter(r => {
     if (filterTab === 'gcash') {
-      return r.paymentType?.toLowerCase().includes('gcash') || Boolean(r.receiptUrl) || r.status === 'For Verification';
+      const isGcash = r.paymentType?.toLowerCase().includes('gcash') || Boolean(r.receiptUrl) || r.status === 'For Verification';
+      if (!isGcash) return false;
     }
     if (filterTab === 'cash') {
-      return r.paymentType?.toLowerCase().includes('cash') && !r.receiptUrl && r.status !== 'For Verification';
+      const isCash = r.paymentType?.toLowerCase().includes('cash') && !r.receiptUrl && r.status !== 'For Verification';
+      if (!isCash) return false;
+    }
+    if (selectedDate && r.createdAt) {
+      const itemDate = new Date(r.createdAt).toLocaleDateString('en-CA');
+      if (itemDate !== selectedDate) return false;
     }
     return true;
   });
@@ -317,9 +341,15 @@ export default function CashierVerifyPickupModal({
               <ShieldCheck className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-[#bd00ff]" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm sm:text-lg font-black tracking-wide m-0 leading-tight truncate sm:whitespace-normal">
-                Verify In-Store Pickup & GCash
-              </h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-lg font-black tracking-wide m-0 leading-tight truncate sm:whitespace-normal">
+                  Verify In-Store Pickup & GCash
+                </h3>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-white/20 text-purple-100 border border-white/25">
+                  <Building2 size={12} className="text-purple-300" />
+                  {activeBranch} Branch
+                </span>
+              </div>
               <p className="text-[11px] sm:text-xs text-purple-200 m-0 truncate sm:whitespace-normal">
                 Search by Customer Name, Phone, or Claim Code
               </p>
@@ -402,6 +432,92 @@ export default function CashierVerifyPickupModal({
               <span>Search</span>
             </button>
           </div>
+
+          {/* Calendar / Date Filter Row */}
+          <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] font-bold text-gray-500 flex items-center gap-1">
+                <Calendar size={13} className="text-purple-600" />
+                Date:
+              </span>
+              <button
+                type="button"
+                onClick={() => { setSelectedDate(''); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer ${
+                  !selectedDate
+                    ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-purple-50'
+                }`}
+              >
+                All Dates
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSelectedDate(todayStr); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer ${
+                  selectedDate === todayStr
+                    ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-purple-50'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSelectedDate(yesterdayStr); setCurrentPage(1); }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer ${
+                  selectedDate === yesterdayStr
+                    ? 'bg-purple-900 text-white border-purple-900 shadow-xs'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-purple-50'
+                }`}
+              >
+                Yesterday
+              </button>
+            </div>
+
+            {/* Native Date Picker */}
+            <div className="flex items-center gap-1.5 ml-auto">
+              <div className="relative flex items-center">
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-2.5 py-1 bg-white border border-purple-200 rounded-lg text-[11px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#bd00ff] shadow-xs cursor-pointer"
+                  title="Filter by specific date"
+                />
+              </div>
+              {selectedDate && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedDate(''); setCurrentPage(1); }}
+                  className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-md border border-gray-200 transition-colors cursor-pointer"
+                  title="Clear date filter"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Active Date Indicator Banner (if a date is picked) */}
+          {selectedDate && (
+            <div className="flex items-center justify-between px-2.5 py-1.5 bg-purple-100/70 border border-purple-200/80 rounded-xl text-xs text-purple-950">
+              <span className="flex items-center gap-1.5 font-medium">
+                <CalendarDays size={14} className="text-purple-700 shrink-0" />
+                Viewing reservations for: <strong className="font-bold">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => { setSelectedDate(''); setCurrentPage(1); }}
+                className="text-[11px] font-bold text-purple-700 hover:text-purple-900 underline cursor-pointer bg-transparent border-none p-0"
+              >
+                Show All Dates
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content Body */}
@@ -431,6 +547,18 @@ export default function CashierVerifyPickupModal({
                     <span className="text-xs font-mono font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
                       {selectedOrder.referenceId}
                     </span>
+                    {selectedOrder.branch && (
+                      <span className="text-[11px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 flex items-center gap-1">
+                        <Building2 size={11} className="text-gray-500" />
+                        {selectedOrder.branch}
+                      </span>
+                    )}
+                    {selectedOrder.createdAt && (
+                      <span className="text-[11px] text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 flex items-center gap-1">
+                        <Calendar size={11} className="text-gray-400" />
+                        {new Date(selectedOrder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
                     {selectedOrder.status === 'Completed' ? (
                       <span className="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                         <Check size={12} /> PICKUP COMPLETED
@@ -793,8 +921,25 @@ export default function CashierVerifyPickupModal({
               {filteredReservations.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 flex flex-col items-center justify-center gap-2">
                   <Package size={36} strokeWidth={1.5} />
-                  <p className="text-sm font-semibold">No reservations match the selected filter.</p>
-                  <p className="text-xs text-gray-400">Ask the customer for their full name, phone number, or show their order screenshot.</p>
+                  <p className="text-sm font-semibold">
+                    {selectedDate 
+                      ? `No reservations found for ${new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.` 
+                      : 'No reservations match the selected filter.'}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {selectedDate 
+                      ? 'Try selecting "All Dates" or picking a different date on the calendar.' 
+                      : 'Ask the customer for their full name, phone number, or show their order screenshot.'}
+                  </p>
+                  {selectedDate && (
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedDate(''); setCurrentPage(1); }}
+                      className="mt-1 px-3 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg cursor-pointer transition-colors"
+                    >
+                      Show All Dates
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
@@ -834,6 +979,12 @@ export default function CashierVerifyPickupModal({
                               {resItem.user.phone && (
                                 <span className="text-xs text-gray-500 font-medium truncate">
                                   ({resItem.user.phone})
+                                </span>
+                              )}
+                              {resItem.createdAt && (
+                                <span className="text-[11px] text-gray-400 flex items-center gap-1 font-medium ml-auto sm:ml-0">
+                                  <Calendar size={11} className="text-gray-400" />
+                                  {new Date(resItem.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                 </span>
                               )}
                             </div>
