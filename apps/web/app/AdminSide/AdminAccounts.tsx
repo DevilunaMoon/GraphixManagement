@@ -5,7 +5,8 @@ import {
   Search, Filter, ChevronDown, ChevronLeft, ChevronRight, X, 
   Eye, EyeOff, MoreVertical, ShieldCheck, UserCheck, Users, 
   Building2, Key, Edit3, ArrowRightLeft, Power, Ban, Plus,
-  CheckCircle2, AlertCircle, Sparkles, Crown, User, Phone
+  CheckCircle2, AlertCircle, Sparkles, Crown, User, Phone,
+  UserPlus, Mail, Lock, Loader2
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
@@ -24,6 +25,7 @@ const splitName = (fullName: string) => {
 
 export default function AdminAccounts() {
   const { selectedBranch, setSelectedBranch, branches, isSuperAdmin, userBranch, userRole } = useBranch();
+  const effectiveBranch = userBranch || 'Tagoloan';
   const { styles } = useTheme();
 
   // Filters State
@@ -1488,109 +1490,217 @@ export default function AdminAccounts() {
           onClick={() => setCreateModal(false)}
         >
           <div 
-            className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[92dvh] overflow-y-auto overscroll-contain flex flex-col" 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto max-h-[94dvh] overflow-y-auto overscroll-contain flex flex-col border border-purple-100" 
             onClick={e => e.stopPropagation()}
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
-            <div className="p-5 bg-gradient-to-r from-purple-800 to-indigo-800 text-white flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Plus size={20} />
-                <h3 className="font-bold text-base">Create New Account</h3>
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-800 text-white flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3 min-w-0 pr-2">
+                <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center text-[#bd00ff] shrink-0 border border-white/15 shadow-sm">
+                  <UserPlus size={20} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-extrabold text-sm sm:text-base tracking-tight m-0 text-white">Create New Account</h3>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-purple-100 border border-white/25">
+                      <Building2 size={11} className="text-purple-300" />
+                      {isSuperAdmin ? 'All Branches' : `${effectiveBranch} Branch`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-purple-200 m-0 mt-0.5 truncate">
+                    Set up a new staff member or customer account in Graphix
+                  </p>
+                </div>
               </div>
-              <button className="text-white/80 hover:text-white" onClick={() => setCreateModal(false)}>
-                <X size={20} />
+              <button 
+                type="button"
+                className="p-1.5 sm:p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 hover:text-white transition-colors border-none cursor-pointer shrink-0" 
+                onClick={() => setCreateModal(false)}
+                title="Close"
+              >
+                <X size={18} />
               </button>
             </div>
             
-            <form onSubmit={handleCreateAccount} className="p-6 flex flex-col gap-3.5 text-xs text-left">
+            <form onSubmit={handleCreateAccount} className="p-5 sm:p-6 flex flex-col gap-4 text-xs text-left">
               {modalError && (
-                <div className="bg-red-50 text-red-600 p-2.5 rounded-xl font-bold border border-red-100">
-                  {modalError}
+                <div className="bg-rose-50 text-rose-700 p-3 rounded-2xl font-bold border border-rose-200 flex items-center gap-2 text-xs">
+                  <AlertCircle size={16} className="text-rose-600 shrink-0" />
+                  <span>{modalError}</span>
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-gray-700">First Name</label>
-                  <input required name="firstName" type="text" placeholder="John" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white text-gray-900 font-medium outline-none" />
+              {/* First Name & Last Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-gray-700 text-xs">First Name *</label>
+                  <div className="relative">
+                    <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input 
+                      required 
+                      name="firstName" 
+                      type="text" 
+                      placeholder="e.g. John" 
+                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white text-gray-900 font-semibold text-xs outline-none transition-all shadow-2xs" 
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-gray-700">Last Name</label>
-                  <input required name="lastName" type="text" placeholder="Doe" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white text-gray-900 font-medium outline-none" />
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-gray-700 text-xs">Last Name *</label>
+                  <div className="relative">
+                    <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <input 
+                      required 
+                      name="lastName" 
+                      type="text" 
+                      placeholder="e.g. Doe" 
+                      className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white text-gray-900 font-semibold text-xs outline-none transition-all shadow-2xs" 
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-bold text-gray-700">Email Address *</label>
-                <input required name="email" type="email" placeholder="user@graphix.com" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white text-gray-900 font-medium outline-none" />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="font-bold text-gray-700">Contact Number</label>
-                <input name="phone" type="text" placeholder="09123456789" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white text-gray-900 font-medium outline-none" />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="font-bold text-gray-700">Initial Password *</label>
+              {/* Email Address */}
+              <div className="flex flex-col gap-1.5">
+                <label className="font-bold text-gray-700 text-xs">Email Address *</label>
                 <div className="relative">
-                  <input required name="password" type={showPassword ? "text" : "password"} placeholder="••••••••" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:bg-white text-gray-900 font-medium pr-10 outline-none" />
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input 
+                    required 
+                    name="email" 
+                    type="email" 
+                    placeholder="e.g. user@graphix.com" 
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white text-gray-900 font-semibold text-xs outline-none transition-all shadow-2xs" 
+                  />
+                </div>
+              </div>
+
+              {/* Contact Number */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-gray-700 text-xs">Contact Number</label>
+                  <span className="text-[10px] text-gray-400 font-medium">Philippine mobile number</span>
+                </div>
+                <div className="relative">
+                  <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input 
+                    name="phone" 
+                    type="tel" 
+                    placeholder="e.g. 0912 345 6789" 
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white text-gray-900 font-semibold text-xs outline-none transition-all shadow-2xs" 
+                  />
+                </div>
+              </div>
+
+              {/* Initial Password */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-gray-700 text-xs">Initial Password *</label>
+                  <span className="text-[10px] text-purple-600 font-bold">Min. 6 characters</span>
+                </div>
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input 
+                    required 
+                    name="password" 
+                    minLength={6}
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Enter account initial password" 
+                    className="w-full pl-9 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white text-gray-900 font-semibold text-xs outline-none transition-all shadow-2xs" 
+                  />
                   <button 
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1 border-none bg-transparent cursor-pointer"
+                    title={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-gray-700">Role</label>
-                  <select name="role" className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-purple-500">
-                    <option value="TECHNICIAN">Technician</option>
-                    <option value="CASHIER">Cashier</option>
-                    <option value="ADMIN">Admin</option>
-                    {isSuperAdmin && <option value="SUPER_ADMIN">Super Admin</option>}
-                    <option value="CUSTOMER">Customer</option>
+              {/* Role & Branch Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Role */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-gray-700 text-xs flex items-center gap-1">
+                    <ShieldCheck size={14} className="text-purple-600" /> Account Role *
+                  </label>
+                  <select 
+                    name="role" 
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white shadow-2xs cursor-pointer"
+                  >
+                    <option value="TECHNICIAN">🔧 Technician</option>
+                    <option value="CASHIER">💳 Cashier</option>
+                    <option value="CUSTOMER">👤 Customer</option>
+                    {isSuperAdmin && (
+                      <>
+                        <option value="ADMIN">🛡️ Branch Admin</option>
+                        <option value="SUPER_ADMIN">👑 Super Admin</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="font-bold text-gray-700">Branch</label>
+                {/* Branch Assignment */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-bold text-gray-700 text-xs flex items-center gap-1">
+                    <Building2 size={14} className="text-purple-600" /> Branch Assignment *
+                  </label>
                   {isSuperAdmin ? (
                     <select 
                       name="branch" 
                       defaultValue={selectedBranch !== 'all' ? selectedBranch : 'Tagoloan'}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl font-bold text-xs text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-[#bd00ff] focus:bg-white shadow-2xs cursor-pointer"
                     >
-                      <option value="Tagoloan">Tagoloan</option>
-                      <option value="Villanueva">Villanueva</option>
-                      <option value="Jasaan">Jasaan</option>
+                      <option value="Tagoloan">Tagoloan Branch</option>
+                      <option value="Villanueva">Villanueva Branch</option>
+                      <option value="Jasaan">Jasaan Branch</option>
                     </select>
                   ) : (
-                    <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl font-bold text-gray-700">
-                      {userBranch || 'Tagoloan'}
-                    </div>
+                    <>
+                      <div className="px-3 py-2.5 bg-purple-50/70 border border-purple-200 rounded-xl font-bold text-xs text-purple-950 flex items-center justify-between shadow-2xs">
+                        <span className="flex items-center gap-1.5">
+                          <Building2 size={14} className="text-[#bd00ff]" />
+                          {effectiveBranch} Branch
+                        </span>
+                        <span className="text-[10px] text-purple-600 font-extrabold uppercase tracking-wider bg-purple-100 px-1.5 py-0.5 rounded">
+                          Fixed
+                        </span>
+                      </div>
+                      <input type="hidden" name="branch" value={effectiveBranch} />
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className="mt-3 flex gap-2">
+              {/* Action Buttons */}
+              <div className="mt-2 pt-3 border-t border-gray-100 flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => setCreateModal(false)}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold text-xs transition-colors border-none cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2.5 bg-[#5c0099] hover:bg-[#4a007a] text-white rounded-xl font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-700 to-[#bd00ff] hover:brightness-110 text-white rounded-xl font-extrabold text-xs transition-all shadow-md shadow-purple-500/20 border-none cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Account'}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={15} />
+                      <span>Create Account</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
