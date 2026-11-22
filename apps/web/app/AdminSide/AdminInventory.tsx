@@ -5,7 +5,7 @@ import {
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
-  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User, Loader2
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
@@ -108,6 +108,8 @@ export default function AdminInventory() {
   const [isDeleteCatMode, setIsDeleteCatMode] = useState(false);
   const [selectedCatsToDelete, setSelectedCatsToDelete] = useState<string[]>([]);
   const [isDeletingCats, setIsDeletingCats] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState<{ id: string; name: string; logoUrl?: string } | null>(null);
+  const [brandDeleteError, setBrandDeleteError] = useState<string | null>(null);
 
   // Modals
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -1053,29 +1055,38 @@ export default function AdminInventory() {
     }
   };
 
-  const handleDeleteCategory = async (catId: string, catName: string) => {
-    if (!confirm(`Are you sure you want to delete brand "${catName}"?`)) return;
+  const handleDeleteCategory = (catId: string, catName: string, logoUrl?: string) => {
+    setBrandDeleteError(null);
+    setBrandToDelete({ id: catId, name: catName, logoUrl });
+  };
+
+  const handleConfirmDeleteBrand = async () => {
+    if (!brandToDelete) return;
     setIsDeletingCats(true);
+    setBrandDeleteError(null);
     try {
       const res = await fetch('/api/categories', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: [catId] })
+        body: JSON.stringify({ ids: [brandToDelete.id] })
       });
       if (res.ok) {
+        const deletedName = brandToDelete.name;
+        const deletedId = brandToDelete.id;
+        setBrandToDelete(null);
         fetchCategories();
-        if (selectedCategory === catId) {
+        if (selectedCategory === deletedId) {
           setSelectedCategory('All');
         }
-        setSuccessModalContent({ title: 'Brand Deleted', message: `Brand "${catName}" has been removed.` });
+        setSuccessModalContent({ title: 'Brand Deleted', message: `Brand "${deletedName}" has been removed.` });
         setSuccessModalOpen(true);
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete brand. It may be assigned to existing products.');
+        setBrandDeleteError(data.error || 'Failed to delete brand. It may be assigned to existing products.');
       }
     } catch (err: any) {
       console.error(err);
-      alert('Network error while deleting brand');
+      setBrandDeleteError('Network error while deleting brand');
     } finally {
       setIsDeletingCats(false);
     }
@@ -5545,7 +5556,7 @@ export default function AdminInventory() {
 
                           <button
                             type="button"
-                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            onClick={() => handleDeleteCategory(cat.id, cat.name, cat.logoUrl)}
                             disabled={isDeletingCats}
                             className="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors bg-transparent border-none cursor-pointer"
                             title={`Delete brand ${cat.name}`}
@@ -5576,6 +5587,95 @@ export default function AdminInventory() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* BRAND DELETE CONFIRMATION MODAL                            */}
+      {/* ========================================================== */}
+      {brandToDelete && (
+        <div 
+          className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => {
+            if (!isDeletingCats) {
+              setBrandToDelete(null);
+              setBrandDeleteError(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl border border-rose-100 text-center animate-in zoom-in-95 duration-200 flex flex-col items-center gap-4"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Warning Icon Badge */}
+            <div className="w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-inner">
+              <Trash2 size={32} className="text-rose-500 animate-pulse" />
+            </div>
+
+            {/* Title & Description */}
+            <div className="flex flex-col gap-1.5 w-full">
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Delete Brand?</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed m-0">
+                Are you sure you want to permanently delete this brand from your catalog?
+              </p>
+            </div>
+
+            {/* Brand Chip Preview */}
+            <div className="flex items-center gap-3 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl w-full justify-center">
+              {brandToDelete.logoUrl ? (
+                <img 
+                  src={brandToDelete.logoUrl} 
+                  alt={brandToDelete.name} 
+                  className="w-8 h-8 object-contain rounded-xl bg-white p-1 border border-gray-200 shrink-0" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center border border-purple-200 shrink-0 uppercase">
+                  {brandToDelete.name.slice(0, 2)}
+                </div>
+              )}
+              <div className="text-left truncate max-w-[180px]">
+                <span className="font-extrabold text-sm text-gray-900 block truncate">{brandToDelete.name}</span>
+                <span className="text-[10px] text-gray-400 font-mono">ID: {brandToDelete.id.slice(-6)}</span>
+              </div>
+            </div>
+
+            {/* Error Message if deletion failed */}
+            {brandDeleteError && (
+              <div className="w-full p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center animate-in fade-in">
+                {brandDeleteError}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setBrandToDelete(null);
+                  setBrandDeleteError(null);
+                }}
+                disabled={isDeletingCats}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-xl transition-all border border-gray-200 cursor-pointer text-xs sm:text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteBrand}
+                disabled={isDeletingCats}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl transition-all shadow-md shadow-rose-200 border-none cursor-pointer text-xs sm:text-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingCats ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  'Yes, Delete Brand'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
