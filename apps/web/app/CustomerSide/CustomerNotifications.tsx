@@ -239,7 +239,65 @@ export default function CustomerNotifications() {
   const [copiedCode, setCopiedCode] = useState(false);
   const itemsPerPage = 10;
 
-  const hasUnread = notifications.some(n => !n.isRead);
+  // User Notification Preferences (synced with /customer/settings/notifications)
+  const [notificationPrefs, setNotificationPrefs] = useState<{
+    orderUpdates: boolean;
+    deviceRepairStatus: boolean;
+    promotionsAndOffers: boolean;
+  }>({
+    orderUpdates: true,
+    deviceRepairStatus: true,
+    promotionsAndOffers: false
+  });
+
+  useEffect(() => {
+    const syncPrefs = () => {
+      try {
+        const stored = localStorage.getItem('customer_notification_prefs');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setNotificationPrefs(prev => ({ ...prev, ...parsed }));
+        }
+      } catch (e) {
+        console.error('Failed to sync notification preferences:', e);
+      }
+    };
+
+    syncPrefs();
+    window.addEventListener('storage', syncPrefs);
+    window.addEventListener('notificationPrefsUpdated', syncPrefs);
+    return () => {
+      window.removeEventListener('storage', syncPrefs);
+      window.removeEventListener('notificationPrefsUpdated', syncPrefs);
+    };
+  }, []);
+
+  const filteredNotifications = notifications.filter(notif => {
+    const parsed = parseNotification(notif);
+
+    // 1. Order Updates (orders & store reservations)
+    if (parsed.iconType === 'order' || parsed.iconType === 'reservation') {
+      if (notificationPrefs.orderUpdates === false) return false;
+    }
+
+    // 2. Device Repair Progress
+    if (parsed.iconType === 'repair') {
+      if (notificationPrefs.deviceRepairStatus === false) return false;
+    }
+
+    // 3. Promotions & Exclusive Deals
+    const isPromo = (notif.type || '').toUpperCase() === 'PROMOTION' ||
+                    notif.title.toLowerCase().includes('promo') ||
+                    notif.title.toLowerCase().includes('discount') ||
+                    notif.title.toLowerCase().includes('sale');
+    if (isPromo && notificationPrefs.promotionsAndOffers === false) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const hasUnread = filteredNotifications.some(n => !n.isRead);
 
   const fetchNotifications = async (pageToFetch = currentPage) => {
     try {
@@ -379,16 +437,32 @@ export default function CustomerNotifications() {
                 <div className="w-10 h-10 border-4 border-purple-100 border-t-[#8b00cc] rounded-full animate-spin"></div>
                 <p className="text-gray-500 font-medium text-sm">Loading notifications...</p>
               </div>
-            ) : notifications.length === 0 ? (
-              <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400 my-auto bg-purple-50/40 rounded-2xl border border-dashed border-purple-200">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center text-[#8b00cc] shadow-sm border border-purple-100">
-                  <Bell size={24} className="sm:w-7 sm:h-7" strokeWidth={1.75} />
+            ) : filteredNotifications.length === 0 ? (
+              notifications.length > 0 ? (
+                <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400 my-auto bg-purple-50/40 rounded-2xl border border-dashed border-purple-200">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center text-[#8b00cc] shadow-sm border border-purple-100">
+                    <Bell size={24} className="sm:w-7 sm:h-7" strokeWidth={1.75} />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-700 m-0 border-none">All alerts hidden by preferences</h3>
+                  <p className="text-[11px] sm:text-xs text-gray-500 m-0">You have notifications, but they are currently hidden by your Notification Preferences.</p>
+                  <button
+                    onClick={() => router.push('/customer/settings/notifications')}
+                    className="mt-1 px-4 py-2 bg-white text-[#8b00cc] hover:bg-[#8b00cc] hover:text-white rounded-xl text-xs font-bold transition-all border border-purple-200 shadow-xs cursor-pointer"
+                  >
+                    Adjust Notification Preferences
+                  </button>
                 </div>
-                <h3 className="text-sm sm:text-base font-bold text-gray-700 m-0 border-none">No notifications yet</h3>
-                <p className="text-[11px] sm:text-xs text-gray-500 m-0">You&apos;re completely caught up! Updates about your account will show up here.</p>
-              </div>
+              ) : (
+                <div className="p-8 sm:p-12 text-center flex flex-col items-center justify-center gap-3 text-gray-400 my-auto bg-purple-50/40 rounded-2xl border border-dashed border-purple-200">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white flex items-center justify-center text-[#8b00cc] shadow-sm border border-purple-100">
+                    <Bell size={24} className="sm:w-7 sm:h-7" strokeWidth={1.75} />
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-700 m-0 border-none">No notifications yet</h3>
+                  <p className="text-[11px] sm:text-xs text-gray-500 m-0">You&apos;re completely caught up! Updates about your account will show up here.</p>
+                </div>
+              )
             ) : (
-              notifications.map((notif) => {
+              filteredNotifications.map((notif) => {
                 const parsed = parseNotification(notif);
 
                 return (

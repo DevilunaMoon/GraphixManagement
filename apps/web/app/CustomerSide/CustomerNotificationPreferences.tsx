@@ -6,7 +6,6 @@ import {
   ChevronLeft, 
   Bell, 
   PackageCheck, 
-  CreditCard, 
   Wrench, 
   Tag, 
   CheckCircle2 
@@ -14,14 +13,12 @@ import {
 
 interface Preferences {
   orderUpdates: boolean;
-  paymentReminders: boolean;
   deviceRepairStatus: boolean;
   promotionsAndOffers: boolean;
 }
 
 const DEFAULT_PREFERENCES: Preferences = {
   orderUpdates: true,
-  paymentReminders: true,
   deviceRepairStatus: true,
   promotionsAndOffers: false
 };
@@ -52,6 +49,7 @@ export default function CustomerNotificationPreferences() {
       };
       try {
         localStorage.setItem('customer_notification_prefs', JSON.stringify(updated));
+        window.dispatchEvent(new Event('notificationPrefsUpdated'));
       } catch (e) {
         console.error('Failed to save notification preferences:', e);
       }
@@ -127,35 +125,7 @@ export default function CustomerNotificationPreferences() {
               </button>
             </div>
 
-            {/* 2. Payment Reminders */}
-            <div className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border border-gray-200/80 bg-gray-50/40 hover:bg-white hover:border-purple-200 hover:shadow-xs transition-all">
-              <div className="flex items-center gap-3.5 sm:gap-4 pr-3">
-                <div className="w-11 h-11 rounded-2xl bg-purple-50 text-[#8b00cc] flex items-center justify-center shrink-0 border border-purple-100/80">
-                  <CreditCard size={20} />
-                </div>
-                <div className="flex flex-col">
-                  <h3 className="text-sm sm:text-base font-bold text-gray-900 m-0">Payment Reminders</h3>
-                  <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium mt-0.5">
-                    Get alerted before scheduled downpayment due dates and balance settlements
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => togglePreference('paymentReminders')}
-                className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-200 ease-in-out shrink-0 border-none p-0 focus:outline-none ${
-                  preferences.paymentReminders ? 'bg-[#8b00cc]' : 'bg-gray-300'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white shadow-md absolute top-0.5 transition-all duration-200 ease-in-out ${
-                    preferences.paymentReminders ? 'left-6.5' : 'left-0.5'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* 3. Device Repair Status */}
+            {/* 2. Device Repair Status */}
             <div className="flex items-center justify-between p-4 sm:p-5 rounded-2xl border border-gray-200/80 bg-gray-50/40 hover:bg-white hover:border-purple-200 hover:shadow-xs transition-all">
               <div className="flex items-center gap-3.5 sm:gap-4 pr-3">
                 <div className="w-11 h-11 rounded-2xl bg-purple-50 text-[#8b00cc] flex items-center justify-center shrink-0 border border-purple-100/80">
