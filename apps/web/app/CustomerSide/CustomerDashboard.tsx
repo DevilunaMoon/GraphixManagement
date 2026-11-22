@@ -236,7 +236,7 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
         {/* Left Chevron */}
         <button 
           onClick={() => scrollCategories(-300)}
-          className="absolute left-2 md:left-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+          className="absolute left-2 md:left-4 top-[92px] md:top-[108px] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
         >
           <ChevronLeft size={20} strokeWidth={2.5} />
         </button>
@@ -244,21 +244,21 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
         {/* Right Chevron */}
         <button 
           onClick={() => scrollCategories(300)}
-          className="absolute right-2 md:right-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
+          className="absolute right-2 md:right-4 top-[92px] md:top-[108px] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all opacity-0 group-hover/cats:opacity-100 cursor-pointer hidden md:flex"
         >
           <ChevronRight size={20} strokeWidth={2.5} />
         </button>
 
         <div 
           ref={categoryScrollRef}
-          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden items-center"
+          className="flex gap-4 sm:gap-6 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden items-start"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {displayCategories.map((category, idx) => (
             <div 
               key={category.id || idx} 
               onClick={() => navigate(`/customer/products?category=${encodeURIComponent(category.name || category.id)}`)}
-              className="flex flex-col items-center gap-2.5 min-w-[85px] sm:min-w-[105px] cursor-pointer group"
+              className="flex flex-col items-center gap-2.5 min-w-[85px] sm:min-w-[95px] max-w-[110px] cursor-pointer group"
             >
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-purple-50/40 flex items-center justify-center shadow-xs border border-purple-100/80 group-hover:border-[#8b00cc] group-hover:bg-white group-hover:shadow-md group-hover:-translate-y-1 transition-all ease-out duration-300 p-3.5 shrink-0">
                 {category.logoUrl || category.logo ? (
@@ -272,9 +272,11 @@ export default function CustomerDashboard({ user }: { user?: { name: string; ema
                   <span className="text-[10px] text-gray-400 font-bold">No Img</span>
                 )}
               </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-700 text-center group-hover:text-[#8b00cc] transition-colors leading-tight">
-                {category.name}
-              </span>
+              <div className="w-full min-h-[2.5rem] flex items-start justify-center">
+                <span className="text-xs sm:text-sm font-bold text-gray-700 text-center group-hover:text-[#8b00cc] transition-colors leading-tight break-words">
+                  {category.name}
+                </span>
+              </div>
             </div>
           ))}
         </div>
