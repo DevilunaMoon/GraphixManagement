@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box, Edit2, CreditCard, Banknote, Layers, Clock } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
+import PaymentMethodDropdown from '../../components/ui/PaymentMethodDropdown';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
@@ -301,29 +302,13 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             </div>
 
             {/* Payment Method Filter */}
-            <div className="relative min-w-[170px] w-full sm:w-auto">
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
-                <CreditCard size={16} />
-              </div>
-              <select
-                value={paymentMethod}
-                onChange={(e) => {
-                  setPaymentMethod(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[48px] pl-9 pr-8 bg-gray-50 border-2 border-gray-100 hover:border-purple-300 focus:border-purple-500 focus:bg-white rounded-2xl text-xs font-bold text-gray-800 outline-none transition-all cursor-pointer appearance-none"
-              >
-                <option value="all">All Payments</option>
-                <option value="Cash">Cash</option>
-                <option value="GCash">GCash</option>
-                <option value="Skyro">Skyro</option>
-                <option value="Home Credit">Home Credit</option>
-                <option value="Split">Split</option>
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
-                ▼
-              </div>
-            </div>
+            <PaymentMethodDropdown 
+              value={paymentMethod}
+              onChange={(val) => {
+                setPaymentMethod(val);
+                setCurrentPage(1);
+              }}
+            />
 
             <div className="relative w-full md:w-72">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
