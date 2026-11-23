@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Download, UserCircle2, Search, ReceiptText, 
 import { useRouter } from 'next/navigation';
 import DatePicker from '../../components/ui/DatePicker';
 import PaymentMethodDropdown from '../../components/ui/PaymentMethodDropdown';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
 import CashierImeiPromptModal from '../../components/CashierSide/CashierImeiPromptModal';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
@@ -110,6 +111,30 @@ const renderPaymentMethodBadge = (paymentType?: string) => {
     </span>
   );
 };
+
+const IMEI_FILTER_OPTIONS: DropdownOption[] = [
+  {
+    value: 'all',
+    label: 'All Devices',
+    icon: Smartphone,
+    iconColor: 'text-purple-600',
+    badgeBg: 'bg-purple-50'
+  },
+  {
+    value: 'pending',
+    label: 'IMEI: Pending Pickup',
+    icon: Smartphone,
+    iconColor: 'text-amber-600',
+    badgeBg: 'bg-amber-50'
+  },
+  {
+    value: 'assigned',
+    label: 'IMEI: Assigned',
+    icon: Smartphone,
+    iconColor: 'text-emerald-600',
+    badgeBg: 'bg-emerald-50'
+  }
+];
 
 export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "downpayment" }) {
   const router = useRouter();
@@ -243,26 +268,15 @@ export default function CashierSaleRecord({ type = "full" }: { type?: "full" | "
           />
 
           {/* IMEI Status Dropdown */}
-          <div className="relative min-w-0 sm:min-w-[190px] w-full sm:w-auto">
-            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
-              <Smartphone size={16} />
-            </div>
-            <select
-              value={imeiStatus}
-              onChange={(e) => {
-                setImeiStatus(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full h-[42px] sm:h-[48px] pl-9 pr-8 bg-gray-50 border-2 border-gray-100 hover:border-purple-300 focus:border-purple-500 focus:bg-white rounded-2xl text-xs font-bold text-gray-800 outline-none transition-all cursor-pointer appearance-none"
-            >
-              <option value="all">All Devices</option>
-              <option value="pending">IMEI: Pending Pickup</option>
-              <option value="assigned">IMEI: Assigned</option>
-            </select>
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
-              ▼
-            </div>
-          </div>
+          <CustomDropdown
+            value={imeiStatus}
+            onChange={(val) => {
+              setImeiStatus(val);
+              setCurrentPage(1);
+            }}
+            options={IMEI_FILTER_OPTIONS}
+            className="min-w-[190px]"
+          />
 
           {/* Payment Method Filter */}
           <PaymentMethodDropdown 

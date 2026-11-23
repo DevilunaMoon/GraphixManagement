@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box, Edit2, CreditCard, Banknote, Layers, Clock } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import PaymentMethodDropdown from '../../components/ui/PaymentMethodDropdown';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
@@ -111,6 +112,30 @@ const renderPaymentMethodBadge = (paymentType?: string) => {
     </span>
   );
 };
+
+const IMEI_FILTER_OPTIONS: DropdownOption[] = [
+  {
+    value: 'all',
+    label: 'All Devices',
+    icon: Smartphone,
+    iconColor: 'text-purple-600',
+    badgeBg: 'bg-purple-50'
+  },
+  {
+    value: 'pending',
+    label: 'IMEI: Pending Pickup',
+    icon: Smartphone,
+    iconColor: 'text-amber-600',
+    badgeBg: 'bg-amber-50'
+  },
+  {
+    value: 'assigned',
+    label: 'IMEI: Assigned',
+    icon: Smartphone,
+    iconColor: 'text-emerald-600',
+    badgeBg: 'bg-emerald-50'
+  }
+];
 
 export default function AdminTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
   const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
@@ -280,26 +305,15 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
             </div>
 
             {/* IMEI Status Dropdown */}
-            <div className="relative min-w-[200px] w-full sm:w-auto">
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
-                <Smartphone size={16} />
-              </div>
-              <select
-                value={imeiStatus}
-                onChange={(e) => {
-                  setImeiStatus(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[48px] pl-9 pr-8 bg-gray-50 border-2 border-gray-100 hover:border-purple-300 focus:border-purple-500 focus:bg-white rounded-2xl text-xs font-bold text-gray-800 outline-none transition-all cursor-pointer appearance-none"
-              >
-                <option value="all">All</option>
-                <option value="pending">IMEI: Pending Pickup</option>
-                <option value="assigned">IMEI: Assigned</option>
-              </select>
-              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
-                ▼
-              </div>
-            </div>
+            <CustomDropdown
+              value={imeiStatus}
+              onChange={(val) => {
+                setImeiStatus(val);
+                setCurrentPage(1);
+              }}
+              options={IMEI_FILTER_OPTIONS}
+              className="min-w-[190px]"
+            />
 
             {/* Payment Method Filter */}
             <PaymentMethodDropdown 

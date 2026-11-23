@@ -6,8 +6,9 @@ import {
   Eye, EyeOff, MoreVertical, ShieldCheck, UserCheck, Users, 
   Building2, Key, Edit3, ArrowRightLeft, Power, Ban, Plus,
   CheckCircle2, AlertCircle, Sparkles, Crown, User, Phone,
-  UserPlus, Mail, Lock, Loader2
+  UserPlus, Mail, Lock, Loader2, Shield, Store, Wrench
 } from 'lucide-react';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
@@ -22,6 +23,28 @@ const splitName = (fullName: string) => {
   const first = parts.join(' ');
   return { first, last };
 };
+
+const ROLE_FILTER_OPTIONS: DropdownOption[] = [
+  { value: 'All Accounts', label: 'All Accounts', icon: Users, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'Super Admin', label: 'Super Admin', icon: Crown, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'Admin', label: 'Admin', icon: Shield, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'Cashier', label: 'Cashier', icon: Store, iconColor: 'text-blue-600', badgeBg: 'bg-blue-50' },
+  { value: 'Technician', label: 'Technician', icon: Wrench, iconColor: 'text-emerald-600', badgeBg: 'bg-emerald-50' },
+  { value: 'Customer', label: 'Customer', icon: User, iconColor: 'text-gray-600', badgeBg: 'bg-gray-50' }
+];
+
+const STATUS_FILTER_OPTIONS: DropdownOption[] = [
+  { value: 'All', label: 'All', dotColor: 'bg-purple-400' },
+  { value: 'Active', label: 'Active', dotColor: 'bg-emerald-500' },
+  { value: 'Inactive', label: 'Inactive', dotColor: 'bg-rose-400' }
+];
+
+const BRANCH_FILTER_OPTIONS: DropdownOption[] = [
+  { value: 'All Branches', label: 'All Branches', icon: Building2, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'Tagoloan', label: 'Tagoloan Branch', icon: Building2, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'Villanueva', label: 'Villanueva Branch', icon: Building2, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'Jasaan', label: 'Jasaan Branch', icon: Building2, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' }
+];
 
 export default function AdminAccounts() {
   const { selectedBranch, setSelectedBranch, branches, isSuperAdmin, userBranch, userRole } = useBranch();
@@ -478,103 +501,36 @@ export default function AdminAccounts() {
           {/* Dropdown Filters: 2-column grid on mobile, inline flex on tablet/desktop */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             {/* Role Filter */}
-            <div className="relative w-full sm:w-auto" onClick={e => e.stopPropagation()}>
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsRoleDropdownOpen(!isRoleDropdownOpen);
-                  setIsBranchDropdownOpen(false);
-                  setIsStatusDropdownOpen(false);
-                }}
-                className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm active:scale-95"
-              >
-                <span className="truncate">Role: <strong className="text-purple-800">{roleFilter}</strong></span>
-                <ChevronDown size={14} className={`transition-transform shrink-0 ${isRoleDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isRoleDropdownOpen && (
-                <div className="absolute top-[115%] left-0 w-44 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                  {['All Accounts', 'Super Admin', 'Admin', 'Cashier', 'Technician', 'Customer'].map((role) => (
-                    <button 
-                      key={role}
-                      type="button"
-                      onClick={() => { setRoleFilter(role); setIsRoleDropdownOpen(false); }}
-                      className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${roleFilter === role ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
-                    >
-                      {role}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              value={roleFilter}
+              onChange={(val) => setRoleFilter(val)}
+              options={ROLE_FILTER_OPTIONS}
+              prefix="Role:"
+              size="sm"
+            />
 
             {/* Branch Filter (Super Admin Enabled) */}
             {isSuperAdmin && (
-              <div className="relative w-full sm:w-auto" onClick={e => e.stopPropagation()}>
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setIsBranchDropdownOpen(!isBranchDropdownOpen);
-                    setIsRoleDropdownOpen(false);
-                    setIsStatusDropdownOpen(false);
-                  }}
-                  className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm active:scale-95"
-                >
-                  <span className="truncate">Branch: <strong className="text-purple-800">{branchFilter}</strong></span>
-                  <ChevronDown size={14} className={`transition-transform shrink-0 ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isBranchDropdownOpen && (
-                  <div className="absolute top-[115%] left-0 w-40 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                    {['All Branches', 'Tagoloan', 'Villanueva', 'Jasaan'].map((b) => (
-                      <button 
-                        key={b}
-                        type="button"
-                        onClick={() => {
-                          setBranchFilter(b);
-                          setSelectedBranch(b === 'All Branches' ? 'all' : b);
-                          setIsBranchDropdownOpen(false);
-                        }}
-                        className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${branchFilter === b ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
-                      >
-                        {b === 'All Branches' ? '🏢 All Branches' : `📍 ${b}`}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <CustomDropdown
+                value={branchFilter}
+                onChange={(val) => {
+                  setBranchFilter(val);
+                  setSelectedBranch(val === 'All Branches' ? 'all' : val);
+                }}
+                options={BRANCH_FILTER_OPTIONS}
+                prefix="Branch:"
+                size="sm"
+              />
             )}
 
             {/* Status Filter */}
-            <div className="relative w-full sm:w-auto" onClick={e => e.stopPropagation()}>
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsStatusDropdownOpen(!isStatusDropdownOpen);
-                  setIsRoleDropdownOpen(false);
-                  setIsBranchDropdownOpen(false);
-                }}
-                className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 transition-all cursor-pointer shadow-sm active:scale-95"
-              >
-                <span className="truncate">Status: <strong className="text-purple-800">{statusFilter}</strong></span>
-                <ChevronDown size={14} className={`transition-transform shrink-0 ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isStatusDropdownOpen && (
-                <div className="absolute top-[115%] left-0 w-36 bg-white rounded-xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95">
-                  {['All', 'Active', 'Inactive'].map((st) => (
-                    <button 
-                      key={st}
-                      type="button"
-                      onClick={() => { setStatusFilter(st); setIsStatusDropdownOpen(false); }}
-                      className={`px-4 py-2.5 text-left text-xs font-bold transition-colors hover:bg-purple-50 ${statusFilter === st ? 'text-[#5c0099] bg-purple-50/70 font-black' : 'text-gray-700'}`}
-                    >
-                      {st}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val)}
+              options={STATUS_FILTER_OPTIONS}
+              prefix="Status:"
+              size="sm"
+            />
           </div>
 
           {/* Create Account Button */}

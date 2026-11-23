@@ -5,8 +5,10 @@ import {
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
-  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User, Loader2
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User, Loader2,
+  Laptop, Tablet, Tv, Speaker, Headphones, Box
 } from 'lucide-react';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
@@ -31,6 +33,22 @@ type VariantData = {
   isOutOfStock?: boolean;
   isLowStock?: boolean;
 };
+
+const DEVICE_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All Types', icon: Box },
+  { value: 'smartphone', label: 'Smartphones', icon: Smartphone, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'laptop', label: 'Laptops', icon: Laptop, iconColor: 'text-blue-600', badgeBg: 'bg-blue-50' },
+  { value: 'ipad', label: 'iPads/Tablets', icon: Tablet, iconColor: 'text-sky-600', badgeBg: 'bg-sky-50' },
+  { value: 'tv', label: 'TVs', icon: Tv, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'speaker', label: 'Speakers', icon: Speaker, iconColor: 'text-rose-600', badgeBg: 'bg-rose-50' },
+  { value: 'phone accessories', label: 'Accessories', icon: Headphones, iconColor: 'text-emerald-600', badgeBg: 'bg-emerald-50' },
+];
+
+const CONDITION_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All Conditions' },
+  { value: 'new', label: 'Brand New', icon: Sparkles, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'pre-owned', label: 'Pre-Owned', icon: RefreshCw, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+];
 
 export default function AdminInventory() {
   const { styles } = useTheme();
@@ -2020,69 +2038,42 @@ export default function AdminInventory() {
           {/* Dropdown Filters + Export Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Brand Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                className={`flex items-center gap-2 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
-              >
-                <Filter size={15} />
-                <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
-                <ChevronDown size={15} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isFilterOpen && (
-                <div className="absolute top-[115%] left-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
-                  <button 
-                    onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} 
-                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                  >
-                    All Brands
-                  </button>
-                  {categories.map(cat => (
-                    <button 
-                      key={cat.id} 
-                      onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} 
-                      className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                  <div className="border-t border-purple-100 mt-1 pt-1">
-                    <button 
-                      onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Plus size={14} /> + Add / Manage Brands
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              value={selectedCategory}
+              onChange={(val) => setSelectedCategory(val)}
+              options={[
+                { value: 'All', label: 'All Brands', icon: Filter },
+                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+              ]}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+              footerAction={{
+                label: '+ Add / Manage Brands',
+                icon: Plus,
+                onClick: () => setCategoriesModalOpen(true)
+              }}
+            />
 
             {/* Type Dropdown */}
-            <select 
-              value={selectedDeviceType} 
-              onChange={(e) => setSelectedDeviceType(e.target.value)} 
-              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-            >
-              <option value="all">All Types</option>
-              <option value="smartphone">Smartphones</option>
-              <option value="laptop">Laptops</option>
-              <option value="ipad">iPads/Tablets</option>
-              <option value="tv">TVs</option>
-              <option value="speaker">Speakers</option>
-              <option value="phone accessories">Accessories</option>
-            </select>
+            <CustomDropdown
+              value={selectedDeviceType}
+              onChange={(val) => setSelectedDeviceType(val)}
+              options={DEVICE_TYPE_OPTIONS}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+            />
 
             {/* Condition Filter Dropdown */}
-            <select
+            <CustomDropdown
               value={selectedCondition}
-              onChange={(e) => setSelectedCondition(e.target.value as any)}
-              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-            >
-              <option value="all">All Conditions</option>
-              <option value="new">Brand New</option>
-              <option value="pre-owned">Pre-Owned</option>
-            </select>
+              onChange={(val) => setSelectedCondition(val as any)}
+              options={CONDITION_OPTIONS}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+            />
 
             {/* Export Buttons */}
             <div className="flex items-center gap-1.5">
