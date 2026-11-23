@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box, Edit2 } from 'lucide-react';
+import { ReceiptText, Search, ChevronLeft, ChevronRight, UserCircle2, Download, X, CheckCircle2, Building2, Smartphone, Box, Edit2, CreditCard, Banknote, Layers, Clock } from 'lucide-react';
 import DatePicker from '../../components/ui/DatePicker';
 import { useBranch } from '../../context/BranchContext';
 import StandardDigitalReceipt, { StandardReceiptData } from '../../components/Common/StandardDigitalReceipt';
@@ -55,6 +55,62 @@ const formatVariations = (variationsStr: string | null): string => {
   return variationsStr;
 };
 
+const renderPaymentMethodBadge = (paymentType?: string) => {
+  const norm = (paymentType || '').toLowerCase().trim();
+  
+  if (norm.includes('skyro')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200 shadow-2xs whitespace-nowrap">
+        <CreditCard size={12} className="text-sky-600" />
+        Skyro
+      </span>
+    );
+  }
+  
+  if (norm.includes('home credit') || norm.includes('homecredit')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs whitespace-nowrap">
+        <CreditCard size={12} className="text-rose-600" />
+        Home Credit
+      </span>
+    );
+  }
+  
+  if (norm.includes('gcash')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#005ce6] border border-blue-200 shadow-2xs whitespace-nowrap">
+        <Smartphone size={12} className="text-[#005ce6]" />
+        GCash
+      </span>
+    );
+  }
+  
+  if (norm.includes('split')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-[#bd00ff] border border-purple-200 shadow-2xs whitespace-nowrap">
+        <Layers size={12} className="text-[#bd00ff]" />
+        Split
+      </span>
+    );
+  }
+
+  if (norm.includes('downpayment')) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs whitespace-nowrap">
+        <Clock size={12} className="text-amber-600" />
+        Downpayment
+      </span>
+    );
+  }
+  
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs whitespace-nowrap">
+      <Banknote size={12} className="text-emerald-600" />
+      Cash
+    </span>
+  );
+};
+
 export default function AdminTransactions({ type = "full" }: { type?: "full" | "downpayment" }) {
   const { selectedBranch, setSelectedBranch, isSuperAdmin } = useBranch();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -62,6 +118,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [imeiStatus, setImeiStatus] = useState('all');
+  const [paymentMethod, setPaymentMethod] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [customerDetailsTarget, setCustomerDetailsTarget] = useState<{ id?: string; email?: string; name?: string } | null>(null);
@@ -119,7 +176,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     const fetchTransactions = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&branch=${encodeURIComponent(selectedBranch)}&imeiStatus=${encodeURIComponent(imeiStatus)}`);
+        const res = await fetch(`/api/transactions?type=${type}&page=${currentPage}&limit=${itemsPerPage}&search=${encodeURIComponent(searchTerm)}&date=${filterDate}&branch=${encodeURIComponent(selectedBranch)}&imeiStatus=${encodeURIComponent(imeiStatus)}&paymentMethod=${encodeURIComponent(paymentMethod)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && Array.isArray(data.transactions)) {
@@ -141,7 +198,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, searchTerm, filterDate, type, selectedBranch, imeiStatus]);
+  }, [currentPage, searchTerm, filterDate, type, selectedBranch, imeiStatus, paymentMethod]);
 
   const filteredTransactions = transactions;
   const paginatedTransactions = transactions;
@@ -243,6 +300,31 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
               </div>
             </div>
 
+            {/* Payment Method Filter */}
+            <div className="relative min-w-[170px] w-full sm:w-auto">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none">
+                <CreditCard size={16} />
+              </div>
+              <select
+                value={paymentMethod}
+                onChange={(e) => {
+                  setPaymentMethod(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full h-[48px] pl-9 pr-8 bg-gray-50 border-2 border-gray-100 hover:border-purple-300 focus:border-purple-500 focus:bg-white rounded-2xl text-xs font-bold text-gray-800 outline-none transition-all cursor-pointer appearance-none"
+              >
+                <option value="all">All Payments</option>
+                <option value="Cash">Cash</option>
+                <option value="GCash">GCash</option>
+                <option value="Skyro">Skyro</option>
+                <option value="Home Credit">Home Credit</option>
+                <option value="Split">Split</option>
+              </select>
+              <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-600 pointer-events-none text-xs">
+                ▼
+              </div>
+            </div>
+
             <div className="relative w-full md:w-72">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
@@ -301,6 +383,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
+                        {renderPaymentMethodBadge(tx.paymentType)}
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                           {tx.branch || 'Tagoloan'}
                         </span>
@@ -455,6 +538,7 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                     <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Branch</th>
                     <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Customer</th>
                     <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Device</th>
+                    <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Payment Method</th>
                     {type === "downpayment" && <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">Source</th>}
                     <th className="px-5 py-4 font-semibold border-b-2 border-transparent text-sm">
                       {type === "downpayment" ? "Payment Info" : "Amount"}
@@ -573,6 +657,9 @@ export default function AdminTransactions({ type = "full" }: { type?: "full" | "
                             ) : null}
                           </div>
                         </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {renderPaymentMethodBadge(tx.paymentType)}
                       </td>
                       {type === "downpayment" && (
                         <td className="px-5 py-4">

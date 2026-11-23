@@ -19,6 +19,7 @@ export async function GET(req: Request) {
     const date = searchParams.get('date') || '';
     const branchParam = searchParams.get('branch');
     const imeiStatus = searchParams.get('imeiStatus') || 'all';
+    const paymentMethodParam = searchParams.get('paymentMethod') || 'all';
     
     // Build where clause with clean AND conditions
     const andConditions: any[] = [];
@@ -33,7 +34,34 @@ export async function GET(req: Request) {
     if (type === 'downpayment') {
       andConditions.push({ paymentType: 'Downpayment' });
     } else if (type === 'full') {
-      andConditions.push({ paymentType: { in: ['Full', 'Cash', 'GCash', 'Split', 'Online', 'Buy Now (Full Payment)'] } });
+      andConditions.push({ 
+        NOT: { paymentType: 'Downpayment' } 
+      });
+    }
+
+    if (paymentMethodParam && paymentMethodParam !== 'all') {
+      const pm = paymentMethodParam.toLowerCase();
+      if (pm === 'skyro') {
+        andConditions.push({ paymentType: { contains: 'Skyro', mode: 'insensitive' } });
+      } else if (pm === 'home credit' || pm === 'homecredit') {
+        andConditions.push({
+          OR: [
+            { paymentType: { contains: 'Home Credit', mode: 'insensitive' } },
+            { paymentType: { contains: 'Homecredit', mode: 'insensitive' } }
+          ]
+        });
+      } else if (pm === 'gcash') {
+        andConditions.push({ paymentType: { contains: 'GCash', mode: 'insensitive' } });
+      } else if (pm === 'cash') {
+        andConditions.push({
+          AND: [
+            { paymentType: { contains: 'Cash', mode: 'insensitive' } },
+            { NOT: { paymentType: { contains: 'GCash', mode: 'insensitive' } } }
+          ]
+        });
+      } else if (pm === 'split') {
+        andConditions.push({ paymentType: { contains: 'Split', mode: 'insensitive' } });
+      }
     }
 
     if (search) {

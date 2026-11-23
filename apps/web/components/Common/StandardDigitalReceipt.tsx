@@ -128,8 +128,15 @@ export default function StandardDigitalReceipt({
   const shortTransId = formatDisplayInvoiceId(rawTransId, branchLocation);
 
   // 4. Payment Method & Status Logic
-  const paymentMethod = data.paymentType?.toLowerCase().includes('gcash')
+  const rawPType = (data.paymentType || '').toLowerCase();
+  const paymentMethod = rawPType.includes('skyro')
+    ? 'Skyro'
+    : (rawPType.includes('home credit') || rawPType.includes('homecredit'))
+    ? 'Home Credit'
+    : rawPType.includes('gcash')
     ? 'GCash'
+    : rawPType.includes('split')
+    ? 'Split (Cash + GCash)'
     : (data.paymentType === 'Downpayment' ? 'Downpayment' : 'Cash');
 
   const isDownpayment = data.paymentType === 'Downpayment';

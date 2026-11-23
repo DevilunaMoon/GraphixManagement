@@ -120,13 +120,14 @@ export default function CashierPayment() {
     setShowSuggestionsDropdown(false);
   };
 
-  const [paymentType, setPaymentType] = useState<'Cash' | 'GCash' | 'Split'>('Cash');
+  const [paymentType, setPaymentType] = useState<'Cash' | 'GCash' | 'Split' | 'Skyro' | 'Home Credit'>('Cash');
   
   // Payment specifics
   const [cashTendered, setCashTendered] = useState<string>('');
   const [cashAmount, setCashAmount] = useState<number>(0);
   const [gcashAmount, setGcashAmount] = useState<number>(0);
   const [gcashRefNumber, setGcashRefNumber] = useState<string>('');
+  const [financingRefNumber, setFinancingRefNumber] = useState<string>('');
   
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
@@ -343,7 +344,7 @@ export default function CashierPayment() {
               isSettled: true,
               phoneNumber: contactNumber || (parsedCashTendered > 0 ? `Tendered: ₱${parsedCashTendered}` : undefined),
               customerName: customerName,
-              referenceId: gcashRefNumber.trim() || undefined,
+              referenceId: (paymentType === 'GCash' || paymentType === 'Split' ? gcashRefNumber.trim() : (paymentType === 'Skyro' || paymentType === 'Home Credit' ? financingRefNumber.trim() : undefined)) || undefined,
               targetUserId: linkedCustomer?.id || undefined
             })
           });
@@ -611,62 +612,96 @@ export default function CashierPayment() {
                   Payment Option
                 </span>
                 <span className="text-[11px] font-bold text-purple-700 bg-purple-100/70 px-2.5 py-0.5 rounded-full">
-                  {paymentType === 'Cash' ? 'Cash Tender' : paymentType === 'GCash' ? 'GCash Digital' : 'Cash + GCash Split'}
+                  {paymentType === 'Cash' ? 'Cash Tender' : paymentType === 'GCash' ? 'GCash Digital' : paymentType === 'Skyro' ? 'Skyro Financing' : paymentType === 'Home Credit' ? 'Home Credit Loan' : 'Cash + GCash Split'}
                 </span>
               </div>
 
-              {/* 3 Payment Buttons: Cash, GCash, Split */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* 5 Payment Buttons: Cash, GCash, Skyro, Home Credit, Split */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                 
                 {/* Button 1: Cash Payment */}
                 <button
                   type="button"
                   onClick={() => setPaymentType('Cash')}
-                  className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                  className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
                     paymentType === 'Cash' 
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold shadow-xs' 
                       : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Banknote size={18} className={paymentType === 'Cash' ? 'text-emerald-600' : 'text-gray-400'} />
-                    <span className="font-extrabold text-sm">Cash Payment</span>
+                  <div className="flex items-center gap-1.5">
+                    <Banknote size={16} className={paymentType === 'Cash' ? 'text-emerald-600' : 'text-gray-400'} />
+                    <span className="font-extrabold text-xs sm:text-sm">Cash</span>
                   </div>
-                  <span className="text-[11px] text-gray-500 font-normal">Paid in cash at counter</span>
+                  <span className="text-[10px] text-gray-500 font-normal">Paid at counter</span>
                 </button>
 
                 {/* Button 2: GCash Payment */}
                 <button
                   type="button"
                   onClick={() => setPaymentType('GCash')}
-                  className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                  className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
                     paymentType === 'GCash' 
                       ? 'border-[#005ce6] bg-blue-50 text-blue-950 font-bold shadow-xs' 
                       : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <QrCode size={18} className={paymentType === 'GCash' ? 'text-[#005ce6]' : 'text-gray-400'} />
-                    <span className="font-extrabold text-sm">GCash Payment</span>
+                  <div className="flex items-center gap-1.5">
+                    <QrCode size={16} className={paymentType === 'GCash' ? 'text-[#005ce6]' : 'text-gray-400'} />
+                    <span className="font-extrabold text-xs sm:text-sm">GCash</span>
                   </div>
-                  <span className="text-[11px] text-gray-500 font-normal">Direct store QR transfer</span>
+                  <span className="text-[10px] text-gray-500 font-normal">Store QR transfer</span>
                 </button>
 
-                {/* Button 3: Split Payment */}
+                {/* Button 3: Skyro Payment */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('Skyro')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                    paymentType === 'Skyro' 
+                      ? 'border-sky-500 bg-sky-50 text-sky-950 font-bold shadow-xs' 
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-sky-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard size={16} className={paymentType === 'Skyro' ? 'text-sky-600' : 'text-gray-400'} />
+                    <span className="font-extrabold text-xs sm:text-sm">Skyro</span>
+                  </div>
+                  <span className="text-[10px] text-gray-500 font-normal">Financing app</span>
+                </button>
+
+                {/* Button 4: Home Credit Payment */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('Home Credit')}
+                  className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
+                    paymentType === 'Home Credit' 
+                      ? 'border-rose-500 bg-rose-50 text-rose-950 font-bold shadow-xs' 
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-rose-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <CreditCard size={16} className={paymentType === 'Home Credit' ? 'text-rose-600' : 'text-gray-400'} />
+                    <span className="font-extrabold text-xs sm:text-sm">Home Credit</span>
+                  </div>
+                  <span className="text-[10px] text-gray-500 font-normal">Financing loan</span>
+                </button>
+
+                {/* Button 5: Split Payment */}
                 <button
                   type="button"
                   onClick={() => setPaymentType('Split')}
-                  className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
+                  className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col gap-1 ${
                     paymentType === 'Split' 
                       ? 'border-[#bd00ff] bg-purple-50 text-purple-950 font-bold shadow-xs' 
                       : 'border-gray-200 bg-white text-gray-700 hover:border-purple-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Layers size={18} className={paymentType === 'Split' ? 'text-[#bd00ff]' : 'text-gray-400'} />
-                    <span className="font-extrabold text-sm">Split Payment</span>
+                  <div className="flex items-center gap-1.5">
+                    <Layers size={16} className={paymentType === 'Split' ? 'text-[#bd00ff]' : 'text-gray-400'} />
+                    <span className="font-extrabold text-xs sm:text-sm">Split</span>
                   </div>
-                  <span className="text-[11px] text-gray-500 font-normal">Both Cash & GCash</span>
+                  <span className="text-[10px] text-gray-500 font-normal">Cash + GCash</span>
                 </button>
 
               </div>
@@ -924,6 +959,78 @@ export default function CashierPayment() {
                 </div>
               )}
 
+              {/* ----------------- Option 4: Skyro Financing Details ----------------- */}
+              {paymentType === 'Skyro' && (
+                <div className="flex flex-col gap-4 pt-2 animate-in fade-in duration-200">
+                  <div className="p-4 bg-gradient-to-br from-sky-50/90 to-blue-50/50 border border-sky-200 rounded-2xl flex flex-col gap-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <CreditCard size={16} className="text-sky-600" />
+                        Skyro Financing Approval
+                      </span>
+                      <span className="text-[10px] font-bold bg-sky-100 text-sky-700 px-2.5 py-0.5 rounded-full">
+                        In-Store Partner
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white border border-sky-100 rounded-xl flex items-center justify-between text-xs">
+                      <span className="text-gray-600 font-semibold">Total Amount Financed:</span>
+                      <span className="text-lg font-black text-sky-700">₱{totalAmount.toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                        <span>Skyro Loan / Approval Reference</span>
+                        <span className="text-[10px] text-gray-400 lowercase">optional confirmation code</span>
+                      </label>
+                      <input 
+                        type="text"
+                        value={financingRefNumber}
+                        onChange={(e) => setFinancingRefNumber(e.target.value)}
+                        placeholder="e.g. SKY-90821-XP"
+                        className="w-full h-11 border-2 border-sky-200 focus:border-sky-500 bg-white rounded-xl px-4 text-xs font-mono font-bold text-gray-900 outline-none shadow-2xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ----------------- Option 5: Home Credit Financing Details ----------------- */}
+              {paymentType === 'Home Credit' && (
+                <div className="flex flex-col gap-4 pt-2 animate-in fade-in duration-200">
+                  <div className="p-4 bg-gradient-to-br from-rose-50/90 to-pink-50/50 border border-rose-200 rounded-2xl flex flex-col gap-3.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <CreditCard size={16} className="text-rose-600" />
+                        Home Credit Loan Approval
+                      </span>
+                      <span className="text-[10px] font-bold bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full">
+                        In-Store Financing
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white border border-rose-100 rounded-xl flex items-center justify-between text-xs">
+                      <span className="text-gray-600 font-semibold">Total Loan Contract Amount:</span>
+                      <span className="text-lg font-black text-rose-700">₱{totalAmount.toLocaleString()}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center justify-between">
+                        <span>Home Credit Contract / Reference No.</span>
+                        <span className="text-[10px] text-gray-400 lowercase">from agent POS slip</span>
+                      </label>
+                      <input 
+                        type="text"
+                        value={financingRefNumber}
+                        onChange={(e) => setFinancingRefNumber(e.target.value)}
+                        placeholder="e.g. HC-7729-4401"
+                        className="w-full h-11 border-2 border-rose-200 focus:border-rose-500 bg-white rounded-xl px-4 text-xs font-mono font-bold text-gray-900 outline-none shadow-2xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
 
           </div>
@@ -1024,6 +1131,8 @@ export default function CashierPayment() {
                   <span className="font-bold text-purple-700">
                     {paymentType === 'Cash' && '💵 Full Cash Payment'}
                     {paymentType === 'GCash' && '📱 Full GCash Payment'}
+                    {paymentType === 'Skyro' && '💳 Skyro Financing'}
+                    {paymentType === 'Home Credit' && '💳 Home Credit Loan'}
                     {paymentType === 'Split' && `💳 Split (Cash ₱${cashAmount.toLocaleString()} + GCash ₱${gcashAmount.toLocaleString()})`}
                   </span>
                 </div>
