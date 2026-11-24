@@ -5584,10 +5584,11 @@ export default function AdminInventory() {
                             type="button"
                             onClick={() => handleDeleteCategory(cat.id, cat.name, cat.logoUrl)}
                             disabled={isDeletingCats}
-                            className="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors bg-transparent border-none cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition-all cursor-pointer shrink-0 disabled:opacity-50"
                             title={`Delete brand ${cat.name}`}
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} />
+                            <span>Delete</span>
                           </button>
                         </div>
                       ))}
@@ -5641,9 +5642,12 @@ export default function AdminInventory() {
 
             {/* Title & Description */}
             <div className="flex flex-col gap-1.5 w-full">
-              <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Delete Brand?</h3>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed m-0">
-                Are you sure you want to permanently delete this brand from your catalog?
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Delete Brand</h3>
+              <p className="text-sm font-semibold text-gray-700 leading-relaxed m-0">
+                Are you sure you want to delete this?
+              </p>
+              <p className="text-xs text-gray-500 m-0">
+                This will permanently remove the brand from your catalog.
               </p>
             </div>
 
@@ -5698,7 +5702,7 @@ export default function AdminInventory() {
                     <span>Deleting...</span>
                   </>
                 ) : (
-                  'Yes, Delete Brand'
+                  'Delete'
                 )}
               </button>
             </div>

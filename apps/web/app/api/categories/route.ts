@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
+import { getSession } from '../../../lib/session';
 
 export const revalidate = 30;
 
@@ -53,21 +54,31 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    const session = await getSession();
+    if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { ids } = await req.json();
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'No category IDs provided' }, { status: 400 });
     }
 
-    // Prisma deleteMany
-    await prisma.category.deleteMany({
-      where: {
-        id: { in: ids }
-      }
+    // Safely unlink any devices referencing these categories before deleting
+    await prisma.$transaction(async (tx) => {
+      await tx.device.updateMany({
+        where: { categoryId: { in: ids } },
+        data: { categoryId: null }
+      });
+
+      await tx.category.deleteMany({
+        where: { id: { in: ids } }
+      });
     });
 
     return NextResponse.json({ success: true, deletedCount: ids.length });
   } catch (error: any) {
     console.error('Error deleting categories:', error);
-    return NextResponse.json({ error: 'Failed to delete categories. Some categories might be in use by devices.' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete categories. Please try again.' }, { status: 500 });
   }
 }
