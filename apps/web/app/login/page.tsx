@@ -16,7 +16,8 @@ import {
   Scale, 
   ShieldCheck, 
   X, 
-  FileText 
+  FileText,
+  Sparkles 
 } from "lucide-react";
 import { login, register } from "../../actions/auth";
 import PasswordRequirements from "../../components/PasswordRequirements";
@@ -192,7 +193,7 @@ function LoginContent() {
 
   return (
     <div 
-      className="h-[100dvh] min-h-[620px] w-full flex items-center justify-center p-4 sm:p-6 md:p-8 font-['Inter'] relative overflow-hidden bg-cover bg-center"
+      className="min-h-[100dvh] w-full flex items-center justify-center p-3 sm:p-6 md:p-8 font-['Inter'] relative overflow-y-auto bg-cover bg-center"
       style={{ backgroundImage: "linear-gradient(rgba(14, 4, 26, 0.6), rgba(14, 4, 26, 0.65)), url('/Images/storefront-bg.jpg')" }}
     >
       {/* Ambient background blur circles */}
@@ -202,7 +203,7 @@ function LoginContent() {
       {/* Back to Homepage Button */}
       <button
         onClick={() => router.push('/')}
-        className="absolute top-4 left-4 sm:top-6 sm:left-6 z-40 flex items-center gap-2 text-[#8b00cc] font-extrabold hover:text-[#bd00ff] bg-white/90 hover:bg-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(139,0,204,0.2)] hover:-translate-y-0.5 active:translate-y-0 transition-all text-xs sm:text-sm cursor-pointer border-none"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 z-40 flex items-center gap-2 text-[#8b00cc] font-extrabold hover:text-[#bd00ff] bg-white/95 hover:bg-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.15)] hover:shadow-[0_6px_20px_rgba(139,0,204,0.25)] hover:-translate-y-0.5 active:translate-y-0 transition-all text-xs sm:text-sm cursor-pointer border border-white/80 ring-1 ring-purple-100"
       >
         <ArrowLeft size={18} />
         <span className="hidden sm:inline">Back to Homepage</span>
@@ -210,22 +211,25 @@ function LoginContent() {
       </button>
 
       {/* Main Glassmorphic Container */}
-      <div className="bg-white/30 backdrop-blur-xl rounded-[2.2rem] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] overflow-hidden w-full max-w-4xl h-[680px] md:h-[720px] max-h-[95vh] flex flex-col relative transition-all duration-700 border border-white/50 z-10">
+      <div className="bg-white/95 sm:bg-white/92 backdrop-blur-2xl rounded-[2.2rem] sm:rounded-[2.6rem] shadow-[0_25px_70px_-15px_rgba(25,0,55,0.45)] overflow-hidden w-full max-w-md md:max-w-4xl h-auto min-h-[580px] md:h-[720px] max-h-[96dvh] flex flex-col relative transition-all duration-700 border border-white/80 ring-1 ring-purple-100 z-10">
 
         {/* --- Sign In Form --- */}
         <div 
-          className={`w-full h-full flex-1 md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:left-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-purple-300/40 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent
+          className={`w-full h-full flex-1 md:w-1/2 p-6 sm:p-8 md:p-10 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:left-0 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-purple-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent
             ${isLogin ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-[20%] pointer-events-none hidden md:flex'}
             ${isLogin ? 'flex' : 'hidden md:flex'}
           `}
         >
-          <div className="text-center mb-5">
+          <div className="text-center mb-5 sm:mb-6">
+            <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-purple-50 text-[#8b00cc] mb-3 shadow-2xs border border-purple-100">
+              <Sparkles size={20} className="text-[#8b00cc]" />
+            </div>
             <h2 className="text-3xl sm:text-4xl font-black text-gray-950 tracking-tight m-0">Sign In</h2>
-            <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-1 m-0">Access your Graphix Account & Portal</p>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1 m-0">Access your Graphix Account & Portal</p>
           </div>
 
           {errorMsg && isLogin && (
-            <div className="bg-rose-50/90 backdrop-blur-xs text-rose-700 p-3 rounded-xl mb-3 text-xs sm:text-sm font-bold border border-rose-200 text-center animate-in fade-in shadow-xs">
+            <div className="bg-rose-50 text-rose-700 p-3 rounded-2xl mb-3 text-xs sm:text-sm font-bold border border-rose-200 text-center animate-in fade-in shadow-xs">
               {errorMsg}
             </div>
           )}
@@ -233,7 +237,7 @@ function LoginContent() {
           <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
             {/* Email or Username Input */}
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
                 <User size={18} strokeWidth={2.2} />
               </div>
               <input 
@@ -241,13 +245,13 @@ function LoginContent() {
                 name="email" 
                 required 
                 placeholder="Email or Username" 
-                className="w-full pl-10 pr-4 py-2.5 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-sm outline-none" 
+                className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-150 hover:border-gray-300 focus:border-[#8b00cc] focus:ring-4 focus:ring-purple-100 shadow-2xs rounded-2xl transition-all text-gray-900 font-semibold placeholder-gray-400 text-sm outline-none" 
               />
             </div>
 
             {/* Password Input */}
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
                 <Lock size={18} strokeWidth={2.2} />
               </div>
               <input 
@@ -255,64 +259,62 @@ function LoginContent() {
                 name="password" 
                 required 
                 placeholder="Password" 
-                className="w-full pl-10 pr-10 py-2.5 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-sm outline-none" 
+                className="w-full pl-10 pr-11 py-3 bg-white border-2 border-gray-150 hover:border-gray-300 focus:border-[#8b00cc] focus:ring-4 focus:ring-purple-100 shadow-2xs rounded-2xl transition-all text-gray-900 font-semibold placeholder-gray-400 text-sm outline-none" 
               />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center z-10">
+              <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center z-10">
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)} 
-                  className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
+                  className="text-gray-400 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer p-1"
                   title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
+                  {showPassword ? <EyeOff size={18} strokeWidth={2} /> : <Eye size={18} strokeWidth={2} />}
                 </button>
               </div>
             </div>
 
             {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between mt-0.5">
+            <div className="flex items-center justify-between mt-1 select-none">
               <div 
-                className="flex items-center gap-2 cursor-pointer select-none" 
+                className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors" 
                 onClick={() => setRememberMe(!rememberMe)}
               >
-                {rememberMe ? (
-                  <CheckSquare size={18} className="text-[#8b00cc]" />
-                ) : (
-                  <Square size={18} className="text-gray-500 hover:text-gray-700" />
-                )}
-                <span className="text-xs sm:text-sm font-bold text-gray-900">Remember Me</span>
+                <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${rememberMe ? 'bg-[#8b00cc] border-[#8b00cc] text-white shadow-2xs' : 'border-gray-300 bg-white hover:border-gray-400'}`}>
+                  {rememberMe && <CheckSquare size={13} className="stroke-[3]" />}
+                </div>
+                <span>Remember Me</span>
               </div>
               <a 
                 href="/forgot-password"
-                className="text-xs sm:text-sm font-extrabold text-[#8b00cc] hover:text-[#bd00ff] transition-colors text-decoration-none"
+                className="text-xs sm:text-sm font-bold text-[#8b00cc] hover:text-[#bd00ff] transition-colors text-decoration-none"
               >
                 Forgot Password?
               </a>
             </div>
 
             {/* Sign In Submit Button */}
-            <div className="mt-1">
+            <div className="mt-2">
               <button 
                 disabled={isLoading} 
                 type="submit" 
-                className="bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white w-full py-3 rounded-xl font-black text-sm sm:text-base shadow-[0_8px_20px_rgba(139,0,204,0.35)] hover:shadow-[0_12px_28px_rgba(139,0,204,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 cursor-pointer border-none"
+                className="bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white w-full py-3 rounded-2xl font-bold text-sm sm:text-base shadow-[0_8px_20px_rgba(139,0,204,0.3)] hover:shadow-[0_12px_28px_rgba(139,0,204,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer border-none"
               >
                 {isLoading ? "Signing In..." : "Sign In"}
               </button>
             </div>
 
             {/* Divider */}
-            <div className="flex items-center justify-center my-0.5 w-full mx-auto">
-              <div className="h-px bg-gray-300/80 flex-1" />
-              <span className="px-3 text-gray-500 text-xs font-black">OR</span>
-              <div className="h-px bg-gray-300/80 flex-1" />
+            <div className="flex items-center justify-center my-1 w-full mx-auto">
+              <div className="h-px bg-gray-200 flex-1" />
+              <span className="px-3 text-gray-400 text-xs font-black uppercase tracking-wider">OR</span>
+              <div className="h-px bg-gray-200 flex-1" />
             </div>
 
             {/* Google Sign-In */}
             <div>
               <a 
                 href={`/api/auth/google${searchParams?.get("redirect") ? `?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : ""}`} 
-                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50 border border-gray-200/90 text-gray-800 w-full py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_18px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 active:translate-y-0 transition-all text-decoration-none"
+                className="flex items-center justify-center gap-3 bg-white hover:bg-gray-50/80 border border-gray-200 text-gray-800 w-full py-3 rounded-2xl font-bold text-xs sm:text-sm shadow-xs hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0 transition-all text-decoration-none"
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -325,14 +327,14 @@ function LoginContent() {
             </div>
 
             {/* Mobile-only View Toggle */}
-            <div className="md:hidden mt-2 text-center">
-              <p className="text-gray-600 text-xs mb-1 font-bold">Don't have an account yet?</p>
+            <div className="md:hidden mt-3 text-center">
+              <p className="text-gray-500 text-xs mb-1 font-medium">Don't have an account yet?</p>
               <button 
                 type="button" 
                 onClick={() => toggleView(false)} 
                 className="text-[#8b00cc] font-black text-sm bg-transparent border-none cursor-pointer hover:underline"
               >
-                Sign Up
+                Create Account &rarr;
               </button>
             </div>
           </form>
@@ -340,70 +342,73 @@ function LoginContent() {
 
         {/* --- Sign Up Form --- */}
         <div 
-          className={`w-full h-full flex-1 md:w-1/2 p-5 sm:p-6 md:p-8 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:right-0 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-purple-300/40 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent
+          className={`w-full h-full flex-1 md:w-1/2 p-6 sm:p-7 md:p-8 flex flex-col justify-center bg-transparent transition-all duration-700 ease-in-out md:absolute md:top-0 md:h-full md:right-0 overflow-y-auto overscroll-contain [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-purple-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent
             ${!isLogin ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-[20%] pointer-events-none hidden md:flex'}
             ${!isLogin ? 'flex' : 'hidden md:flex'}
           `}
         >
-          <div className="text-center mb-2.5">
+          <div className="text-center mb-3">
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-purple-50 text-[#8b00cc] mb-2 shadow-2xs border border-purple-100">
+              <Sparkles size={18} className="text-[#8b00cc]" />
+            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-950 tracking-tight m-0">Create Account</h2>
-            <p className="text-xs sm:text-sm text-gray-700 font-semibold mt-0.5 m-0">Join the Graphix Customer Community</p>
+            <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5 m-0">Join the Graphix Customer Community</p>
           </div>
 
           {errorMsg && !isLogin && (
-            <div className="bg-rose-50/90 backdrop-blur-xs text-rose-700 p-2.5 rounded-xl mb-2 text-xs sm:text-sm font-bold border border-rose-200 text-center animate-in fade-in shadow-xs">
+            <div className="bg-rose-50 text-rose-700 p-2.5 rounded-2xl mb-2 text-xs sm:text-sm font-bold border border-rose-200 text-center animate-in fade-in shadow-xs">
               {errorMsg}
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="flex flex-col gap-2">
+          <form onSubmit={handleRegister} className="flex flex-col gap-2.5">
             {/* 1. Name */}
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
-                <User size={18} strokeWidth={2.2} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <User size={17} strokeWidth={2.2} />
               </div>
               <input 
                 type="text" 
                 name="name" 
                 required 
                 placeholder="Full Name" 
-                className="w-full pl-10 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                className="w-full pl-10 pr-3.5 py-2.5 bg-white border-2 border-gray-150 hover:border-gray-300 focus:border-[#8b00cc] focus:ring-4 focus:ring-purple-100 shadow-2xs rounded-2xl transition-all text-gray-900 font-semibold placeholder-gray-400 text-xs sm:text-sm outline-none" 
               />
             </div>
 
             {/* 2. Email */}
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
-                <Mail size={18} strokeWidth={2.2} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <Mail size={17} strokeWidth={2.2} />
               </div>
               <input 
                 type="email" 
                 name="email" 
                 required 
                 placeholder="Email Address" 
-                className="w-full pl-10 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                className="w-full pl-10 pr-3.5 py-2.5 bg-white border-2 border-gray-150 hover:border-gray-300 focus:border-[#8b00cc] focus:ring-4 focus:ring-purple-100 shadow-2xs rounded-2xl transition-all text-gray-900 font-semibold placeholder-gray-400 text-xs sm:text-sm outline-none" 
               />
             </div>
 
             {/* 3. Phone */}
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
-                <Phone size={18} strokeWidth={2.2} />
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                <Phone size={17} strokeWidth={2.2} />
               </div>
               <input 
                 type="tel" 
                 name="phone" 
                 required 
                 placeholder="Phone Number" 
-                className="w-full pl-10 pr-3.5 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                className="w-full pl-10 pr-3.5 py-2.5 bg-white border-2 border-gray-150 hover:border-gray-300 focus:border-[#8b00cc] focus:ring-4 focus:ring-purple-100 shadow-2xs rounded-2xl transition-all text-gray-900 font-semibold placeholder-gray-400 text-xs sm:text-sm outline-none" 
               />
             </div>
 
             {/* 4. Password */}
             <div className="flex flex-col gap-0.5">
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
-                  <Lock size={18} strokeWidth={2.2} />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                  <Lock size={17} strokeWidth={2.2} />
                 </div>
                 <input 
                   type={showSignUpPassword ? "text" : "password"} 
@@ -417,15 +422,15 @@ function LoginContent() {
                   onFocus={() => setIsSignUpPasswordFocused(true)}
                   onBlur={() => setIsSignUpPasswordFocused(false)}
                   placeholder="Password" 
-                  className="w-full pl-10 pr-10 py-2 bg-white/50 backdrop-blur-md border border-white/60 shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 focus:border-purple-300 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none" 
+                  className="w-full pl-10 pr-10 py-2.5 bg-white border-2 border-gray-150 hover:border-gray-300 focus:border-[#8b00cc] focus:ring-4 focus:ring-purple-100 shadow-2xs rounded-2xl transition-all text-gray-900 font-semibold placeholder-gray-400 text-xs sm:text-sm outline-none" 
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center z-10">
                   <button 
                     type="button" 
                     onClick={() => setShowSignUpPassword(!showSignUpPassword)} 
-                    className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
+                    className="text-gray-400 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer p-1"
                   >
-                    {showSignUpPassword ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
+                    {showSignUpPassword ? <EyeOff size={17} strokeWidth={2} /> : <Eye size={17} strokeWidth={2} />}
                   </button>
                 </div>
               </div>
@@ -434,15 +439,15 @@ function LoginContent() {
               <PasswordRequirements 
                 password={signUpPassword} 
                 isFocused={isSignUpPasswordFocused} 
-                variant="glass" 
+                variant="clean" 
               />
             </div>
 
             {/* 5. Confirm Password */}
             <div className="flex flex-col gap-0.5">
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#8b00cc] transition-colors z-10">
-                  <Lock size={18} strokeWidth={2.2} />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#8b00cc] transition-colors z-10">
+                  <Lock size={17} strokeWidth={2.2} />
                 </div>
                 <input 
                   type={showSignUpConfirmPassword ? "text" : "password"} 
@@ -456,19 +461,19 @@ function LoginContent() {
                   onFocus={() => setIsSignUpConfirmFocused(true)}
                   onBlur={() => setIsSignUpConfirmFocused(false)}
                   placeholder="Confirm Password" 
-                  className={`w-full pl-10 pr-10 py-2 bg-white/50 backdrop-blur-md border shadow-xs rounded-xl focus:ring-2 focus:ring-[#8b00cc] focus:bg-white/80 transition-all text-gray-900 font-bold placeholder-gray-500 text-xs sm:text-sm outline-none ${
+                  className={`w-full pl-10 pr-10 py-2.5 bg-white border-2 shadow-2xs rounded-2xl focus:ring-4 focus:ring-purple-100 transition-all text-gray-900 font-semibold placeholder-gray-400 text-xs sm:text-sm outline-none ${
                     signUpConfirmPassword && signUpPassword !== signUpConfirmPassword
-                      ? 'border-rose-400 focus:ring-rose-400'
-                      : 'border-white/60'
+                      ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100'
+                      : 'border-gray-150 hover:border-gray-300 focus:border-[#8b00cc]'
                   }`}
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center z-10">
                   <button 
                     type="button" 
                     onClick={() => setShowSignUpConfirmPassword(!showSignUpConfirmPassword)} 
-                    className="text-gray-600 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer"
+                    className="text-gray-400 hover:text-[#8b00cc] focus:outline-none transition-colors bg-transparent border-none cursor-pointer p-1"
                   >
-                    {showSignUpConfirmPassword ? <EyeOff size={18} strokeWidth={2.2} /> : <Eye size={18} strokeWidth={2.2} />}
+                    {showSignUpConfirmPassword ? <EyeOff size={17} strokeWidth={2} /> : <Eye size={17} strokeWidth={2} />}
                   </button>
                 </div>
               </div>
@@ -485,15 +490,13 @@ function LoginContent() {
               <button
                 type="button"
                 onClick={() => setAcceptTerms(!acceptTerms)}
-                className="mt-0.5 text-[#8b00cc] bg-transparent border-none p-0 cursor-pointer shrink-0"
+                className="mt-0.5 bg-transparent border-none p-0 cursor-pointer shrink-0"
               >
-                {acceptTerms ? (
-                  <CheckSquare size={16} className="text-[#8b00cc] bg-white rounded-xs" />
-                ) : (
-                  <Square size={16} className="text-gray-600 hover:text-gray-900" />
-                )}
+                <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${acceptTerms ? 'bg-[#8b00cc] border-[#8b00cc] text-white shadow-2xs' : 'border-gray-300 bg-white hover:border-gray-400'}`}>
+                  {acceptTerms && <CheckSquare size={13} className="stroke-[3]" />}
+                </div>
               </button>
-              <label className="text-[11px] sm:text-xs font-semibold text-gray-900 leading-tight cursor-pointer">
+              <label className="text-[11px] sm:text-xs font-semibold text-gray-700 leading-tight cursor-pointer">
                 <span onClick={() => setAcceptTerms(!acceptTerms)}>I agree to the </span>
                 <button
                   type="button"
@@ -520,28 +523,28 @@ function LoginContent() {
             </div>
 
             {/* Sign Up Button */}
-            <div className="mt-0.5">
+            <div className="mt-1">
               <button 
                 disabled={isLoading} 
                 type="submit" 
-                className="bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white w-full py-2.5 rounded-xl font-black text-xs sm:text-sm shadow-[0_8px_18px_rgba(139,0,204,0.35)] hover:shadow-[0_10px_25px_rgba(139,0,204,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 cursor-pointer border-none"
+                className="bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] hover:from-[#7a00b3] hover:to-[#a900e6] text-white w-full py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-[0_8px_18px_rgba(139,0,204,0.3)] hover:shadow-[0_10px_25px_rgba(139,0,204,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all disabled:opacity-50 cursor-pointer border-none"
               >
                 {isLoading ? "Signing Up..." : "Sign Up"}
               </button>
             </div>
 
             {/* Divider */}
-            <div className="flex items-center justify-center my-0.2 w-full mx-auto">
-              <div className="h-px bg-gray-300/80 flex-1" />
-              <span className="px-2.5 text-gray-500 text-[11px] font-black">OR</span>
-              <div className="h-px bg-gray-300/80 flex-1" />
+            <div className="flex items-center justify-center my-0.5 w-full mx-auto">
+              <div className="h-px bg-gray-200 flex-1" />
+              <span className="px-2.5 text-gray-400 text-[11px] font-black uppercase tracking-wider">OR</span>
+              <div className="h-px bg-gray-200 flex-1" />
             </div>
 
             {/* Google Sign-Up */}
             <div>
               <a 
                 href={`/api/auth/google${searchParams?.get("redirect") ? `?redirect=${encodeURIComponent(searchParams.get("redirect")!)}` : ""}`} 
-                className="flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 border border-gray-200/90 text-gray-800 w-full py-2 rounded-xl font-bold text-xs shadow-[0_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_6px_15px_rgba(0,0,0,0.1)] hover:-translate-y-0.5 active:translate-y-0 transition-all text-decoration-none"
+                className="flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50/80 border border-gray-200 text-gray-800 w-full py-2 rounded-2xl font-bold text-xs shadow-xs hover:shadow-sm hover:-translate-y-0.5 active:translate-y-0 transition-all text-decoration-none"
               >
                 <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -554,14 +557,14 @@ function LoginContent() {
             </div>
 
             {/* Mobile View Toggle */}
-            <div className="md:hidden mt-0.5 text-center">
-              <p className="text-gray-600 text-[11px] mb-0.5 font-bold">Already have an account?</p>
+            <div className="md:hidden mt-1 text-center">
+              <p className="text-gray-500 text-[11px] mb-0.5 font-medium">Already have an account?</p>
               <button 
                 type="button" 
                 onClick={() => toggleView(true)} 
-                className="text-[#8b00cc] font-black text-xs bg-transparent border-none cursor-pointer hover:underline"
+                className="text-[#8b00cc] font-black text-xs sm:text-sm bg-transparent border-none cursor-pointer hover:underline"
               >
-                Sign In
+                Sign In &rarr;
               </button>
             </div>
           </form>
@@ -569,7 +572,7 @@ function LoginContent() {
 
         {/* --- Sliding Overlay (Purple Box) --- */}
         <div 
-          className={`hidden md:block absolute top-0 left-0 w-1/2 h-full z-30 transition-transform duration-700 ease-in-out bg-gradient-to-br from-[#9b00e6]/90 via-[#8200bf]/95 to-[#5e008a]/95 backdrop-blur-xl shadow-[-10px_0_35px_rgba(0,0,0,0.2)] border-l border-white/30
+          className={`hidden md:block absolute top-0 left-0 w-1/2 h-full z-30 transition-transform duration-700 ease-in-out bg-gradient-to-br from-[#8b00cc] via-[#7500b3] to-[#4c0070] shadow-[-10px_0_35px_rgba(0,0,0,0.25)] border-l border-white/20
             ${isLogin ? 'translate-x-[100%]' : 'translate-x-0'}
           `}
         >
