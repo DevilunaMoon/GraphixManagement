@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
 import DeviceRepairIntakeSheetModal from '../../components/Repair/DeviceRepairIntakeSheetModal';
+import DiscardChangesModal from '../../components/Common/DiscardChangesModal';
 import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import { useRouter } from 'next/navigation';
@@ -175,6 +176,7 @@ export default function CashierMonitoring() {
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [discardEditConfirmOpen, setDiscardEditConfirmOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<DeviceProgress | null>(null);
   const [editBrand, setEditBrand] = useState('Apple');
   const [editCustomBrand, setEditCustomBrand] = useState('');
@@ -1223,8 +1225,14 @@ export default function CashierMonitoring() {
 
       {/* Edit Progress Modal */}
       {editModalOpen && deviceToEdit && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overscroll-contain">
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100">
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 overscroll-contain"
+          onClick={() => setDiscardEditConfirmOpen(true)}
+        >
+          <div
+            className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 max-w-4xl w-full flex flex-col gap-4 sm:gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100"
+            onClick={(e) => e.stopPropagation()}
+          >
             
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -1238,7 +1246,7 @@ export default function CashierMonitoring() {
                 </div>
               </div>
               <button 
-                onClick={() => setEditModalOpen(false)} 
+                onClick={() => setDiscardEditConfirmOpen(true)} 
                 className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none p-1"
               >
                 ✕
@@ -1664,7 +1672,7 @@ export default function CashierMonitoring() {
             {/* Footer */}
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                <button 
-                 onClick={() => setEditModalOpen(false)}
+                 onClick={() => setDiscardEditConfirmOpen(true)}
                  className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-white"
                >
                  Cancel
@@ -1680,6 +1688,15 @@ export default function CashierMonitoring() {
           </div>
         </div>
       )}
+
+      <DiscardChangesModal
+        isOpen={discardEditConfirmOpen}
+        onKeepEditing={() => setDiscardEditConfirmOpen(false)}
+        onConfirmDiscard={() => {
+          setDiscardEditConfirmOpen(false);
+          setEditModalOpen(false);
+        }}
+      />
 
       {/* Add Device Request Modal */}
       {addModalOpen && (

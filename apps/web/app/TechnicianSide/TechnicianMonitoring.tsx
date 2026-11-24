@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
 import DeviceRepairIntakeSheetModal from '../../components/Repair/DeviceRepairIntakeSheetModal';
+import DiscardChangesModal from '../../components/Common/DiscardChangesModal';
 import imageCompression from 'browser-image-compression';
 
 const BRAND_OPTIONS = [
@@ -246,6 +247,7 @@ export default function TechnicianMonitoring() {
   // Workbench Modal State
   const [selectedDevice, setSelectedDevice] = useState<DeviceItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [discardEditConfirmOpen, setDiscardEditConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [modalSuccess, setModalSuccess] = useState<string | null>(null);
@@ -1562,7 +1564,7 @@ export default function TechnicianMonitoring() {
       {isModalOpen && selectedDevice && (
         <div 
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overscroll-contain"
-          onClick={() => setIsModalOpen(false)}
+          onClick={() => setDiscardEditConfirmOpen(true)}
         >
           <div 
             className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100"
@@ -1581,7 +1583,7 @@ export default function TechnicianMonitoring() {
                 </div>
               </div>
               <button 
-                onClick={() => setIsModalOpen(false)} 
+                onClick={() => setDiscardEditConfirmOpen(true)} 
                 className="text-gray-400 hover:text-black transition-colors font-bold text-xl cursor-pointer bg-transparent border-none p-1"
               >
                 ✕
@@ -2129,7 +2131,7 @@ export default function TechnicianMonitoring() {
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
               <button 
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setDiscardEditConfirmOpen(true)}
                 disabled={isSubmitting}
                 className="px-6 py-2.5 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition-colors cursor-pointer bg-white"
               >
@@ -2148,6 +2150,15 @@ export default function TechnicianMonitoring() {
           </div>
         </div>
       )}
+
+      <DiscardChangesModal
+        isOpen={discardEditConfirmOpen}
+        onKeepEditing={() => setDiscardEditConfirmOpen(false)}
+        onConfirmDiscard={() => {
+          setDiscardEditConfirmOpen(false);
+          setIsModalOpen(false);
+        }}
+      />
 
       {/* 3. Customer Details Modal */}
       <CustomerDetailsModal
