@@ -273,7 +273,7 @@ export default function SalesBreakdownModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-purple-100 bg-gradient-to-r from-purple-50/90 via-white to-fuchsia-50/70 flex flex-col gap-3">
+        <div className="shrink-0 px-5 py-4 sm:px-6 sm:py-5 border-b border-purple-100 bg-gradient-to-r from-purple-50/90 via-white to-fuchsia-50/70 flex flex-col gap-3">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -363,7 +363,7 @@ export default function SalesBreakdownModal({
         </div>
 
         {/* Summary KPI Strip */}
-        <div className="px-5 py-3 sm:px-6 bg-gray-50/70 border-b border-gray-100 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="shrink-0 px-5 py-3 sm:px-6 bg-gray-50/70 border-b border-gray-100 grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="bg-white rounded-xl p-3 border border-purple-100 shadow-2xs">
             <div className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Total Sales</div>
             <div className="text-base sm:text-lg font-black text-[#111] mt-0.5 truncate" title={formatCurrency(meta.totalRevenue || 0)}>
@@ -407,14 +407,14 @@ export default function SalesBreakdownModal({
         </div>
 
         {/* Tab Bar */}
-        <div className="px-5 sm:px-6 pt-3 border-b border-gray-200 bg-white flex items-center gap-1 overflow-x-auto">
+        <div className="shrink-0 px-5 sm:px-6 pt-3 border-b border-gray-200 bg-white flex items-center gap-1 overflow-x-auto overflow-y-hidden">
           {tabs.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer bg-transparent ${
+                className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer bg-transparent ${
                   active
                     ? 'border-[#bd00ff] text-[#bd00ff]'
                     : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
@@ -437,7 +437,7 @@ export default function SalesBreakdownModal({
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-gray-50/40">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 bg-gray-50/40">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-gray-500">
               <Loader2 size={32} className="animate-spin text-[#bd00ff]" />
