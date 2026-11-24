@@ -8,6 +8,7 @@ import {
   Circle, Lock, Activity
 } from 'lucide-react';
 import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
+import DeviceRepairIntakeSheetModal from '../../components/Repair/DeviceRepairIntakeSheetModal';
 import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import { useRouter } from 'next/navigation';
@@ -2226,187 +2227,15 @@ export default function CashierMonitoring() {
 
       {/* View Intake & Material Breakdown Modal */}
       {viewDetailsOpen && deviceToView && (() => {
-        let items: MaterialItem[] = [];
-        let parsedMethod: 'Cash' | 'GCash' | 'Split' = 'Cash';
-        let parsedCash = '';
-        let parsedGcash = '';
-        if (deviceToView.materials) {
-          try {
-            const parsed = JSON.parse(deviceToView.materials);
-            if (Array.isArray(parsed)) {
-              items = parsed;
-            } else if (parsed && typeof parsed === 'object') {
-              items = parsed.items || [];
-              if (parsed.paymentMethod) parsedMethod = parsed.paymentMethod;
-              if (parsed.cashAmount !== undefined) parsedCash = String(parsed.cashAmount);
-              if (parsed.gcashAmount !== undefined) parsedGcash = String(parsed.gcashAmount);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
-        if (!parsedCash && !parsedGcash && deviceToView.downpayment) {
-          if (parsedMethod === 'GCash') parsedGcash = deviceToView.downpayment;
-          else parsedCash = deviceToView.downpayment;
-        }
-
         const { parsed, cleanNotes } = parseRepairDetails(deviceToView.repairHistory);
-        const photosList: string[] = [];
-        if (parsed?.photos && Array.isArray(parsed.photos)) {
-          photosList.push(...parsed.photos);
-        }
-        if (deviceToView.image && !photosList.includes(deviceToView.image)) {
-          photosList.unshift(deviceToView.image);
-        }
-
         return (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overscroll-contain">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100">
-              
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
-                    <Receipt size={22} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-black m-0">Device Repair Intake Sheet</h2>
-                    <p className="text-xs text-gray-500 m-0">Complete device inspection, customer information & line-item parts breakdown</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setViewDetailsOpen(false)} 
-                  className="text-gray-400 hover:text-black transition-colors font-bold text-2xl cursor-pointer bg-transparent border-none p-1"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Device</span>
-                  <span className="text-sm font-bold text-black block truncate">{deviceToView.deviceName}</span>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Customer</span>
-                  <span className="text-sm font-bold text-purple-700 block truncate">{deviceToView.ownerName || 'Walk-in'}</span>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Branch</span>
-                  <span className="text-sm font-bold text-black block">{deviceToView.branch || 'Tagoloan'}</span>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Status</span>
-                  <span className={`text-sm font-bold block ${getProgressColor(deviceToView.progress)}`}>
-                    {formatProgress(deviceToView.progress)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Customer Contact & Account Info */}
-              {(parsed?.customerEmail || parsed?.customerPhone || deviceToView.ownerName) && (
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                    <User size={14} className="text-[#bd00ff]" />
-                    Customer Information (Auto-retrieved)
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-gray-700">
-                    <div><strong className="text-black">Full Name:</strong> {deviceToView.ownerName || parsed?.customerName || 'Walk-in Customer'}</div>
-                    <div><strong className="text-black">Email:</strong> {parsed?.customerEmail || 'Not provided'}</div>
-                    <div><strong className="text-black">Phone:</strong> {parsed?.customerPhone || 'Not provided'}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Structured Device Details */}
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
-                <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                  <Smartphone size={14} className="text-[#bd00ff]" />
-                  Device & Diagnostic Details
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-700">
-                  <div><strong className="text-black">Brand:</strong> {parsed?.brand || 'Apple'}</div>
-                  <div><strong className="text-black">Device Type:</strong> {parsed?.deviceType || 'Smartphone'}</div>
-                  <div><strong className="text-black">IMEI/Serial:</strong> {parsed?.imei || 'N/A'}</div>
-                  <div><strong className="text-black">Assigned Tech:</strong> {deviceToView.technician || 'Pending'}</div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700 pt-2 border-t border-gray-200">
-                  <div><strong className="text-black">Working Condition:</strong> {parsed?.isWorking || 'Yes'}</div>
-                  <div><strong className="text-black">Visible Damage:</strong> {parsed?.hasPhysicalDamage || 'No'}</div>
-                </div>
-
-                <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                  <div><strong className="text-black">Reported Issue:</strong> {parsed?.problem ? `${parsed.problem} - ${parsed.problemDescription || ''}` : (deviceToView.cause || 'Diagnostic required')}</div>
-                </div>
-
-                {parsed?.suggestedRepair && (
-                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                    <div><strong className="text-black">Suggested Repair:</strong> {parsed.suggestedRepair}</div>
-                  </div>
-                )}
-
-                {parsed?.suggestionForRepair && (
-                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                    <div><strong className="text-black">Suggestion for Repair:</strong> {parsed.suggestionForRepair}</div>
-                  </div>
-                )}
-
-                {cleanNotes && (
-                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                    <div><strong className="text-black">Repair History Notes:</strong> {cleanNotes}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Photos Gallery */}
-              {photosList.length > 0 && (
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                    <Camera size={14} className="text-[#bd00ff]" />
-                    Uploaded Device Photos ({photosList.length})
-                  </span>
-                  <div className="flex flex-wrap gap-3 items-center pt-1">
-                    {photosList.map((photo, idx) => (
-                      <a 
-                        key={idx} 
-                        href={photo} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="w-24 h-24 rounded-2xl border-2 border-purple-200 overflow-hidden hover:scale-105 transition-transform bg-white shadow-sm flex items-center justify-center p-1"
-                        title="Click to view full image"
-                      >
-                        <img src={photo} alt={`Device photo ${idx+1}`} className="w-full h-full object-contain" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Render Read-Only Material Breakdown */}
-              <MaterialBreakdownEditor
-                readOnly
-                items={items}
-                paymentMethod={parsedMethod}
-                cashAmount={parsedCash}
-                gcashAmount={parsedGcash}
-                downpayment={deviceToView.downpayment || '0'}
-                deviceName={deviceToView.deviceName}
-                customerName={deviceToView.ownerName || 'Walk-in Customer'}
-                branch={deviceToView.branch}
-              />
-
-              <div className="flex justify-end pt-3 border-t border-gray-100">
-                <button
-                  onClick={() => setViewDetailsOpen(false)}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors cursor-pointer border-none"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+          <DeviceRepairIntakeSheetModal
+            isOpen={viewDetailsOpen}
+            onClose={() => setViewDetailsOpen(false)}
+            device={deviceToView}
+            parsedDetails={parsed}
+            cleanNotes={cleanNotes}
+          />
         );
       })()}
 

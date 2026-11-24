@@ -13,6 +13,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
+import DeviceRepairIntakeSheetModal from '../../components/Repair/DeviceRepairIntakeSheetModal';
 import imageCompression from 'browser-image-compression';
 
 const BRAND_OPTIONS = [
@@ -1472,218 +1473,25 @@ export default function TechnicianMonitoring() {
 
       {/* 1. View Intake & Material Breakdown Modal */}
       {viewDetailsOpen && deviceToView && (() => {
-        let items: MaterialItem[] = [];
-        let parsedMethod: 'Cash' | 'GCash' | 'Split' = 'Cash';
-        let parsedCash = '';
-        let parsedGcash = '';
-        if (deviceToView.materials) {
-          try {
-            const parsed = JSON.parse(deviceToView.materials);
-            if (Array.isArray(parsed)) {
-              items = parsed;
-            } else if (parsed && typeof parsed === 'object') {
-              items = parsed.items || [];
-              if (parsed.paymentMethod) parsedMethod = parsed.paymentMethod;
-              if (parsed.cashAmount !== undefined) parsedCash = String(parsed.cashAmount);
-              if (parsed.gcashAmount !== undefined) parsedGcash = String(parsed.gcashAmount);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
-        if (!parsedCash && !parsedGcash && deviceToView.downpayment) {
-          if (parsedMethod === 'GCash') parsedGcash = deviceToView.downpayment;
-          else parsedCash = deviceToView.downpayment;
-        }
-
         const { parsed, cleanNotes } = parseRepairDetails(deviceToView.repairHistory);
-        const photosList: string[] = [];
-        if (parsed?.photos && Array.isArray(parsed.photos)) {
-          photosList.push(...parsed.photos);
-        }
-        if (deviceToView.image && !photosList.includes(deviceToView.image)) {
-          photosList.unshift(deviceToView.image);
-        }
-
+        const enrichedParsed = {
+          ...(parsed || {}),
+          customerName: parsed?.customerName || deviceToView.user?.name,
+          customerPhone: parsed?.customerPhone || deviceToView.user?.phone,
+          customerEmail: parsed?.customerEmail || deviceToView.user?.email,
+        };
         return (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overscroll-contain">
-            <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full flex flex-col gap-6 shadow-2xl animate-in zoom-in-95 max-h-[92vh] overflow-y-auto overscroll-contain border border-purple-100">
-              
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-[#bd00ff]">
-                    <Receipt size={22} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-black m-0">Device Repair Intake Sheet</h2>
-                    <p className="text-xs text-gray-500 m-0">Complete device inspection, customer information & line-item parts breakdown</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setViewDetailsOpen(false)} 
-                  className="text-gray-400 hover:text-black transition-colors font-bold text-2xl cursor-pointer bg-transparent border-none p-1"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-purple-50/60 p-4 rounded-2xl border border-purple-100">
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Device</span>
-                  <span className="text-sm font-bold text-black block truncate">{deviceToView.deviceName}</span>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Customer</span>
-                  <span className="text-sm font-bold text-purple-700 block truncate">{deviceToView.ownerName || 'Walk-in'}</span>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Branch</span>
-                  <span className="text-sm font-bold text-black block">{deviceToView.branch || 'Tagoloan'}</span>
-                </div>
-                <div>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider block">Status</span>
-                  <span className={`text-sm font-bold block ${getProgressColor(deviceToView.progress)}`}>
-                    {formatProgress(deviceToView.progress)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Customer Contact & Account Info */}
-              {(parsed?.customerEmail || parsed?.customerPhone || parsed?.emergencyContactPhone || deviceToView.ownerName || deviceToView.user?.email || deviceToView.user?.phone) && (
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                      <User size={14} className="text-[#bd00ff]" />
-                      Customer Information (Auto-retrieved)
-                    </span>
-                    {parsed?.smsRecipient === 'EMERGENCY_CONTACT' ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
-                        🚨 SMS Target: Emergency Contact (Only phone in repair)
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
-                        📱 SMS Target: Customer Primary Phone (Has extra device)
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs text-gray-700">
-                    <div><strong className="text-black">Full Name:</strong> {deviceToView.ownerName || parsed?.customerName || deviceToView.user?.name || 'Walk-in Customer'}</div>
-                    <div><strong className="text-black">Primary Phone:</strong> {parsed?.customerPhone || deviceToView.user?.phone || 'Not provided'}</div>
-                    <div><strong className="text-black">Emergency Contact:</strong> {parsed?.emergencyContactPhone ? `${parsed.emergencyContactPhone} ${parsed.emergencyContactName ? `(${parsed.emergencyContactName})` : ''}` : 'None provided'}</div>
-                    <div><strong className="text-black">Email:</strong> {parsed?.customerEmail || deviceToView.user?.email || 'Not provided'}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Structured Device Details */}
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-3">
-                <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                  <Smartphone size={14} className="text-[#bd00ff]" />
-                  Device & Diagnostic Details
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-700">
-                  <div><strong className="text-black">Brand:</strong> {parsed?.brand || 'Apple'}</div>
-                  <div><strong className="text-black">Device Type:</strong> {parsed?.deviceType || 'Smartphone'}</div>
-                  <div><strong className="text-black">IMEI/Serial:</strong> {parsed?.imei || 'N/A'}</div>
-                  <div><strong className="text-black">Assigned Tech:</strong> {deviceToView.technician || 'Pending'}</div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700 pt-2 border-t border-gray-200">
-                  <div><strong className="text-black">Working Condition:</strong> {parsed?.isWorking || 'Yes'}</div>
-                  <div><strong className="text-black">Visible Damage:</strong> {parsed?.hasPhysicalDamage || 'No'}</div>
-                </div>
-
-                <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                  <div><strong className="text-black">Reported Issue:</strong> {parsed?.problem ? `${parsed.problem} - ${parsed.problemDescription || ''}` : (deviceToView.cause || 'Diagnostic required')}</div>
-                </div>
-
-                {parsed?.suggestedRepair && (
-                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                    <div><strong className="text-black">Suggested Repair:</strong> {parsed.suggestedRepair}</div>
-                  </div>
-                )}
-
-                {parsed?.suggestionForRepair && (
-                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                    <div><strong className="text-black">Suggestion for Repair:</strong> {parsed.suggestionForRepair}</div>
-                  </div>
-                )}
-
-                {cleanNotes && (
-                  <div className="pt-2 border-t border-gray-200 text-xs text-gray-700">
-                    <div><strong className="text-black">Repair History Notes:</strong> {cleanNotes}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Photos Gallery */}
-              {photosList.length > 0 && (
-                <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-black uppercase tracking-wider flex items-center gap-1.5">
-                    <Camera size={14} className="text-[#bd00ff]" />
-                    Uploaded Device Photos ({photosList.length})
-                  </span>
-                  <div className="flex flex-wrap gap-3 items-center pt-1">
-                    {photosList.map((photo, idx) => (
-                      <div 
-                        key={idx} 
-                        onClick={() => setLightboxImage(photo)}
-                        className="w-24 h-24 rounded-2xl border-2 border-purple-200 overflow-hidden hover:scale-105 transition-transform bg-white shadow-sm flex items-center justify-center p-1 cursor-pointer group relative"
-                        title="Click to zoom image"
-                      >
-                        <img src={photo} alt={`Device photo ${idx+1}`} className="w-full h-full object-contain" />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold rounded-2xl">
-                          Zoom
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Render Read-Only Material Breakdown */}
-              <MaterialBreakdownEditor
-                readOnly
-                items={items}
-                paymentMethod={parsedMethod}
-                cashAmount={parsedCash}
-                gcashAmount={parsedGcash}
-                downpayment={deviceToView.downpayment || '0'}
-                deviceName={deviceToView.deviceName}
-                customerName={deviceToView.ownerName || 'Walk-in Customer'}
-                branch={deviceToView.branch}
-              />
-
-              {/* Completion Proof Photo */}
-              {deviceToView.proofImage && (
-                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-emerald-600" />
-                    Completion Proof Photo
-                  </span>
-                  <div className="pt-1">
-                    <div 
-                      onClick={() => setLightboxImage(deviceToView.proofImage!)}
-                      className="w-24 h-24 rounded-2xl border-2 border-emerald-300 overflow-hidden hover:scale-105 transition-transform bg-white shadow-sm flex items-center justify-center p-1 cursor-pointer group relative"
-                      title="Click to zoom completion proof"
-                    >
-                      <img src={deviceToView.proofImage} alt="Completion Proof" className="w-full h-full object-contain" />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold rounded-2xl">
-                        Zoom
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              
-              {/* SMS Notification Log */}
-              <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-200 flex flex-col gap-3">
+          <DeviceRepairIntakeSheetModal
+            isOpen={viewDetailsOpen}
+            onClose={() => setViewDetailsOpen(false)}
+            device={deviceToView}
+            parsedDetails={enrichedParsed}
+            cleanNotes={cleanNotes}
+            extraSections={
+              <div className="bg-white rounded-2xl p-4 border border-purple-100/90 shadow-2xs flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                    <MessageSquare size={14} className="text-purple-600" />
+                  <span className="text-xs font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <MessageSquare size={14} className="text-[#bd00ff]" />
                     SMS Notification History ({deviceSmsLogs.length})
                   </span>
                   {isLoadingSmsLogs && (
@@ -1700,7 +1508,7 @@ export default function TechnicianMonitoring() {
                 ) : (
                   <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                     {deviceSmsLogs.map((log: any) => (
-                      <div key={log.id} className="p-3 bg-white rounded-xl border border-slate-200 text-xs shadow-xs space-y-1.5">
+                      <div key={log.id} className="p-3 bg-gray-50/80 rounded-xl border border-gray-200 text-xs space-y-1.5">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5 font-bold text-slate-800">
                             <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-semibold border border-purple-200">
@@ -1723,7 +1531,7 @@ export default function TechnicianMonitoring() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg font-mono leading-relaxed border border-slate-100">
+                        <p className="text-[11px] text-slate-600 bg-white p-2 rounded-lg font-mono leading-relaxed border border-slate-100">
                           {log.message}
                         </p>
                         {log.errorMessage && (
@@ -1745,18 +1553,8 @@ export default function TechnicianMonitoring() {
                   </div>
                 )}
               </div>
-
-              <div className="flex justify-end pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setViewDetailsOpen(false)}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors cursor-pointer border-none"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+            }
+          />
         );
       })()}
 
