@@ -8,6 +8,7 @@ import {
   normalizeRepairStatus,
   NormalizedRepairStatus,
 } from '../../../../../lib/repairAnalyticsHelper';
+import { formatRepairReceiptId, getRepairBranchCode } from '../../../../../lib/invoice';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,15 +120,40 @@ export async function GET(req: Request): Promise<NextResponse> {
         ? { createdAt: { gte: scopeStart, lte: scopeEnd } }
         : {};
 
-    const dbRepairs = await prisma.repairRequest.findMany({
-      where: {
-        ...branchWhere,
-        ...dateWhere,
-      },
-      include: {
-        user: { select: { name: true, email: true, phone: true } },
-      },
-      orderBy: { createdAt: 'desc' },
+    const [dbRepairs, allBranchRepairsAsc] = await Promise.all([
+      prisma.repairRequest.findMany({
+        where: {
+          ...branchWhere,
+          ...dateWhere,
+        },
+        include: {
+          user: { select: { name: true, email: true, phone: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.repairRequest.findMany({
+        select: { id: true, branch: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+    ]);
+
+    // Build official branch-sequential Receipt IDs (#GRPX-TAG-A1, #GRPX-VIL-A1, #GRPX-JAS-A1)
+    const repairBranchCounters: Record<string, number> = {};
+    const repairReceiptMap = new Map<string, string>();
+    for (const item of allBranchRepairsAsc) {
+      const code = getRepairBranchCode(item.branch);
+      const count = (repairBranchCounters[code] || 0) + 1;
+      repairBranchCounters[code] = count;
+      repairReceiptMap.set(item.id, formatRepairReceiptId(item.branch, count));
+    }
+    STORE_PAPER_RECEIPTS.forEach((p) => {
+      const code = getRepairBranchCode(p.branch);
+      const count = (repairBranchCounters[code] || 0) + 1;
+      repairBranchCounters[code] = count;
+      const key = p.id || p.repairId;
+      if (key) {
+        repairReceiptMap.set(key, formatRepairReceiptId(p.branch, count));
+      }
     });
 
     const dbIds = new Set(dbRepairs.map((r) => r.id));
@@ -159,7 +185,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
       allRecords.push({
         id: r.id,
-        referenceId: `REP-${r.id.slice(-6).toUpperCase()}`,
+        referenceId: repairReceiptMap.get(r.id) || formatRepairReceiptId(r.branch, 1),
         createdAt: dt.toISOString(),
         monthKey,
         monthLabel,
@@ -189,7 +215,10 @@ export async function GET(req: Request): Promise<NextResponse> {
 
       allRecords.push({
         id: p.repairId || `paper-${dt.getTime()}`,
-        referenceId: p.referenceId || `REC-${String(p.repairId || '').slice(-6).toUpperCase()}`,
+        referenceId:
+          repairReceiptMap.get(p.id || p.repairId) ||
+          p.referenceId ||
+          formatRepairReceiptId(p.branch, 1),
         createdAt: dt.toISOString(),
         monthKey,
         monthLabel,

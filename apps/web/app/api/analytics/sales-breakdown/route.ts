@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 import { computeAnalyticsDateRanges } from '../../../../lib/analyticsDateRange';
+import { getBranchCode, formatRepairReceiptId, getRepairBranchCode } from '../../../../lib/invoice';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,8 +178,8 @@ export async function GET(req: Request): Promise<NextResponse> {
         ? { createdAt: { gte: scopeStart, lte: scopeEnd } }
         : {};
 
-    // Fetch purchases and completed repairs in scope
-    const [purchases, repairs] = await Promise.all([
+    // Fetch purchases, completed repairs, and global sequence order in parallel
+    const [purchases, repairs, allPurchasesAsc, allRepairsAsc] = await Promise.all([
       prisma.purchase.findMany({
         where: {
           ...branchWhere,
@@ -244,7 +245,39 @@ export async function GET(req: Request): Promise<NextResponse> {
         },
         orderBy: { createdAt: 'desc' },
       }),
+      prisma.purchase.findMany({
+        select: { id: true, branch: true, createdAt: true, referenceId: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      prisma.repairRequest.findMany({
+        select: { id: true, branch: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
+
+    // Build official branch-sequential Receipt IDs matching Order History (#GRPX-T-A...) and Repair Transactions (#GRPX-TAG-A...)
+    const purchaseReceiptMap = new Map<string, string>();
+    const purchaseCounters: Record<string, number> = {};
+    for (const item of allPurchasesAsc) {
+      const bCode = getBranchCode(item.branch);
+      purchaseCounters[bCode] = (purchaseCounters[bCode] || 0) + 1;
+      const ref = item.referenceId;
+      const isStd = typeof ref === 'string' && ref.replace(/^#/, '').match(/^GRPX-([TVJ]|[A-Z])-A\d+$/i);
+      if (isStd && ref) {
+        purchaseReceiptMap.set(item.id, ref.startsWith('#') ? ref : `#${ref}`);
+      } else {
+        purchaseReceiptMap.set(item.id, `#GRPX-${bCode}-A${purchaseCounters[bCode]}`);
+      }
+    }
+
+    const repairReceiptMap = new Map<string, string>();
+    const repairCounters: Record<string, number> = {};
+    for (const item of allRepairsAsc) {
+      const code = getRepairBranchCode(item.branch);
+      const count = (repairCounters[code] || 0) + 1;
+      repairCounters[code] = count;
+      repairReceiptMap.set(item.id, formatRepairReceiptId(item.branch, count));
+    }
 
     // Build unified transaction records
     const allTransactions: UnifiedTransaction[] = [];
@@ -261,7 +294,9 @@ export async function GET(req: Request): Promise<NextResponse> {
 
       allTransactions.push({
         id: p.id,
-        referenceId: p.referenceId || p.id.slice(-8).toUpperCase(),
+        referenceId:
+          purchaseReceiptMap.get(p.id) ||
+          (p.referenceId ? (p.referenceId.startsWith('#') ? p.referenceId : `#${p.referenceId}`) : `#GRPX-${getBranchCode(p.branch)}-A1`),
         createdAt: dt.toISOString(),
         monthKey,
         monthLabel,
@@ -295,7 +330,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
       allTransactions.push({
         id: r.id,
-        referenceId: `REP-${r.id.slice(-6).toUpperCase()}`,
+        referenceId: repairReceiptMap.get(r.id) || formatRepairReceiptId(r.branch, 1),
         createdAt: dt.toISOString(),
         monthKey,
         monthLabel,
