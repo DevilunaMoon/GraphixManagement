@@ -6,6 +6,7 @@ import {
   extractRepairCost,
   normalizeRepairStatus,
 } from '../../../../../lib/repairAnalyticsHelper';
+import { computeAnalyticsDateRanges } from '../../../../../lib/analyticsDateRange';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,33 +45,13 @@ export async function GET(req: Request) {
     const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
     const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
 
-    // Calculate dynamic filter boundaries for period metrics
-    let filterStart: Date | null = null;
-    let filterEnd: Date | null = null;
-
-    if (dateFilter === 'today') {
-      filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    } else if (dateFilter === 'week') {
-      const dayOfWeek = now.getDay();
-      filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59, 999);
-    } else if (dateFilter === 'month') {
-      filterStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    } else if (dateFilter === 'year') {
-      filterStart = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (dateFilter === 'custom' && startDateParam && endDateParam) {
-      const s = new Date(startDateParam);
-      s.setHours(0, 0, 0, 0);
-      const e = new Date(endDateParam);
-      e.setHours(23, 59, 59, 999);
-      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
-        filterStart = s;
-        filterEnd = e;
-      }
-    }
+    // Calculate dynamic filter boundaries for period metrics via shared helper
+    const { filterStart, filterEnd } = computeAnalyticsDateRanges(
+      dateFilter,
+      startDateParam,
+      endDateParam,
+      now
+    );
 
     // 1. Fetch all repairs for all-time stats & year-over-year
     const allRepairs = await prisma.repairRequest.findMany({
