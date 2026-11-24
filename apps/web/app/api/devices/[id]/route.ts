@@ -122,12 +122,75 @@ export async function GET(req: Request, props: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getSession();
+    if (!session || (session.role !== 'SUPER_ADMIN' && session.role !== 'ADMIN')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const params = await props.params;
     const { id } = params;
-    await prisma.device.delete({
-      where: { id }
+
+    const existingDevice = await prisma.device.findUnique({
+      where: { id },
+      select: { id: true, name: true, branch: true },
     });
-    return NextResponse.json({ message: 'Device deleted' });
+
+    if (!existingDevice) {
+      return NextResponse.json({ error: 'Device not found' }, { status: 404 });
+    }
+
+    if (session.role === 'SUPER_ADMIN') {
+      await prisma.device.delete({ where: { id } });
+      return NextResponse.json({
+        message: `"${existingDevice.name}" has been permanently deleted across all branches.`,
+      });
+    }
+
+    // Branch Admin: only delete globally if no other branch has remaining stock
+    const assignedBranch = (session.branch || 'Tagoloan').trim();
+    const otherBranchStocks = await prisma.branchStock.findMany({
+      where: {
+        deviceId: id,
+        stock: { gt: 0 },
+        NOT: { branch: { equals: assignedBranch, mode: 'insensitive' } },
+      },
+      select: { id: true, stock: true },
+    });
+
+    if (otherBranchStocks.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        await tx.branchStock.deleteMany({
+          where: {
+            deviceId: id,
+            branch: { equals: assignedBranch, mode: 'insensitive' },
+          },
+        });
+        await tx.deviceUnit.deleteMany({
+          where: {
+            deviceId: id,
+            branch: { equals: assignedBranch, mode: 'insensitive' },
+          },
+        });
+
+        const remainingAgg = await tx.branchStock.aggregate({
+          where: { deviceId: id },
+          _sum: { stock: true },
+        });
+        await tx.device.update({
+          where: { id },
+          data: { stock: remainingAgg._sum.stock || 0 },
+        });
+      });
+
+      return NextResponse.json({
+        message: `"${existingDevice.name}" has been removed from ${assignedBranch} Branch inventory.`,
+      });
+    }
+
+    await prisma.device.delete({ where: { id } });
+    return NextResponse.json({
+      message: `"${existingDevice.name}" has been deleted from inventory.`,
+    });
   } catch (error) {
     console.error('Error deleting device:', error);
     return NextResponse.json({ error: 'Failed to delete device' }, { status: 500 });

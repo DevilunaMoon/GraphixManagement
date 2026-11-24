@@ -132,6 +132,7 @@ export default function AdminInventory() {
   // Modals
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [productToDeleteName, setProductToDeleteName] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [successModalOpen, setSuccessModalOpen] = useState(false);
@@ -1685,10 +1686,15 @@ export default function AdminInventory() {
     try {
       const res = await fetch(`/api/devices/${productToDelete}`, { method: 'DELETE' });
       if (res.ok) {
+        const resData = await res.json().catch(() => ({}));
         fetchProducts();
         setDeleteModalOpen(false);
         setProductToDelete(null);
-        setSuccessModalContent({ title: 'Deleted Successfully', message: 'The device has been removed from inventory.' });
+        setProductToDeleteName('');
+        setSuccessModalContent({
+          title: 'Deleted Successfully',
+          message: resData.message || 'The device has been removed from inventory.'
+        });
         setSuccessModalOpen(true);
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -2442,24 +2448,22 @@ export default function AdminInventory() {
                                         <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
                                       </button>
 
-                                      {isSuperAdmin && (
-                                        <>
-                                          <div className="my-1 border-t border-gray-100" />
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setActiveActionMenuId(null);
-                                              setActionMenuPosition(null);
-                                              setProductToDelete(prod.id);
-                                              setDeleteModalOpen(true);
-                                            }}
-                                            className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
-                                          >
-                                            <Trash2 size={15} className="text-rose-600" />
-                                            <span>Delete Product</span>
-                                          </button>
-                                        </>
-                                      )}
+                                      <div className="my-1 border-t border-gray-100" />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveActionMenuId(null);
+                                          setActionMenuPosition(null);
+                                          setDeleteError(undefined);
+                                          setProductToDelete(prod.id);
+                                          setProductToDeleteName(prod.name || '');
+                                          setDeleteModalOpen(true);
+                                        }}
+                                        className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                      >
+                                        <Trash2 size={15} className="text-rose-600" />
+                                        <span>Delete Product</span>
+                                      </button>
                                     </div>
                                   </>
                                 )}
@@ -2969,23 +2973,21 @@ export default function AdminInventory() {
                               <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
                             </button>
 
-                            {isSuperAdmin && (
-                              <>
-                                <div className="my-1 border-t border-gray-100" />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    setProductToDelete(prod.id);
-                                    setDeleteModalOpen(true);
-                                  }}
-                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
-                                >
-                                  <Trash2 size={15} className="text-rose-600" />
-                                  <span>Delete Product</span>
-                                </button>
-                              </>
-                            )}
+                            <div className="my-1 border-t border-gray-100" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenuId(null);
+                                setDeleteError(undefined);
+                                setProductToDelete(prod.id);
+                                setProductToDeleteName(prod.name || '');
+                                setDeleteModalOpen(true);
+                              }}
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                            >
+                              <Trash2 size={15} className="text-rose-600" />
+                              <span>Delete Product</span>
+                            </button>
                           </div>
                         </>
                       )}
@@ -5362,25 +5364,58 @@ export default function AdminInventory() {
 
       {/* Delete Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center gap-3">
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          onClick={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setProductToDelete(null);
+              setProductToDeleteName('');
+              setDeleteError(undefined);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl border border-rose-100 animate-in zoom-in-95 flex flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
-              <Trash2 size={28} />
+              <Trash2 size={26} />
             </div>
             <h3 className="font-bold text-lg text-gray-900">Delete Product</h3>
-            <p className="text-xs text-gray-600">Are you sure you want to delete this product and all its variants from inventory across all branches?</p>
+            <p className="text-sm font-semibold text-gray-700">
+              Are you sure you want to delete this?
+            </p>
+            {productToDeleteName && (
+              <span className="px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-xs font-bold text-[#5c0099] max-w-full truncate">
+                {productToDeleteName}
+              </span>
+            )}
+            <p className="text-xs text-gray-500">
+              {isSuperAdmin
+                ? 'This will permanently remove the product and all its variants across all branches.'
+                : `This will remove the product from ${userBranch || 'your'} branch inventory.`}
+            </p>
             {deleteError && <span className="text-xs text-rose-600 font-bold">{deleteError}</span>}
             <div className="flex gap-3 w-full mt-2">
               <button
-                onClick={() => setDeleteModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm"
+                type="button"
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setProductToDelete(null);
+                  setProductToDeleteName('');
+                  setDeleteError(undefined);
+                }}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm cursor-pointer border-none transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm cursor-pointer border-none transition-colors disabled:opacity-50"
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
