@@ -529,26 +529,43 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Branch Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-2xl border border-gray-200 shadow-xs">
-              {BEST_SELLER_BRANCH_TABS.map((tab) => {
-                const isActive = selectedBestSellerBranch.toLowerCase() === tab.key.toLowerCase();
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setSelectedBestSellerBranch(tab.key)}
-                    className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border-none cursor-pointer flex items-center gap-1.5 ${
-                      isActive
-                        ? 'bg-gradient-to-r from-[#8b00cc] to-[#bd00ff] text-white shadow-md shadow-purple-500/20'
-                        : 'bg-transparent hover:bg-purple-50/60 text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <tab.icon size={14} className={isActive ? "text-white" : "text-purple-600"} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
+            {/* Branch Filter Tabs - Horizontal Smooth-Scroll Capsule Track */}
+            <div className="w-full lg:w-auto relative">
+              <div 
+                className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1.5 px-0.5 -mx-1 sm:mx-0 scroll-smooth snap-x touch-pan-x"
+                role="tablist"
+                aria-label="Filter best sellers by branch"
+              >
+                {BEST_SELLER_BRANCH_TABS.map((tab) => {
+                  const isActive = selectedBestSellerBranch.toLowerCase() === tab.key.toLowerCase();
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setSelectedBestSellerBranch(tab.key)}
+                      className={`shrink-0 snap-start px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-200 border cursor-pointer flex items-center gap-2 select-none active:scale-95 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-[#8b00cc] via-[#9d00e6] to-[#bd00ff] text-white border-transparent shadow-[0_4px_16px_rgba(139,0,204,0.35)] ring-2 ring-purple-300/40'
+                          : 'bg-white hover:bg-purple-50/70 text-gray-700 hover:text-[#8b00cc] border-gray-200/90 hover:border-purple-200/80 shadow-xs'
+                      }`}
+                    >
+                      <span className={`flex items-center justify-center w-5 h-5 rounded-full transition-colors ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-purple-50 text-[#8b00cc]'
+                      }`}>
+                        <tab.icon size={13} strokeWidth={isActive ? 2.5 : 2} />
+                      </span>
+                      <span>{tab.label}</span>
+                      {tab.key !== 'all' && (
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                          isActive ? 'bg-white' : 'bg-emerald-500'
+                        }`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
