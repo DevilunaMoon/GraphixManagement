@@ -628,18 +628,6 @@ export default function AdminAccounts() {
                             <Eye size={14} /> View Details
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditModalAccount(acc);
-                              setModalError(null);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2"
-                          >
-                            <Edit3 size={14} /> Edit Account
-                          </button>
-
                           {isSuperAdmin && (
                             <button
                               type="button"
@@ -672,19 +660,6 @@ export default function AdminAccounts() {
                           <button
                             type="button"
                             onClick={() => {
-                              setResetPasswordAccount(acc);
-                              setNewPasswordInput('');
-                              setModalError(null);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2 border-t border-gray-100"
-                          >
-                            <Key size={14} /> Reset Password
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
                               setSuspendModal({
                                 isOpen: true,
                                 id: acc.id,
@@ -694,7 +669,7 @@ export default function AdminAccounts() {
                               });
                               setActiveMenuId(null);
                             }}
-                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                            className="w-full px-3.5 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 border-t border-gray-100"
                           >
                             <Ban size={14} /> Suspend Access
                           </button>
@@ -914,18 +889,6 @@ export default function AdminAccounts() {
                                 <Eye size={14} /> View Details
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditModalAccount(acc);
-                                  setModalError(null);
-                                  setActiveMenuId(null);
-                                }}
-                                className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2"
-                              >
-                                <Edit3 size={14} /> Edit Account
-                              </button>
-
                               {isSuperAdmin && (
                                 <button
                                   type="button"
@@ -958,19 +921,6 @@ export default function AdminAccounts() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  setResetPasswordAccount(acc);
-                                  setNewPasswordInput('');
-                                  setModalError(null);
-                                  setActiveMenuId(null);
-                                }}
-                                className="w-full px-3.5 py-2 text-left text-xs font-bold text-gray-700 hover:bg-purple-50 hover:text-[#5c0099] flex items-center gap-2 border-t border-gray-100"
-                              >
-                                <Key size={14} /> Reset Password
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
                                   setSuspendModal({
                                     isOpen: true,
                                     id: acc.id,
@@ -980,7 +930,7 @@ export default function AdminAccounts() {
                                   });
                                   setActiveMenuId(null);
                                 }}
-                                className="w-full px-3.5 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                                className="w-full px-3.5 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 border-t border-gray-100"
                               >
                                 <Ban size={14} /> Suspend Access
                               </button>
