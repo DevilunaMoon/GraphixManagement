@@ -136,28 +136,7 @@ export async function GET(req: Request) {
       ? allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
       : allFilteredPurchases;
 
-    // Fetch completed repairs
-    const repairsWhere: any = {
-      ...(isSuperAdmin ? {} : branchWhere),
-      status: 'Completed'
-    };
-
-    const allRepairs = await prisma.repairRequest.findMany({
-      where: repairsWhere
-    });
-
-    const filteredRepairs = await prisma.repairRequest.findMany({
-      where: {
-        ...repairsWhere,
-        ...dateWhere
-      }
-    });
-
-    const activeFilteredRepairs = targetBranch 
-      ? filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
-      : filteredRepairs;
-
-    // Workload
+    // Workload (non-completed repairs for optional summary metadata)
     const activeRepairs = await prisma.repairRequest.findMany({
       where: { ...(isSuperAdmin ? (targetBranch ? { branch: targetBranch } : {}) : branchWhere), status: { not: 'Completed' } }
     });
@@ -267,10 +246,6 @@ export async function GET(req: Request) {
       ? allSystemPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
       : allSystemPurchases;
 
-    const activeAllRepairs = targetBranch 
-      ? allRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
-      : allRepairs;
-
     activeAllPurchases.forEach(p => {
       const amt = p.amount || 0;
       totalRetail += amt;
@@ -306,42 +281,6 @@ export async function GET(req: Request) {
         physicalCount++;
       } else {
         onlineCount++;
-      }
-    });
-
-    activeAllRepairs.forEach(r => {
-      if (r.repairCost) {
-        const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
-        if (!isNaN(num)) {
-          totalRepair += num;
-          allTimeSales += num;
-          
-          const createdAt = new Date(r.createdAt);
-          if (createdAt >= currentYearStart) {
-            thisYearSales += num;
-          } else if (createdAt >= lastYearStart && createdAt <= lastYearEnd) {
-            lastYearSales += num;
-          }
-
-          if (filterStart && filterEnd && createdAt >= filterStart && createdAt <= filterEnd) {
-            periodSales += num;
-          }
-          if (prevStart && prevEnd && createdAt >= prevStart && createdAt <= prevEnd) {
-            previousPeriodSales += num;
-          }
-
-          for (const b of chartBuckets) {
-            if (createdAt >= b.start && createdAt <= b.end) {
-              b.value += num;
-              break;
-            }
-          }
-
-          const repairYear = createdAt.getFullYear().toString();
-          if (yearlySales[repairYear] !== undefined) {
-            yearlySales[repairYear] += num;
-          }
-        }
       }
     });
 
@@ -381,69 +320,41 @@ export async function GET(req: Request) {
       }
     });
 
-    activeFilteredRepairs.forEach(r => {
-      if (r.repairCost) {
-        const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
-        if (!isNaN(num)) {
-          cashAmount += num;
-          cashCount += 1;
-        }
-      }
-    });
-
-    // 3. Calculate Branch Performance
+    // 3. Calculate Branch Performance (Product Purchases only)
     const systemBranches = ['Tagoloan', 'Villanueva', 'Jasaan'];
     let branchPerformance: Array<{ branch: string; revenue: number; orders: number }> = [];
 
     if (isSuperAdmin) {
       if (targetBranch) {
         const branchPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
-        const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
-
-        let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-        rev += branchRepairs.reduce((sum, r) => {
-          const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
-          return sum + (isNaN(num) ? 0 : num);
-        }, 0);
+        const rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
         branchPerformance = [{
           branch: targetBranch,
           revenue: rev,
-          orders: branchPurchases.length + branchRepairs.length
+          orders: branchPurchases.length
         }];
       } else {
         branchPerformance = systemBranches.map(bName => {
           const bPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
-          const bRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
-
-          let rev = bPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-          rev += bRepairs.reduce((sum, r) => {
-            const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
-            return sum + (isNaN(num) ? 0 : num);
-          }, 0);
+          const rev = bPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
           return {
             branch: bName,
             revenue: rev,
-            orders: bPurchases.length + bRepairs.length
+            orders: bPurchases.length
           };
         });
       }
     } else {
       const assignedBranch = (session.branch || 'Tagoloan').trim();
       const branchPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
-      const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
-
-      let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-      rev += branchRepairs.reduce((sum, r) => {
-        const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
-        return sum + (isNaN(num) ? 0 : num);
-      }, 0);
+      const rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       branchPerformance = [{
         branch: assignedBranch,
         revenue: rev,
-        orders: branchPurchases.length + branchRepairs.length
+        orders: branchPurchases.length
       }];
     }
 

@@ -370,8 +370,7 @@ export default function SalesBreakdownModal({
               {formatCurrency(meta.totalRevenue || 0)}
             </div>
             <div className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">
-              Retail: {formatCurrency(meta.retailRevenue || 0)}
-              {(meta.repairRevenue || 0) > 0 && ` • Repair: ${formatCurrency(meta.repairRevenue)}`}
+              Product retail sales ({meta.effectiveBranch || (isSuperAdmin ? 'All Branches' : userBranch)})
             </div>
           </div>
 
@@ -460,7 +459,7 @@ export default function SalesBreakdownModal({
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <p className="text-xs sm:text-sm text-gray-600 font-medium">
-                      Showing <span className="font-bold text-gray-900">{filteredProducts.length}</span> products & services sold in{' '}
+                      Showing <span className="font-bold text-gray-900">{filteredProducts.length}</span> products sold in{' '}
                       <span className="font-bold text-gray-900">{meta.effectiveBranch}</span>
                     </p>
                     <div className="relative w-full sm:w-72">
@@ -488,7 +487,7 @@ export default function SalesBreakdownModal({
                           <thead>
                             <tr className="bg-purple-50/70 text-[11px] uppercase tracking-wider text-gray-600 font-extrabold border-b border-purple-100">
                               <th className="py-3 px-4">#</th>
-                              <th className="py-3 px-4">Product / Service</th>
+                              <th className="py-3 px-4">Product</th>
                               <th className="py-3 px-4">Branches Made Sale</th>
                               <th className="py-3 px-4 text-right">Qty Sold</th>
                               <th className="py-3 px-4 text-right">Avg Price</th>
@@ -641,7 +640,7 @@ export default function SalesBreakdownModal({
                           <thead>
                             <tr className="bg-purple-50/70 text-[11px] uppercase tracking-wider text-gray-600 font-extrabold border-b border-purple-100">
                               <th className="py-3 px-4">Date & Ref</th>
-                              <th className="py-3 px-4">Product / Service</th>
+                              <th className="py-3 px-4">Product</th>
                               <th className="py-3 px-4">Customer</th>
                               <th className="py-3 px-4">Branch & Where Sold</th>
                               <th className="py-3 px-4 text-center">Qty</th>

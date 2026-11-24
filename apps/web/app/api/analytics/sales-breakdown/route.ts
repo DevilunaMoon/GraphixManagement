@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 import { computeAnalyticsDateRanges } from '../../../../lib/analyticsDateRange';
-import { getBranchCode, formatRepairReceiptId, getRepairBranchCode } from '../../../../lib/invoice';
+import { getBranchCode } from '../../../../lib/invoice';
 
 export const dynamic = 'force-dynamic';
 
@@ -178,8 +178,8 @@ export async function GET(req: Request): Promise<NextResponse> {
         ? { createdAt: { gte: scopeStart, lte: scopeEnd } }
         : {};
 
-    // Fetch purchases, completed repairs, and global sequence order in parallel
-    const [purchases, repairs, allPurchasesAsc, allRepairsAsc] = await Promise.all([
+    // Fetch retail product purchases and global sequence order in parallel (repairs have their own dedicated analytics/breakdown)
+    const [purchases, allPurchasesAsc] = await Promise.all([
       prisma.purchase.findMany({
         where: {
           ...branchWhere,
@@ -221,41 +221,13 @@ export async function GET(req: Request): Promise<NextResponse> {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.repairRequest.findMany({
-        where: {
-          ...branchWhere,
-          ...dateWhere,
-          status: 'Completed',
-        },
-        select: {
-          id: true,
-          deviceName: true,
-          ownerName: true,
-          technician: true,
-          repairCost: true,
-          branch: true,
-          status: true,
-          createdAt: true,
-          user: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
       prisma.purchase.findMany({
         select: { id: true, branch: true, createdAt: true, referenceId: true },
         orderBy: { createdAt: 'asc' },
       }),
-      prisma.repairRequest.findMany({
-        select: { id: true, branch: true, createdAt: true },
-        orderBy: { createdAt: 'asc' },
-      }),
     ]);
 
-    // Build official branch-sequential Receipt IDs matching Order History (#GRPX-T-A...) and Repair Transactions (#GRPX-TAG-A...)
+    // Build official branch-sequential Receipt IDs matching Order History (#GRPX-T-A...)
     const purchaseReceiptMap = new Map<string, string>();
     const purchaseCounters: Record<string, number> = {};
     for (const item of allPurchasesAsc) {
@@ -268,15 +240,6 @@ export async function GET(req: Request): Promise<NextResponse> {
       } else {
         purchaseReceiptMap.set(item.id, `#GRPX-${bCode}-A${purchaseCounters[bCode]}`);
       }
-    }
-
-    const repairReceiptMap = new Map<string, string>();
-    const repairCounters: Record<string, number> = {};
-    for (const item of allRepairsAsc) {
-      const code = getRepairBranchCode(item.branch);
-      const count = (repairCounters[code] || 0) + 1;
-      repairCounters[code] = count;
-      repairReceiptMap.set(item.id, formatRepairReceiptId(item.branch, count));
     }
 
     // Build unified transaction records
@@ -320,41 +283,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       });
     }
 
-    for (const r of repairs) {
-      const amt = parseRepairCost(r.repairCost);
-      if (amt <= 0) continue;
-      const dt = new Date(r.createdAt);
-      const branchName = canonicalBranchName(r.branch);
-      const monthKey = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
-      const monthLabel = dt.toLocaleDateString('en-PH', { month: 'short', year: 'numeric' });
-
-      allTransactions.push({
-        id: r.id,
-        referenceId: repairReceiptMap.get(r.id) || formatRepairReceiptId(r.branch, 1),
-        createdAt: dt.toISOString(),
-        monthKey,
-        monthLabel,
-        recordType: 'Repair',
-        productId: `repair-${r.deviceName.toLowerCase().replace(/\s+/g, '-')}`,
-        productName: `Repair: ${r.deviceName}`,
-        variation: r.technician ? `Tech: ${r.technician}` : 'Repair Service',
-        condition: 'Service',
-        image: null,
-        quantity: 1,
-        amount: amt,
-        imei: null,
-        customerName: r.ownerName || r.user?.name || 'Walk-in Customer',
-        customerEmail: r.user?.email || null,
-        branch: branchName,
-        branchAddress: branchAddressMap[branchName.toLowerCase()] || `${branchName} Branch`,
-        source: 'In-Store POS',
-        paymentMethod: 'Cash',
-        paymentType: 'Cash (Repair)',
-        status: r.status || 'Completed',
-      });
-    }
-
-    // Sort all transactions newest first
+    // Sort all product purchase transactions newest first
     allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // 1. Aggregate Totals
