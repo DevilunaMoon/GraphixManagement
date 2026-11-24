@@ -1135,30 +1135,28 @@ export default function AdminAboutEditor() {
                               </div>
                             </div>
 
-                            <label className={`cursor-pointer w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border shadow-xs transition-all ${
-                              uploadingBranchId === branch.id 
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
-                                : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
-                            }`}>
-                              {uploadingBranchId === branch.id ? (
+                            <button
+                              type="button"
+                              onClick={handleSave}
+                              disabled={saving}
+                              className={`cursor-pointer w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border shadow-xs transition-all ${
+                                saving
+                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                              }`}
+                            >
+                              {saving ? (
                                 <>
                                   <Loader2 size={15} className="animate-spin" />
-                                  <span>Compressing & Uploading Banner...</span>
+                                  <span>Saving Facebook Link...</span>
                                 </>
                               ) : (
                                 <>
-                                  <Upload size={15} />
-                                  <span>Upload New Banner Image</span>
+                                  <Save size={15} />
+                                  <span>Save Facebook Link</span>
                                 </>
                               )}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                disabled={uploadingBranchId === branch.id}
-                                onChange={(e) => handleImageUpload(branch.id, e)}
-                                className="hidden"
-                              />
-                            </label>
+                            </button>
                           </div>
 
                           {/* Inputs (7 cols) */}
