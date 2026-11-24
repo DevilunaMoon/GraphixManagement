@@ -44,7 +44,9 @@ export default function CustomerLayout({ children, user }: { children: React.Rea
 
     const scrollables = document.querySelectorAll('main, .overflow-y-auto');
     scrollables.forEach((el) => {
-      (el as HTMLElement).scrollTop = 0;
+      if (!el.closest('aside')) {
+        (el as HTMLElement).scrollTop = 0;
+      }
     });
 
     requestAnimationFrame(() => {

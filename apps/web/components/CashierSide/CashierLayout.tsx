@@ -31,7 +31,9 @@ function CashierLayoutContent({ children }: { children: React.ReactNode }) {
 
     const scrollables = document.querySelectorAll('main, .overflow-y-auto');
     scrollables.forEach((el) => {
-      (el as HTMLElement).scrollTop = 0;
+      if (!el.closest('aside')) {
+        (el as HTMLElement).scrollTop = 0;
+      }
     });
 
     requestAnimationFrame(() => {
