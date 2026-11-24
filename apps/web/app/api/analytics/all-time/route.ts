@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 import { calculateBranchBestSellers } from '../../../../lib/analyticsBestSellers';
+import { computeAnalyticsDateRanges } from '../../../../lib/analyticsDateRange';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,55 +47,13 @@ export async function GET(req: Request) {
     const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
     const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
 
-    // Calculate dynamic filter boundaries for Payment Methods, Branch Performance, etc.
-    let filterStart: Date | null = null;
-    let filterEnd: Date | null = null;
-
-    if (dateFilter === 'today') {
-      filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    } else if (dateFilter === 'week') {
-      const dayOfWeek = now.getDay(); // 0 = Sunday
-      filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59, 999);
-    } else if (dateFilter === 'month') {
-      filterStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    } else if (dateFilter === 'year') {
-      filterStart = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (dateFilter === 'custom' && startDateParam && endDateParam) {
-      const s = new Date(startDateParam);
-      s.setHours(0, 0, 0, 0);
-      const e = new Date(endDateParam);
-      e.setHours(23, 59, 59, 999);
-      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
-        filterStart = s;
-        filterEnd = e;
-      }
-    }
-
-    // Previous period boundaries for dynamic comparative metrics
-    let prevStart: Date | null = null;
-    let prevEnd: Date | null = null;
-
-    if (dateFilter === 'today') {
-      prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-      prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
-    } else if (dateFilter === 'week') {
-      prevStart = new Date((filterStart || now).getTime() - 7 * 24 * 60 * 60 * 1000);
-      prevEnd = new Date((filterEnd || now).getTime() - 7 * 24 * 60 * 60 * 1000);
-    } else if (dateFilter === 'month') {
-      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-      prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    } else if (dateFilter === 'year') {
-      prevStart = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
-      prevEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
-    } else if (dateFilter === 'custom' && filterStart && filterEnd) {
-      const diff = filterEnd.getTime() - filterStart.getTime();
-      prevEnd = new Date(filterStart.getTime() - 1);
-      prevStart = new Date(prevEnd.getTime() - diff);
-    }
+    // Calculate dynamic filter boundaries & previous period boundaries via shared helper
+    const { filterStart, filterEnd, prevStart, prevEnd } = computeAnalyticsDateRanges(
+      dateFilter,
+      startDateParam,
+      endDateParam,
+      now
+    );
 
     const dateWhere: any = {};
     if (filterStart && filterEnd) {

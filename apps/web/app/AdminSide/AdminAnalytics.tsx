@@ -18,12 +18,14 @@ import {
   Lock,
   Clock,
   RefreshCw,
-  ChevronDown
+  ChevronDown,
+  ExternalLink
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import YearlyBestSellersSection from '../../components/AdminSide/YearlyBestSellersSection';
 import RepairAnalyticsView from '../../components/AdminSide/RepairAnalyticsView';
+import SalesBreakdownModal from '../../components/AdminSide/SalesBreakdownModal';
 
 const formatCurrency = (val: number) => {
   return '₱' + (val || 0).toLocaleString('en-PH', {
@@ -62,6 +64,7 @@ export default function AdminAnalytics() {
   const [reportData, setReportData] = useState<{year: string; salesGrowth: number; userGrowth: number}[]>([]);
   const [userGrowthData, setUserGrowthData] = useState<{ year: string, users: string, trend: string, trendUp: boolean }[]>([]);
   const [selectedYearData, setSelectedYearData] = useState<{ year: string, users: string, trend: string, trendUp: boolean } | null>(null);
+  const [selectedSalesScope, setSelectedSalesScope] = useState<{ scope: 'current' | 'previous' | 'all_time'; title: string } | null>(null);
   const repairExportRef = useRef<(() => void) | null>(null);
 
   const { styles } = useTheme();
@@ -334,21 +337,27 @@ export default function AdminAnalytics() {
                   </span>
                 }
                 iconBg="bg-green-100" 
-                iconColor="text-green-600" 
+                iconColor="text-green-600"
+                onClick={() => setSelectedSalesScope({ scope: 'current', title: currentPeriodLabel })}
+                actionHint="View Breakdown"
               />
               <StatCard 
                 icon={<span className="text-[22px] font-bold">₱</span>}
                 label={previousPeriodLabel} 
                 value={formatCurrency(prevSales)} 
                 iconBg="bg-blue-100" 
-                iconColor="text-blue-600" 
+                iconColor="text-blue-600"
+                onClick={() => setSelectedSalesScope({ scope: 'previous', title: previousPeriodLabel })}
+                actionHint="View Breakdown"
               />
               <StatCard 
                 icon={<span className="text-[22px] font-bold">₱</span>}
                 label="All-Time Sales" 
                 value={formatCurrency(analyticsData?.sales?.allTime ?? 0)} 
                 iconBg="bg-purple-100" 
-                iconColor="text-purple-600" 
+                iconColor="text-purple-600"
+                onClick={() => setSelectedSalesScope({ scope: 'all_time', title: 'All-Time Sales' })}
+                actionHint="View Breakdown"
               />
               <Link href="/admin/accounts" className="block transition-transform hover:-translate-y-1 no-underline">
                 <StatCard 
@@ -607,6 +616,21 @@ export default function AdminAnalytics() {
         )}
       </div>
 
+      {selectedSalesScope && (
+        <SalesBreakdownModal
+          isOpen={!!selectedSalesScope}
+          onClose={() => setSelectedSalesScope(null)}
+          scope={selectedSalesScope.scope}
+          title={selectedSalesScope.title}
+          dateFilter={dateFilter}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          initialBranch={isSuperAdmin ? selectedBranch : (userBranch || 'Tagoloan')}
+          isSuperAdmin={isSuperAdmin}
+          userBranch={userBranch || 'Tagoloan'}
+        />
+      )}
+
       {selectedYearData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setSelectedYearData(null)}>
           <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
@@ -644,14 +668,47 @@ export default function AdminAnalytics() {
   );
 }
 
-function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: React.ReactNode, label: string, value: string, subText?: React.ReactNode, iconBg: string, iconColor: string }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  subText,
+  iconBg,
+  iconColor,
+  onClick,
+  actionHint,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  subText?: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  onClick?: () => void;
+  actionHint?: string;
+}) {
   const valueClass = getResponsiveNumberClass(value);
+  const isClickable = typeof onClick === 'function';
 
-  return (
-    <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col justify-between gap-3 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full overflow-hidden">
+  const cardClasses = `bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col justify-between gap-3 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full w-full text-left overflow-hidden transition-all ${
+    isClickable
+      ? 'cursor-pointer hover:-translate-y-1 hover:border-purple-400/60 hover:shadow-[0_12px_36px_rgba(189,0,255,0.12)] active:scale-[0.99] group focus:outline-none focus:ring-2 focus:ring-[#bd00ff]/40'
+      : ''
+  }`;
+
+  const content = (
+    <>
       <div>
-        <div className={`w-11 h-11 rounded-xl flex justify-center items-center mb-3 ${iconBg} ${iconColor}`}>
-          {icon}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className={`w-11 h-11 rounded-xl flex justify-center items-center ${iconBg} ${iconColor}`}>
+            {icon}
+          </div>
+          {isClickable && actionHint && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-purple-50 text-[#8b00cc] border border-purple-200/70 group-hover:bg-[#bd00ff] group-hover:text-white group-hover:border-[#bd00ff] transition-colors">
+              <span>{actionHint}</span>
+              <ExternalLink size={11} />
+            </span>
+          )}
         </div>
         <span className="text-xs font-bold text-[#666] uppercase tracking-wider block truncate">{label}</span>
         <h3 
@@ -662,8 +719,18 @@ function StatCard({ icon, label, value, subText, iconBg, iconColor }: { icon: Re
         </h3>
       </div>
       {subText && <div className="mt-1 text-xs font-semibold overflow-hidden">{subText}</div>}
-    </div>
+    </>
   );
+
+  if (isClickable) {
+    return (
+      <button type="button" onClick={onClick} className={cardClasses}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={cardClasses}>{content}</div>;
 }
 
 function ChartBar({ 
