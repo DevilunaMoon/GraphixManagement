@@ -248,6 +248,7 @@ export default function AdminDSS() {
   const isLoading = invLoading || repLoading;
 
   return (
+    <>
     <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto font-['Inter'] space-y-6">
       {/* Toast Notification */}
       {toast && (
@@ -811,10 +812,11 @@ export default function AdminDSS() {
           </div>
         </div>
       )}
+    </div>
 
       {/* Confirmation Modal for Recommended Branch Transfer */}
       {transferModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 m-0 z-[60] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-purple-100 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95">
             <div className="px-5 py-4 bg-gradient-to-r from-[#7e22ce] to-[#9b1fe8] text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -905,7 +907,7 @@ export default function AdminDSS() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
