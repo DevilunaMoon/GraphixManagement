@@ -29,7 +29,8 @@ import {
   Crown,
   KeyRound,
   Check,
-  Globe
+  Globe,
+  Sparkles
 } from 'lucide-react';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -189,6 +190,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
     { href: '/admin/about-editor', label: 'About Page', icon: FileText },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+    { href: '/admin/dss', label: 'Decision Support', icon: Sparkles },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -202,6 +204,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     if (path.startsWith('/admin/banners')) return 'Banners';
     if (path.startsWith('/admin/about-editor')) return 'About Page';
     if (path.startsWith('/admin/analytics')) return 'Analytics';
+    if (path.startsWith('/admin/dss')) return 'Decision Support (DSS)';
     if (path.startsWith('/admin/settings')) return 'Settings';
     if (path.startsWith('/admin/notifications')) return 'Notifications';
     return isSuperAdmin ? 'Super Admin Portal' : 'Dashboard Overview';

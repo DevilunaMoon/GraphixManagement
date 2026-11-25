@@ -15,6 +15,8 @@ import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../components/Repair/MaterialBreakdownEditor';
 import DeviceRepairIntakeSheetModal from '../../components/Repair/DeviceRepairIntakeSheetModal';
 import DiscardChangesModal from '../../components/Common/DiscardChangesModal';
+import RepairDssAdvisor from '../../components/TechnicianSide/RepairDssAdvisor';
+import RepairPriorityBanner from '../../components/Repair/RepairPriorityBanner';
 import imageCompression from 'browser-image-compression';
 
 const BRAND_OPTIONS = [
@@ -1123,6 +1125,15 @@ export default function TechnicianMonitoring() {
           </div>
         </div>
 
+        {/* DSS Priority Review Banner */}
+        <RepairPriorityBanner
+          branch={technician?.branch}
+          onSelectRepair={(repairId) => {
+            const found = devices.find((d) => d.id === repairId);
+            if (found) openWorkbenchModal(found);
+          }}
+        />
+
         {/* Filter Pills Bar */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           {(['ALL', 'DIAGNOSTIC', 'REPAIRING', 'DOWNPAYMENTS', 'COMPLETED'] as const).map((tab) => (
@@ -2083,6 +2094,26 @@ export default function TechnicianMonitoring() {
                 </div>
               </div>
 
+              {/* DSS Diagnosis & Service Recommendation (Reference Only) */}
+              <RepairDssAdvisor
+                deviceName={editDeviceName || selectedDevice.deviceName}
+                cause={`${editProblem === 'Other' ? editCustomProblem : editProblem} ${editProblemDescription || editCause || ''}`}
+                branch={editBranch || selectedDevice.branch}
+                onAddPart={(part) => {
+                  setEditMaterials((prev) => [
+                    ...prev,
+                    {
+                      id: `dss-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      qty: 1,
+                      description: part.description,
+                      unitPrice: part.unitPrice,
+                      total: part.unitPrice,
+                      sparePartId: part.sparePartId,
+                    },
+                  ]);
+                }}
+              />
+
               {/* 5. Itemized Materials Breakdown */}
               <div className="bg-white p-5 rounded-2xl border-2 border-gray-100">
                 <MaterialBreakdownEditor
@@ -2789,6 +2820,26 @@ export default function TechnicianMonitoring() {
                   <span className="text-[11px] text-gray-400">Clean text notes regarding prior repairs (never raw JSON).</span>
                 </div>
               </div>
+
+              {/* DSS Diagnosis & Service Recommendation (Reference Only) */}
+              <RepairDssAdvisor
+                deviceName={addDeviceName}
+                cause={`${addProblem === 'Other' ? addCustomProblem : addProblem} ${addProblemDescription || addCause || ''}`}
+                branch={addBranch}
+                onAddPart={(part) => {
+                  setAddMaterials((prev) => [
+                    ...prev,
+                    {
+                      id: `dss-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                      qty: 1,
+                      description: part.description,
+                      unitPrice: part.unitPrice,
+                      total: part.unitPrice,
+                      sparePartId: part.sparePartId,
+                    },
+                  ]);
+                }}
+              />
 
               {/* 5. Itemized Materials Breakdown */}
               <div className="bg-white p-5 rounded-2xl border-2 border-gray-100">

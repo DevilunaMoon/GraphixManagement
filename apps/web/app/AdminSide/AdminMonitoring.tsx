@@ -13,6 +13,7 @@ import MaterialBreakdownEditor, { MaterialItem, PaymentDetails } from '../../com
 import DeviceRepairIntakeSheetModal from '../../components/Repair/DeviceRepairIntakeSheetModal';
 import DiscardChangesModal from '../../components/Common/DiscardChangesModal';
 import RepairRequestReviewModal from '../../components/Repair/RepairRequestReviewModal';
+import RepairPriorityBanner from '../../components/Repair/RepairPriorityBanner';
 import CustomerDetailsModal from '../../components/Common/CustomerDetailsModal';
 import { useBranch } from '../../context/BranchContext';
 
@@ -1038,6 +1039,9 @@ export default function AdminMonitoring() {
             </button>
           </div>
         </div>
+
+        {/* DSS Priority Review Banner */}
+        <RepairPriorityBanner branch={isSuperAdmin ? selectedBranch : undefined} />
 
         {/* Devices Table */}
         <div className="w-full">
