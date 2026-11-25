@@ -16,6 +16,7 @@ export interface ReceiptCartItem {
   total: number;
   variations?: string; // e.g. "Color: Black, Storage: 128GB" or "Black, 128GB"
   imei?: string | null;
+  deviceImei?: string | null;
 }
 
 export interface DigitalReceiptData {
@@ -36,6 +37,7 @@ export interface DigitalReceiptData {
   customerPhone?: string;
   isVerified?: boolean;
   imei?: string | null;
+  deviceImei?: string | null;
 }
 
 interface CustomerDigitalReceiptCardProps {
@@ -112,6 +114,15 @@ export default function CustomerDigitalReceiptCard({
     return String(v);
   };
 
+  const extractDeviceImeis = (deviceImei?: string | null, fallbackImei?: string | null): string[] => {
+    const fromDeviceImei = deviceImei
+      ? String(deviceImei).split(',').map((s) => s.trim()).filter((s) => /^\d{14,16}$/.test(s))
+      : [];
+    if (fromDeviceImei.length > 0) return fromDeviceImei;
+    if (!fallbackImei) return [];
+    return String(fallbackImei).split(',').map((s) => s.trim()).filter((s) => /^\d{14,16}$/.test(s));
+  };
+
   const rawItems: ReceiptCartItem[] = (data?.items && data.items.length > 0)
     ? data.items
     : [
@@ -120,7 +131,9 @@ export default function CustomerDigitalReceiptCard({
           quantity: data?.quantity || 1,
           unitPrice: data?.totalAmount || 28998,
           total: data?.totalAmount || 28998,
-          variations: 'Black, 128GB'
+          variations: 'Black, 128GB',
+          imei: data?.imei,
+          deviceImei: data?.deviceImei
         }
       ];
 
@@ -214,6 +227,10 @@ export default function CustomerDigitalReceiptCard({
       : [resolveDisplayUniqueId(null, item.name || data?.deviceName, branchLocation, 1, shortTransId)];
     resolvedUids.forEach(u => {
       receiptText += `Unique ID: ${u}\n`;
+    });
+    const resolvedImeis = extractDeviceImeis(item.deviceImei || data?.deviceImei, item.imei || data?.imei);
+    resolvedImeis.forEach(imeiVal => {
+      receiptText += `Device IMEI: ${imeiVal}\n`;
     });
   });
 
@@ -492,15 +509,25 @@ export default function CustomerDigitalReceiptCard({
           const resolvedUids = rawUid
             ? String(rawUid).split(',').map(s => s.trim()).filter(Boolean).map((u, uIdx) => resolveDisplayUniqueId(u, item.name || data?.deviceName, branchLocation, uIdx + 1, shortTransId))
             : [resolveDisplayUniqueId(null, item.name || data?.deviceName, branchLocation, 1, shortTransId)];
-          if (doc) {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(6.5);
-            doc.setTextColor(31, 41, 55);
-            resolvedUids.forEach(u => {
+          const resolvedImeis = extractDeviceImeis(item.deviceImei || data?.deviceImei, item.imei || data?.imei);
+          resolvedUids.forEach(u => {
+            if (doc) {
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6.5);
+              doc.setTextColor(31, 41, 55);
               doc.text(`Unique ID: ${u}`, leftPad, y);
-              y += 3.2;
-            });
-          }
+            }
+            y += 3.2;
+          });
+          resolvedImeis.forEach(imeiVal => {
+            if (doc) {
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(6.5);
+              doc.setTextColor(31, 41, 55);
+              doc.text(`Device IMEI: ${imeiVal}`, leftPad, y);
+            }
+            y += 3.2;
+          });
         });
 
         // Divider
@@ -844,6 +871,7 @@ export default function CustomerDigitalReceiptCard({
                   const resolvedUids = rawUid
                     ? String(rawUid).split(',').map(s => s.trim()).filter(Boolean).map((u, uIdx) => resolveDisplayUniqueId(u, item.name || data?.deviceName, branchLocation, uIdx + 1, shortTransId))
                     : [resolveDisplayUniqueId(null, item.name || data?.deviceName, branchLocation, 1, shortTransId)];
+                  const resolvedImeis = extractDeviceImeis(item.deviceImei || data?.deviceImei, item.imei || data?.imei);
                   return (
                     <div className="flex flex-col gap-0.5 mt-0.5">
                       {resolvedUids.map((u, uIdx) => (
@@ -851,6 +879,14 @@ export default function CustomerDigitalReceiptCard({
                           <span className="text-[#5c0099]">● Unique ID:</span>
                           <span className="bg-purple-50 text-purple-900 border border-purple-200/80 px-1 py-0.2 rounded text-[9.5px]">
                             {u}
+                          </span>
+                        </div>
+                      ))}
+                      {resolvedImeis.map((imeiVal, iIdx) => (
+                        <div key={`imei-${iIdx}`} className="font-mono font-bold text-[10px] text-gray-800 text-left flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[#5c0099]">● Device IMEI:</span>
+                          <span className="bg-gray-100 text-gray-900 border border-gray-200 px-1 py-0.2 rounded text-[9.5px]">
+                            {imeiVal}
                           </span>
                         </div>
                       ))}

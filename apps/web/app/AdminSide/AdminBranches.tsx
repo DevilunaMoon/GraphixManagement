@@ -23,6 +23,7 @@ import {
   Mail
 } from 'lucide-react';
 import { useBranch } from '../../context/BranchContext';
+import DiscardChangesModal from '../../components/Common/DiscardChangesModal';
 
 interface BranchMetricItem {
   id: string;
@@ -59,6 +60,7 @@ export default function AdminBranches() {
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState<BranchMetricItem | null>(null);
 
   // Form Fields
@@ -659,8 +661,14 @@ export default function AdminBranches() {
 
       {/* Add / Edit Branch Modal */}
       {(isAddModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setDiscardConfirmOpen(true)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 md:p-8 max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center pb-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#bd00ff] flex items-center justify-center">
@@ -676,7 +684,8 @@ export default function AdminBranches() {
                 </div>
               </div>
               <button 
-                onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }}
+                type="button"
+                onClick={() => setDiscardConfirmOpen(true)}
                 className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-black flex items-center justify-center transition-colors cursor-pointer border-none"
               >
                 <X size={18} />
@@ -863,7 +872,7 @@ export default function AdminBranches() {
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => { setIsAddModalOpen(false); setIsEditModalOpen(false); }}
+                  onClick={() => setDiscardConfirmOpen(true)}
                   className="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer bg-transparent"
                 >
                   Cancel
@@ -880,6 +889,16 @@ export default function AdminBranches() {
           </div>
         </div>
       )}
+
+      <DiscardChangesModal
+        isOpen={discardConfirmOpen}
+        onKeepEditing={() => setDiscardConfirmOpen(false)}
+        onConfirmDiscard={() => {
+          setDiscardConfirmOpen(false);
+          setIsAddModalOpen(false);
+          setIsEditModalOpen(false);
+        }}
+      />
 
       {/* Delete Confirmation Modal */}
       {branchToDelete && (

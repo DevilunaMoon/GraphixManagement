@@ -437,7 +437,7 @@ function CustomerProductsContent() {
           <button 
             onClick={() => scrollCategories(-300)}
             aria-label="Previous Brands"
-            className="absolute left-2 md:left-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all cursor-pointer"
+            className="absolute left-2 md:left-4 top-[84px] sm:top-[100px] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all cursor-pointer"
           >
             <ChevronLeft size={18} strokeWidth={2.5} />
           </button>
@@ -446,14 +446,14 @@ function CustomerProductsContent() {
           <button 
             onClick={() => scrollCategories(300)}
             aria-label="Next Brands"
-            className="absolute right-2 md:right-4 top-[58%] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all cursor-pointer"
+            className="absolute right-2 md:right-4 top-[84px] sm:top-[100px] -translate-y-1/2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center border border-purple-100 z-10 text-gray-600 hover:text-[#8b00cc] hover:scale-110 transition-all cursor-pointer"
           >
             <ChevronRight size={18} strokeWidth={2.5} />
           </button>
 
           <div 
             ref={categoryScrollRef}
-            className="flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto pb-2 px-8 [&::-webkit-scrollbar]:hidden items-center"
+            className="flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto pb-2 px-8 [&::-webkit-scrollbar]:hidden items-start"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {displayCategories.map((category, idx) => {
@@ -469,9 +469,9 @@ function CustomerProductsContent() {
                       navigate(`/customer/products?category=${encodeURIComponent(catName)}`);
                     }
                   }}
-                  className="flex flex-col items-center gap-2.5 min-w-[76px] sm:min-w-[90px] cursor-pointer group"
+                  className="flex flex-col items-center gap-2.5 min-w-[85px] sm:min-w-[95px] max-w-[110px] cursor-pointer group"
                 >
-                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center border transition-all ease-out duration-300 p-3.5 ${
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full shrink-0 flex items-center justify-center border transition-all ease-out duration-300 p-3.5 ${
                     isActive 
                       ? 'bg-purple-50 border-[#bd00ff] ring-4 ring-purple-100 shadow-md scale-105' 
                       : 'bg-white border-gray-150 shadow-sm group-hover:border-purple-300 group-hover:shadow-md group-hover:scale-105'
@@ -487,11 +487,13 @@ function CustomerProductsContent() {
                       <span className="text-xs text-gray-400 font-bold">No Img</span>
                     )}
                   </div>
-                  <span className={`text-xs sm:text-sm font-semibold text-center transition-colors leading-tight ${
-                    isActive ? 'text-[#8b00cc] font-bold' : 'text-gray-700 group-hover:text-[#8b00cc]'
-                  }`}>
-                    {category.name}
-                  </span>
+                  <div className="w-full min-h-[2.5rem] flex items-start justify-center">
+                    <span className={`text-xs sm:text-sm font-semibold text-center transition-colors leading-tight break-words ${
+                      isActive ? 'text-[#8b00cc] font-bold' : 'text-gray-700 group-hover:text-[#8b00cc]'
+                    }`}>
+                      {category.name}
+                    </span>
+                  </div>
                 </div>
               );
             })}

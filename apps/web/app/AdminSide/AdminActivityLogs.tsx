@@ -47,7 +47,28 @@ export default function AdminActivityLogs() {
   const [totalLogs, setTotalLogs] = useState(0);
 
   const [selectedLog, setSelectedLog] = useState<ActivityLogItem | null>(null);
-  const itemsPerPage = 15;
+  const itemsPerPage = 10;
+
+  const startItem = totalLogs === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalLogs);
+
+  const getPageNumbers = () => {
+    const total = Math.max(1, totalPages);
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (currentPage >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', total];
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedBranchFilter, selectedActionFilter, filterDate]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -362,23 +383,59 @@ export default function AdminActivityLogs() {
         )}
 
         {/* Pagination Footer */}
-        {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-between pt-6 border-t border-gray-100 mt-4 text-xs text-gray-500 font-semibold">
-            <span>Page {currentPage} of {totalPages}</span>
-            <div className="flex gap-2">
-              <button
-                disabled={currentPage === 1}
+        {!loading && totalLogs > 0 && (
+          <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-gray-100 mt-4 text-xs">
+            <span className="w-full sm:w-auto text-gray-500 font-medium text-center sm:text-left">
+              Showing <span className="font-bold text-gray-900">{startItem}</span> to{' '}
+              <span className="font-bold text-gray-900">{endItem}</span> of{' '}
+              <span className="font-bold text-gray-900">{totalLogs}</span> activity logs
+            </span>
+
+            <div className="w-full sm:w-auto flex items-center justify-center gap-1.5 flex-wrap">
+              <button 
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className="p-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed"
+                disabled={currentPage === 1}
+                className="h-9 px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                title="Previous Page"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={15} />
+                <span className="hidden sm:inline">Prev</span>
               </button>
-              <button
-                disabled={currentPage === totalPages}
+
+              <div className="flex items-center gap-1">
+                {getPageNumbers().map((p, idx) => {
+                  if (p === '...') {
+                    return (
+                      <span key={`dots-${idx}`} className="w-7 h-9 flex items-center justify-center text-xs text-gray-400 font-bold select-none">
+                        ...
+                      </span>
+                    );
+                  }
+                  const isCurrent = p === currentPage;
+                  return (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p as number)}
+                      className={`w-9 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer active:scale-95 ${
+                        isCurrent
+                          ? 'bg-gradient-to-r from-purple-700 to-indigo-700 text-white shadow-sm shadow-purple-500/25 ring-2 ring-purple-400/30'
+                          : 'bg-white hover:bg-purple-50 text-gray-700 hover:text-purple-700 border border-gray-200/90 hover:border-purple-200'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button 
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className="p-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed"
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-9 px-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 disabled:opacity-30 disabled:pointer-events-none transition-all text-xs font-semibold text-gray-700 flex items-center justify-center gap-1 cursor-pointer shadow-xs active:scale-95"
+                title="Next Page"
               >
-                <ChevronRight size={16} />
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight size={15} />
               </button>
             </div>
           </div>

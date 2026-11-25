@@ -17,10 +17,10 @@ export async function GET(req: Request) {
     const action = searchParams.get('action') || '';
     const date = searchParams.get('date') || '';
     const pageStr = searchParams.get('page') || '1';
-    const limitStr = searchParams.get('limit') || '20';
+    const limitStr = searchParams.get('limit') || '10';
 
     const page = Math.max(1, parseInt(pageStr, 10) || 1);
-    const limit = Math.max(1, parseInt(limitStr, 10) || 20);
+    const limit = Math.max(1, parseInt(limitStr, 10) || 10);
     const skip = (page - 1) * limit;
 
     const whereClause: any = {};

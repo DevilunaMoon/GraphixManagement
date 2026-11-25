@@ -4,6 +4,7 @@ import { sendNotificationEmail } from '../../../../lib/email';
 import { uploadToCloudinary } from '../../../../lib/cloudinary';
 import { getSession } from '../../../../lib/session';
 import { triggerRepairStatusSms } from '../../../../lib/sms';
+import { processSparePartUsageAndNotify } from '../../../../lib/sparePartUsageHelper';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -203,6 +204,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         user: true
       }
     });
+
+    // If a Technician added or increased inventory spare parts on this repair,
+    // deduct the delta stock and notify ONLY the Branch Admin(s) of the technician's branch.
+    if (session.role === 'TECHNICIAN' && updateData.materials !== undefined) {
+      await processSparePartUsageAndNotify({
+        newMaterialsRaw: updateData.materials,
+        previousMaterialsRaw: existingRequest.materials,
+        branch: request.branch || session.branch || 'Tagoloan',
+        deviceName: request.deviceName,
+        ownerName: request.ownerName,
+        technicianName: request.technician,
+        technicianUserId: session.userId,
+      });
+    }
 
     // Compute changed flags
     const isNewlyAccepted = (action === 'ACCEPT' || updateData.progress === 'Accepted') && existingRequest.progress !== 'Accepted';

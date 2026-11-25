@@ -535,45 +535,58 @@ export async function POST(req: Request) {
               const unitIds: string[] = Array.isArray(v.uniqueIds) && v.uniqueIds.length > 0
                 ? v.uniqueIds
                 : (v.uniqueId && String(v.uniqueId).trim() ? [String(v.uniqueId).trim()] : []);
+              const unitDetails: Array<{ uniqueId?: string; imei?: string; color?: string }> = Array.isArray(v.unitDetails)
+                ? v.unitDetails
+                : [];
 
               const branchUnits = await tx.deviceUnit.findMany({
                 where: { branch: { equals: operatingBranch, mode: 'insensitive' } },
-                select: { imei: true }
+                select: { imei: true, notes: true }
               });
               let branchMaxSeq = 0;
               for (const bu of branchUnits) {
-                const s = extractSequenceIndexFromId(bu.imei);
+                const s1 = extractSequenceIndexFromId(bu.imei);
+                const s2 = extractSequenceIndexFromId(bu.notes || '');
+                const s = Math.max(s1, s2);
                 if (s > branchMaxSeq) branchMaxSeq = s;
               }
               let nextBranchSeq = Math.max(branchMaxSeq, branchUnits.length);
 
               for (let u = 0; u < allocatedStock; u++) {
                 nextBranchSeq++;
-                const fallbackImei = generateUniqueDeviceId(name, operatingBranch, nextBranchSeq);
-                const unitImei = unitIds[u] || fallbackImei;
-                if (unitImei && String(unitImei).trim()) {
-                  let cleanImei = String(unitImei).trim().toUpperCase();
-                  const exists = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
-                  if (exists) {
-                    let probe = nextBranchSeq;
-                    while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
-                      probe++;
-                    }
-                    cleanImei = generateUniqueDeviceId(name, operatingBranch, probe);
-                    nextBranchSeq = probe;
-                  }
+                const detail = unitDetails[u] || {};
+                const fallbackUid = generateUniqueDeviceId(name, operatingBranch, nextBranchSeq);
+                const rawUid = detail.uniqueId || unitIds[u] || fallbackUid;
+                let cleanUid = String(rawUid || fallbackUid).trim().toUpperCase();
+                const rawRealImei = detail.imei ? String(detail.imei).trim() : '';
+                const unitColor = (detail.color || v.color || '').trim();
 
-                  await tx.deviceUnit.create({
-                    data: {
-                      deviceId: existingDevice.id,
-                      variationId: createdVar.id,
-                      productId: prodId,
-                      branch: operatingBranch,
-                      imei: cleanImei,
-                      status: 'Available'
-                    }
-                  }).catch(() => {});
+                let storedImei = rawRealImei || cleanUid;
+                const exists = await tx.deviceUnit.findUnique({ where: { imei: storedImei } });
+                if (exists) {
+                  let probe = nextBranchSeq;
+                  while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
+                    probe++;
+                  }
+                  cleanUid = generateUniqueDeviceId(name, operatingBranch, probe);
+                  storedImei = cleanUid;
+                  nextBranchSeq = probe;
                 }
+
+                const noteParts = [`UID:${cleanUid}`];
+                if (unitColor) noteParts.push(`Color:${unitColor}`);
+
+                await tx.deviceUnit.create({
+                  data: {
+                    deviceId: existingDevice.id,
+                    variationId: createdVar.id,
+                    productId: prodId,
+                    branch: operatingBranch,
+                    imei: storedImei,
+                    notes: noteParts.join('; '),
+                    status: 'Available'
+                  }
+                }).catch(() => {});
               }
             }
           }
@@ -728,45 +741,58 @@ export async function POST(req: Request) {
           const unitIds: string[] = Array.isArray(v.uniqueIds) && v.uniqueIds.length > 0
             ? v.uniqueIds
             : (v.uniqueId && String(v.uniqueId).trim() ? [String(v.uniqueId).trim()] : []);
+          const unitDetails: Array<{ uniqueId?: string; imei?: string; color?: string }> = Array.isArray(v.unitDetails)
+            ? v.unitDetails
+            : [];
 
           const branchUnits = await tx.deviceUnit.findMany({
             where: { branch: { equals: operatingBranch, mode: 'insensitive' } },
-            select: { imei: true }
+            select: { imei: true, notes: true }
           });
           let branchMaxSeq = 0;
           for (const bu of branchUnits) {
-            const s = extractSequenceIndexFromId(bu.imei);
+            const s1 = extractSequenceIndexFromId(bu.imei);
+            const s2 = extractSequenceIndexFromId(bu.notes || '');
+            const s = Math.max(s1, s2);
             if (s > branchMaxSeq) branchMaxSeq = s;
           }
           let nextBranchSeq = Math.max(branchMaxSeq, branchUnits.length);
 
           for (let u = 0; u < allocatedStock; u++) {
             nextBranchSeq++;
-            const fallbackImei = generateUniqueDeviceId(name, operatingBranch, nextBranchSeq);
-            const unitImei = unitIds[u] || fallbackImei;
-            if (unitImei && String(unitImei).trim()) {
-              let cleanImei = String(unitImei).trim().toUpperCase();
-              const exists = await tx.deviceUnit.findUnique({ where: { imei: cleanImei } });
-              if (exists) {
-                let probe = nextBranchSeq;
-                while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
-                  probe++;
-                }
-                cleanImei = generateUniqueDeviceId(name, operatingBranch, probe);
-                nextBranchSeq = probe;
-              }
+            const detail = unitDetails[u] || {};
+            const fallbackUid = generateUniqueDeviceId(name, operatingBranch, nextBranchSeq);
+            const rawUid = detail.uniqueId || unitIds[u] || fallbackUid;
+            let cleanUid = String(rawUid || fallbackUid).trim().toUpperCase();
+            const rawRealImei = detail.imei ? String(detail.imei).trim() : '';
+            const unitColor = (detail.color || v.color || '').trim();
 
-              await tx.deviceUnit.create({
-                data: {
-                  deviceId: createdDevice.id,
-                  variationId: createdVar.id,
-                  productId: prodId,
-                  branch: operatingBranch,
-                  imei: cleanImei,
-                  status: 'Available'
-                }
-              }).catch(() => {});
+            let storedImei = rawRealImei || cleanUid;
+            const exists = await tx.deviceUnit.findUnique({ where: { imei: storedImei } });
+            if (exists) {
+              let probe = nextBranchSeq;
+              while (await tx.deviceUnit.findUnique({ where: { imei: generateUniqueDeviceId(name, operatingBranch, probe) } })) {
+                probe++;
+              }
+              cleanUid = generateUniqueDeviceId(name, operatingBranch, probe);
+              storedImei = cleanUid;
+              nextBranchSeq = probe;
             }
+
+            const noteParts = [`UID:${cleanUid}`];
+            if (unitColor) noteParts.push(`Color:${unitColor}`);
+
+            await tx.deviceUnit.create({
+              data: {
+                deviceId: createdDevice.id,
+                variationId: createdVar.id,
+                productId: prodId,
+                branch: operatingBranch,
+                imei: storedImei,
+                notes: noteParts.join('; '),
+                status: 'Available'
+              }
+            }).catch(() => {});
           }
 
           for (const b of branches) {

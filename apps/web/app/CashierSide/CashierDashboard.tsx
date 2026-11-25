@@ -844,6 +844,7 @@ export default function CashierDashboard() {
       <CashierVerifyPickupModal
         isOpen={isVerifyModalOpen}
         onClose={() => setIsVerifyModalOpen(false)}
+        branch={userBranch || 'Tagoloan'}
       />
     </div>
   );

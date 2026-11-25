@@ -16,6 +16,7 @@ export interface StandardReceiptItem {
   variations?: string | null;
   imei?: string | null;
   uniqueId?: string | null;
+  deviceImei?: string | null;
   discount?: number | null;
 }
 
@@ -32,6 +33,7 @@ export interface StandardReceiptData {
   branch?: string;
   imei?: string | null;
   uniqueId?: string | null;
+  deviceImei?: string | null;
   discount?: number | null;
   downpaymentAmount?: number | null;
   remainingBalance?: number | null;
@@ -128,14 +130,30 @@ export default function StandardDigitalReceipt({
   const shortTransId = formatDisplayInvoiceId(rawTransId, branchLocation);
 
   // 4. Payment Method & Status Logic
-  const paymentMethod = data.paymentType?.toLowerCase().includes('gcash')
+  const rawPType = (data.paymentType || '').toLowerCase();
+  const paymentMethod = rawPType.includes('skyro')
+    ? 'Skyro'
+    : (rawPType.includes('home credit') || rawPType.includes('homecredit'))
+    ? 'Home Credit'
+    : rawPType.includes('gcash')
     ? 'GCash'
+    : rawPType.includes('split')
+    ? 'Split (Cash + GCash)'
     : (data.paymentType === 'Downpayment' ? 'Downpayment' : 'Cash');
 
   const isDownpayment = data.paymentType === 'Downpayment';
   const isCashOrder = paymentMethod === 'Cash';
 
   // 5. Items Resolution
+  const extractDeviceImeis = (deviceImei?: string | null, fallbackImei?: string | null): string[] => {
+    const fromDeviceImei = deviceImei
+      ? String(deviceImei).split(',').map((s) => s.trim()).filter((s) => /^\d{14,16}$/.test(s))
+      : [];
+    if (fromDeviceImei.length > 0) return fromDeviceImei;
+    if (!fallbackImei) return [];
+    return String(fallbackImei).split(',').map((s) => s.trim()).filter((s) => /^\d{14,16}$/.test(s));
+  };
+
   const rawItems: StandardReceiptItem[] = (data.items && data.items.length > 0)
     ? data.items
     : [
@@ -145,7 +163,9 @@ export default function StandardDigitalReceipt({
           unitPrice: data.device?.price || (data.amount / (data.quantity || 1)),
           total: data.amount > 0 ? data.amount : ((data.device?.price || 0) * (data.quantity || 1)),
           variations: data.variations || 'Standard',
-          imei: data.imei
+          imei: data.imei,
+          uniqueId: data.uniqueId,
+          deviceImei: data.deviceImei
         }
       ];
 
@@ -217,6 +237,10 @@ export default function StandardDigitalReceipt({
         : [resolveDisplayUniqueId(null, item.name || data.device?.name, branchLocation, 1, shortTransId)];
       resolvedUids.forEach((uid) => {
         text += `Unique ID: ${uid}\n`;
+      });
+      const resolvedImeis = extractDeviceImeis(item.deviceImei || data.deviceImei, item.imei || data.imei);
+      resolvedImeis.forEach((imeiVal) => {
+        text += `Device IMEI: ${imeiVal}\n`;
       });
     });
 
@@ -486,7 +510,9 @@ export default function StandardDigitalReceipt({
                           .map((uid, uIdx) => resolveDisplayUniqueId(uid, item.name || data.device?.name, branchLocation, uIdx + 1, shortTransId))
                       : [resolveDisplayUniqueId(null, item.name || data.device?.name, branchLocation, 1, shortTransId)];
 
-                    if (resolvedUids.length === 0) return null;
+                    const resolvedImeis = extractDeviceImeis(item.deviceImei || data.deviceImei, item.imei || data.imei);
+
+                    if (resolvedUids.length === 0 && resolvedImeis.length === 0) return null;
 
                     return (
                       <div className="flex flex-col gap-0.5 mt-1">
@@ -498,6 +524,17 @@ export default function StandardDigitalReceipt({
                             <span className="text-[#5c0099] font-bold">● Unique ID:</span>
                             <span className="font-bold tracking-tight bg-purple-50 text-purple-900 border border-purple-200/80 px-1.5 py-0.2 rounded">
                               {uid}
+                            </span>
+                          </div>
+                        ))}
+                        {resolvedImeis.map((imeiVal, iIdx) => (
+                          <div
+                            key={`imei-${iIdx}`}
+                            className="font-mono text-[9.5px] sm:text-[10px] text-gray-800 text-left flex items-center gap-1.5 flex-wrap"
+                          >
+                            <span className="text-[#5c0099] font-bold">● Device IMEI:</span>
+                            <span className="font-bold tracking-tight bg-gray-100 text-gray-900 border border-gray-200 px-1.5 py-0.2 rounded">
+                              {imeiVal}
                             </span>
                           </div>
                         ))}

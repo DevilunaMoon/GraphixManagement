@@ -42,7 +42,7 @@ export default function CustomerSettings() {
                   Notification Preferences
                 </h3>
                 <p className="text-gray-500 m-0 text-xs sm:text-sm font-medium">
-                  Manage alerts for orders, repair progress, and payments
+                  Manage alerts for orders, repair progress, and exclusive offers
                 </p>
               </div>
               <ChevronRight size={20} className="text-gray-400 group-hover:text-[#8b00cc] group-hover:translate-x-1 transition-all shrink-0 ml-2" />

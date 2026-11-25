@@ -3,9 +3,27 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useBranch } from '../../context/BranchContext';
-import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Building2, ChevronDown } from 'lucide-react';
+import { Users, Package, TrendingUp, TrendingDown, X, ShoppingCart, Building2, ChevronDown, ShoppingBag, Wrench } from 'lucide-react';
 import YearlyBestSellersSection from '../../components/AdminSide/YearlyBestSellersSection';
 import RepairDashboardView from '../../components/AdminSide/RepairDashboardView';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
+
+const DASHBOARD_VIEW_OPTIONS: DropdownOption[] = [
+  {
+    value: 'product',
+    label: 'Product Purchase',
+    icon: ShoppingBag,
+    iconColor: 'text-[#bd00ff]',
+    badgeBg: 'bg-purple-50'
+  },
+  {
+    value: 'repair',
+    label: 'Repair',
+    icon: Wrench,
+    iconColor: 'text-amber-600',
+    badgeBg: 'bg-amber-50'
+  }
+];
 
 const formatCurrency = (val: number) => {
   return '₱' + (val || 0).toLocaleString('en-PH', {
@@ -94,19 +112,16 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-purple-500/15 shadow-sm">
-            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Dashboard View:</span>
-            <div className="relative">
-              <select
-                value={dashboardView}
-                onChange={(e) => setDashboardView(e.target.value as 'product' | 'repair')}
-                className="bg-purple-50 hover:bg-purple-100 border border-purple-200 text-[#bd00ff] font-extrabold text-xs sm:text-sm py-1.5 pl-3 pr-8 rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-purple-400 cursor-pointer appearance-none transition-colors"
-              >
-                <option value="product">Product Purchase</option>
-                <option value="repair">Repair</option>
-              </select>
-              <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#bd00ff] pointer-events-none" />
-            </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <CustomDropdown
+              value={dashboardView}
+              onChange={(val) => setDashboardView(val as 'product' | 'repair')}
+              options={DASHBOARD_VIEW_OPTIONS}
+              prefix="Dashboard View:"
+              size="sm"
+              align="right"
+              buttonClassName="bg-purple-50 hover:bg-purple-100/80 border-purple-200 text-[#bd00ff] font-extrabold shadow-sm"
+            />
           </div>
         </div>
 

@@ -5,8 +5,10 @@ import {
   Search, Filter, ChevronDown, ChevronUp, Trash2, ChevronLeft, ChevronRight, 
   X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   ArrowRightLeft, ArrowRight, RefreshCw, History, Smartphone, Building2, Package, Layers, ShieldCheck, MoreVertical,
-  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, QrCode, ExternalLink, Eye, Phone, User, Loader2,
+  Laptop, Tablet, Tv, Speaker, Headphones, Box
 } from 'lucide-react';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
 import { useTheme } from '../../context/ThemeContext';
 import { useBranch } from '../../context/BranchContext';
 import imageCompression from 'browser-image-compression';
@@ -31,6 +33,22 @@ type VariantData = {
   isOutOfStock?: boolean;
   isLowStock?: boolean;
 };
+
+const DEVICE_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All Types', icon: Box },
+  { value: 'smartphone', label: 'Smartphones', icon: Smartphone, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'laptop', label: 'Laptops', icon: Laptop, iconColor: 'text-blue-600', badgeBg: 'bg-blue-50' },
+  { value: 'ipad', label: 'iPads/Tablets', icon: Tablet, iconColor: 'text-sky-600', badgeBg: 'bg-sky-50' },
+  { value: 'tv', label: 'TVs', icon: Tv, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'speaker', label: 'Speakers', icon: Speaker, iconColor: 'text-rose-600', badgeBg: 'bg-rose-50' },
+  { value: 'phone accessories', label: 'Accessories', icon: Headphones, iconColor: 'text-emerald-600', badgeBg: 'bg-emerald-50' },
+];
+
+const CONDITION_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All Conditions' },
+  { value: 'new', label: 'Brand New', icon: Sparkles, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'pre-owned', label: 'Pre-Owned', icon: RefreshCw, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+];
 
 export default function AdminInventory() {
   const { styles } = useTheme();
@@ -108,10 +126,13 @@ export default function AdminInventory() {
   const [isDeleteCatMode, setIsDeleteCatMode] = useState(false);
   const [selectedCatsToDelete, setSelectedCatsToDelete] = useState<string[]>([]);
   const [isDeletingCats, setIsDeletingCats] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState<{ id: string; name: string; logoUrl?: string } | null>(null);
+  const [brandDeleteError, setBrandDeleteError] = useState<string | null>(null);
 
   // Modals
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [productToDeleteName, setProductToDeleteName] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();
   const [successModalOpen, setSuccessModalOpen] = useState(false);
@@ -357,16 +378,17 @@ export default function AdminInventory() {
     productId: string;
     uniqueId?: string;
     uniqueIds?: string[];
+    unitDetails?: Array<{ uniqueId?: string; imei?: string; color?: string }>;
     price: string;
     cost: string;
     tagoloanStock: string;
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
   function getVariantStockCount(v: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }): number {
@@ -1053,29 +1075,38 @@ export default function AdminInventory() {
     }
   };
 
-  const handleDeleteCategory = async (catId: string, catName: string) => {
-    if (!confirm(`Are you sure you want to delete brand "${catName}"?`)) return;
+  const handleDeleteCategory = (catId: string, catName: string, logoUrl?: string) => {
+    setBrandDeleteError(null);
+    setBrandToDelete({ id: catId, name: catName, logoUrl });
+  };
+
+  const handleConfirmDeleteBrand = async () => {
+    if (!brandToDelete) return;
     setIsDeletingCats(true);
+    setBrandDeleteError(null);
     try {
       const res = await fetch('/api/categories', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: [catId] })
+        body: JSON.stringify({ ids: [brandToDelete.id] })
       });
       if (res.ok) {
+        const deletedName = brandToDelete.name;
+        const deletedId = brandToDelete.id;
+        setBrandToDelete(null);
         fetchCategories();
-        if (selectedCategory === catId) {
+        if (selectedCategory === deletedId) {
           setSelectedCategory('All');
         }
-        setSuccessModalContent({ title: 'Brand Deleted', message: `Brand "${catName}" has been removed.` });
+        setSuccessModalContent({ title: 'Brand Deleted', message: `Brand "${deletedName}" has been removed.` });
         setSuccessModalOpen(true);
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete brand. It may be assigned to existing products.');
+        setBrandDeleteError(data.error || 'Failed to delete brand. It may be assigned to existing products.');
       }
     } catch (err: any) {
       console.error(err);
-      alert('Network error while deleting brand');
+      setBrandDeleteError('Network error while deleting brand');
     } finally {
       setIsDeletingCats(false);
     }
@@ -1426,16 +1457,24 @@ export default function AdminInventory() {
 
         const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
         const resolvedUniqueIds: string[] = [];
+        const resolvedUnitDetails: Array<{ uniqueId: string; imei: string; color: string }> = [];
         for (let u = 0; u < varTotal; u++) {
           const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', targetBranch, startIdx + u);
-          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim() && !v.uniqueIds[u]?.startsWith('MODEL-')) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+          const customUid = v.unitDetails?.[u]?.uniqueId || v.uniqueIds?.[u];
+          const resolvedUid = (customUid && customUid.trim() && !customUid.startsWith('MODEL-')) ? customUid.trim().toUpperCase() : defaultId;
+          const resolvedImei = (v.unitDetails?.[u]?.imei || '').trim();
+          const resolvedColor = (v.unitDetails?.[u]?.color ?? v.color ?? '').trim();
+          resolvedUniqueIds.push(resolvedUid);
+          resolvedUnitDetails.push({ uniqueId: resolvedUid, imei: resolvedImei, color: resolvedColor });
         }
 
         return {
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
+          color: v.color || '',
           productId: autoProdId,
           uniqueIds: resolvedUniqueIds,
+          unitDetails: resolvedUnitDetails,
           uniqueId: resolvedUniqueIds[0] || generateUniqueDeviceId(newDeviceName, targetBranch, startIdx),
           price: v.price || newDevicePrice || '0',
           cost: v.cost || newDeviceCost || '0',
@@ -1656,10 +1695,15 @@ export default function AdminInventory() {
     try {
       const res = await fetch(`/api/devices/${productToDelete}`, { method: 'DELETE' });
       if (res.ok) {
+        const resData = await res.json().catch(() => ({}));
         fetchProducts();
         setDeleteModalOpen(false);
         setProductToDelete(null);
-        setSuccessModalContent({ title: 'Deleted Successfully', message: 'The device has been removed from inventory.' });
+        setProductToDeleteName('');
+        setSuccessModalContent({
+          title: 'Deleted Successfully',
+          message: resData.message || 'The device has been removed from inventory.'
+        });
         setSuccessModalOpen(true);
       } else {
         const errorData = await res.json().catch(() => ({}));
@@ -2009,69 +2053,42 @@ export default function AdminInventory() {
           {/* Dropdown Filters + Export Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Brand Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                className={`flex items-center gap-2 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 sm:px-4 sm:py-2 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
-              >
-                <Filter size={15} />
-                <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
-                <ChevronDown size={15} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isFilterOpen && (
-                <div className="absolute top-[115%] left-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
-                  <button 
-                    onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); }} 
-                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                  >
-                    All Brands
-                  </button>
-                  {categories.map(cat => (
-                    <button 
-                      key={cat.id} 
-                      onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); }} 
-                      className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                  <div className="border-t border-purple-100 mt-1 pt-1">
-                    <button 
-                      onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Plus size={14} /> + Add / Manage Brands
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              value={selectedCategory}
+              onChange={(val) => setSelectedCategory(val)}
+              options={[
+                { value: 'All', label: 'All Brands', icon: Filter },
+                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+              ]}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+              footerAction={{
+                label: '+ Add / Manage Brands',
+                icon: Plus,
+                onClick: () => setCategoriesModalOpen(true)
+              }}
+            />
 
             {/* Type Dropdown */}
-            <select 
-              value={selectedDeviceType} 
-              onChange={(e) => setSelectedDeviceType(e.target.value)} 
-              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-            >
-              <option value="all">All Types</option>
-              <option value="smartphone">Smartphones</option>
-              <option value="laptop">Laptops</option>
-              <option value="ipad">iPads/Tablets</option>
-              <option value="tv">TVs</option>
-              <option value="speaker">Speakers</option>
-              <option value="phone accessories">Accessories</option>
-            </select>
+            <CustomDropdown
+              value={selectedDeviceType}
+              onChange={(val) => setSelectedDeviceType(val)}
+              options={DEVICE_TYPE_OPTIONS}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+            />
 
             {/* Condition Filter Dropdown */}
-            <select
+            <CustomDropdown
               value={selectedCondition}
-              onChange={(e) => setSelectedCondition(e.target.value as any)}
-              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-            >
-              <option value="all">All Conditions</option>
-              <option value="new">Brand New</option>
-              <option value="pre-owned">Pre-Owned</option>
-            </select>
+              onChange={(val) => setSelectedCondition(val as any)}
+              options={CONDITION_OPTIONS}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+            />
 
             {/* Export Buttons */}
             <div className="flex items-center gap-1.5">
@@ -2440,24 +2457,22 @@ export default function AdminInventory() {
                                         <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
                                       </button>
 
-                                      {isSuperAdmin && (
-                                        <>
-                                          <div className="my-1 border-t border-gray-100" />
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setActiveActionMenuId(null);
-                                              setActionMenuPosition(null);
-                                              setProductToDelete(prod.id);
-                                              setDeleteModalOpen(true);
-                                            }}
-                                            className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
-                                          >
-                                            <Trash2 size={15} className="text-rose-600" />
-                                            <span>Delete Product</span>
-                                          </button>
-                                        </>
-                                      )}
+                                      <div className="my-1 border-t border-gray-100" />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveActionMenuId(null);
+                                          setActionMenuPosition(null);
+                                          setDeleteError(undefined);
+                                          setProductToDelete(prod.id);
+                                          setProductToDeleteName(prod.name || '');
+                                          setDeleteModalOpen(true);
+                                        }}
+                                        className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                                      >
+                                        <Trash2 size={15} className="text-rose-600" />
+                                        <span>Delete Product</span>
+                                      </button>
                                     </div>
                                   </>
                                 )}
@@ -2967,23 +2982,21 @@ export default function AdminInventory() {
                               <span>{prod.discount && prod.discount > 0 ? 'Manage Discount' : 'Add/Edit Discount'}</span>
                             </button>
 
-                            {isSuperAdmin && (
-                              <>
-                                <div className="my-1 border-t border-gray-100" />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveActionMenuId(null);
-                                    setProductToDelete(prod.id);
-                                    setDeleteModalOpen(true);
-                                  }}
-                                  className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
-                                >
-                                  <Trash2 size={15} className="text-rose-600" />
-                                  <span>Delete Product</span>
-                                </button>
-                              </>
-                            )}
+                            <div className="my-1 border-t border-gray-100" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveActionMenuId(null);
+                                setDeleteError(undefined);
+                                setProductToDelete(prod.id);
+                                setProductToDeleteName(prod.name || '');
+                                setDeleteModalOpen(true);
+                              }}
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                            >
+                              <Trash2 size={15} className="text-rose-600" />
+                              <span>Delete Product</span>
+                            </button>
                           </div>
                         </>
                       )}
@@ -4121,7 +4134,10 @@ export default function AdminInventory() {
 
                 {/* MOBILE VIEW (Option A): Stacked Cards - NO SIDE SCROLLING */}
                 <div className="flex flex-col gap-3 md:hidden">
-                  {addVariants.map((v, idx) => (
+                  {addVariants.map((v, idx) => {
+                    const unitsCount = getVariantStockCount(v);
+                    const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
+                    return (
                     <div 
                       key={idx} 
                       className="bg-white rounded-xl p-3.5 border border-purple-200 shadow-xs flex flex-col gap-2.5 text-left"
@@ -4148,73 +4164,23 @@ export default function AdminInventory() {
                         </button>
                       </div>
 
-                      {/* Row 1: Unit & Color */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit</label>
-                          <input
-                            type="text"
-                            value={v.name}
-                            onChange={(e) => {
-                              const updated = [...addVariants];
-                              updated[idx]!.name = e.target.value;
-                              updated[idx]!.storage = e.target.value;
-                              setAddVariants(updated);
-                            }}
-                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="32 GB"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Color</label>
-                          <input
-                            type="text"
-                            value={v.color || ''}
-                            onChange={(e) => {
-                              const updated = [...addVariants];
-                              updated[idx]!.color = e.target.value;
-                              setAddVariants(updated);
-                            }}
-                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg p-2 text-xs font-medium outline-none focus:ring-2 focus:ring-purple-500"
-                            placeholder="Red"
-                          />
-                        </div>
+                      {/* Row 1: Unit (Read-only) */}
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Unit</label>
+                        <input
+                          type="text"
+                          readOnly
+                          disabled
+                          tabIndex={-1}
+                          value={v.name}
+                          className="w-full bg-gray-100 text-gray-700 border border-gray-200 rounded-lg p-2 text-xs font-bold outline-none cursor-not-allowed select-none pointer-events-none"
+                          placeholder="32 GB"
+                        />
                       </div>
 
-                      {/* Row 2: Product ID & Price */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Product ID</label>
-                          <input
-                            type="text"
-                            readOnly
-                            disabled
-                            tabIndex={-1}
-                            value={v.productId || generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                            className="w-full bg-gray-100 text-gray-500 border border-gray-200 rounded-lg p-2 text-xs font-mono font-bold outline-none uppercase cursor-not-allowed select-none pointer-events-none"
-                            title="Auto-generated Product ID"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Price (₱)</label>
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder={newDevicePrice || "5999"}
-                            value={v.price}
-                            onChange={(e) => {
-                              const updated = [...addVariants];
-                              updated[idx]!.price = e.target.value;
-                              setAddVariants(updated);
-                            }}
-                            className="w-full bg-white text-[#5c0099] border border-purple-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Row 4: Initial Branch Stocks */}
-                      <div className="pt-1 border-t border-gray-100">
-                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Initial Stocks</label>
+                      {/* Row 2: Stock */}
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Stock</label>
                         {isSuperAdmin ? (
                           <div className="grid grid-cols-3 gap-2">
                             <div>
@@ -4295,18 +4261,100 @@ export default function AdminInventory() {
                           </div>
                         )}
                       </div>
+
+                      {/* Row 3: Price */}
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-600 uppercase tracking-wider block mb-0.5">Price (₱)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder={newDevicePrice || "5999"}
+                          value={v.price}
+                          onChange={(e) => {
+                            const updated = [...addVariants];
+                            updated[idx]!.price = e.target.value;
+                            setAddVariants(updated);
+                          }}
+                          className="w-full bg-white text-[#5c0099] border border-purple-300 rounded-lg p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      {/* Mobile Per-Unit Unique ID, IMEI & Color */}
+                      {unitsCount > 0 && (
+                        <div className="pt-2 border-t border-purple-100 flex flex-col gap-2">
+                          <span className="text-[10px] font-bold text-purple-900 uppercase tracking-wider flex items-center gap-1">
+                            <Smartphone className="w-3 h-3 text-purple-600" />
+                            Unit Details — Unique ID, IMEI &amp; Color ({unitsCount})
+                          </span>
+                          {Array.from({ length: unitsCount }).map((_, uIdx) => {
+                            const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
+                            const detail = v.unitDetails?.[uIdx] || {};
+                            const currentId = (detail.uniqueId && !detail.uniqueId.startsWith('MODEL-'))
+                              ? detail.uniqueId
+                              : ((v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId);
+                            return (
+                              <div key={uIdx} className="bg-purple-50/50 border border-purple-200 rounded-lg p-2 flex flex-col gap-1.5">
+                                <span className="text-[10px] font-bold text-purple-700">Unit #{startIdx + uIdx}</span>
+                                <input
+                                  type="text"
+                                  value={currentId}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    const uIds = [...(updated[idx]!.uniqueIds || [])];
+                                    const details = [...(updated[idx]!.unitDetails || [])];
+                                    const val = e.target.value.toUpperCase();
+                                    uIds[uIdx] = val;
+                                    details[uIdx] = { ...(details[uIdx] || {}), uniqueId: val };
+                                    updated[idx]!.uniqueIds = uIds;
+                                    updated[idx]!.unitDetails = details;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="w-full bg-white border border-purple-200 rounded-md px-2 py-1 text-xs font-mono font-bold text-purple-900 uppercase outline-none"
+                                  placeholder={defaultId}
+                                />
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <input
+                                    type="text"
+                                    value={detail.imei || ''}
+                                    onChange={(e) => {
+                                      const updated = [...addVariants];
+                                      const details = [...(updated[idx]!.unitDetails || [])];
+                                      details[uIdx] = { ...(details[uIdx] || {}), imei: e.target.value };
+                                      updated[idx]!.unitDetails = details;
+                                      setAddVariants(updated);
+                                    }}
+                                    className="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs font-mono text-gray-900 outline-none focus:border-purple-500"
+                                    placeholder="IMEI (optional)"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={detail.color ?? v.color ?? ''}
+                                    onChange={(e) => {
+                                      const updated = [...addVariants];
+                                      const details = [...(updated[idx]!.unitDetails || [])];
+                                      details[uIdx] = { ...(details[uIdx] || {}), color: e.target.value };
+                                      updated[idx]!.unitDetails = details;
+                                      setAddVariants(updated);
+                                    }}
+                                    className="w-full bg-white border border-gray-300 rounded-md px-2 py-1 text-xs font-medium text-gray-900 outline-none focus:border-purple-500"
+                                    placeholder="Color (e.g. Black)"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  );})}
                 </div>
 
-                {/* DESKTOP VIEW: Full Table */}
+                {/* DESKTOP VIEW: Full Table (Unit > Stock > Price) */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-xs text-left bg-white rounded-xl border border-purple-100 overflow-hidden">
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
-                        <th className="py-2.5 px-3">Product ID</th>
-                        <th className="py-2.5 px-3">Color</th>
                         {isSuperAdmin ? (
                           <>
                             <th className="py-2.5 px-3 text-center">Tagoloan Stock</th>
@@ -4331,39 +4379,12 @@ export default function AdminInventory() {
                               <td className="py-2 px-3">
                                 <input
                                   type="text"
-                                  value={v.name}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.name = e.target.value;
-                                    updated[idx]!.storage = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-2 focus:ring-purple-500"
-                                  placeholder="32 GB"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
                                   readOnly
                                   disabled
                                   tabIndex={-1}
-                                  value={v.productId || generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                                  className="border border-gray-200 bg-gray-100 rounded-lg p-1.5 text-xs font-mono font-bold text-gray-500 w-28 outline-none uppercase cursor-not-allowed select-none pointer-events-none"
-                                  title="Auto-generated Product ID"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.color || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.color = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-2 focus:ring-purple-500"
-                                  placeholder="Red"
+                                  value={v.name}
+                                  className="bg-gray-100 text-gray-700 border border-gray-200 rounded-lg p-1.5 text-xs font-bold w-24 outline-none cursor-not-allowed select-none pointer-events-none"
+                                  placeholder="32 GB"
                                 />
                               </td>
                               {isSuperAdmin ? (
@@ -4437,7 +4458,7 @@ export default function AdminInventory() {
                                       }
                                       setAddVariants(updated);
                                     }}
-                                    className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-16 text-center outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="bg-white text-gray-900 border border-gray-300 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none focus:ring-2 focus:ring-purple-500"
                                   />
                                 </td>
                               )}
@@ -4452,7 +4473,7 @@ export default function AdminInventory() {
                                     updated[idx]!.price = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="bg-white border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-24 text-right outline-none focus:ring-2 focus:ring-purple-500"
+                                  className="bg-white border border-gray-300 rounded-lg p-1.5 text-xs font-bold text-[#5c0099] w-28 text-right outline-none focus:ring-2 focus:ring-purple-500"
                                 />
                               </td>
                               <td className="py-2 px-2 text-center">
@@ -4466,45 +4487,84 @@ export default function AdminInventory() {
                               </td>
                             </tr>
 
-                            {/* Individual Device Unique IDs expansion row */}
+                            {/* Individual Device Units expansion row (Unique ID + IMEI + Color) */}
                             {unitsCount > 0 && (
                               <tr key={`${idx}-units`} className="bg-purple-50/40 border-b border-purple-200/80">
-                                <td colSpan={isSuperAdmin ? 8 : 6} className="py-2.5 px-4">
-                                  <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center justify-between">
+                                <td colSpan={isSuperAdmin ? 6 : 4} className="py-2.5 px-4">
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
                                       <div className="flex items-center gap-2">
                                         <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
                                           <Smartphone className="w-3.5 h-3.5 text-purple-600" />
-                                          Individual Device Unique IDs ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
-                                        </span>
-                                        <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
-                                          Sequential Unique ID for each physical phone:
+                                          Individual Device Units — Unique ID, IMEI &amp; Color ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
                                         </span>
                                       </div>
                                       <span className="text-[10px] font-mono text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full font-bold">
                                         {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx)} → {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + unitsCount - 1)}
                                       </span>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <div className="flex flex-col gap-1.5 pt-0.5">
                                       {Array.from({ length: unitsCount }).map((_, uIdx) => {
                                         const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
-                                        const currentId = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId;
+                                        const detail = v.unitDetails?.[uIdx] || {};
+                                        const currentId = (detail.uniqueId && !detail.uniqueId.startsWith('MODEL-'))
+                                          ? detail.uniqueId
+                                          : ((v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId);
                                         return (
-                                          <div key={uIdx} className="flex items-center gap-1.5 bg-white border border-purple-200 rounded-lg px-2.5 py-1 shadow-2xs">
-                                            <span className="text-[10px] font-bold text-gray-400">#{startIdx + uIdx}</span>
-                                            <input
-                                              type="text"
-                                              value={currentId}
-                                              onChange={(e) => {
-                                                const updated = [...addVariants];
-                                                const uIds = [...(updated[idx]!.uniqueIds || [])];
-                                                uIds[uIdx] = e.target.value.toUpperCase();
-                                                updated[idx]!.uniqueIds = uIds;
-                                                setAddVariants(updated);
-                                              }}
-                                              className="text-xs font-mono font-bold text-purple-900 outline-none w-36 uppercase bg-transparent"
-                                              placeholder={defaultId}
-                                            />
+                                          <div key={uIdx} className="grid grid-cols-12 items-center gap-2 bg-white border border-purple-200/90 rounded-lg px-2.5 py-1.5 shadow-2xs">
+                                            <span className="col-span-1 text-[10px] font-extrabold text-gray-400">#{startIdx + uIdx}</span>
+                                            <div className="col-span-4 flex flex-col">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">Unique ID</span>
+                                              <input
+                                                type="text"
+                                                value={currentId}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const uIds = [...(updated[idx]!.uniqueIds || [])];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  const val = e.target.value.toUpperCase();
+                                                  uIds[uIdx] = val;
+                                                  details[uIdx] = { ...(details[uIdx] || {}), uniqueId: val };
+                                                  updated[idx]!.uniqueIds = uIds;
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-mono font-bold text-purple-900 outline-none uppercase bg-transparent"
+                                                placeholder={defaultId}
+                                              />
+                                            </div>
+                                            <div className="col-span-4 flex flex-col border-l border-gray-100 pl-2">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">IMEI</span>
+                                              <input
+                                                type="text"
+                                                value={detail.imei || ''}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  details[uIdx] = { ...(details[uIdx] || {}), imei: e.target.value };
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-mono font-semibold text-gray-900 outline-none bg-transparent placeholder-gray-400"
+                                                placeholder="Enter 14-16 digit IMEI"
+                                              />
+                                            </div>
+                                            <div className="col-span-3 flex flex-col border-l border-gray-100 pl-2">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">Color</span>
+                                              <input
+                                                type="text"
+                                                value={detail.color ?? v.color ?? ''}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  details[uIdx] = { ...(details[uIdx] || {}), color: e.target.value };
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-medium text-gray-900 outline-none bg-transparent placeholder-gray-400"
+                                                placeholder={v.color || 'e.g. Black'}
+                                              />
+                                            </div>
                                           </div>
                                         );
                                       })}
@@ -5360,25 +5420,58 @@ export default function AdminInventory() {
 
       {/* Delete Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl animate-in zoom-in-95 flex flex-col items-center gap-3">
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in"
+          onClick={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setProductToDelete(null);
+              setProductToDeleteName('');
+              setDeleteError(undefined);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm p-6 text-center shadow-2xl border border-rose-100 animate-in zoom-in-95 flex flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
-              <Trash2 size={28} />
+              <Trash2 size={26} />
             </div>
             <h3 className="font-bold text-lg text-gray-900">Delete Product</h3>
-            <p className="text-xs text-gray-600">Are you sure you want to delete this product and all its variants from inventory across all branches?</p>
+            <p className="text-sm font-semibold text-gray-700">
+              Are you sure you want to delete this?
+            </p>
+            {productToDeleteName && (
+              <span className="px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-xs font-bold text-[#5c0099] max-w-full truncate">
+                {productToDeleteName}
+              </span>
+            )}
+            <p className="text-xs text-gray-500">
+              {isSuperAdmin
+                ? 'This will permanently remove the product and all its variants across all branches.'
+                : `This will remove the product from ${userBranch || 'your'} branch inventory.`}
+            </p>
             {deleteError && <span className="text-xs text-rose-600 font-bold">{deleteError}</span>}
             <div className="flex gap-3 w-full mt-2">
               <button
-                onClick={() => setDeleteModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm"
+                type="button"
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setProductToDelete(null);
+                  setProductToDeleteName('');
+                  setDeleteError(undefined);
+                }}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm cursor-pointer border-none transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm cursor-pointer border-none transition-colors disabled:opacity-50"
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
@@ -5545,12 +5638,13 @@ export default function AdminInventory() {
 
                           <button
                             type="button"
-                            onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                            onClick={() => handleDeleteCategory(cat.id, cat.name, cat.logoUrl)}
                             disabled={isDeletingCats}
-                            className="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors bg-transparent border-none cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 font-bold text-xs transition-all cursor-pointer shrink-0 disabled:opacity-50"
                             title={`Delete brand ${cat.name}`}
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} />
+                            <span>Delete</span>
                           </button>
                         </div>
                       ))}
@@ -5576,6 +5670,98 @@ export default function AdminInventory() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================== */}
+      {/* BRAND DELETE CONFIRMATION MODAL                            */}
+      {/* ========================================================== */}
+      {brandToDelete && (
+        <div 
+          className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => {
+            if (!isDeletingCats) {
+              setBrandToDelete(null);
+              setBrandDeleteError(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl border border-rose-100 text-center animate-in zoom-in-95 duration-200 flex flex-col items-center gap-4"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Warning Icon Badge */}
+            <div className="w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 text-rose-600 flex items-center justify-center shadow-inner">
+              <Trash2 size={32} className="text-rose-500 animate-pulse" />
+            </div>
+
+            {/* Title & Description */}
+            <div className="flex flex-col gap-1.5 w-full">
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 m-0">Delete Brand</h3>
+              <p className="text-sm font-semibold text-gray-700 leading-relaxed m-0">
+                Are you sure you want to delete this?
+              </p>
+              <p className="text-xs text-gray-500 m-0">
+                This will permanently remove the brand from your catalog.
+              </p>
+            </div>
+
+            {/* Brand Chip Preview */}
+            <div className="flex items-center gap-3 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl w-full justify-center">
+              {brandToDelete.logoUrl ? (
+                <img 
+                  src={brandToDelete.logoUrl} 
+                  alt={brandToDelete.name} 
+                  className="w-8 h-8 object-contain rounded-xl bg-white p-1 border border-gray-200 shrink-0" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center border border-purple-200 shrink-0 uppercase">
+                  {brandToDelete.name.slice(0, 2)}
+                </div>
+              )}
+              <div className="text-left truncate max-w-[180px]">
+                <span className="font-extrabold text-sm text-gray-900 block truncate">{brandToDelete.name}</span>
+                <span className="text-[10px] text-gray-400 font-mono">ID: {brandToDelete.id.slice(-6)}</span>
+              </div>
+            </div>
+
+            {/* Error Message if deletion failed */}
+            {brandDeleteError && (
+              <div className="w-full p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center animate-in fade-in">
+                {brandDeleteError}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setBrandToDelete(null);
+                  setBrandDeleteError(null);
+                }}
+                disabled={isDeletingCats}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold rounded-xl transition-all border border-gray-200 cursor-pointer text-xs sm:text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteBrand}
+                disabled={isDeletingCats}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl transition-all shadow-md shadow-rose-200 border-none cursor-pointer text-xs sm:text-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isDeletingCats ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -37,6 +37,10 @@ export async function middleware(request: NextRequest) {
       if (isTechnician) return NextResponse.redirect(new URL('/technician/dashboard', request.url));
       return NextResponse.redirect(new URL('/customer/dashboard', request.url));
     }
+    // Redirect legacy /homepage to clean root URL '/'
+    if (currentPath === '/homepage') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
     // If not logged in, allow them to view landing page or login page
     return NextResponse.next();
   }

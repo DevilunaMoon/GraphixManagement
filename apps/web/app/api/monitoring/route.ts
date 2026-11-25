@@ -3,6 +3,7 @@ import { prisma } from 'database';
 import { uploadToCloudinary } from '../../../lib/cloudinary';
 import { getSession } from '../../../lib/session';
 import { sendNotificationEmail } from '../../../lib/email';
+import { processSparePartUsageAndNotify } from '../../../lib/sparePartUsageHelper';
 
 export async function GET(req: Request) {
   try {
@@ -306,6 +307,20 @@ export async function POST(req: Request) {
       if (user && user.email) {
         await sendNotificationEmail(user.email, deviceName, progress, true, baseUrl);
       }
+    }
+
+    // If a Technician used spare parts from inventory while adding a device repair,
+    // deduct stock and notify ONLY the Branch Admin(s) of the technician's assigned branch.
+    if (session.role === 'TECHNICIAN' && materials) {
+      await processSparePartUsageAndNotify({
+        newMaterialsRaw: materials,
+        previousMaterialsRaw: null,
+        branch: operatingBranch,
+        deviceName,
+        ownerName,
+        technicianName: technician,
+        technicianUserId: session.userId,
+      });
     }
 
     return NextResponse.json(request, { status: 201 });

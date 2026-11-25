@@ -20,6 +20,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import RepairBreakdownModal, { RepairBreakdownScope } from './RepairBreakdownModal';
 
 const formatCurrency = (val: number) => {
   return '₱' + (val || 0).toLocaleString('en-PH', {
@@ -67,6 +68,7 @@ export default function RepairAnalyticsView({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+  const [selectedRepairScope, setSelectedRepairScope] = useState<{ scope: RepairBreakdownScope; title: string } | null>(null);
   const { styles } = useTheme();
 
   const fetchRepairAnalytics = async () => {
@@ -224,6 +226,8 @@ export default function RepairAnalyticsView({
           }
           iconBg="bg-green-100"
           iconColor="text-green-600"
+          onClick={() => setSelectedRepairScope({ scope: 'period_revenue', title: 'Period Repair Revenue' })}
+          actionHint="View Breakdown"
         />
         <StatCard
           icon={<CheckCheck size={24} />}
@@ -238,6 +242,8 @@ export default function RepairAnalyticsView({
           }
           iconBg="bg-emerald-100"
           iconColor="text-emerald-600"
+          onClick={() => setSelectedRepairScope({ scope: 'completed', title: 'Completed Repairs' })}
+          actionHint="View Breakdown"
         />
         <StatCard
           icon={<Smartphone size={24} />}
@@ -250,6 +256,8 @@ export default function RepairAnalyticsView({
           }
           iconBg="bg-blue-100"
           iconColor="text-blue-600"
+          onClick={() => setSelectedRepairScope({ scope: 'all_requests', title: 'Total Repair Requests' })}
+          actionHint="View Breakdown"
         />
         <StatCard
           icon={<span className="text-[22px] font-bold">₱</span>}
@@ -262,6 +270,8 @@ export default function RepairAnalyticsView({
           }
           iconBg="bg-purple-100"
           iconColor="text-purple-600"
+          onClick={() => setSelectedRepairScope({ scope: 'all_time', title: 'All-Time Repair Sales' })}
+          actionHint="View Breakdown"
         />
       </div>
 
@@ -459,6 +469,21 @@ export default function RepairAnalyticsView({
         </div>
       </div>
 
+      {selectedRepairScope && (
+        <RepairBreakdownModal
+          isOpen={!!selectedRepairScope}
+          onClose={() => setSelectedRepairScope(null)}
+          scope={selectedRepairScope.scope}
+          title={selectedRepairScope.title}
+          dateFilter={dateFilter}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          initialBranch={isSuperAdmin ? selectedBranch : userBranch || 'Tagoloan'}
+          isSuperAdmin={isSuperAdmin}
+          userBranch={userBranch || 'Tagoloan'}
+        />
+      )}
+
       {/* Month Details Popup */}
       {selectedMonthIndex !== null && (
         <div
@@ -512,6 +537,8 @@ function StatCard({
   subText,
   iconBg,
   iconColor,
+  onClick,
+  actionHint,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -519,14 +546,31 @@ function StatCard({
   subText?: React.ReactNode;
   iconBg: string;
   iconColor: string;
+  onClick?: () => void;
+  actionHint?: string;
 }) {
   const valueClass = getResponsiveNumberClass(value);
+  const isClickable = typeof onClick === 'function';
 
-  return (
-    <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col justify-between gap-3 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full overflow-hidden">
+  const cardClasses = `bg-white/95 backdrop-blur-md p-6 rounded-2xl flex flex-col justify-between gap-3 border border-purple-500/15 shadow-[0_8px_32px_rgba(0,0,0,0.05)] h-full w-full text-left overflow-hidden transition-all ${
+    isClickable
+      ? 'cursor-pointer hover:-translate-y-1 hover:border-purple-400/60 hover:shadow-[0_12px_36px_rgba(189,0,255,0.12)] active:scale-[0.99] group focus:outline-none focus:ring-2 focus:ring-[#bd00ff]/40'
+      : ''
+  }`;
+
+  const content = (
+    <>
       <div>
-        <div className={`w-11 h-11 rounded-xl flex justify-center items-center mb-3 ${iconBg} ${iconColor}`}>
-          {icon}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className={`w-11 h-11 rounded-xl flex justify-center items-center ${iconBg} ${iconColor}`}>
+            {icon}
+          </div>
+          {isClickable && actionHint && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-purple-50 text-[#8b00cc] border border-purple-200/70 group-hover:bg-[#bd00ff] group-hover:text-white group-hover:border-[#bd00ff] transition-colors">
+              <span>{actionHint}</span>
+              <ExternalLink size={11} />
+            </span>
+          )}
         </div>
         <span className="text-xs font-bold text-[#666] uppercase tracking-wider block truncate">{label}</span>
         <h3
@@ -537,6 +581,16 @@ function StatCard({
         </h3>
       </div>
       {subText && <div className="mt-1 text-xs font-semibold overflow-hidden">{subText}</div>}
-    </div>
+    </>
   );
+
+  if (isClickable) {
+    return (
+      <button type="button" onClick={onClick} className={cardClasses}>
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={cardClasses}>{content}</div>;
 }

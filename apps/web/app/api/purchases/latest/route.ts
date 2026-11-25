@@ -121,9 +121,57 @@ export async function GET(req: Request) {
       }
     }
 
+    // Resolve real 14-16 digit Device IMEI from linked DeviceUnit(s) or purchase.imei
+    let resolvedDeviceImei: string | null = null;
+    let resolvedUniqueId: string | null = purchase.imei;
+    try {
+      const linkedUnits = await prisma.deviceUnit.findMany({
+        where: {
+          OR: [
+            { purchaseId: purchase.id },
+            ...(purchase.imei ? [{ imei: purchase.imei }, { notes: { contains: purchase.imei } }] : []),
+          ],
+        },
+        select: { imei: true, notes: true },
+      });
+
+      const realImeis: string[] = [];
+      const uids: string[] = [];
+      for (const u of linkedUnits) {
+        const clean = (u.imei || '').trim();
+        if (/^\d{14,16}$/.test(clean)) {
+          if (!realImeis.includes(clean)) realImeis.push(clean);
+        }
+        if (u.notes && u.notes.includes('UID:')) {
+          const uid = u.notes.split('UID:')[1]?.split(';')[0]?.trim();
+          if (uid && !uids.includes(uid)) uids.push(uid);
+        } else if (clean && !/^\d{14,16}$/.test(clean) && !uids.includes(clean)) {
+          uids.push(clean);
+        }
+      }
+
+      if (realImeis.length === 0 && purchase.imei) {
+        const numericFromPurchase = purchase.imei
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => /^\d{14,16}$/.test(s));
+        realImeis.push(...numericFromPurchase);
+      }
+
+      if (realImeis.length > 0) {
+        resolvedDeviceImei = realImeis.join(', ');
+      }
+      if (uids.length > 0) {
+        resolvedUniqueId = uids.join(', ');
+      }
+    } catch (unitErr) {
+      console.warn('Could not resolve linked DeviceUnit IMEI:', unitErr);
+    }
+
     const formattedPurchase = {
       ...purchase,
-      uniqueId: purchase.imei,
+      uniqueId: resolvedUniqueId,
+      deviceImei: resolvedDeviceImei,
       referenceId: resolvedRefId ? (resolvedRefId.startsWith('#') ? resolvedRefId : `#${resolvedRefId}`) : `#GRPX-${bCode}-A1`
     };
 

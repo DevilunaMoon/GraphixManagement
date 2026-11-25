@@ -6,7 +6,8 @@ import {
   X, Plus, Pencil, Upload, AlertCircle, AlertTriangle, Trash, CheckCircle2, FileText, 
   History, Smartphone, Building2, Package, Layers, MoreVertical,
   RefreshCw, ArrowRight,
-  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, ShoppingCart, ReceiptText
+  Image as ImageIcon, Sparkles, Percent, Clock, Tag, Flame, ShoppingCart, ReceiptText,
+  Box, Laptop, Tablet, Tv, Speaker, Headphones
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
@@ -15,6 +16,23 @@ import imageCompression from 'browser-image-compression';
 import CountdownTimer from '../../components/Common/CountdownTimer';
 import { generateProductInventoryPDF } from '../../lib/inventory-pdf';
 import { generateUniqueDeviceId } from '../../lib/unique-id';
+import CustomDropdown, { DropdownOption } from '../../components/ui/CustomDropdown';
+
+const DEVICE_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All Types', icon: Box },
+  { value: 'smartphone', label: 'Smartphones', icon: Smartphone, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+  { value: 'laptop', label: 'Laptops', icon: Laptop, iconColor: 'text-blue-600', badgeBg: 'bg-blue-50' },
+  { value: 'ipad', label: 'iPads/Tablets', icon: Tablet, iconColor: 'text-sky-600', badgeBg: 'bg-sky-50' },
+  { value: 'tv', label: 'TVs', icon: Tv, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'speaker', label: 'Speakers', icon: Speaker, iconColor: 'text-rose-600', badgeBg: 'bg-rose-50' },
+  { value: 'phone accessories', label: 'Accessories', icon: Headphones, iconColor: 'text-emerald-600', badgeBg: 'bg-emerald-50' },
+];
+
+const CONDITION_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All Conditions' },
+  { value: 'new', label: 'Brand New', icon: Sparkles, iconColor: 'text-amber-600', badgeBg: 'bg-amber-50' },
+  { value: 'pre-owned', label: 'Pre-Owned', icon: RefreshCw, iconColor: 'text-purple-600', badgeBg: 'bg-purple-50' },
+];
 
 type VariantData = {
   id?: string;
@@ -134,6 +152,14 @@ export default function CashierDevices() {
   const [isRegisteringImei, setIsRegisteringImei] = useState(false);
   const [imeiError, setImeiError] = useState<string | null>(null);
 
+  // Nested Variant Units & IMEI Drawer State
+  const [expandedVariantIds, setExpandedVariantIds] = useState<string[]>([]);
+  const [variantUnitsMap, setVariantUnitsMap] = useState<Record<string, any[]>>({});
+  const [loadingVariantUnits, setLoadingVariantUnits] = useState<Record<string, boolean>>({});
+  const [variantUnitsImeiInput, setVariantUnitsImeiInput] = useState<Record<string, string>>({});
+  const [savingUnitStatus, setSavingUnitStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [unitErrorMessage, setUnitErrorMessage] = useState<Record<string, string>>({});
+
   // Discount Product Feature States
   const [discountModalOpen, setDiscountModalOpen] = useState(false);
   const [discountDeviceId, setDiscountDeviceId] = useState('');
@@ -242,16 +268,17 @@ export default function CashierDevices() {
     productId: string;
     uniqueId?: string;
     uniqueIds?: string[];
+    unitDetails?: Array<{ uniqueId?: string; imei?: string; color?: string }>;
     price: string;
     cost: string;
     tagoloanStock: string;
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
   function getVariantStockCount(v: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }): number {
@@ -490,6 +517,86 @@ export default function CashierDevices() {
       })
       .catch(err => console.error("Failed to load device units:", err))
       .finally(() => setIsUnitsLoading(false));
+  };
+
+  const toggleVariantDropdown = (variantId: string, deviceId: string) => {
+    if (expandedVariantIds.includes(variantId)) {
+      setExpandedVariantIds(prev => prev.filter(id => id !== variantId));
+    } else {
+      setExpandedVariantIds(prev => [...prev, variantId]);
+      fetchVariantUnits(variantId, deviceId);
+    }
+  };
+
+  const fetchVariantUnits = async (variantId: string, deviceId: string) => {
+    setLoadingVariantUnits(prev => ({ ...prev, [variantId]: true }));
+    try {
+      const branchQuery = userBranch ? `&branch=${encodeURIComponent(userBranch)}` : '';
+      const res = await fetch(`/api/inventory/units?deviceId=${encodeURIComponent(deviceId)}&variationId=${encodeURIComponent(variantId)}${branchQuery}&limit=100&autoCreateSlots=true`);
+      const data = await res.json();
+      if (res.ok && data.units) {
+        setVariantUnitsMap(prev => ({ ...prev, [variantId]: data.units }));
+        const inputs: Record<string, string> = {};
+        data.units.forEach((u: any) => {
+          inputs[u.id] = u.realImei || (/^\d{14,16}$/.test(u.imei) ? u.imei : '');
+        });
+        setVariantUnitsImeiInput(prev => ({ ...prev, ...inputs }));
+      }
+    } catch (err) {
+      console.error('Failed to load variant units:', err);
+    } finally {
+      setLoadingVariantUnits(prev => ({ ...prev, [variantId]: false }));
+    }
+  };
+
+  const handleSaveSingleUnitImei = async (unit: any, variantKey: string) => {
+    const currentVal = (variantUnitsImeiInput[unit.id] ?? '').trim();
+    if (!currentVal) {
+      setUnitErrorMessage(prev => ({ ...prev, [unit.id]: 'Please enter a valid 14-16 digit IMEI.' }));
+      return;
+    }
+    if (!/^\d{14,16}$/.test(currentVal)) {
+      setUnitErrorMessage(prev => ({ ...prev, [unit.id]: 'IMEI must be 14-16 numeric digits.' }));
+      return;
+    }
+
+    setUnitErrorMessage(prev => ({ ...prev, [unit.id]: '' }));
+    setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'saving' }));
+
+    try {
+      const res = await fetch('/api/inventory/units', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          unitId: unit.id,
+          imei: currentVal,
+          uniqueId: unit.uniqueId
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'error' }));
+        setUnitErrorMessage(prev => ({ ...prev, [unit.id]: data.error || 'Failed to save IMEI.' }));
+        return;
+      }
+
+      setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'saved' }));
+      setVariantUnitsMap(prev => {
+        const currentList = prev[variantKey] || [];
+        return {
+          ...prev,
+          [variantKey]: currentList.map(u => u.id === unit.id ? data.unit : u)
+        };
+      });
+
+      setTimeout(() => {
+        setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'idle' }));
+      }, 2500);
+    } catch (err: any) {
+      setSavingUnitStatus(prev => ({ ...prev, [unit.id]: 'error' }));
+      setUnitErrorMessage(prev => ({ ...prev, [unit.id]: err.message || 'Error saving IMEI.' }));
+    }
   };
 
   // Fetch Discounts
@@ -769,6 +876,9 @@ export default function CashierDevices() {
         });
         setSuccessModalOpen(true);
         fetchProducts();
+        if (adjustItem.variant?.id) {
+          fetchVariantUnits(adjustItem.variant.id, adjustItem.device.id);
+        }
       } else {
         const errData = await res.json().catch(() => ({}));
         setAdjustError(errData.error || 'Failed to update stock');
@@ -962,16 +1072,24 @@ export default function CashierDevices() {
 
         const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
         const resolvedUniqueIds: string[] = [];
+        const resolvedUnitDetails: Array<{ uniqueId: string; imei: string; color: string }> = [];
         for (let u = 0; u < varTotal; u++) {
           const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + u);
-          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim() && !v.uniqueIds[u]?.startsWith('MODEL-')) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+          const customUid = v.unitDetails?.[u]?.uniqueId || v.uniqueIds?.[u];
+          const resolvedUid = (customUid && customUid.trim() && !customUid.startsWith('MODEL-')) ? customUid.trim().toUpperCase() : defaultId;
+          const resolvedImei = (v.unitDetails?.[u]?.imei || '').trim();
+          const resolvedColor = (v.unitDetails?.[u]?.color ?? v.color ?? '').trim();
+          resolvedUniqueIds.push(resolvedUid);
+          resolvedUnitDetails.push({ uniqueId: resolvedUid, imei: resolvedImei, color: resolvedColor });
         }
 
         return {
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
+          color: v.color || '',
           productId: autoProdId,
           uniqueIds: resolvedUniqueIds,
+          unitDetails: resolvedUnitDetails,
           uniqueId: resolvedUniqueIds[0] || generateUniqueDeviceId(newDeviceName, userBranch, startIdx),
           price: v.price || newDevicePrice,
           cost: v.cost || newDeviceCost,
@@ -1386,69 +1504,42 @@ export default function CashierDevices() {
           {/* Dropdown Filters + Export Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             {/* Brand Dropdown */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsFilterOpen(!isFilterOpen)} 
-                className={`flex items-center gap-1.5 bg-white border-2 ${styles.borderMain} rounded-full px-3.5 py-1.5 font-semibold text-xs sm:text-sm ${styles.textActive} hover:bg-gray-50 transition-colors shadow-sm cursor-pointer`}
-              >
-                <Filter size={14} />
-                <span>{selectedCategory === 'All' ? 'All Brands' : (categories.find(c => c.id === selectedCategory)?.name || 'Brand')}</span>
-                <ChevronDown size={14} className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isFilterOpen && (
-                <div className="absolute top-[115%] left-0 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50 py-1 max-h-60 overflow-y-auto">
-                  <button 
-                    onClick={() => { setSelectedCategory('All'); setIsFilterOpen(false); setCurrentPage(1); }} 
-                    className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === 'All' ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                  >
-                    All Brands
-                  </button>
-                  {categories.map(cat => (
-                    <button 
-                      key={cat.id} 
-                      onClick={() => { setSelectedCategory(cat.id); setIsFilterOpen(false); setCurrentPage(1); }} 
-                      className={`w-full px-4 py-2 text-left text-sm font-medium hover:bg-gray-100 ${selectedCategory === cat.id ? 'text-[#5c0099] font-bold bg-purple-50' : 'text-gray-700'}`}
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                  <div className="border-t border-purple-100 mt-1 pt-1">
-                    <button 
-                      onClick={() => { setIsFilterOpen(false); setCategoriesModalOpen(true); }} 
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#5c0099] hover:bg-purple-50 flex items-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Plus size={14} /> + Add / Manage Brands
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CustomDropdown
+              value={selectedCategory}
+              onChange={(val) => { setSelectedCategory(val); setCurrentPage(1); }}
+              options={[
+                { value: 'All', label: 'All Brands', icon: Filter },
+                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+              ]}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+              footerAction={{
+                label: '+ Add / Manage Brands',
+                icon: Plus,
+                onClick: () => setCategoriesModalOpen(true)
+              }}
+            />
 
             {/* Type Dropdown */}
-            <select 
-              value={selectedDeviceType} 
-              onChange={(e) => { setSelectedDeviceType(e.target.value); setCurrentPage(1); }} 
-              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-            >
-              <option value="all">All Types</option>
-              <option value="smartphone">Smartphones</option>
-              <option value="laptop">Laptops</option>
-              <option value="ipad">iPads/Tablets</option>
-              <option value="tv">TVs</option>
-              <option value="speaker">Speakers</option>
-              <option value="phone accessories">Accessories</option>
-            </select>
+            <CustomDropdown
+              value={selectedDeviceType}
+              onChange={(val) => { setSelectedDeviceType(val); setCurrentPage(1); }}
+              options={DEVICE_TYPE_OPTIONS}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+            />
 
             {/* Condition Filter Dropdown */}
-            <select
+            <CustomDropdown
               value={selectedCondition}
-              onChange={(e) => { setSelectedCondition(e.target.value as any); setCurrentPage(1); }}
-              className={`bg-white border-2 ${styles.borderMain} rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold ${styles.textActive} outline-none cursor-pointer shadow-sm`}
-            >
-              <option value="all">All Conditions</option>
-              <option value="new">New</option>
-              <option value="pre-owned">Pre-Owned</option>
-            </select>
+              onChange={(val) => { setSelectedCondition(val as any); setCurrentPage(1); }}
+              options={CONDITION_OPTIONS}
+              variant="pill"
+              size="sm"
+              buttonClassName={`bg-white border-2 ${styles.borderMain} text-xs sm:text-sm font-semibold ${styles.textActive} shadow-sm px-3.5 py-1.5 sm:px-4 sm:py-2 h-auto`}
+            />
 
             {/* Export Buttons */}
             <div className="flex items-center gap-1.5">
@@ -1589,6 +1680,7 @@ export default function CashierDevices() {
                   const isExpanded = expandedModelId === prod.id;
                   const variants: VariantData[] = prod.variations || [];
                   const now = new Date();
+                  const isNewlyAdded = Boolean(prod.createdAt && (now.getTime() - new Date(prod.createdAt).getTime() < 24 * 60 * 60 * 1000));
                   const isDiscountActive = Boolean(
                     prod.discount && prod.discount > 0 &&
                     (!prod.discountStartDate || new Date(prod.discountStartDate) <= now) &&
@@ -1631,6 +1723,11 @@ export default function CashierDevices() {
                             <div className="flex flex-col">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-bold text-gray-900 text-sm md:text-base">{prod.name}</span>
+                                {isNewlyAdded && (
+                                  <span className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider inline-flex items-center gap-1">
+                                    <Sparkles size={10} className="text-amber-300" /> NEW
+                                  </span>
+                                )}
                                 {isDiscountActive && (
                                   <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-300 flex items-center gap-1 uppercase tracking-wider animate-pulse">
                                     <Percent size={11} /> DISCOUNT ({prod.discount}% OFF)
@@ -1790,9 +1887,9 @@ export default function CashierDevices() {
                             <div className="bg-white rounded-xl border border-purple-200 p-4 shadow-sm flex flex-col gap-3">
                               <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                                 <div className="flex items-center gap-2">
-                                  <Package size={18} className="text-[#5c0099]" />
+                                  <Layers size={18} className="text-[#5c0099]" />
                                   <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                                    <span>{prod.name} – Units & {userBranch} Branch Inventory</span>
+                                    <span>{prod.name} – Storage Variants & {userBranch} Branch Inventory</span>
                                     {prod.isPreOwned && (
                                       <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
                                         PRE-OWNED
@@ -1800,7 +1897,7 @@ export default function CashierDevices() {
                                     )}
                                   </h4>
                                 </div>
-                                <span className="text-xs text-gray-500">Quickly adjust stock or sell unit in POS</span>
+                                <span className="text-xs text-gray-500">Quickly adjust stock or manage variant</span>
                               </div>
 
                               {variants.length > 0 ? (
@@ -1810,7 +1907,6 @@ export default function CashierDevices() {
                                       <tr className="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
                                         <th className="py-2.5 px-3">Unit</th>
                                         <th className="py-2.5 px-3">Product ID</th>
-                                        <th className="py-2.5 px-3">Color</th>
                                         <th className="py-2.5 px-3">Internal Storage</th>
                                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
                                         <th className="py-2.5 px-3 text-center">Active Branch Stock</th>
@@ -1826,80 +1922,249 @@ export default function CashierDevices() {
                                           ? (v.jasaanStock ?? (v.branchStocks?.Jasaan || 0))
                                           : (v.tagoloanStock ?? (v.branchStocks?.Tagoloan || 0));
 
-                                        const { unitLabel, color, storage } = parseUnitDetails(prod.name, v);
                                         const displayProdId = v.productId || generateAutoProductId(prod.name, v.name);
+                                        const varKey = v.id || `${prod.id}-${v.name}`;
+                                        const isVarExpanded = expandedVariantIds.includes(varKey);
+                                        const units = variantUnitsMap[varKey] || [];
+                                        const isLoadingUnits = loadingVariantUnits[varKey] || false;
 
                                         return (
-                                          <tr key={v.id || vIdx} className="hover:bg-purple-50/50 transition-colors">
-                                            <td className="py-3 px-3 font-bold text-gray-900">
-                                              {unitLabel}
-                                            </td>
-                                            <td className="py-3 px-3 font-mono font-bold text-[#5c0099]">
-                                              <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px]">
-                                                {displayProdId}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-3">
-                                              {color !== '—' ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-800 border border-gray-200">
-                                                  <span 
-                                                    className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0" 
-                                                    style={{ 
-                                                      backgroundColor: color.toLowerCase() === 'black' ? '#111' 
-                                                        : color.toLowerCase() === 'white' ? '#fff' 
-                                                        : color.toLowerCase() === 'red' ? '#ef4444' 
-                                                        : color.toLowerCase() === 'blue' ? '#3b82f6' 
-                                                        : color.toLowerCase() === 'green' ? '#10b981' 
-                                                        : color.toLowerCase() === 'gold' ? '#eab308' 
-                                                        : color.toLowerCase() === 'silver' ? '#94a3b8' 
-                                                        : color.toLowerCase() === 'purple' ? '#a855f7' 
-                                                        : '#8b5cf6' 
-                                                    }} 
-                                                  />
-                                                  {color}
-                                                </span>
-                                              ) : (
-                                                <span className="text-gray-400 font-medium">—</span>
-                                              )}
-                                            </td>
-                                            <td className="py-3 px-3">
-                                              {storage !== '—' ? (
-                                                <span className="bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded text-[11px] border border-purple-200">
-                                                  {storage}
-                                                </span>
-                                              ) : (
-                                                <span className="text-gray-400 font-medium">—</span>
-                                              )}
-                                            </td>
-                                            <td className="py-3 px-3 text-center">
-                                              <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                                {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-3 text-center font-bold text-gray-800">
-                                              <span className={`px-2.5 py-0.5 rounded-full font-bold ${vBranchStock > 0 ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-700'}`}>
-                                                {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-3 text-right font-bold text-[#5c0099]">
-                                              ₱ {Number(v.price || prod.price).toLocaleString()}
-                                            </td>
-                                            <td className="py-3 px-3 text-right">
-                                              <div className="flex items-center justify-end gap-1.5">
+                                          <React.Fragment key={varKey}>
+                                            <tr className="hover:bg-purple-50/50 transition-colors">
+                                              <td className="py-2.5 px-3 font-bold text-gray-900">
                                                 <button
-                                                  onClick={() => {
-                                                    setAdjustItem({ device: prod, variant: v });
-                                                    setAdjustStockVal(String(vBranchStock));
-                                                    setAdjustModalOpen(true);
-                                                  }}
-                                                  className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer"
-                                                  title="Quick Adjust Stock"
+                                                  type="button"
+                                                  onClick={() => toggleVariantDropdown(varKey, prod.id)}
+                                                  className="inline-flex items-center gap-2 text-left group hover:text-[#5c0099] transition-colors cursor-pointer select-none"
+                                                  title={isVarExpanded ? "Collapse IMEI units" : "Click to view Unique IDs & IMEIs"}
                                                 >
-                                                  Adjust Stock
+                                                  <span className={`p-1 rounded-md shrink-0 transition-colors ${isVarExpanded ? 'bg-purple-100 text-[#5c0099]' : 'bg-gray-100 text-gray-500 group-hover:bg-purple-50 group-hover:text-[#5c0099]'}`}>
+                                                    {isVarExpanded ? <ChevronDown size={14} className="stroke-[2.5]" /> : <ChevronRight size={14} className="stroke-[2.5]" />}
+                                                  </span>
+                                                  <span className="font-bold text-gray-900 whitespace-nowrap">{v.name}</span>
+                                                  <span className="shrink-0 whitespace-nowrap text-[10px] font-bold bg-purple-50 text-[#5c0099] border border-purple-200 px-2 py-0.5 rounded-md flex items-center gap-1 group-hover:bg-purple-100 group-hover:border-purple-300 transition-colors shadow-2xs">
+                                                    <Smartphone size={10} className="text-purple-600 shrink-0" />
+                                                    <span>IMEI / Units</span>
+                                                  </span>
                                                 </button>
-                                              </div>
-                                            </td>
-                                          </tr>
+                                              </td>
+                                              <td className="py-2.5 px-2.5 font-mono font-bold text-[#5c0099] whitespace-nowrap">
+                                                <span className="bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px] whitespace-nowrap">
+                                                  {displayProdId}
+                                                </span>
+                                              </td>
+                                              <td className="py-2.5 px-2.5 whitespace-nowrap">
+                                                <span className="font-semibold text-gray-800">
+                                                  {v.name || 'Standard'}
+                                                </span>
+                                              </td>
+                                              <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
+                                                <span className={`px-2 py-0.5 rounded font-bold ${vBranchStock > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                  {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
+                                                </span>
+                                              </td>
+                                              <td className="py-2.5 px-2.5 text-center font-bold text-gray-800 whitespace-nowrap">
+                                                <span className={`px-2.5 py-0.5 rounded-full font-bold ${vBranchStock > 0 ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-700'}`}>
+                                                  {vBranchStock > 0 ? `${vBranchStock} pcs` : 'Out of Stock'}
+                                                </span>
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right font-extrabold text-[#5c0099] whitespace-nowrap">
+                                                ₱{Number(v.price || prod.price).toLocaleString()}
+                                              </td>
+                                              <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                  <button
+                                                    onClick={() => {
+                                                      setAdjustItem({ device: prod, variant: v });
+                                                      setAdjustStockVal(String(vBranchStock));
+                                                      setAdjustModalOpen(true);
+                                                    }}
+                                                    className="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2.5 py-1 rounded text-xs transition-colors cursor-pointer"
+                                                    title="Quick Adjust Stock"
+                                                  >
+                                                    Adjust Stock
+                                                  </button>
+                                                </div>
+                                              </td>
+                                            </tr>
+
+                                            {/* Collapsible Nested Units & IMEI Management Drawer */}
+                                            {isVarExpanded && (
+                                              <tr className="bg-purple-50/40 border-b-2 border-purple-200/50">
+                                                <td colSpan={7} className="p-3 sm:p-4">
+                                                  <div className="bg-white rounded-xl border border-purple-200 shadow-2xs p-4 flex flex-col gap-3">
+                                                    {/* Drawer Header */}
+                                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+                                                      <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 rounded-lg bg-purple-100 text-[#5c0099] flex items-center justify-center shrink-0">
+                                                          <Smartphone size={16} />
+                                                        </div>
+                                                        <div>
+                                                          <h5 className="font-bold text-gray-900 text-xs sm:text-sm flex items-center gap-2">
+                                                            <span>{prod.name} ({v.name}) – Physical Phone Units</span>
+                                                            <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold">
+                                                              {units.length} registered
+                                                            </span>
+                                                          </h5>
+                                                          <p className="text-[11px] text-gray-500">
+                                                            View Unique IDs and assign hardware IMEIs for {userBranch} Branch.
+                                                          </p>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-center gap-2">
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => fetchVariantUnits(varKey, prod.id)}
+                                                          disabled={isLoadingUnits}
+                                                          className="text-xs text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                                                          title="Refresh units"
+                                                        >
+                                                          <RefreshCw size={12} className={isLoadingUnits ? 'animate-spin' : ''} />
+                                                          Refresh
+                                                        </button>
+                                                      </div>
+                                                    </div>
+
+                                                    {/* Units Table */}
+                                                    {isLoadingUnits ? (
+                                                      <div className="py-8 text-center text-xs font-semibold text-gray-500 flex items-center justify-center gap-2">
+                                                        <RefreshCw size={14} className="animate-spin text-[#5c0099]" />
+                                                        Loading phone units & IMEIs...
+                                                      </div>
+                                                    ) : units.length > 0 ? (
+                                                      <div className="w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                                        <table className="w-full text-xs text-left">
+                                                          <thead>
+                                                            <tr className="bg-gray-50/90 text-gray-600 font-bold border-b border-gray-200">
+                                                              <th className="py-2 px-2.5 w-10 text-center whitespace-nowrap">#</th>
+                                                              <th className="py-2 px-2.5 whitespace-nowrap">Unique ID</th>
+                                                              <th className="py-2 px-2 text-center whitespace-nowrap">Status</th>
+                                                              <th className="py-2 px-2.5 whitespace-nowrap">Branch</th>
+                                                              <th className="py-2 px-2.5 whitespace-nowrap">Hardware IMEI (14-16 Digits)</th>
+                                                              <th className="py-2 px-2.5 text-center w-24 whitespace-nowrap">Action</th>
+                                                            </tr>
+                                                          </thead>
+                                                          <tbody className="divide-y divide-gray-100">
+                                                            {units.map((u: any, uIdx: number) => {
+                                                              const inputVal = variantUnitsImeiInput[u.id] ?? '';
+                                                              const status = savingUnitStatus[u.id] || 'idle';
+                                                              const errMsg = unitErrorMessage[u.id] || '';
+                                                              const isSold = u.status === 'Sold';
+                                                              const isSavedReal = u.hasRealImei;
+
+                                                              return (
+                                                                <tr key={u.id || uIdx} className="hover:bg-purple-50/20 transition-colors">
+                                                                  <td className="py-2.5 px-3 text-center font-bold text-gray-400 whitespace-nowrap">
+                                                                    #{uIdx + 1}
+                                                                  </td>
+                                                                  <td className="py-2.5 px-3 whitespace-nowrap">
+                                                                    <span className="font-mono font-bold text-xs bg-purple-50 text-[#5c0099] border border-purple-200 px-2.5 py-1 rounded-md tracking-wider">
+                                                                      {u.uniqueId || `UNIT-${uIdx + 1}`}
+                                                                    </span>
+                                                                  </td>
+                                                                  <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                                                      u.status === 'Available'
+                                                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                                                        : 'bg-gray-100 text-gray-700 border border-gray-300'
+                                                                    }`}>
+                                                                      {u.status || 'Available'}
+                                                                    </span>
+                                                                  </td>
+                                                                  <td className="py-2.5 px-3 font-semibold text-gray-700 whitespace-nowrap">
+                                                                    {u.branch}
+                                                                  </td>
+                                                                  <td className="py-2.5 px-3">
+                                                                    <div className="flex flex-col gap-1 max-w-xs">
+                                                                      <div className="relative">
+                                                                        <input
+                                                                          id={`imei-input-${v.id}-${uIdx}`}
+                                                                          type="text"
+                                                                          disabled={isSold || status === 'saving'}
+                                                                          placeholder="Enter 14-16 digit IMEI..."
+                                                                          value={inputVal}
+                                                                          onChange={(e) => {
+                                                                            const val = e.target.value.replace(/\s+/g, '');
+                                                                            setVariantUnitsImeiInput(prev => ({ ...prev, [u.id]: val }));
+                                                                            if (unitErrorMessage[u.id]) {
+                                                                              setUnitErrorMessage(prev => ({ ...prev, [u.id]: '' }));
+                                                                            }
+                                                                          }}
+                                                                          onKeyDown={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                              e.preventDefault();
+                                                                              handleSaveSingleUnitImei(u, varKey);
+                                                                              const nextEl = document.getElementById(`imei-input-${v.id}-${uIdx + 1}`);
+                                                                              if (nextEl) nextEl.focus();
+                                                                            }
+                                                                          }}
+                                                                          className={`w-full font-mono text-xs px-2.5 py-1.5 rounded-lg border outline-none transition-all ${
+                                                                            errMsg
+                                                                              ? 'border-rose-400 bg-rose-50/50 focus:ring-1 focus:ring-rose-400'
+                                                                              : isSavedReal && !errMsg
+                                                                              ? 'border-emerald-300 bg-emerald-50/20 text-gray-900 focus:border-[#5c0099] focus:ring-1 focus:ring-[#5c0099]'
+                                                                              : 'border-gray-300 bg-white text-gray-900 focus:border-[#5c0099] focus:ring-1 focus:ring-[#5c0099]'
+                                                                          } ${isSold ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''}`}
+                                                                        />
+                                                                        {isSavedReal && !errMsg && (
+                                                                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-emerald-600 text-[10px] font-bold flex items-center gap-0.5 pointer-events-none">
+                                                                            <CheckCircle2 size={12} />
+                                                                          </span>
+                                                                        )}
+                                                                      </div>
+                                                                      {errMsg && (
+                                                                        <span className="text-[10px] text-rose-600 font-semibold flex items-center gap-1">
+                                                                          <AlertCircle size={10} /> {errMsg}
+                                                                        </span>
+                                                                      )}
+                                                                    </div>
+                                                                  </td>
+                                                                  <td className="py-2.5 px-3 text-center">
+                                                                    <button
+                                                                      type="button"
+                                                                      disabled={isSold || status === 'saving'}
+                                                                      onClick={() => handleSaveSingleUnitImei(u, varKey)}
+                                                                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 w-full cursor-pointer ${
+                                                                        status === 'saved'
+                                                                          ? 'bg-emerald-600 text-white'
+                                                                          : status === 'saving'
+                                                                          ? 'bg-purple-300 text-white cursor-wait'
+                                                                          : isSold
+                                                                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                                          : 'bg-[#5c0099] hover:bg-[#470077] text-white shadow-2xs'
+                                                                      }`}
+                                                                    >
+                                                                      {status === 'saving' ? (
+                                                                        <>
+                                                                          <RefreshCw size={12} className="animate-spin" />
+                                                                          Saving...
+                                                                        </>
+                                                                      ) : status === 'saved' ? (
+                                                                        <>
+                                                                          <CheckCircle2 size={12} />
+                                                                          Saved
+                                                                        </>
+                                                                      ) : (
+                                                                        'Save'
+                                                                      )}
+                                                                    </button>
+                                                                  </td>
+                                                                </tr>
+                                                              );
+                                                            })}
+                                                          </tbody>
+                                                        </table>
+                                                      </div>
+                                                    ) : (
+                                                      <div className="py-6 text-center text-xs text-gray-500 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                                                        No individual unit records tracked yet for this variant.
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </td>
+                                              </tr>
+                                            )}
+                                          </React.Fragment>
                                         );
                                       })}
                                     </tbody>
@@ -3311,9 +3576,6 @@ export default function CashierDevices() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
-                        <th className="py-2.5 px-3">Product ID</th>
-                        <th className="py-2.5 px-3">Color</th>
-                        <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
                         <th className="py-2.5 px-3 text-right">Price (₱)</th>
                         <th className="py-2.5 px-2 text-center"></th>
@@ -3330,52 +3592,11 @@ export default function CashierDevices() {
                               <td className="py-2 px-3">
                                 <input
                                   type="text"
+                                  readOnly
+                                  disabled
+                                  tabIndex={-1}
                                   value={v.name}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.name = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder="32 GB"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.productId || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.productId = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.color || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.color = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder="Red"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.storage || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.storage = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  className="border border-gray-200 bg-gray-100 text-gray-700 rounded-lg p-1.5 text-xs font-bold w-24 outline-none cursor-not-allowed select-none pointer-events-none"
                                   placeholder="32 GB"
                                 />
                               </td>
@@ -3405,7 +3626,7 @@ export default function CashierDevices() {
                                     updated[idx]!.price = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-28 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 />
                               </td>
                               <td className="py-2 px-2 text-center">
@@ -3419,45 +3640,82 @@ export default function CashierDevices() {
                               </td>
                             </tr>
 
-                            {/* Individual Device Unique IDs expansion row */}
+                            {/* Individual Device Units expansion row (Unique ID + IMEI + Color) */}
                             {unitsCount > 0 && (
                               <tr key={`${idx}-units`} className="bg-purple-50/40 border-b border-purple-200/80">
-                                <td colSpan={7} className="py-2.5 px-4">
-                                  <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
-                                          <Smartphone className="w-3.5 h-3.5 text-purple-600" />
-                                          Individual Device Unique IDs ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
-                                        </span>
-                                        <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
-                                          Sequential Unique ID for each physical phone:
-                                        </span>
-                                      </div>
+                                <td colSpan={4} className="py-2.5 px-4">
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                      <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                                        <Smartphone className="w-3.5 h-3.5 text-purple-600" />
+                                        Individual Device Units — Unique ID, IMEI &amp; Color ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
+                                      </span>
                                       <span className="text-[10px] font-mono text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full font-bold">
                                         {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx)} → {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + unitsCount - 1)}
                                       </span>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <div className="flex flex-col gap-1.5 pt-0.5">
                                       {Array.from({ length: unitsCount }).map((_, uIdx) => {
                                         const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
-                                        const currentId = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId;
+                                        const detail = v.unitDetails?.[uIdx] || {};
+                                        const currentId = (detail.uniqueId && !detail.uniqueId.startsWith('MODEL-'))
+                                          ? detail.uniqueId
+                                          : ((v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId);
                                         return (
-                                          <div key={uIdx} className="flex items-center gap-1.5 bg-white border border-purple-200 rounded-lg px-2.5 py-1 shadow-2xs">
-                                            <span className="text-[10px] font-bold text-gray-400">#{startIdx + uIdx}</span>
-                                            <input
-                                              type="text"
-                                              value={currentId}
-                                              onChange={(e) => {
-                                                const updated = [...addVariants];
-                                                const uIds = [...(updated[idx]!.uniqueIds || [])];
-                                                uIds[uIdx] = e.target.value.toUpperCase();
-                                                updated[idx]!.uniqueIds = uIds;
-                                                setAddVariants(updated);
-                                              }}
-                                              className="text-xs font-mono font-bold text-purple-900 outline-none w-36 uppercase bg-transparent"
-                                              placeholder={defaultId}
-                                            />
+                                          <div key={uIdx} className="grid grid-cols-12 items-center gap-2 bg-white border border-purple-200/90 rounded-lg px-2.5 py-1.5 shadow-2xs">
+                                            <span className="col-span-1 text-[10px] font-extrabold text-gray-400">#{startIdx + uIdx}</span>
+                                            <div className="col-span-4 flex flex-col">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">Unique ID</span>
+                                              <input
+                                                type="text"
+                                                value={currentId}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const uIds = [...(updated[idx]!.uniqueIds || [])];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  const val = e.target.value.toUpperCase();
+                                                  uIds[uIdx] = val;
+                                                  details[uIdx] = { ...(details[uIdx] || {}), uniqueId: val };
+                                                  updated[idx]!.uniqueIds = uIds;
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-mono font-bold text-purple-900 outline-none uppercase bg-transparent"
+                                                placeholder={defaultId}
+                                              />
+                                            </div>
+                                            <div className="col-span-4 flex flex-col border-l border-gray-100 pl-2">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">IMEI</span>
+                                              <input
+                                                type="text"
+                                                value={detail.imei || ''}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  details[uIdx] = { ...(details[uIdx] || {}), imei: e.target.value };
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-mono font-semibold text-gray-900 outline-none bg-transparent placeholder-gray-400"
+                                                placeholder="Enter 14-16 digit IMEI"
+                                              />
+                                            </div>
+                                            <div className="col-span-3 flex flex-col border-l border-gray-100 pl-2">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">Color</span>
+                                              <input
+                                                type="text"
+                                                value={detail.color ?? v.color ?? ''}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  details[uIdx] = { ...(details[uIdx] || {}), color: e.target.value };
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-medium text-gray-900 outline-none bg-transparent placeholder-gray-400"
+                                                placeholder={v.color || 'e.g. Black'}
+                                              />
+                                            </div>
                                           </div>
                                         );
                                       })}

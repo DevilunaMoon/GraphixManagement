@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from 'database';
 import { getSession } from '../../../../lib/session';
 import { calculateBranchBestSellers } from '../../../../lib/analyticsBestSellers';
+import { computeAnalyticsDateRanges } from '../../../../lib/analyticsDateRange';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,55 +47,13 @@ export async function GET(req: Request) {
     const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
     const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
 
-    // Calculate dynamic filter boundaries for Payment Methods, Branch Performance, etc.
-    let filterStart: Date | null = null;
-    let filterEnd: Date | null = null;
-
-    if (dateFilter === 'today') {
-      filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    } else if (dateFilter === 'week') {
-      const dayOfWeek = now.getDay(); // 0 = Sunday
-      filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59, 999);
-    } else if (dateFilter === 'month') {
-      filterStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-    } else if (dateFilter === 'year') {
-      filterStart = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-      filterEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-    } else if (dateFilter === 'custom' && startDateParam && endDateParam) {
-      const s = new Date(startDateParam);
-      s.setHours(0, 0, 0, 0);
-      const e = new Date(endDateParam);
-      e.setHours(23, 59, 59, 999);
-      if (!isNaN(s.getTime()) && !isNaN(e.getTime())) {
-        filterStart = s;
-        filterEnd = e;
-      }
-    }
-
-    // Previous period boundaries for dynamic comparative metrics
-    let prevStart: Date | null = null;
-    let prevEnd: Date | null = null;
-
-    if (dateFilter === 'today') {
-      prevStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-      prevEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
-    } else if (dateFilter === 'week') {
-      prevStart = new Date((filterStart || now).getTime() - 7 * 24 * 60 * 60 * 1000);
-      prevEnd = new Date((filterEnd || now).getTime() - 7 * 24 * 60 * 60 * 1000);
-    } else if (dateFilter === 'month') {
-      prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-      prevEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-    } else if (dateFilter === 'year') {
-      prevStart = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
-      prevEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
-    } else if (dateFilter === 'custom' && filterStart && filterEnd) {
-      const diff = filterEnd.getTime() - filterStart.getTime();
-      prevEnd = new Date(filterStart.getTime() - 1);
-      prevStart = new Date(prevEnd.getTime() - diff);
-    }
+    // Calculate dynamic filter boundaries & previous period boundaries via shared helper
+    const { filterStart, filterEnd, prevStart, prevEnd } = computeAnalyticsDateRanges(
+      dateFilter,
+      startDateParam,
+      endDateParam,
+      now
+    );
 
     const dateWhere: any = {};
     if (filterStart && filterEnd) {
@@ -177,28 +136,7 @@ export async function GET(req: Request) {
       ? allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
       : allFilteredPurchases;
 
-    // Fetch completed repairs
-    const repairsWhere: any = {
-      ...(isSuperAdmin ? {} : branchWhere),
-      status: 'Completed'
-    };
-
-    const allRepairs = await prisma.repairRequest.findMany({
-      where: repairsWhere
-    });
-
-    const filteredRepairs = await prisma.repairRequest.findMany({
-      where: {
-        ...repairsWhere,
-        ...dateWhere
-      }
-    });
-
-    const activeFilteredRepairs = targetBranch 
-      ? filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
-      : filteredRepairs;
-
-    // Workload
+    // Workload (non-completed repairs for optional summary metadata)
     const activeRepairs = await prisma.repairRequest.findMany({
       where: { ...(isSuperAdmin ? (targetBranch ? { branch: targetBranch } : {}) : branchWhere), status: { not: 'Completed' } }
     });
@@ -308,10 +246,6 @@ export async function GET(req: Request) {
       ? allSystemPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
       : allSystemPurchases;
 
-    const activeAllRepairs = targetBranch 
-      ? allRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase())
-      : allRepairs;
-
     activeAllPurchases.forEach(p => {
       const amt = p.amount || 0;
       totalRetail += amt;
@@ -347,42 +281,6 @@ export async function GET(req: Request) {
         physicalCount++;
       } else {
         onlineCount++;
-      }
-    });
-
-    activeAllRepairs.forEach(r => {
-      if (r.repairCost) {
-        const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
-        if (!isNaN(num)) {
-          totalRepair += num;
-          allTimeSales += num;
-          
-          const createdAt = new Date(r.createdAt);
-          if (createdAt >= currentYearStart) {
-            thisYearSales += num;
-          } else if (createdAt >= lastYearStart && createdAt <= lastYearEnd) {
-            lastYearSales += num;
-          }
-
-          if (filterStart && filterEnd && createdAt >= filterStart && createdAt <= filterEnd) {
-            periodSales += num;
-          }
-          if (prevStart && prevEnd && createdAt >= prevStart && createdAt <= prevEnd) {
-            previousPeriodSales += num;
-          }
-
-          for (const b of chartBuckets) {
-            if (createdAt >= b.start && createdAt <= b.end) {
-              b.value += num;
-              break;
-            }
-          }
-
-          const repairYear = createdAt.getFullYear().toString();
-          if (yearlySales[repairYear] !== undefined) {
-            yearlySales[repairYear] += num;
-          }
-        }
       }
     });
 
@@ -422,69 +320,41 @@ export async function GET(req: Request) {
       }
     });
 
-    activeFilteredRepairs.forEach(r => {
-      if (r.repairCost) {
-        const num = parseFloat(r.repairCost.replace(/[^0-9.]/g, ''));
-        if (!isNaN(num)) {
-          cashAmount += num;
-          cashCount += 1;
-        }
-      }
-    });
-
-    // 3. Calculate Branch Performance
+    // 3. Calculate Branch Performance (Product Purchases only)
     const systemBranches = ['Tagoloan', 'Villanueva', 'Jasaan'];
     let branchPerformance: Array<{ branch: string; revenue: number; orders: number }> = [];
 
     if (isSuperAdmin) {
       if (targetBranch) {
         const branchPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
-        const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === targetBranch?.toLowerCase());
-
-        let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-        rev += branchRepairs.reduce((sum, r) => {
-          const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
-          return sum + (isNaN(num) ? 0 : num);
-        }, 0);
+        const rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
         branchPerformance = [{
           branch: targetBranch,
           revenue: rev,
-          orders: branchPurchases.length + branchRepairs.length
+          orders: branchPurchases.length
         }];
       } else {
         branchPerformance = systemBranches.map(bName => {
           const bPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
-          const bRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === bName.toLowerCase());
-
-          let rev = bPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-          rev += bRepairs.reduce((sum, r) => {
-            const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
-            return sum + (isNaN(num) ? 0 : num);
-          }, 0);
+          const rev = bPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
           return {
             branch: bName,
             revenue: rev,
-            orders: bPurchases.length + bRepairs.length
+            orders: bPurchases.length
           };
         });
       }
     } else {
       const assignedBranch = (session.branch || 'Tagoloan').trim();
       const branchPurchases = allFilteredPurchases.filter(p => (p.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
-      const branchRepairs = filteredRepairs.filter(r => (r.branch || 'Tagoloan').toLowerCase() === assignedBranch.toLowerCase());
-
-      let rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
-      rev += branchRepairs.reduce((sum, r) => {
-        const num = parseFloat((r.repairCost || '').replace(/[^0-9.]/g, ''));
-        return sum + (isNaN(num) ? 0 : num);
-      }, 0);
+      const rev = branchPurchases.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       branchPerformance = [{
         branch: assignedBranch,
         revenue: rev,
-        orders: branchPurchases.length + branchRepairs.length
+        orders: branchPurchases.length
       }];
     }
 

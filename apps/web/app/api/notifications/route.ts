@@ -30,15 +30,41 @@ export async function GET(req: Request) {
     };
 
     // For Super Admin, Admin & Cashier, include restock alerts, stock warnings, repair requests, reservations, new products, installment applications, etc.
+    // Include SPARE_PART_USED specifically for Branch Admins (not Super Admin)
     if (isSuperAdmin || isAdmin || isCashier) {
-      whereClause.type = { in: ['RESTOCK', 'STOCK_OUT', 'STOCK_LOW', 'REPAIR_REQUEST', 'REPAIR_ACCEPTED', 'REPAIR_REJECTED', 'REPAIR', 'SYSTEM', 'PAYMENT', 'ORDER', 'CASH_RESERVATION', 'REVIEW_REPLY', 'NEW_PRODUCT', 'INSTALLMENT_APPLICATION'] };
+      const allowedTypes = [
+        'RESTOCK',
+        'STOCK_OUT',
+        'STOCK_LOW',
+        'REPAIR_REQUEST',
+        'REPAIR_ACCEPTED',
+        'REPAIR_REJECTED',
+        'REPAIR',
+        'SYSTEM',
+        'PAYMENT',
+        'ORDER',
+        'CASH_RESERVATION',
+        'REVIEW_REPLY',
+        'NEW_PRODUCT',
+        'INSTALLMENT_APPLICATION',
+      ];
+      if (isAdmin) {
+        allowedTypes.push('SPARE_PART_USED');
+      }
+      whereClause.type = { in: allowedTypes };
     }
 
-    // Branch filtering
+    // Branch filtering (case-insensitive)
     if (branchParam && branchParam.toLowerCase() !== 'all') {
-      whereClause.branch = { in: [branchParam, 'all', 'All'] };
+      whereClause.OR = [
+        { branch: { equals: branchParam, mode: 'insensitive' } },
+        { branch: { equals: 'all', mode: 'insensitive' } },
+      ];
     } else if ((isAdmin || isCashier) && session.branch) {
-      whereClause.branch = { in: [session.branch, 'all', 'All'] };
+      whereClause.OR = [
+        { branch: { equals: session.branch, mode: 'insensitive' } },
+        { branch: { equals: 'all', mode: 'insensitive' } },
+      ];
     }
 
     const [notifications, totalCount, unreadCount] = await Promise.all([
