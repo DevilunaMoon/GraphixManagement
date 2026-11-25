@@ -268,16 +268,17 @@ export default function CashierDevices() {
     productId: string;
     uniqueId?: string;
     uniqueIds?: string[];
+    unitDetails?: Array<{ uniqueId?: string; imei?: string; color?: string }>;
     price: string;
     cost: string;
     tagoloanStock: string;
     villanuevaStock: string;
     jasaanStock: string;
   }[]>([
-    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
-    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
+    { type: 'Storage', name: '32 GB', color: '', storage: '32 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '64 GB', color: '', storage: '64 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '128 GB', color: '', storage: '128 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' },
+    { type: 'Storage', name: '256 GB', color: '', storage: '256 GB', productId: '', uniqueIds: [], unitDetails: [], price: '', cost: '', tagoloanStock: '0', villanuevaStock: '0', jasaanStock: '0' }
   ]);
 
   function getVariantStockCount(v: { tagoloanStock?: string; villanuevaStock?: string; jasaanStock?: string }): number {
@@ -1071,16 +1072,24 @@ export default function CashierDevices() {
 
         const startIdx = getVariantStartUnitIndex(addVariants, idx, addSequenceOffset);
         const resolvedUniqueIds: string[] = [];
+        const resolvedUnitDetails: Array<{ uniqueId: string; imei: string; color: string }> = [];
         for (let u = 0; u < varTotal; u++) {
           const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + u);
-          resolvedUniqueIds.push((v.uniqueIds?.[u] && v.uniqueIds[u]?.trim() && !v.uniqueIds[u]?.startsWith('MODEL-')) ? v.uniqueIds[u]!.trim().toUpperCase() : defaultId);
+          const customUid = v.unitDetails?.[u]?.uniqueId || v.uniqueIds?.[u];
+          const resolvedUid = (customUid && customUid.trim() && !customUid.startsWith('MODEL-')) ? customUid.trim().toUpperCase() : defaultId;
+          const resolvedImei = (v.unitDetails?.[u]?.imei || '').trim();
+          const resolvedColor = (v.unitDetails?.[u]?.color ?? v.color ?? '').trim();
+          resolvedUniqueIds.push(resolvedUid);
+          resolvedUnitDetails.push({ uniqueId: resolvedUid, imei: resolvedImei, color: resolvedColor });
         }
 
         return {
           type: v.color && v.storage ? 'Unit' : (v.color ? 'Color' : 'Storage'),
           name: resolvedName,
+          color: v.color || '',
           productId: autoProdId,
           uniqueIds: resolvedUniqueIds,
+          unitDetails: resolvedUnitDetails,
           uniqueId: resolvedUniqueIds[0] || generateUniqueDeviceId(newDeviceName, userBranch, startIdx),
           price: v.price || newDevicePrice,
           cost: v.cost || newDeviceCost,
@@ -3567,10 +3576,8 @@ export default function CashierDevices() {
                     <thead>
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
-                        <th className="py-2.5 px-3">Product ID</th>
-                        <th className="py-2.5 px-3">Color</th>
-                        <th className="py-2.5 px-3">Internal Storage</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
+                        <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3 text-right">Price (₱)</th>
                         <th className="py-2.5 px-2 text-center"></th>
                       </tr>
@@ -3590,48 +3597,10 @@ export default function CashierDevices() {
                                   onChange={(e) => {
                                     const updated = [...addVariants];
                                     updated[idx]!.name = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder="32 GB"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.productId || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.productId = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-mono font-bold text-purple-900 w-28 outline-none uppercase focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder={generateAutoProductId(newDeviceName || 'MODEL', v.storage || v.name || '32 GB')}
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.color || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.color = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-20 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder="Red"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.storage || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
                                     updated[idx]!.storage = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="border border-purple-200 bg-purple-50/50 rounded-lg p-1.5 text-xs font-bold text-purple-900 w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                   placeholder="32 GB"
                                 />
                               </td>
@@ -3650,6 +3619,19 @@ export default function CashierDevices() {
                                   className="border border-gray-300 bg-white text-gray-900 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 />
                               </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={v.color || ''}
+                                  onChange={(e) => {
+                                    const updated = [...addVariants];
+                                    updated[idx]!.color = e.target.value;
+                                    setAddVariants(updated);
+                                  }}
+                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-28 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  placeholder="Red"
+                                />
+                              </td>
                               <td className="py-2 px-3 text-right">
                                 <input
                                   type="number"
@@ -3661,7 +3643,7 @@ export default function CashierDevices() {
                                     updated[idx]!.price = e.target.value;
                                     setAddVariants(updated);
                                   }}
-                                  className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  className="border border-gray-300 bg-white text-[#5c0099] placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-28 text-right outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
                                 />
                               </td>
                               <td className="py-2 px-2 text-center">
@@ -3675,45 +3657,82 @@ export default function CashierDevices() {
                               </td>
                             </tr>
 
-                            {/* Individual Device Unique IDs expansion row */}
+                            {/* Individual Device Units expansion row (Unique ID + IMEI + Color) */}
                             {unitsCount > 0 && (
                               <tr key={`${idx}-units`} className="bg-purple-50/40 border-b border-purple-200/80">
-                                <td colSpan={7} className="py-2.5 px-4">
-                                  <div className="flex flex-col gap-1.5">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
-                                          <Smartphone className="w-3.5 h-3.5 text-purple-600" />
-                                          Individual Device Unique IDs ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
-                                        </span>
-                                        <span className="text-[10px] text-gray-500 font-medium hidden sm:inline">
-                                          Sequential Unique ID for each physical phone:
-                                        </span>
-                                      </div>
+                                <td colSpan={5} className="py-2.5 px-4">
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between flex-wrap gap-2">
+                                      <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                                        <Smartphone className="w-3.5 h-3.5 text-purple-600" />
+                                        Individual Device Units — Unique ID, IMEI &amp; Color ({unitsCount} {unitsCount === 1 ? 'unit' : 'units'})
+                                      </span>
                                       <span className="text-[10px] font-mono text-purple-700 bg-purple-100/90 px-2 py-0.5 rounded-full font-bold">
                                         {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx)} → {generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + unitsCount - 1)}
                                       </span>
                                     </div>
-                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                    <div className="flex flex-col gap-1.5 pt-0.5">
                                       {Array.from({ length: unitsCount }).map((_, uIdx) => {
                                         const defaultId = generateUniqueDeviceId(newDeviceName || 'MODEL', userBranch, startIdx + uIdx);
-                                        const currentId = (v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId;
+                                        const detail = v.unitDetails?.[uIdx] || {};
+                                        const currentId = (detail.uniqueId && !detail.uniqueId.startsWith('MODEL-'))
+                                          ? detail.uniqueId
+                                          : ((v.uniqueIds?.[uIdx] && !v.uniqueIds[uIdx]?.startsWith('MODEL-')) ? v.uniqueIds[uIdx] : defaultId);
                                         return (
-                                          <div key={uIdx} className="flex items-center gap-1.5 bg-white border border-purple-200 rounded-lg px-2.5 py-1 shadow-2xs">
-                                            <span className="text-[10px] font-bold text-gray-400">#{startIdx + uIdx}</span>
-                                            <input
-                                              type="text"
-                                              value={currentId}
-                                              onChange={(e) => {
-                                                const updated = [...addVariants];
-                                                const uIds = [...(updated[idx]!.uniqueIds || [])];
-                                                uIds[uIdx] = e.target.value.toUpperCase();
-                                                updated[idx]!.uniqueIds = uIds;
-                                                setAddVariants(updated);
-                                              }}
-                                              className="text-xs font-mono font-bold text-purple-900 outline-none w-36 uppercase bg-transparent"
-                                              placeholder={defaultId}
-                                            />
+                                          <div key={uIdx} className="grid grid-cols-12 items-center gap-2 bg-white border border-purple-200/90 rounded-lg px-2.5 py-1.5 shadow-2xs">
+                                            <span className="col-span-1 text-[10px] font-extrabold text-gray-400">#{startIdx + uIdx}</span>
+                                            <div className="col-span-4 flex flex-col">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">Unique ID</span>
+                                              <input
+                                                type="text"
+                                                value={currentId}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const uIds = [...(updated[idx]!.uniqueIds || [])];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  const val = e.target.value.toUpperCase();
+                                                  uIds[uIdx] = val;
+                                                  details[uIdx] = { ...(details[uIdx] || {}), uniqueId: val };
+                                                  updated[idx]!.uniqueIds = uIds;
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-mono font-bold text-purple-900 outline-none uppercase bg-transparent"
+                                                placeholder={defaultId}
+                                              />
+                                            </div>
+                                            <div className="col-span-4 flex flex-col border-l border-gray-100 pl-2">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">IMEI</span>
+                                              <input
+                                                type="text"
+                                                value={detail.imei || ''}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  details[uIdx] = { ...(details[uIdx] || {}), imei: e.target.value };
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-mono font-semibold text-gray-900 outline-none bg-transparent placeholder-gray-400"
+                                                placeholder="Enter 14-16 digit IMEI"
+                                              />
+                                            </div>
+                                            <div className="col-span-3 flex flex-col border-l border-gray-100 pl-2">
+                                              <span className="text-[9px] font-bold text-gray-400 uppercase">Color</span>
+                                              <input
+                                                type="text"
+                                                value={detail.color ?? v.color ?? ''}
+                                                onChange={(e) => {
+                                                  const updated = [...addVariants];
+                                                  const details = [...(updated[idx]!.unitDetails || [])];
+                                                  details[uIdx] = { ...(details[uIdx] || {}), color: e.target.value };
+                                                  updated[idx]!.unitDetails = details;
+                                                  setAddVariants(updated);
+                                                }}
+                                                className="text-xs font-medium text-gray-900 outline-none bg-transparent placeholder-gray-400"
+                                                placeholder={v.color || 'e.g. Black'}
+                                              />
+                                            </div>
                                           </div>
                                         );
                                       })}
