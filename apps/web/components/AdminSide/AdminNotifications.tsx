@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, Check, Clock, ShoppingCart, X, AlertTriangle, AlertCircle, Package, CheckCheck, RefreshCw, Building2, Wrench, CheckCircle2, Sparkles, FileText, CreditCard } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useBranch } from '../../context/BranchContext';
 import RepairRequestReviewModal from '../Repair/RepairRequestReviewModal';
 
@@ -25,6 +26,7 @@ const formatDateTime = (dateStr: string) => {
 };
 
 export default function AdminNotifications() {
+  const router = useRouter();
   const { selectedBranch, isSuperAdmin } = useBranch();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,6 +142,8 @@ export default function AdminNotifications() {
         return <CheckCircle2 size={20} className="text-white" />;
       case 'REPAIR_REJECTED':
         return <X size={20} className="text-white" />;
+      case 'SPARE_PART_USED':
+        return <Wrench size={20} className="text-white" />;
       case 'REPAIR_REQUEST':
       case 'REPAIR':
         return <Wrench size={20} className="text-white" />;
@@ -225,6 +229,7 @@ export default function AdminNotifications() {
               const isSkyro = isInstallment && (notification.title.toLowerCase().includes('skyro') || notification.message.toLowerCase().includes('skyro'));
               const isRestock = notification.type === 'RESTOCK';
               const isNewProduct = notification.type === 'NEW_PRODUCT';
+              const isSparePartUsed = notification.type === 'SPARE_PART_USED';
               const isRepairAccepted = notification.type === 'REPAIR_ACCEPTED' || 
                 notification.title.toLowerCase().includes('accepted') || 
                 notification.message.toLowerCase().includes('has been accepted');
@@ -237,6 +242,7 @@ export default function AdminNotifications() {
 
               let iconBg = !notification.isRead ? 'bg-[#5c0099]' : 'bg-gray-300';
               if (isInstallment) iconBg = !notification.isRead ? 'bg-gradient-to-tr from-[#7a00b3] to-[#bd00ff]' : 'bg-gray-400';
+              else if (isSparePartUsed) iconBg = !notification.isRead ? 'bg-gradient-to-tr from-[#5c0099] to-[#bd00ff]' : 'bg-gray-400';
               else if (isNewProduct) iconBg = !notification.isRead ? 'bg-indigo-600' : 'bg-gray-400';
               else if (isRestock) iconBg = !notification.isRead ? 'bg-emerald-600' : 'bg-gray-400';
               else if (isRepairAccepted) iconBg = 'bg-emerald-600';
@@ -249,9 +255,14 @@ export default function AdminNotifications() {
                 <div 
                   key={notification.id} 
                   onClick={() => {
+                    if (isSparePartUsed) {
+                      if (!notification.isRead) handleAction(notification.id, 'READ', false);
+                      router.push('/admin/monitoring');
+                      return;
+                    }
                     if (isRepairRequest) openRepairRequest(notification);
                   }}
-                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${isRepairRequest ? 'cursor-pointer' : ''} ${
+                  className={`p-6 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${(isRepairRequest || isSparePartUsed) ? 'cursor-pointer' : ''} ${
                     isRepairAccepted
                       ? 'bg-emerald-50/40 hover:bg-emerald-50/60 border-l-4 border-l-emerald-500'
                       : isRepairRejected
@@ -259,6 +270,8 @@ export default function AdminNotifications() {
                       : !notification.isRead 
                         ? isInstallment
                           ? 'bg-purple-50/60 hover:bg-purple-100/50 border-l-4 border-l-[#8b00cc]'
+                          : isSparePartUsed
+                          ? 'bg-purple-50/70 hover:bg-purple-100/60 border-l-4 border-l-[#bd00ff]'
                           : isNewProduct
                           ? 'bg-indigo-50/50 hover:bg-indigo-50/70 border-l-4 border-l-indigo-600'
                           : isRestock
@@ -292,6 +305,12 @@ export default function AdminNotifications() {
                         }`}>
                           <CreditCard size={12} className={isHomeCredit ? 'text-rose-600' : isSkyro ? 'text-sky-600' : 'text-[#8b00cc]'} />
                           {isHomeCredit ? 'HOME CREDIT' : isSkyro ? 'SKYRO' : 'INSTALLMENT APPLICATION'}
+                        </span>
+                      )}
+                      {isSparePartUsed && (
+                        <span className="shrink-0 bg-purple-100 text-[#5c0099] text-xs font-black px-2.5 py-0.5 rounded-full shadow-sm border border-purple-300 flex items-center gap-1">
+                          <Wrench size={12} className="text-[#bd00ff]" />
+                          SPARE PARTS USED
                         </span>
                       )}
                       {isNewProduct && (
@@ -351,6 +370,17 @@ export default function AdminNotifications() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 sm:self-center" onClick={e => e.stopPropagation()}>
+                    {isSparePartUsed && (
+                      <Link 
+                        href="/admin/monitoring"
+                        onClick={() => {
+                          if (!notification.isRead) handleAction(notification.id, 'READ', false);
+                        }}
+                        className="shrink-0 px-3.5 py-2 bg-gradient-to-r from-[#7a00b3] to-[#bd00ff] hover:from-[#5c0099] hover:to-[#a900e6] text-white font-bold text-xs rounded-xl transition-all shadow-xs hover:shadow-md flex items-center gap-1.5 no-underline cursor-pointer"
+                      >
+                        <Wrench size={14} /> View Device Monitoring
+                      </Link>
+                    )}
                     {isInstallment && (
                       <Link 
                         href="/admin/inventory?openInstallment=true"
