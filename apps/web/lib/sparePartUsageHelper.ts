@@ -147,7 +147,7 @@ export async function processSparePartUsageAndNotify(params: {
         branch: { equals: operatingBranch, mode: 'insensitive' },
         status: 'Active',
       },
-      select: { id: true },
+      select: { id: true, branch: true },
     });
 
     if (branchAdmins.length === 0) return;
@@ -162,7 +162,7 @@ export async function processSparePartUsageAndNotify(params: {
         title: 'Spare Parts Used in Repair',
         message,
         type: 'SPARE_PART_USED',
-        branch: operatingBranch,
+        branch: admin.branch || operatingBranch,
         isRead: false,
       })),
     });
