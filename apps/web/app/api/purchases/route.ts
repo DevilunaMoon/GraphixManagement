@@ -823,6 +823,55 @@ export async function GET(req: Request) {
     const sort = searchParams.get('sort') || 'desc';
     const orderByDir: 'asc' | 'desc' = sort === 'asc' ? 'asc' : 'desc';
 
+    const attachDeviceImeis = async (list: any[]) => {
+      if (list.length === 0) return [];
+      const purchaseIds = list.map((p) => p.id);
+      const linkedUnits = await prisma.deviceUnit.findMany({
+        where: { purchaseId: { in: purchaseIds } },
+        select: { purchaseId: true, imei: true, notes: true },
+      });
+
+      const unitMap = new Map<string, { realImeis: string[]; uniqueIds: string[] }>();
+      for (const u of linkedUnits) {
+        if (!u.purchaseId) continue;
+        const entry = unitMap.get(u.purchaseId) || { realImeis: [], uniqueIds: [] };
+        const isReal = /^\d{14,16}$/.test((u.imei || '').trim());
+        if (isReal && u.imei) {
+          entry.realImeis.push(u.imei.trim());
+        }
+        if (u.notes && u.notes.includes('UID:')) {
+          const uid = u.notes.split('UID:')[1]?.split(';')[0]?.trim();
+          if (uid) entry.uniqueIds.push(uid);
+        } else if (!isReal && u.imei) {
+          entry.uniqueIds.push(u.imei.trim());
+        }
+        unitMap.set(u.purchaseId, entry);
+      }
+
+      return list.map((p) => {
+        const entry = unitMap.get(p.id);
+        const purchaseImeiParts = (p.imei || '')
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean);
+        const numericFromPurchase = purchaseImeiParts.filter((s: string) => /^\d{14,16}$/.test(s));
+        const realImeis =
+          entry && entry.realImeis.length > 0
+            ? entry.realImeis
+            : numericFromPurchase;
+        const resolvedUniqueId =
+          entry && entry.uniqueIds.length > 0
+            ? entry.uniqueIds.join(', ')
+            : p.imei;
+
+        return {
+          ...p,
+          uniqueId: resolvedUniqueId,
+          deviceImei: realImeis.length > 0 ? realImeis.join(', ') : null,
+        };
+      });
+    };
+
     if (pageStr) {
       const page = Math.max(1, parseInt(pageStr, 10) || 1);
       const limit = Math.max(1, parseInt(limitStr || '8', 10) || 8);
@@ -845,10 +894,7 @@ export async function GET(req: Request) {
         })
       ]);
 
-      const formattedPurchases = purchases.map(p => ({
-        ...p,
-        uniqueId: p.imei
-      }));
+      const formattedPurchases = await attachDeviceImeis(purchases);
 
       return NextResponse.json({
         purchases: formattedPurchases,
@@ -869,10 +915,7 @@ export async function GET(req: Request) {
       }
     });
 
-    const formattedPurchases = purchases.map(p => ({
-      ...p,
-      uniqueId: p.imei
-    }));
+    const formattedPurchases = await attachDeviceImeis(purchases);
 
     return NextResponse.json(formattedPurchases);
   } catch (error: any) {

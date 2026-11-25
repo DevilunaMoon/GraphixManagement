@@ -119,7 +119,7 @@ export default function CustomerProfile({ user }: { user?: any }) {
               <div className="w-8 h-8 rounded-xl bg-purple-50 group-hover:bg-purple-100/80 flex items-center justify-center transition-colors">
                 <Receipt className="text-[#6b588c] group-hover:text-[#8b00cc] transition-colors" size={18} />
               </div>
-              <span>Digital Receipt</span>
+              <span>Order History</span>
             </button>
 
           </nav>

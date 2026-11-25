@@ -18,6 +18,7 @@ interface ReceiptItem {
   paymentType: string;
   status?: string;
   uniqueId?: string | null;
+  deviceImei?: string | null;
   downpaymentAmount?: number;
   remainingBalance?: number;
   createdAt: string;
@@ -59,6 +60,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
             paymentType: item.paymentType || "Full Payment",
             status: item.status,
             uniqueId: item.uniqueId || item.imei || null,
+            deviceImei: item.deviceImei || (/^\d{14,16}$/.test(String(item.imei || '').trim()) ? String(item.imei).trim() : null),
             downpaymentAmount: item.downpaymentAmount || 0,
             remainingBalance: item.remainingBalance || 0,
             createdAt: item.createdAt
@@ -158,7 +160,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
               <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
                 <Receipt size={18} className="text-white" />
               </div>
-              <span>Digital Receipt</span>
+              <span>Order History</span>
             </button>
 
           </nav>
@@ -171,7 +173,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-purple-100 pb-5 mb-6 gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl sm:text-3xl font-black text-gray-950 m-0 tracking-tight">Digital Receipts</h2>
+                <h2 className="text-2xl sm:text-3xl font-black text-gray-950 m-0 tracking-tight">Order History</h2>
                 <Sparkles size={20} className="text-[#bd00ff]" />
               </div>
               <p className="text-gray-500 m-0 mt-1 font-medium text-xs sm:text-sm">
@@ -182,7 +184,7 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
             {/* Top Toolbar / Sort Controls */}
             <div className="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-end">
               <span className="text-xs font-bold text-purple-700 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-xl">
-                {totalCount} {totalCount === 1 ? 'Receipt' : 'Receipts'}
+                {totalCount} {totalCount === 1 ? 'Order' : 'Orders'}
               </span>
 
               {/* Custom Sort Dropdown */}
@@ -262,6 +264,11 @@ export default function CustomerDigitalReceipt({ user }: { user?: any }) {
                         <QrCode size={11} className="text-[#8b00cc]" />
                         Unique ID: {resolveDisplayUniqueId(item.uniqueId, item.deviceName, item.branch, 1, item.orderNum)}
                       </span>
+                      {item.deviceImei && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-gray-800 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-md">
+                          IMEI: {item.deviceImei}
+                        </span>
+                      )}
                     </div>
 
                     <h4 className="text-gray-900 font-bold text-sm sm:text-base truncate m-0 group-hover:text-[#8b00cc] transition-colors">
