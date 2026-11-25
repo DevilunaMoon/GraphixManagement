@@ -3577,7 +3577,6 @@ export default function CashierDevices() {
                       <tr className="bg-purple-100/70 text-purple-900 font-bold border-b border-purple-200">
                         <th className="py-2.5 px-3">Unit</th>
                         <th className="py-2.5 px-3 text-center">{userBranch} Stock</th>
-                        <th className="py-2.5 px-3">Color</th>
                         <th className="py-2.5 px-3 text-right">Price (₱)</th>
                         <th className="py-2.5 px-2 text-center"></th>
                       </tr>
@@ -3593,14 +3592,11 @@ export default function CashierDevices() {
                               <td className="py-2 px-3">
                                 <input
                                   type="text"
+                                  readOnly
+                                  disabled
+                                  tabIndex={-1}
                                   value={v.name}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.name = e.target.value;
-                                    updated[idx]!.storage = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-bold w-24 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+                                  className="border border-gray-200 bg-gray-100 text-gray-700 rounded-lg p-1.5 text-xs font-bold w-24 outline-none cursor-not-allowed select-none pointer-events-none"
                                   placeholder="32 GB"
                                 />
                               </td>
@@ -3617,19 +3613,6 @@ export default function CashierDevices() {
                                     setAddVariants(updated);
                                   }}
                                   className="border border-gray-300 bg-white text-gray-900 rounded-lg p-1.5 text-xs font-bold w-20 text-center outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                />
-                              </td>
-                              <td className="py-2 px-3">
-                                <input
-                                  type="text"
-                                  value={v.color || ''}
-                                  onChange={(e) => {
-                                    const updated = [...addVariants];
-                                    updated[idx]!.color = e.target.value;
-                                    setAddVariants(updated);
-                                  }}
-                                  className="border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg p-1.5 text-xs font-medium w-28 outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
-                                  placeholder="Red"
                                 />
                               </td>
                               <td className="py-2 px-3 text-right">
@@ -3660,7 +3643,7 @@ export default function CashierDevices() {
                             {/* Individual Device Units expansion row (Unique ID + IMEI + Color) */}
                             {unitsCount > 0 && (
                               <tr key={`${idx}-units`} className="bg-purple-50/40 border-b border-purple-200/80">
-                                <td colSpan={5} className="py-2.5 px-4">
+                                <td colSpan={4} className="py-2.5 px-4">
                                   <div className="flex flex-col gap-2">
                                     <div className="flex items-center justify-between flex-wrap gap-2">
                                       <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
