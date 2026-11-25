@@ -64,7 +64,7 @@ export default function RepairPriorityBanner({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-[#7e22ce]">
-                <Sparkles size={10} /> DSS Priority Review
+                <Sparkles size={10} /> Priority Review
               </span>
               <span className="text-xs sm:text-sm font-extrabold text-gray-900">
                 {flagged.length} repair{flagged.length === 1 ? '' : 's'} flagged for attention
